@@ -20,7 +20,8 @@
   "license": "MIT",
   "dependencies": {
     "puppeteer": "^21.5.0",
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "googleapis": "^144.0.0"
   }
 }
 
