@@ -1576,6 +1576,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       updateBulkButtons();
       
     } catch (error) {
+      console.error('Error validating URL:', error);
+      
+      // Update row with error
+      validationResults[index] = {
+        url: url,
+        row: index,
+        schemaType: null,
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: error.message,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+        notes: validationResults[index].notes || ''
+      };
+      
+      updateTableRow(index, validationResults[index]);
+      
+      // Enable bulk action buttons (even if error)
+      updateBulkButtons();
+    }
+  }
 
   // Toggle help block
   function toggleHelpBlock() {
