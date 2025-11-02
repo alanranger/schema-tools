@@ -764,7 +764,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.10</span>
+    <span class="version">v1.5.1</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2673,17 +2673,27 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const missingMessages = [];
       missingDetails.forEach(m => {
         const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
-        const nodeInfo = m.hasId ? ` (with @id: ${m.key.includes('#') ? m.key.split('#')[1] : 'root'})` : '';
+        // Identify which node is missing the field - check if it has @id
+        let nodeLocation = '';
+        if (m.hasId && m.key && m.key.includes('#')) {
+          const idPart = m.key.split('#')[1];
+          nodeLocation = ` (in node with @id: ${idPart})`;
+        } else if (!m.hasId) {
+          // No @id means it's likely a standalone block (could be global footer or Squarespace-generated)
+          nodeLocation = ` (in node WITHOUT @id - likely needs fixing)`;
+        }
+        
         const duplicateInfo = m.instances > 1 ? ` [${m.instances} duplicate instances]` : '';
         if (elsewhere) {
-          missingMessages.push(`${m.type}: "${m.field}" missing${nodeInfo}${duplicateInfo}. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
+          missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo}. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
         } else {
-          missingMessages.push(`${m.type}: "${m.field}" missing${nodeInfo}${duplicateInfo} (add this property to the ${m.type} node).`);
+          missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo} (add this property to the ${m.type} node).`);
         }
       });
       
-      // Detect and log duplicates
+      // Detect and log duplicates - identify which blocks are global vs page-specific
       const duplicateGroups = {};
+      const blockIndexMap = {}; // Map nodes back to their source block index
       allNodes.forEach((n, idx) => {
         const types = asArray(n['@type']);
         types.forEach(t => {
@@ -2694,16 +2704,25 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       });
       
       const duplicateWarnings = [];
+      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs']; // Common @id patterns from global injections
+      
       Object.keys(duplicateGroups).forEach(t => {
         const nodes = duplicateGroups[t];
         const keyCounts = {};
+        const keyDetails = {};
         nodes.forEach(n => {
           keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
+          if (!keyDetails[n.key]) {
+            keyDetails[n.key] = { hasId: n.hasId, node: n.node };
+          }
         });
+        
         Object.keys(keyCounts).forEach(key => {
           if (keyCounts[key] > 1) {
             const keyName = key.includes('#') ? key.split('#')[1] : 'root';
-            duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicates)'}`);
+            const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
+            const label = isGlobal ? ' (likely global injection)' : (key.includes('#') ? '' : ' (no @id - likely duplicate)');
+            duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${key.includes('#') ? ` (@id: ${keyName})` : ' (no @id)'}${label}`);
           }
         });
       });
@@ -2713,6 +2732,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         // Add duplicate warnings to missingMessages for display
         duplicateWarnings.forEach(w => {
           missingMessages.push(`⚠️ DUPLICATE: ${w}`);
+        });
+      }
+      
+      // Identify which Organization nodes are missing name
+      const orgNodes = allNodes.filter(n => {
+        const types = asArray(n['@type']);
+        return types.includes('Organization');
+      });
+      
+      const orgNodesMissingName = orgNodes.filter(n => !n.name || !n.name.trim());
+      if (orgNodesMissingName.length > 0) {
+        debugLog(`⚠️ Found ${orgNodesMissingName.length} Organization node(s) missing 'name':`, 'warn');
+        orgNodesMissingName.forEach((n, idx) => {
+          const idInfo = n['@id'] ? `@id: ${n['@id']}` : 'no @id';
+          const urlInfo = n.url ? `url: ${n.url}` : 'no url';
+          debugLog(`  Organization ${idx + 1}: ${idInfo}, ${urlInfo}`, 'warn');
         });
       }
       
