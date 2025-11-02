@@ -971,6 +971,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         supabaseAvailable = true;
         console.log('✅ Supabase client initialized successfully');
+        
+        // Update bulk buttons state when Supabase is available
+        updateBulkButtons();
+        
         return true;
       } catch (error) {
         console.error('Failed to initialize Supabase client:', error);
