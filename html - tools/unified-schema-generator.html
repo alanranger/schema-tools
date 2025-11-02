@@ -856,7 +856,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <button onclick="runSingleUrlValidation()" style="margin-top: 0.75rem;">Run Validation</button>
       <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">This will process the URL and display validation results in the table below. Use the validator buttons in the table to open external validators.</p>
       <label style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
-        <input type="checkbox" id="autoRunExternalChecks" checked style="width: auto; margin: 0;">
+        <input type="checkbox" id="autoRunExternalChecks" checked style="width: auto; margin: 0;" onchange="saveAutoRunPreference()">
         <span>Auto-run external checks</span>
       </label>
     </div>
@@ -1080,6 +1080,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (!supabaseAvailable) {
       initSupabase();
     }
+    // Load auto-run preference
+    loadAutoRunPreference();
   });
   
   // Remove duplicate switchTab definition - it's already at the top
@@ -1578,6 +1580,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
         if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
           await runSchemaOrgValidator(index, url);
+        }
+        
+        // Auto-run Rich Results validator if enabled and status is "Not run"
+        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+        if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+          // Don't await - let it run in background
+          runRichResultsValidator(index, url);
         }
       }
       
@@ -2395,7 +2404,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Update row content
     const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
-    const googleUrl = 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
+    // Use reportUrl from API if available, otherwise fallback to default
+    const googleUrl = result.richResultsReportUrl || 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
     
     row.innerHTML = `
       <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
@@ -2408,6 +2418,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           <option value="⚠️ Warning" ${existingGoogleStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
           <option value="❌ Failed" ${existingGoogleStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
           <option value="👀 Opened (reviewing)" ${existingGoogleStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
+          <option value="🔄 Running..." ${existingGoogleStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
           <option value="Not run" ${existingGoogleStatus === 'Not run' ? 'selected' : ''}>Not run</option>
         </select>
       </td>
@@ -2569,6 +2580,135 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusSelect.value = 'Not run';
       statusSelect.title = 'API unreachable';
       updateValidationStatus(index, 'schemaorg', 'Not run');
+    }
+  }
+  
+  // Call Google Rich Results validator API and update dropdown
+  async function runRichResultsValidator(index, url) {
+    const statusSelect = document.getElementById(`googleStatus_${index}`);
+    if (!statusSelect) return;
+    
+    // Set to "Running..." while waiting
+    statusSelect.value = '🔄 Running...';
+    updateValidationStatus(index, 'google', '🔄 Running...');
+    
+    try {
+      // Determine API base URL (use deployed Vercel URL or local dev)
+      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://schema-tools-cpeeveyoh-info-alanrangercs-projects.vercel.app';
+      
+      const apiUrl = `${apiBaseUrl}/api/validator/richresults`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        // Handle error response
+        const errorMsg = data.error || 'Unknown error';
+        statusSelect.value = 'Not run';
+        statusSelect.title = errorMsg;
+        updateValidationStatus(index, 'google', 'Not run');
+        
+        // Add error note to Notes cell
+        const notesEl = document.getElementById(`notes_${index}`);
+        if (notesEl) {
+          const currentNotes = notesEl.value || '';
+          const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
+          notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+          updateValidationNotes(index, notesEl.value);
+        }
+        
+        return;
+      }
+      
+      // Map API status to dropdown value
+      let dropdownValue = 'Not run';
+      switch (data.status) {
+        case 'eligible':
+          dropdownValue = '✅ Passed';
+          break;
+        case 'warnings':
+          dropdownValue = '⚠️ Warning';
+          break;
+        case 'ineligible':
+          dropdownValue = '❌ Failed';
+          break;
+        case 'unknown':
+        default:
+          dropdownValue = 'Not run';
+          statusSelect.title = 'Status unknown';
+      }
+      
+      // Update dropdown
+      statusSelect.value = dropdownValue;
+      updateValidationStatus(index, 'google', dropdownValue);
+      
+      // Store reportUrl in result object for Rich Results button
+      if (validationResults[index] && data.reportUrl) {
+        validationResults[index].richResultsReportUrl = data.reportUrl;
+      }
+      
+      // Update Rich Results button to use reportUrl
+      const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
+      if (richResultsBtn && data.reportUrl) {
+        richResultsBtn.onclick = () => {
+          window.open(data.reportUrl, '_blank');
+          const statusSelect = document.getElementById(`googleStatus_${index}`);
+          if (statusSelect) {
+            statusSelect.value = '👀 Opened (reviewing)';
+            updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
+          }
+        };
+      }
+      
+      // Remove tooltip if status is not unknown
+      if (data.status !== 'unknown') {
+        statusSelect.removeAttribute('title');
+      }
+      
+    } catch (error) {
+      console.error('Rich Results validator API error:', error);
+      // On error, leave as "Not run" and add tooltip
+      statusSelect.value = 'Not run';
+      statusSelect.title = 'API error';
+      updateValidationStatus(index, 'google', 'Not run');
+      
+      // Add error note to Notes cell
+      const notesEl = document.getElementById(`notes_${index}`);
+      if (notesEl) {
+        const currentNotes = notesEl.value || '';
+        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + 'Rich Results: API error';
+        updateValidationNotes(index, notesEl.value);
+      }
+    }
+  }
+  
+  // Save auto-run preference to localStorage
+  function saveAutoRunPreference() {
+    const checkbox = document.getElementById('autoRunExternalChecks');
+    if (checkbox) {
+      localStorage.setItem('validator.autoExternal', checkbox.checked ? '1' : '0');
+    }
+  }
+  
+  // Load auto-run preference from localStorage
+  function loadAutoRunPreference() {
+    const stored = localStorage.getItem('validator.autoExternal');
+    const checkbox = document.getElementById('autoRunExternalChecks');
+    if (checkbox) {
+      checkbox.checked = stored !== '0'; // Default to true if not set
     }
   }
   
@@ -2841,6 +2981,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${i}`);
           if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
             await runSchemaOrgValidator(i, urlData.url);
+          }
+          
+          // Auto-run Rich Results validator if enabled and status is "Not run"
+          const googleStatusSelect = document.getElementById(`googleStatus_${i}`);
+          if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+            // Don't await - let it run in background
+            runRichResultsValidator(i, urlData.url);
           }
         }
         
