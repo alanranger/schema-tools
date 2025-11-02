@@ -1,70 +1,66 @@
+# Schema Tools
+
+This repository contains tools to generate JSON-LD schema markup for **products** and **events**, tailored for use with Squarespace websites.
+
+## Tools Included
+
+### 1. `product-schema-generator-v4-alanranger-WORKFLOW-UPDATED.html`
+- Generates Google-compliant Product schema blocks.
+- Supports review aggregation and filtering (excludes reviews below 4 stars).
+- Injects dynamic fields from product CSV exports (e.g., name, price, URL, availability).
+- Optionally includes review metadata (rating count, average rating).
+- Workflow guide included in the HTML UI.
+
+### 2. `event-schema-generator-v3-FINAL-address-fixed.html`
+- Generates Event and ItemList schema blocks for photography workshops.
+- Accepts structured CSV files for batch generation.
+- Injects performer, organizer, address, validFrom, and location fields.
+- Fully structured schema output compliant with Google's Rich Results.
+
+### 3. `unified_schema_generator.html` (Experimental)
+- Combines both tools into one UI.
+- Designed for future expansion with automatic validation and page scanning.
+
+## Input Files
+
+- CSV exports from Squarespace (Products & Services panel).
+- Review export files from Trustpilot or Squarespace (where available).
+- Cleaned and pre-processed versions must match expected schema field mappings.
+
+## Folder Structure
+
+```
+schema-tools/
+│
+├── html-tools/                  # Contains HTML tools
+│   ├── product-schema-generator-v4-alanranger-WORKFLOW-UPDATED.html
+│   ├── event-schema-generator-v3-FINAL-address-fixed.html
+│   └── unified_schema_generator.html
+│
+├── inputs-csv-files/           # Source CSVs for schema generation
+│
+├── js/                         # Review JS files for widget rendering (optional)
+│
+├── readme-and-docs/
+│   ├── README.md               # This file
+│   └── handover-cursor-ai.md   # Detailed onboarding notes
+```
+
+## Workflow Summary
+
+1. Export product list from Squarespace to CSV (`products_*.csv`).
+2. Clean fields manually or use future cleanup tool (in development).
+3. Merge with review dataset (if reviews available).
+4. Load HTML schema generator.
+5. Select or paste the CSV file.
+6. Generate JSON-LD.
+7. Paste each block into the corresponding Squarespace product or event page (not all in one).
+
+## Notes
+
+- You must not inject multiple schema blocks on unrelated pages. Only paste the matching product’s schema on its correct Squarespace page.
+- Be sure to test all generated schema using:
+  - https://validator.schema.org
+  - https://search.google.com/test/rich-results
 
 ---
-
-## 🛠️ Main Tools
-
-### 1. `html-tools/event-schema-generator-v2-fixed-FINAL.html`
-- Accepts an exported CSV of events (e.g. workshops).
-- Allows filtering by category (1-day, 2+ days, etc.)
-- Outputs valid `Event` + `ItemList` JSON-LD.
-- Includes: `image`, `organizer`, `location.address`, `offers.validFrom`.
-
-### 2. `html-tools/product-schema-generator-v1-FINAL.html`
-- Accepts cleaned Squarespace product CSV.
-- Adds optional Trustpilot reviews via `Product ID`.
-- Outputs `Product` schema including `aggregateRating`, `shippingDetails`, `offers`, `brand`, etc.
-
----
-
-## 📦 Workflow
-
-### Step 1: Export Raw Product Data
-- From Squarespace: Export all products to CSV.
-  - Filename format: `products_YYYY-MM-DD_HH-MM-SS.csv`
-
-### Step 2: Clean CSV (not yet automated)
-- Remove:
-  - Variants (rows without `Product ID`)
-  - Inactive products
-- Add:
-  - Trusted review data (match by `Product ID` from Trustpilot)
-
-➡️ Clean file should go into `/inputs-csv-files/`  
-➡️ Matching review file should go into `/data/` or same folder.
-
-### Step 3: Open Product Schema Generator
-- Load cleaned CSV in `product-schema-generator.html`
-- Generates `Product` schema for each item.
-- Copy only **one schema block** into each **relevant product page** in Squarespace.
-
-> ⚠️ **Important**:  
-> Do **not** paste all product schemas into all products.  
-> Each Squarespace product page should include **only its own schema block**.
-
----
-
-## 🧪 Review Inspector Tool (Planned)
-This will:
-- Let you upload Trustpilot CSV reviews
-- Match `Reference Id` to products
-- Calculate star ratings, count, extract review excerpts
-- Let you select which reviews to inject
-- Output `aggregateRating` + `review` objects per product
-
----
-
-## ✅ Status
-- [x] Product Schema Generator – working
-- [x] Event Schema Generator – working
-- [x] Trustpilot JS Parser – done
-- [ ] CSV cleaning tool – planned
-- [ ] Review Inspector Tool – planned
-
----
-
-## 👤 Author
-Alan Ranger  
-www.alanranger.com
-
----
-

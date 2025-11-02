@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unified Schema Generator - Events & Products</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+    }
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    button.tab {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+    }
+    button.tab.active {
+      background: #0070f3;
+      color: #fff;
+    }
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      margin-top: 1rem;
+      font-family: monospace;
+    }
+    input[type="file"] {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Unified Schema Markup Generator</h1>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('product')">🛍️ Product</button>
+    <button class="tab" onclick="switchTab('event')">📅 Event</button>
+  </div>
+
+  <div id="product" class="section active">
+    <h2>Product Schema Generator</h2>
+    <input type="file" id="productCSV" accept=".csv" />
+    <button onclick="generateProductSchema()">Generate Product Schema</button>
+    <textarea id="productOutput" placeholder="Schema will appear here..."></textarea>
+  </div>
+
+  <div id="event" class="section">
+    <h2>Event Schema Generator</h2>
+    <input type="file" id="eventCSV" accept=".csv" />
+    <button onclick="generateEventSchema()">Generate Event Schema</button>
+    <textarea id="eventOutput" placeholder="Schema will appear here..."></textarea>
+  </div>
+
+  <h3>ℹ️ Instructions & SEO Notes</h3>
+  <ul>
+    <li>🧾 Always export your Products or Events as CSV from Squarespace first</li>
+    <li>🧹 Make sure the file is cleaned (remove variants, duplicates, ensure full URLs)</li>
+    <li>⭐ Use review-injected versions for richer schema</li>
+    <li>📍 Paste each generated schema only into the corresponding product/event page</li>
+    <li>⚠️ Do <strong>not</strong> paste all schema blocks into a single page — one block per page</li>
+    <li>✅ Validate output using:
+      <ul>
+        <li><a href="https://validator.schema.org/" target="_blank">validator.schema.org</a></li>
+        <li><a href="https://search.google.com/test/rich-results" target="_blank">Google Rich Results Test</a></li>
+      </ul>
+    </li>
+    <li>🧪 Future version will support automatic validation via these tools</li>
+  </ul>
+
+  <script>
+    function switchTab(type) {
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+      document.querySelector(`button[onclick*="${type}"]`).classList.add('active');
+      document.getElementById(type).classList.add('active');
+    }
+
+    function generateProductSchema() {
+      const input = document.getElementById('productCSV').files[0];
+      const output = document.getElementById('productOutput');
+      if (!input) return alert("Upload a product CSV first.");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const csv = reader.result;
+        // TODO: Replace with real parsing logic
+        output.value = `// Product schema would be generated from:\n${csv.split('\n').slice(0,3).join('\n')}...`;
+      }
+      reader.readAsText(input);
+    }
+
+    function generateEventSchema() {
+      const input = document.getElementById('eventCSV').files[0];
+      const output = document.getElementById('eventOutput');
+      if (!input) return alert("Upload an event CSV first.");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const csv = reader.result;
+        // TODO: Replace with real parsing logic
+        output.value = `// Event schema would be generated from:\n${csv.split('\n').slice(0,3).join('\n')}...`;
+      }
+      reader.readAsText(input);
+    }
+  </script>
+</body>
+</html>
