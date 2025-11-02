@@ -1506,6 +1506,68 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return analysis;
   }
 
+  // Helper: Process placeholder value and replace with inferred data
+  function processPlaceholderValue(value, field, url) {
+    if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
+      return (field === 'url' && url) ? url : value;
+    }
+    
+    if (typeof value === 'object' && value !== null) {
+      const cloned = JSON.parse(JSON.stringify(value));
+      if (field === 'offers' && cloned.url && cloned.url.includes('[AUTO-INFERRED')) {
+        cloned.url = url;
+      }
+      return cloned;
+    }
+    
+    return value;
+  }
+
+  // Helper: Fill a single field with default or placeholder
+  function fillFieldValue(enhanced, field, defaults, url, isRequired) {
+    if (enhanced[field] && (!Array.isArray(enhanced[field]) || enhanced[field].length > 0)) {
+      return; // Field already has value
+    }
+    
+    if (field === 'url' && url) {
+      enhanced[field] = url;
+      return;
+    }
+    
+    if (defaults[field] !== undefined) {
+      enhanced[field] = processPlaceholderValue(defaults[field], field, url);
+      return;
+    }
+    
+    if (isRequired) {
+      enhanced[field] = `[REPLACE WITH ${field.toUpperCase()}]`;
+    }
+  }
+
+  // Helper: Ensure basic schema structure
+  function ensureBasicSchemaStructure(enhanced, schemaType, url) {
+    if (!enhanced['@context']) {
+      enhanced['@context'] = 'https://schema.org/';
+    }
+    if (!enhanced['@type'] && schemaType) {
+      enhanced['@type'] = schemaType;
+    }
+    if (!enhanced.url && url) {
+      enhanced.url = url;
+    }
+  }
+
+  // Helper: Apply schema-specific enhancements
+  function applySchemaSpecificEnhancements(enhanced, schemaType, url) {
+    if (schemaType === 'Product' && enhanced.offers && typeof enhanced.offers === 'object' && !enhanced.offers.url && url) {
+      enhanced.offers.url = url;
+    }
+    
+    if (schemaType === 'Event' && enhanced.location && typeof enhanced.location === 'object' && !enhanced.location.address) {
+      enhanced.location.address = DEFAULT_VALUES.Event.location.address;
+    }
+  }
+
   // Enhance schema with missing fields
   function enhanceSchema(schema, schemaType, url) {
     const enhanced = JSON.parse(JSON.stringify(schema));
@@ -1513,100 +1575,23 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const requirements = SCHEMA_REQUIREMENTS[schemaType];
     
     if (!requirements) {
-      // Ensure @context and @type are set even for unknown types
-      if (!enhanced['@context']) {
-        enhanced['@context'] = 'https://schema.org/';
-      }
-      if (!enhanced['@type'] && schemaType) {
-        enhanced['@type'] = schemaType;
-      }
-      if (!enhanced.url && url) {
-        enhanced.url = url;
-      }
+      ensureBasicSchemaStructure(enhanced, schemaType, url);
       return enhanced;
     }
     
-    // Ensure @context is set
-    if (!enhanced['@context']) {
-      enhanced['@context'] = 'https://schema.org/';
-    }
+    ensureBasicSchemaStructure(enhanced, schemaType, url);
     
-    // Ensure @type is set
-    if (!enhanced['@type']) {
-      enhanced['@type'] = schemaType;
-    }
-    
-    // Fill missing required fields first
+    // Fill missing required fields
     requirements.required.forEach(field => {
-      if (!enhanced[field] || (Array.isArray(enhanced[field]) && enhanced[field].length === 0)) {
-        // Try to infer from URL
-        if (field === 'url' && url) {
-          enhanced[field] = url;
-        } else if (defaults[field] !== undefined) {
-          let value = defaults[field];
-          
-          // Replace placeholders with inferred values
-          if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
-            if (field === 'url') {
-              value = url;
-            }
-          } else if (typeof value === 'object' && value !== null) {
-            // Deep clone and replace placeholders in nested objects
-            value = JSON.parse(JSON.stringify(value));
-            if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
-              value.url = url;
-            }
-          }
-          
-          enhanced[field] = value;
-        } else {
-          // Generic placeholder for required fields
-          enhanced[field] = `[REPLACE WITH ${field.toUpperCase()}]`;
-        }
-      }
+      fillFieldValue(enhanced, field, defaults, url, true);
     });
     
-    // Fill missing recommended fields (only if defaults exist)
+    // Fill missing recommended fields
     requirements.recommended.forEach(field => {
-      if (!enhanced[field] || (Array.isArray(enhanced[field]) && enhanced[field].length === 0)) {
-        if (defaults[field] !== undefined) {
-          let value = defaults[field];
-          
-          // Replace placeholders with inferred values
-          if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
-            if (field === 'url') {
-              value = url;
-            }
-          } else if (typeof value === 'object' && value !== null) {
-            // Deep clone and replace placeholders in nested objects
-            value = JSON.parse(JSON.stringify(value));
-            if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
-              value.url = url;
-            }
-          }
-          
-          enhanced[field] = value;
-        }
-      }
+      fillFieldValue(enhanced, field, defaults, url, false);
     });
     
-    // Special handling for nested objects
-    if (schemaType === 'Product' && enhanced.offers && typeof enhanced.offers === 'object') {
-      if (!enhanced.offers.url && url) {
-        enhanced.offers.url = url;
-      }
-    }
-    
-    if (schemaType === 'Event' && enhanced.location && typeof enhanced.location === 'object') {
-      if (!enhanced.location.address) {
-        enhanced.location.address = DEFAULT_VALUES.Event.location.address;
-      }
-    }
-    
-    // Ensure URL is set
-    if (!enhanced.url && url) {
-      enhanced.url = url;
-    }
+    applySchemaSpecificEnhancements(enhanced, schemaType, url);
     
     return enhanced;
   }
