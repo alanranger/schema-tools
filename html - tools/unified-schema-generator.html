@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Schema Generator - Events & Products</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f8f8f8;
+      margin: 0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #ddd;
+    }
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: 6px 6px 0 0;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      background: #e0e0e0;
+    }
+    .tab.active {
+      background: #333;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .instructions {
+      background-color: #f4f4f4;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    .instructions strong {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+    .instructions pre {
+      background: #eee;
+      padding: 0.75rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+    input[type="file"], select {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #555;
+    }
+    button.secondary {
+      background: #666;
+      margin-left: 0.5rem;
+    }
+    button.secondary:hover {
+      background: #888;
+    }
+    textarea {
+      width: 100%;
+      height: 400px;
+      margin-top: 1rem;
+      font-family: monospace;
+      font-size: 0.9rem;
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    pre {
+      background: #fff;
+      padding: 1rem;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    #categoryFilterContainer {
+      margin-top: 1rem;
+    }
+    .test-url-section {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #ddd;
+    }
+    .test-url-section input {
+      width: 100%;
+      max-width: 600px;
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    .test-url-section .button-group {
+      margin-top: 0.5rem;
+    }
+    .warning {
+      color: #c00;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Unified Schema Generator - Events & Products</h1>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('event')">Event Schema</button>
+    <button class="tab" onclick="switchTab('product')">Product Schema</button>
+  </div>
+
+  <!-- Event Tab Content -->
+  <div id="eventTab" class="tab-content active">
+    <div class="instructions">
+      <strong>📅 Event Schema Generator</strong><br>
+      Upload a CSV file of events. The generator will create Event and ItemList schema blocks.<br><br>
+      <strong>Required CSV fields:</strong> Event_Title, Start_Date, End_Date, Event_URL, Event_Image, Location_Business_Name, Location_Address, Excerpt, Category, Workflow_State<br><br>
+      • Only published events with future start dates are included<br>
+      • Events are filtered by category<br>
+      • Schema includes organizer, performer, location with parsed address<br>
+    </div>
+
+    <label for="eventCsvFile">Upload Event CSV File:</label>
+    <input type="file" id="eventCsvFile" accept=".csv" aria-label="Event CSV file upload">
+    
+    <div id="eventCategoryFilterContainer" style="display:none;">
+      <p>Select category to generate schema for:</p>
+      <select id="eventCategoryFilter" aria-label="Event category filter"></select>
+      <button onclick="generateEventSchema()">Generate Event Schema</button>
+    </div>
+
+    <h3>Generated JSON-LD Schema:</h3>
+    <pre id="eventOutput"></pre>
+    <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
+
+    <div class="test-url-section">
+      <h4>Test Generated Schema:</h4>
+      <p>Paste a URL containing your schema to validate it:</p>
+      <label for="eventTestUrl">Test URL:</label>
+      <input type="text" id="eventTestUrl" placeholder="https://example.com/page-with-schema" aria-label="Event test URL">
+      <div class="button-group">
+        <button onclick="testSchemaOrg('eventTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('eventTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Tab Content -->
+  <div id="productTab" class="tab-content">
+    <div class="instructions">
+      <strong>🛠 Product Schema Generator</strong><br>
+      1. Upload your product CSV/XLSX file (e.g. <code>products_with_review_data_final.xlsx</code>).<br>
+      2. Ensure it includes these fields: <code>name</code>, <code>description</code>, <code>image</code>, <code>url</code>, <code>price</code>, <code>review_count</code>, <code>average_rating</code>, <code>reviews</code>.<br>
+      3. Reviews rated below 4★ are ignored automatically.<br>
+      4. Products without valid reviews will NOT include an <code>aggregateRating</code> or <code>review</code> block.<br>
+      5. Click <b>Generate Schema</b> to create a valid JSON-LD block per product.<br><br>
+
+      ✅ This tool works entirely offline in your browser.<br>
+      ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
+
+      <strong>📄 Data Workflow Summary:</strong><br>
+      <pre>
+Step 1: Export from Squarespace → products_Nov-02_11-15-24AM.csv
+     ↓
+Step 2: Clean + filter → products_Jul-21_01-43-36PM cleaned.xlsx
+     ↓
+Step 3: Add reviews (OCR or manual) → products_with_review_data_final.xlsx
+     ↓
+Step 4: Final JSON-LD export → alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+     ↓
+Step 5: Paste ONLY relevant schema into Squarespace product page
+      </pre>
+
+      <strong>📌 Squarespace Instructions:</strong><br>
+      • Open your product page in Squarespace.<br>
+      • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
+      • OR insert a <b>Code Block</b> onto the product page.<br>
+      • <b>Paste only the schema for that specific product.</b><br>
+      • <span class="warning">⚠️ Do NOT paste all schemas into every product page.</span><br>
+      • One schema block per product, on its matching product page only.
+    </div>
+
+    <label for="productCsvFile">Upload Product CSV/XLSX File:</label>
+    <input type="file" id="productCsvFile" accept=".csv,.xlsx" aria-label="Product CSV/XLSX file upload">
+    <button onclick="generateProductSchema()">Generate Product Schema</button>
+
+    <h3>Generated JSON-LD Schema:</h3>
+    <textarea id="productOutput" readonly></textarea>
+    <button onclick="copyToClipboard('productOutput')">Copy to Clipboard</button>
+
+    <div class="test-url-section">
+      <h4>Test Generated Schema:</h4>
+      <p>Paste a URL containing your schema to validate it:</p>
+      <label for="productTestUrl">Test URL:</label>
+      <input type="text" id="productTestUrl" placeholder="https://example.com/page-with-schema" aria-label="Product test URL">
+      <div class="button-group">
+        <button onclick="testSchemaOrg('productTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('productTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  // Tab switching
+  function switchTab(mode) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    if (mode === 'event') {
+      document.querySelectorAll('.tab')[0].classList.add('active');
+      document.getElementById('eventTab').classList.add('active');
+    } else {
+      document.querySelectorAll('.tab')[1].classList.add('active');
+      document.getElementById('productTab').classList.add('active');
+    }
+  }
+
+  // Copy to clipboard
+  function copyToClipboard(outputId) {
+    const element = document.getElementById(outputId);
+    const text = element.tagName === 'TEXTAREA' ? element.value : element.textContent;
+    
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Schema copied to clipboard!');
+    }, function(err) {
+      alert('Failed to copy text: ' + err);
+    });
+  }
+
+  // Test URL functions
+  function testSchemaOrg(inputId) {
+    const url = document.getElementById(inputId).value;
+    if (!url) {
+      alert('Please enter a URL to test');
+      return;
+    }
+    window.open('https://validator.schema.org/#url=' + encodeURIComponent(url), '_blank');
+  }
+
+  function testGoogleRichResults(inputId) {
+    const url = document.getElementById(inputId).value;
+    if (!url) {
+      alert('Please enter a URL to test');
+      return;
+    }
+    window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
+  }
+
+  // Event Schema Generation
+  let events = [];
+
+  document.getElementById('eventCsvFile').addEventListener('change', function(e) {
+    Papa.parse(e.target.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        events = results.data;
+        
+        const categories = [...new Set(
+          events.map(e => (e['Category'] || '').split(',')[0].trim()).filter(Boolean)
+        )];
+        
+        const filterSelect = document.getElementById('eventCategoryFilter');
+        filterSelect.innerHTML = '<option value="__ALL__">All Categories</option>';
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          filterSelect.appendChild(opt);
+        });
+        document.getElementById('eventCategoryFilterContainer').style.display = 'block';
+      }
+    });
+  });
+
+  function parseAddress(locationAddressRaw) {
+    if (!locationAddressRaw || typeof locationAddressRaw !== "string") return {
+      "@type": "PostalAddress",
+      "addressCountry": "GB"
+    };
+
+    const parts = locationAddressRaw.split(",").map(p => p.trim()).filter(Boolean).reverse();
+    const address = { "@type": "PostalAddress" };
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+
+      if (!address.addressCountry && /^(United Kingdom|UK)$/i.test(part)) {
+        address.addressCountry = "GB";
+      } else if (!address.postalCode && /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(part)) {
+        address.postalCode = part.toUpperCase();
+      } else if (!address.addressRegion) {
+        address.addressRegion = part;
+      } else if (!address.addressLocality) {
+        address.addressLocality = part;
+      } else if (!address.streetAddress) {
+        address.streetAddress = part;
+      }
+    }
+
+    if (!address.addressCountry) address.addressCountry = "GB";
+    return address;
+  }
+
+  function generateEventSchema() {
+    const selectedCategory = document.getElementById('eventCategoryFilter').value;
+    const today = new Date().toISOString().split('T')[0];
+    const filtered = events.filter(e =>
+      (selectedCategory === "__ALL__" || (e['Category'] || '').split(',')[0].trim() === selectedCategory) &&
+      e['Start_Date'] >= today &&
+      e['Workflow_State'] === 'Published'
+    );
+
+    const itemList = {
+      "@type": "ItemList",
+      "name": selectedCategory === "__ALL__" ? "Events" : selectedCategory + " Events",
+      "itemListElement": filtered.map((event, i) => ({
+        "@type": "ListItem",
+        "position": i + 1,
+        "url": event['Event_URL']
+      }))
+    };
+
+    const eventList = filtered.map(event => ({
+      "@type": "Event",
+      "name": event['Event_Title'],
+      "startDate": event['Start_Date'],
+      "endDate": event['End_Date'],
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "image": event['Event_Image'],
+      "organizer": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+        "url": "https://www.alanranger.com"
+      },
+      "location": {
+        "@type": "Place",
+        "name": event['Location_Business_Name'],
+        "address": parseAddress(event['Location_Address'])
+      },
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": event['Event_URL'],
+        "validFrom": event['Start_Date']
+      },
+      "description": event['Excerpt'],
+      "url": event['Event_URL']
+    }));
+
+    const fullSchema = {
+      "@context": "https://schema.org",
+      "@graph": [itemList, ...eventList]
+    };
+
+    const json = JSON.stringify(fullSchema, null, 2);
+    const scriptEl = document.createElement('script');
+    scriptEl.type = 'application/ld+json';
+    scriptEl.textContent = json;
+    document.getElementById('eventOutput').textContent = scriptEl.outerHTML;
+  }
+
+  // Product Schema Generation
+  function generateProductSchema() {
+    const fileInput = document.getElementById('productCsvFile');
+    const output = document.getElementById('productOutput');
+
+    if (!fileInput.files.length) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
+
+    Papa.parse(fileInput.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const products = results.data;
+
+        const outputSchema = products.map(product => {
+          let reviews = [];
+          try {
+            reviews = JSON.parse(product.reviews || '[]').filter(r => Number(r.rating) >= 4);
+          } catch (e) {
+            reviews = [];
+          }
+          
+          const reviewCount = reviews.length;
+          const averageRating = reviewCount > 0 ? (
+            reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviewCount
+          ).toFixed(1) : null;
+
+          let schema = {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.image,
+            "description": product.description,
+            "url": product.url
+          };
+
+          if (reviewCount > 0) {
+            schema.aggregateRating = {
+              "@type": "AggregateRating",
+              "ratingValue": averageRating,
+              "reviewCount": reviewCount
+            };
+
+            schema.review = reviews.map(r => ({
+              "@type": "Review",
+              "author": r.author,
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": r.rating,
+                "bestRating": "5",
+                "worstRating": "1"
+              },
+              "reviewBody": r.body
+            }));
+          }
+
+          return '<script type="application/ld+json">\n' + JSON.stringify(schema, null, 2) + '\n<\/script>';
+        }).join('\n\n');
+
+        output.value = outputSchema;
+      },
+      error: function(error) {
+        alert('Error parsing CSV file: ' + error.message);
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
+

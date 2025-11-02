@@ -17,9 +17,16 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Injects performer, organizer, address, validFrom, and location fields.
 - Fully structured schema output compliant with Google's Rich Results.
 
-### 3. `unified_schema_generator.html` (Experimental)
+### 3. `unified-schema-generator.html`
 - Combines both tools into one UI.
 - Designed for future expansion with automatic validation and page scanning.
+
+### 4. `schema-validator.js` (Schema Validator Agent)
+- Automated CLI tool to validate schema markup on live URLs.
+- Tests against Schema.org validator and Google Rich Results Test.
+- Supports single URL or batch processing.
+- Provides detailed validation reports with errors and warnings.
+- See `schema-validator-README.md` for full documentation.
 
 ## Input Files
 
@@ -56,10 +63,29 @@ schema-tools/
 6. Generate JSON-LD.
 7. Paste each block into the corresponding Squarespace product or event page (not all in one).
 
+## Schema Validation
+
+After deploying schema to your Squarespace pages, use the Schema Validator Agent to automatically test:
+
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Validate a single URL
+node scripts/schema-validator.js https://www.alanranger.com/shop/product-name
+
+# Validate multiple URLs
+node scripts/schema-validator.js --batch urls.txt --json --output results.json
+```
+
+The validator automatically tests against:
+- https://validator.schema.org
+- https://search.google.com/test/rich-results
+
 ## Notes
 
-- You must not inject multiple schema blocks on unrelated pages. Only paste the matching product’s schema on its correct Squarespace page.
-- Be sure to test all generated schema using:
+- You must not inject multiple schema blocks on unrelated pages. Only paste the matching product's schema on its correct Squarespace page.
+- Always validate your schema after deployment using the Schema Validator Agent or manually:
   - https://validator.schema.org
   - https://search.google.com/test/rich-results
 
