@@ -2721,18 +2721,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           if (keyCounts[key] > 1) {
             const keyName = key.includes('#') ? key.split('#')[1] : 'root';
             const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
-            const label = isGlobal ? ' (likely global injection)' : (key.includes('#') ? '' : ' (no @id - likely duplicate)');
-            duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${key.includes('#') ? ` (@id: ${keyName})` : ' (no @id)'}${label}`);
+            // Only warn about duplicates if they're NOT global injections (which are expected)
+            if (!isGlobal) {
+              const label = key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicate)';
+              duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${label}`);
+            }
           }
         });
       });
       
       if (duplicateWarnings.length > 0) {
         debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
-        // Add duplicate warnings to missingMessages for display
+        // Add duplicate warnings to missingMessages for display (only non-global duplicates)
         duplicateWarnings.forEach(w => {
           missingMessages.push(`⚠️ DUPLICATE: ${w}`);
         });
+      }
+      
+      // Log info about global duplicates separately (for debugging, not shown as issues)
+      const globalDuplicates = [];
+      Object.keys(duplicateGroups).forEach(t => {
+        const nodes = duplicateGroups[t];
+        const keyCounts = {};
+        nodes.forEach(n => {
+          keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
+        });
+        Object.keys(keyCounts).forEach(key => {
+          if (keyCounts[key] > 1) {
+            const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
+            if (isGlobal) {
+              const keyName = key.includes('#') ? key.split('#')[1] : 'root';
+              globalDuplicates.push(`${t}: ${keyCounts[key]}x (@id: ${keyName})`);
+            }
+          }
+        });
+      });
+      if (globalDuplicates.length > 0) {
+        debugLog(`Global injections detected (expected): ${globalDuplicates.join(', ')}`, 'info');
       }
       
       // Identify which Organization nodes are missing name
