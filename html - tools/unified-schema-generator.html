@@ -760,7 +760,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.2</span>
+    <span class="version">v1.4.3</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1581,18 +1581,27 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const backdrop = document.getElementById('genBackdrop');
     const closeBtn = document.getElementById('genCloseBtn');
     const copyBtn  = document.getElementById('genCopyBtn');
-    if (closeBtn) closeBtn.onclick = ()=> backdrop.style.display='none';
+    if (backdrop && closeBtn) closeBtn.onclick = ()=> backdrop.style.display='none';
     if (backdrop) backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.style.display='none'; };
     if (copyBtn) copyBtn.onclick = ()=>{
-      const txt = document.getElementById('genJson').textContent;
-      navigator.clipboard.writeText(txt);
-      copyBtn.textContent = 'Copied!';
-      setTimeout(()=> copyBtn.textContent='Copy to Clipboard', 1200);
+      const txt = document.getElementById('genJson');
+      if (txt) {
+        navigator.clipboard.writeText(txt.textContent);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(()=> copyBtn.textContent='Copy to Clipboard', 1200);
+      }
     };
     window.__openGenModal = (url, json)=>{
-      document.getElementById('genMeta').textContent = url;
-      document.getElementById('genJson').textContent = prettyScript(json);
-      backdrop.style.display='flex';
+      const backdropEl = document.getElementById('genBackdrop');
+      const metaEl = document.getElementById('genMeta');
+      const jsonEl = document.getElementById('genJson');
+      if (!backdropEl) {
+        alert('Error: Modal element not found. Please refresh the page.');
+        return;
+      }
+      if (metaEl) metaEl.textContent = url;
+      if (jsonEl) jsonEl.textContent = prettyScript(json);
+      backdropEl.style.display='flex';
     };
   })();
   
@@ -2650,10 +2659,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       genBtn.onclick = async () => {
         const url = result.url;
         try {
+          genBtn.disabled = true;
+          genBtn.textContent = 'Generating...';
           const json = await generateEnhancedFor(url);
-          window.__openGenModal(url, json);
+          if (window.__openGenModal) {
+            window.__openGenModal(url, json);
+          } else {
+            alert('Error: Modal function not initialized. Please refresh the page.');
+          }
         } catch (e) {
           alert('Failed to generate enhanced schema: ' + e.message);
+          debugLog('Generate Enhanced error: ' + e.message, 'error');
+        } finally {
+          genBtn.disabled = false;
+          genBtn.textContent = 'Generate Enhanced';
         }
       };
     }
