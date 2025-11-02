@@ -19,11 +19,35 @@
       padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .version-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #333;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .version-badge .version {
+      display: block;
+      font-size: 1rem;
+    }
+    .version-badge .date {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.8;
+      margin-top: 0.25rem;
     }
     h1 {
       font-size: 1.8rem;
       margin-bottom: 1rem;
       color: #333;
+      padding-right: 150px;
     }
     .tabs {
       display: flex;
