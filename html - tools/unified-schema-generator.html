@@ -82,6 +82,8 @@
     }
     .tab-content {
       display: none;
+      padding: 20px;
+      border-top: none;
     }
     .tab-content.active {
       display: block;
@@ -481,6 +483,7 @@
     <button class="tab active" onclick="switchTab('event')">Event Schema</button>
     <button class="tab" onclick="switchTab('product')">Product Schema</button>
     <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
+    <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
   </div>
 
   <!-- Event Tab Content -->
@@ -682,6 +685,53 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     </div>
   </div>
 
+  <!-- Tab Guide Tab Content -->
+  <div id="guideTab" class="tab-content">
+    <h2>🧠 Tool Guide: What Each Tab Does</h2>
+
+    <p>This unified tool contains multiple tabs for handling different structured data (schema.org) tasks. Here's what each tab is for:</p>
+
+    <h3>🟢 Event Schema</h3>
+    <ul>
+      <li>Upload a CSV of photography workshops or events.</li>
+      <li>Generates <code>Event</code> schema in JSON-LD format.</li>
+      <li>Includes fields like <code>location</code>, <code>offers</code>, <code>organizer</code>, and <code>performer</code>.</li>
+      <li><strong>Use when:</strong> Creating or updating Squarespace event pages manually.</li>
+    </ul>
+
+    <h3>🔵 Product Schema</h3>
+    <ul>
+      <li>Upload a CSV of products or services (like photo lessons, courses, vouchers).</li>
+      <li>Generates <code>Product</code> schema with pricing, images, reviews, and availability.</li>
+      <li><strong>Use when:</strong> Adding schema to Squarespace product pages.</li>
+    </ul>
+
+    <h3>🟡 Schema Validator</h3>
+    <ul>
+      <li>Enter a single URL or upload a CSV of URLs.</li>
+      <li>Runs Google's Rich Results Test and Schema.org Validator for each page.</li>
+      <li>Highlights schema issues or missing enhancements.</li>
+      <li><strong>Use when:</strong> Auditing live Squarespace pages to check SEO schema quality.</li>
+    </ul>
+
+    <h3>🧰 Workflow Tips</h3>
+    <ul>
+      <li>You should <strong>only paste schema relevant to that specific page</strong> (e.g., 1 Product schema on 1 product page).</li>
+      <li>Do <strong>not paste full JSON-LD blocks for all products or events on every page</strong>.</li>
+      <li>Use the output inside Squarespace via a <code>&lt;script type="application/ld+json"&gt;</code> code injection block.</li>
+      <li>Validate pages using the Schema Validator tab after injection.</li>
+    </ul>
+
+    <h3>📦 Coming Soon</h3>
+    <ul>
+      <li>Supabase integration for schema history + annotation storage.</li>
+      <li>Schema AI assistant to suggest improvements and gaps.</li>
+      <li>Automatic generation of improved schema from live URLs.</li>
+    </ul>
+
+    <p>Questions or ideas? Let Alan's assistant (Ari) know in Cursor!</p>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -748,6 +798,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     } else if (mode === 'validator') {
       document.querySelectorAll('.tab')[2].classList.add('active');
       document.getElementById('validatorTab').classList.add('active');
+    } else if (mode === 'guide') {
+      document.querySelectorAll('.tab')[3].classList.add('active');
+      document.getElementById('guideTab').classList.add('active');
     }
   }
 
