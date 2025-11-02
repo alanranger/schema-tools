@@ -723,45 +723,47 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   <!-- Tab Guide Tab Content -->
   <div id="guideTab" class="tab-content">
-    <h2>🧠 Tool Guide: What Each Tab Does</h2>
+    <div class="instructions" style="max-width: 100%;">
+      <h2>🧠 Tool Guide: What Each Tab Does</h2>
 
-    <p>This tool contains several tabs, each with a specific use:</p>
+      <p>This tool contains several tabs, each with a specific use:</p>
 
-    <h3>🟢 Event Schema</h3>
-    <ul>
-      <li>Use this tab to generate JSON-LD Event schema from a CSV of your photography workshops.</li>
-      <li>Supports <code>location</code>, <code>performer</code>, <code>offers</code>, and <code>organizer</code> fields.</li>
-      <li>Paste the resulting schema into a code block on your Squarespace event page.</li>
-    </ul>
+      <h3>🟢 Event Schema</h3>
+      <ul>
+        <li>Use this tab to generate JSON-LD Event schema from a CSV of your photography workshops.</li>
+        <li>Supports <code>location</code>, <code>performer</code>, <code>offers</code>, and <code>organizer</code> fields.</li>
+        <li>Paste the resulting schema into a code block on your Squarespace event page.</li>
+      </ul>
 
-    <h3>🔵 Product Schema</h3>
-    <ul>
-      <li>Generates <code>Product</code> schema from a CSV of lessons, vouchers, or services.</li>
-      <li>Automatically filters out products with weak or missing reviews.</li>
-      <li>Paste the JSON-LD into product pages on Squarespace.</li>
-    </ul>
+      <h3>🔵 Product Schema</h3>
+      <ul>
+        <li>Generates <code>Product</code> schema from a CSV of lessons, vouchers, or services.</li>
+        <li>Automatically filters out products with weak or missing reviews.</li>
+        <li>Paste the JSON-LD into product pages on Squarespace.</li>
+      </ul>
 
-    <h3>🟡 Schema Validator</h3>
-    <ul>
-      <li>Enter one or more live URLs (CSV or single entry support coming).</li>
-      <li>Fetches the page content and validates all structured data inside it.</li>
-      <li>Flags missing or invalid fields and optionally builds an enhanced schema block you can download.</li>
-      <li>Use this to <strong>audit</strong>, <strong>debug</strong>, or <strong>improve</strong> existing Squarespace pages.</li>
-    </ul>
+      <h3>🟡 Schema Validator</h3>
+      <ul>
+        <li>Enter one or more live URLs (CSV or single entry support coming).</li>
+        <li>Fetches the page content and validates all structured data inside it.</li>
+        <li>Flags missing or invalid fields and optionally builds an enhanced schema block you can download.</li>
+        <li>Use this to <strong>audit</strong>, <strong>debug</strong>, or <strong>improve</strong> existing Squarespace pages.</li>
+      </ul>
 
-    <h3>📌 Best Practices</h3>
-    <ul>
-      <li>Only insert schema relevant to the page (don't paste every product on every product page).</li>
-      <li>Always validate using the <strong>Schema Validator</strong> before and after injecting schema.</li>
-      <li>Use <code>&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages.</li>
-    </ul>
+      <h3>📌 Best Practices</h3>
+      <ul>
+        <li>Only insert schema relevant to the page (don't paste every product on every product page).</li>
+        <li>Always validate using the <strong>Schema Validator</strong> before and after injecting schema.</li>
+        <li>Use <code>&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages.</li>
+      </ul>
 
-    <h3>🔧 Upcoming Features</h3>
-    <ul>
-      <li>Support for validating a single URL directly (no CSV needed).</li>
-      <li>Supabase integration to track schema versions and history.</li>
-      <li>AI suggestions for schema fixes.</li>
-    </ul>
+      <h3>🔧 Upcoming Features</h3>
+      <ul>
+        <li>Support for validating a single URL directly (no CSV needed).</li>
+        <li>Supabase integration to track schema versions and history.</li>
+        <li>AI suggestions for schema fixes.</li>
+      </ul>
+    </div>
   </div>
 
 </div>
