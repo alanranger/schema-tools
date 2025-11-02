@@ -679,7 +679,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.3.5</span>
+    <span class="version">v1.3.6</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -955,6 +955,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+  // Tab switching - MUST be first to work even if other code fails
+  window.switchTab = function(mode) {
+    console.log('switchTab called with mode:', mode);
+    // Reset all active tabs and contents
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => {
+      c.classList.remove('active');
+      c.style.display = 'none';
+    });
+    
+    // Activate correct tab based on mode
+    const tabMap = {
+      'event': { tabIndex: 0, contentId: 'eventTab' },
+      'product': { tabIndex: 1, contentId: 'productTab' },
+      'validator': { tabIndex: 2, contentId: 'validatorTab' },
+      'guide': { tabIndex: 3, contentId: 'guideTab' }
+    };
+    
+    const config = tabMap[mode];
+    if (config) {
+      const tabs = document.querySelectorAll('.tab');
+      if (tabs[config.tabIndex]) {
+        tabs[config.tabIndex].classList.add('active');
+      }
+      const content = document.getElementById(config.contentId);
+      if (content) {
+        content.classList.add('active');
+        content.style.display = 'block';
+        console.log('Tab activated:', config.contentId);
+      } else {
+        console.error('Tab content not found:', config.contentId);
+      }
+    } else {
+      console.error('Unknown tab mode:', mode);
+    }
+  };
+  
   // Supabase Configuration
   const SUPABASE_URL = 'https://igzvwbvgvmzvvzoclufx.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
@@ -1007,42 +1044,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   });
   
-  // Tab switching - ensure it's available globally
-  window.switchTab = function(mode) {
-    console.log('switchTab called with mode:', mode);
-    // Reset all active tabs and contents
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => {
-      c.classList.remove('active');
-      c.style.display = 'none';
-    });
-    
-    // Activate correct tab based on mode
-    const tabMap = {
-      'event': { tabIndex: 0, contentId: 'eventTab' },
-      'product': { tabIndex: 1, contentId: 'productTab' },
-      'validator': { tabIndex: 2, contentId: 'validatorTab' },
-      'guide': { tabIndex: 3, contentId: 'guideTab' }
-    };
-    
-    const config = tabMap[mode];
-    if (config) {
-      const tabs = document.querySelectorAll('.tab');
-      if (tabs[config.tabIndex]) {
-        tabs[config.tabIndex].classList.add('active');
-      }
-      const content = document.getElementById(config.contentId);
-      if (content) {
-        content.classList.add('active');
-        content.style.display = 'block';
-        console.log('Tab activated:', config.contentId);
-      } else {
-        console.error('Tab content not found:', config.contentId);
-      }
-    } else {
-      console.error('Unknown tab mode:', mode);
-    }
-  };
+  // Remove duplicate switchTab definition - it's already at the top
   
   // Progress bar helpers
   function renderProgress(cell) {
@@ -1550,33 +1552,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         warnings: [],
         schemas: [],
         error: error.message,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
-        notes: validationResults[index].notes || ''
-      };
-      
-      updateTableRow(index, validationResults[index]);
-      
-      // Enable bulk action buttons
-      updateBulkButtons();
-      
-    } catch (error) {
-      console.error('Error validating URL:', error);
-      
-      // Update row with error
-      validationResults[index] = {
-        url: url,
-        row: index,
-        schemaType: null,
-        valid: false,
-        schemaFound: false,
-        missingFields: [],
-        warnings: [],
-        schemas: [],
-        error: error.message,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
-        notes: validationResults[index].notes || ''
+        validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || '🚫 Skipped',
+        validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || '🚫 Skipped',
+        notes: validationResults[index]?.notes || ''
       };
       
       updateTableRow(index, validationResults[index]);
@@ -2669,6 +2647,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (saveAllBtn) {
       saveAllBtn.disabled = !hasResults || !supabaseAvailable;
     }
+    
+    console.log('Bulk buttons updated:', { hasResults, supabaseAvailable, exportEnabled: hasResults, saveEnabled: hasResults && supabaseAvailable });
   }
   
   // Export all enhanced schemas
