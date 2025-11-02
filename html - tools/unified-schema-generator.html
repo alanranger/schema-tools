@@ -474,7 +474,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.2.2</span>
+    <span class="version">v1.2.3</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -689,47 +689,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   <div id="guideTab" class="tab-content">
     <h2>🧠 Tool Guide: What Each Tab Does</h2>
 
-    <p>This unified tool contains multiple tabs for handling different structured data (schema.org) tasks. Here's what each tab is for:</p>
+    <p>This tool contains several tabs, each with a specific use:</p>
 
     <h3>🟢 Event Schema</h3>
     <ul>
-      <li>Upload a CSV of photography workshops or events.</li>
-      <li>Generates <code>Event</code> schema in JSON-LD format.</li>
-      <li>Includes fields like <code>location</code>, <code>offers</code>, <code>organizer</code>, and <code>performer</code>.</li>
-      <li><strong>Use when:</strong> Creating or updating Squarespace event pages manually.</li>
+      <li>Use this tab to generate JSON-LD Event schema from a CSV of your photography workshops.</li>
+      <li>Supports <code>location</code>, <code>performer</code>, <code>offers</code>, and <code>organizer</code> fields.</li>
+      <li>Paste the resulting schema into a code block on your Squarespace event page.</li>
     </ul>
 
     <h3>🔵 Product Schema</h3>
     <ul>
-      <li>Upload a CSV of products or services (like photo lessons, courses, vouchers).</li>
-      <li>Generates <code>Product</code> schema with pricing, images, reviews, and availability.</li>
-      <li><strong>Use when:</strong> Adding schema to Squarespace product pages.</li>
+      <li>Generates <code>Product</code> schema from a CSV of lessons, vouchers, or services.</li>
+      <li>Automatically filters out products with weak or missing reviews.</li>
+      <li>Paste the JSON-LD into product pages on Squarespace.</li>
     </ul>
 
     <h3>🟡 Schema Validator</h3>
     <ul>
-      <li>Enter a single URL or upload a CSV of URLs.</li>
-      <li>Runs Google's Rich Results Test and Schema.org Validator for each page.</li>
-      <li>Highlights schema issues or missing enhancements.</li>
-      <li><strong>Use when:</strong> Auditing live Squarespace pages to check SEO schema quality.</li>
+      <li>Enter one or more live URLs (CSV or single entry support coming).</li>
+      <li>Fetches the page content and validates all structured data inside it.</li>
+      <li>Flags missing or invalid fields and optionally builds an enhanced schema block you can download.</li>
+      <li>Use this to <strong>audit</strong>, <strong>debug</strong>, or <strong>improve</strong> existing Squarespace pages.</li>
     </ul>
 
-    <h3>🧰 Workflow Tips</h3>
+    <h3>📌 Best Practices</h3>
     <ul>
-      <li>You should <strong>only paste schema relevant to that specific page</strong> (e.g., 1 Product schema on 1 product page).</li>
-      <li>Do <strong>not paste full JSON-LD blocks for all products or events on every page</strong>.</li>
-      <li>Use the output inside Squarespace via a <code>&lt;script type="application/ld+json"&gt;</code> code injection block.</li>
-      <li>Validate pages using the Schema Validator tab after injection.</li>
+      <li>Only insert schema relevant to the page (don't paste every product on every product page).</li>
+      <li>Always validate using the <strong>Schema Validator</strong> before and after injecting schema.</li>
+      <li>Use <code>&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages.</li>
     </ul>
 
-    <h3>📦 Coming Soon</h3>
+    <h3>🔧 Upcoming Features</h3>
     <ul>
-      <li>Supabase integration for schema history + annotation storage.</li>
-      <li>Schema AI assistant to suggest improvements and gaps.</li>
-      <li>Automatic generation of improved schema from live URLs.</li>
+      <li>Support for validating a single URL directly (no CSV needed).</li>
+      <li>Supabase integration to track schema versions and history.</li>
+      <li>AI suggestions for schema fixes.</li>
     </ul>
-
-    <p>Questions or ideas? Let Alan's assistant (Ari) know in Cursor!</p>
   </div>
 
 </div>
