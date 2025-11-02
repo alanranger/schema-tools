@@ -549,13 +549,110 @@
       padding-top: 2rem;
       border-top: 2px solid #e2e8f0;
     }
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .progress {
+      width: 160px;
+      height: 8px;
+      background: #eee;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c4dff, #4fc3f7);
+      transition: width 0.25s ease;
+    }
+    .progress-label {
+      font-size: 0.85rem;
+      color: #555;
+      min-width: 72px;
+    }
+    /* Issues Modal */
+    .issues-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 20, 33, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .issues-modal {
+      width: min(760px, 94vw);
+      max-height: 80vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+      padding: 1.25rem 1.5rem;
+    }
+    .issues-modal h3 {
+      margin: 0.2rem 0 0.8rem 0;
+      font-size: 1.15rem;
+    }
+    .issues-meta {
+      font-size: 0.9rem;
+      color: #555;
+      margin: 0.5rem 0 1rem;
+    }
+    .issues-list {
+      margin: 0.25rem 0 0.75rem 1rem;
+    }
+    .issues-list li {
+      margin: 0.2rem 0;
+    }
+    .issues-json {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 0.75rem;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.82rem;
+    }
+    .issues-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    .chip-issues {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fde68a;
+      color: #92400e;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      border: 1px solid #f59e0b;
+    }
+    .chip-issues:hover {
+      filter: brightness(0.98);
+    }
+    .chip-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #22c55e;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.2.6</span>
+    <span class="version">v1.2.9</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -748,6 +845,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     </div>
 
     <!-- Help Block -->
+    <div class="help-section" style="margin-top:1rem;padding:1rem;background:#f9f9f9;border-radius:8px;">
+      <strong>ℹ️ How to Read Results:</strong>
+      <ul style="margin-top:0.5rem;">
+        <li><b>Schema Type</b>: Type(s) detected from JSON-LD (<code>@type</code> values).</li>
+        <li><b>Status</b>: "Error" means fetch failed; "OK" means schema was found.</li>
+        <li><b>Skipped</b>: Offline mode—external validators not queried.</li>
+        <li><b>Schema.org / Google Buttons</b>: Open page in respective validators for manual checks.</li>
+        <li><b>Save to Supabase</b>: (Optional) Stores results if DB logging is enabled.</li>
+      </ul>
+    </div>
+
     <div class="help-block" onclick="toggleHelpBlock()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleHelpBlock()" role="button" tabindex="0" aria-expanded="false" id="helpBlock">
       <div class="help-block-header">
         <span>ℹ️ About Schema Validators</span>
@@ -917,7 +1025,90 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       document.getElementById(id)?.classList.add('active');
     }
   }
-
+  
+  // Progress bar helpers
+  function renderProgress(cell) {
+    cell.innerHTML = `
+      <div class="progress-wrap">
+        <div class="progress"><span style="width:0%"></span></div>
+        <div class="progress-label">0%</div>
+      </div>`;
+  }
+  
+  function setProgress(cell, pct, text) {
+    const bar = cell.querySelector('.progress > span');
+    const lbl = cell.querySelector('.progress-label');
+    if (bar) { bar.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
+    if (lbl) { lbl.textContent = (text ? text + ' · ' : '') + Math.round(pct) + '%'; }
+  }
+  
+  function markProgressError(cell) {
+    const bar = cell.querySelector('.progress > span');
+    if (bar) { bar.style.background = 'linear-gradient(90deg,#ff5252,#ff8a80)'; }
+  }
+  
+  // ---- Issues modal helpers ----
+  function openIssuesModal(rowData) {
+    const backdrop = document.getElementById('issuesBackdrop');
+    const meta = document.getElementById('issuesMeta');
+    const list = document.getElementById('issuesList');
+    const json = document.getElementById('issuesJson');
+    const btnSchema = document.getElementById('issuesSchemaOrgBtn');
+    const btnGoogle = document.getElementById('issuesGoogleBtn');
+    const closeBtn = document.getElementById('issuesCloseBtn');
+    
+    meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
+    list.innerHTML = '';
+    const missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : (rowData.missingFields ? String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean) : []);
+    if (missing.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No missing required fields detected.';
+      list.appendChild(li);
+    } else {
+      missing.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f;
+        list.appendChild(li);
+      });
+    }
+    
+    json.textContent = (rowData.firstJsonLd || '').trim();
+    
+    btnSchema.onclick = () => window.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
+    btnGoogle.onclick = () => window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(rowData.url), '_blank');
+    
+    function close() {
+      backdrop.style.display = 'none';
+      document.removeEventListener('keydown', esc);
+      backdrop.onclick = null;
+    }
+    function esc(e) {
+      if (e.key === 'Escape') close();
+    }
+    closeBtn.onclick = close;
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) close();
+    };
+    document.addEventListener('keydown', esc);
+    
+    backdrop.style.display = 'flex';
+  }
+  
+  // Build a minimal rowData snapshot from a <tr>
+  function getRowDataFromTr(tr) {
+    const tds = tr.querySelectorAll('td');
+    const url = tds[0]?.querySelector('a')?.href || tds[0]?.textContent?.trim() || '';
+    const schemaType = tds[1]?.textContent?.trim() || '';
+    const missing = tds[3]?.textContent?.trim() || '';
+    // store first JSON-LD snippet in a dataset if available when row was computed
+    const firstJson = tr.dataset.firstJsonld || '';
+    // Get index from row to find validation result
+    const rowIndex = Array.from(tr.parentNode.children).indexOf(tr);
+    const result = validationResults[rowIndex];
+    const missingFields = result && result.missingFields ? result.missingFields : (missing ? missing.split(',').map(s => s.trim()).filter(Boolean) : []);
+    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson };
+  }
+  
   // Copy to clipboard
   function copyToClipboard(outputId) {
     const element = document.getElementById(outputId);
@@ -968,53 +1159,63 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const resultsDiv = document.getElementById('validatorResults');
     resultsDiv.style.display = 'block';
     
-    // Check if URL already exists in results
-    const existingIndex = validationResults.findIndex(r => r.url === url);
-    let index;
-    
-    if (existingIndex >= 0) {
-      // Update existing row
-      index = existingIndex;
+      // Check if URL already exists in results
+      const existingIndex = validationResults.findIndex(r => r.url === url);
+      let index;
       
-      // Show processing status
-      updateTableRow(index, {
-        url: url,
-        schemaType: 'Processing...',
-        valid: false,
-        schemaFound: false,
-        missingFields: [],
-        warnings: [],
-        schemas: [],
-        error: null,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
-        notes: validationResults[index].notes || ''
-      });
-    } else {
-      // Add new row
-      index = validationResults.length;
-      
-      // Create placeholder result
-      const placeholderResult = {
-        url: url,
-        row: index,
-        schemaType: 'Processing...',
-        valid: false,
-        schemaFound: false,
-        missingFields: [],
-        warnings: [],
-        schemas: [],
-        error: null,
-        validatorGoogleStatus: '🚫 Skipped',
-        validatorSchemaOrgStatus: '🚫 Skipped',
-        notes: ''
-      };
-      
-      validationResults.push(placeholderResult);
-      
-      // Add placeholder row to table
-      updateTableRow(index, placeholderResult);
-    }
+      if (existingIndex >= 0) {
+        // Update existing row
+        index = existingIndex;
+        
+        // Show processing status with progress bar
+        updateTableRow(index, {
+          url: url,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
+          validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+          notes: validationResults[index].notes || ''
+        });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 5, 'Queued');
+        }
+      } else {
+        // Add new row
+        index = validationResults.length;
+        
+        // Create placeholder result
+        const placeholderResult = {
+          url: url,
+          row: index,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: '🚫 Skipped',
+          validatorSchemaOrgStatus: '🚫 Skipped',
+          notes: ''
+        };
+        
+        validationResults.push(placeholderResult);
+        
+        // Add placeholder row to table
+        updateTableRow(index, placeholderResult);
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 5, 'Queued');
+        }
+      }
     
     try {
       // Process URL using existing function
@@ -1400,43 +1601,103 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Fetch page and extract JSON-LD
-  async function fetchPageSchema(url) {
+  async function fetchPageSchema(url, progressIndex) {
+    const schemaTypeCell = progressIndex !== undefined ? document.getElementById(`schemaTypeCell_${progressIndex}`) : null;
+    
     try {
       // Use CORS proxy if needed (for cross-origin requests)
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
       
+      if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
       const response = await fetch(proxyUrl);
       const data = await response.json();
       const html = data.contents;
+      
+      if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
       
       // Parse HTML to extract JSON-LD
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
       
+      if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
+      
       const jsonLdBlocks = [];
+      let detectedTypes = [];
       scripts.forEach(script => {
         try {
           const json = JSON.parse(script.textContent);
           jsonLdBlocks.push(json);
+          // Extract types from this block
+          if (json['@type']) {
+            if (Array.isArray(json['@type'])) detectedTypes.push(...json['@type']);
+            else detectedTypes.push(json['@type']);
+          }
+          if (json['@graph']) {
+            json['@graph'].forEach(item => {
+              if (item['@type']) {
+                if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
+                else detectedTypes.push(item['@type']);
+              }
+            });
+          }
         } catch (e) {
           console.warn('Failed to parse JSON-LD:', e);
         }
       });
       
+      if (schemaTypeCell) {
+        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+        setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+      }
+      
       return {
         url,
         jsonLd: jsonLdBlocks,
-        schemaFound: jsonLdBlocks.length > 0
+        schemaFound: jsonLdBlocks.length > 0,
+        schemaType: detectedTypes.length ? detectedTypes.join(', ') : 'None'
       };
     } catch (error) {
       // Fallback: try direct fetch (may fail due to CORS)
       try {
-        const response = await fetch(url);
-        const html = await response.text();
+        if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
+        const response = await fetch(url, { mode: 'cors' });
+        const htmlText = await response.text();
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        
+        if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
+        
+        // Extract all JSON-LD blocks
+        const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+        let detectedTypes = [];
+        scripts.forEach(s => {
+          try {
+            const data = JSON.parse(s.textContent.trim());
+            if (data['@type']) {
+              if (Array.isArray(data['@type'])) detectedTypes.push(...data['@type']);
+              else detectedTypes.push(data['@type']);
+            }
+            // Also check @graph structure
+            if (data['@graph']) {
+              data['@graph'].forEach(item => {
+                if (item['@type']) {
+                  if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
+                  else detectedTypes.push(item['@type']);
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('Invalid JSON-LD block', err);
+          }
+        });
+        
+        if (schemaTypeCell) {
+          const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+          setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+        }
+        
+        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
         
         const jsonLdBlocks = [];
         scripts.forEach(script => {
@@ -1451,9 +1712,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         return {
           url,
           jsonLd: jsonLdBlocks,
-          schemaFound: jsonLdBlocks.length > 0
+          schemaFound: jsonLdBlocks.length > 0,
+          schemaType: schemaType
         };
       } catch (err) {
+        if (schemaTypeCell) {
+          markProgressError(schemaTypeCell);
+          setProgress(schemaTypeCell, 100, 'Error');
+        }
         throw new Error(`Failed to fetch ${url}: ${err.message}`);
       }
     }
@@ -1664,17 +1930,32 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
     
     try {
-      const pageData = await fetchPageSchema(urlData.url);
+      const pageData = await fetchPageSchema(urlData.url, urlData.row);
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+      if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
+        setProgress(schemaTypeCell, 100, 'Done');
+        // Replace progress bar with actual schema type after a brief delay
+        setTimeout(() => {
+          schemaTypeCell.textContent = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
+        }, 500);
+      }
+      
       result.schemaFound = analysis.schemaFound;
-      result.schemaType = analysis.schemaTypes.join(', ') || 'None';
+      // Use schemaType from fetchPageSchema if available, otherwise use analysis
+      result.schemaType = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
       result.missingFields = [...new Set(analysis.missingFields)];
       result.warnings = analysis.warnings;
       result.valid = analysis.valid;
       result.schemas = analysis.schemas;
       
     } catch (error) {
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+      if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
+        markProgressError(schemaTypeCell);
+        setProgress(schemaTypeCell, 100, 'Error');
+      }
       result.error = error.message;
     }
     
@@ -1695,15 +1976,29 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Determine status badge class and text
     let statusClass = 'no-schema';
     let statusText = '❌ No Schema';
+    let statusHtml = '';
     if (result.error) {
       statusClass = 'error';
       statusText = '❌ Error';
+      statusHtml = '<span class="chip-issues" title="View details">⛔ Error</span>';
     } else if (result.valid) {
       statusClass = 'valid';
       statusText = '✅ Valid';
+      statusHtml = '<span class="chip-ok">✅ Valid</span>';
     } else if (result.schemaFound) {
       statusClass = 'issues';
       statusText = '⚠️ Issues';
+      statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
+    } else {
+      statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
+    }
+    
+    // Store first JSON-LD block if available
+    if (result.schemas && result.schemas.length > 0 && result.schemas[0].schema) {
+      try {
+        const firstJson = JSON.stringify(result.schemas[0].schema, null, 2);
+        row.dataset.firstJsonld = firstJson.slice(0, 6000);
+      } catch (_) {}
     }
     
     // Get existing values if row already exists
@@ -1717,8 +2012,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     row.innerHTML = `
       <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
-      <td>${result.schemaType || 'None'}</td>
-      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+      <td id="schemaTypeCell_${index}">${result.schemaType === 'Processing...' ? '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>' : (result.schemaType || 'None')}</td>
+      <td id="statusCell_${index}">${statusHtml}</td>
       <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
       <td>
         <select class="status-select" id="googleStatus_${index}" onchange="updateValidationStatus(${index}, 'google', this.value)">
@@ -1756,6 +2051,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     if (!result.notes) {
       result.notes = '';
+    }
+    
+    // Add click handler to status cell if it has issues or error
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    if (statusCell && (statusClass === 'issues' || statusClass === 'error')) {
+      const chip = statusCell.querySelector('.chip-issues');
+      if (chip) {
+        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+      }
     }
   }
   
@@ -1923,6 +2227,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           schemaType: 'Processing...',
           error: null
         });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 10, 'Queued');
+        }
       });
       
       // Process each URL
@@ -1942,6 +2251,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           schemas: [],
           error: null
         });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${i}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 10, 'Queued');
+        }
         
         // Process URL
         const result = await processUrl(urlData);
@@ -2003,20 +2317,40 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    // Also create HTML script tag version
-    const htmlBlob = new Blob([`<script type="application/ld+json">\n${jsonData}\n<\/script>`], { type: 'text/html' });
-    const htmlUrl = URL.createObjectURL(htmlBlob);
-    const htmlA = document.createElement('a');
-    htmlA.href = htmlUrl;
-    htmlA.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.html`;
+    // Also create HTML script tag version as .txt file
+    const txtBlob = new Blob([`<script type="application/ld+json">\n${jsonData}\n<\/script>`], { type: 'text/plain' });
+    const txtUrl = URL.createObjectURL(txtBlob);
+    const txtA = document.createElement('a');
+    txtA.href = txtUrl;
+    txtA.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.txt`;
     setTimeout(() => {
-      document.body.appendChild(htmlA);
-      htmlA.click();
-      document.body.removeChild(htmlA);
-      URL.revokeObjectURL(htmlUrl);
+      document.body.appendChild(txtA);
+      txtA.click();
+      document.body.removeChild(txtA);
+      URL.revokeObjectURL(txtUrl);
     }, 500);
   }
 </script>
+
+  </div>
+
+  <!-- Issues Modal -->
+  <div id="issuesBackdrop" class="issues-backdrop" role="dialog" aria-modal="true" aria-labelledby="issuesTitle">
+    <div class="issues-modal">
+      <h3 id="issuesTitle">Schema Issues</h3>
+      <div id="issuesMeta" class="issues-meta"></div>
+      <ul id="issuesList" class="issues-list"></ul>
+      <details>
+        <summary>Preview first JSON-LD block on page</summary>
+        <pre id="issuesJson" class="issues-json"></pre>
+      </details>
+      <div class="issues-actions">
+        <button class="secondary" id="issuesSchemaOrgBtn">Open Schema.org</button>
+        <button class="secondary" id="issuesGoogleBtn">Open Google</button>
+        <button class="primary" id="issuesCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
