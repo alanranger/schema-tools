@@ -619,7 +619,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <label for="singleUrlInput">Validate a Single URL:</label>
       <input type="text" id="singleUrlInput" placeholder="https://www.example.com/page-with-schema" aria-label="Single URL to validate">
       <button onclick="runSingleUrlValidation()" style="margin-top: 0.75rem;">Run Validation</button>
-      <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">This will open both Schema.org and Google Rich Results validators in new tabs for the provided URL.</p>
+      <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">This will process the URL and display validation results in the table below. Use the validator buttons in the table to open external validators.</p>
     </div>
 
     <!-- Batch CSV Validator Section -->
@@ -783,7 +783,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Single URL validation
-  function runSingleUrlValidation() {
+  async function runSingleUrlValidation() {
     const urlInput = document.getElementById('singleUrlInput');
     const url = urlInput.value.trim();
     
@@ -797,9 +797,101 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return;
     }
     
-    // Open both validators in new tabs
-    window.open('https://validator.schema.org/#url=' + encodeURIComponent(url), '_blank');
-    window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
+    // Show results table
+    const resultsDiv = document.getElementById('validatorResults');
+    resultsDiv.style.display = 'block';
+    
+    // Check if URL already exists in results
+    const existingIndex = validationResults.findIndex(r => r.url === url);
+    let index;
+    
+    if (existingIndex >= 0) {
+      // Update existing row
+      index = existingIndex;
+      
+      // Show processing status
+      updateTableRow(index, {
+        url: url,
+        schemaType: 'Processing...',
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: null,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+        notes: validationResults[index].notes || ''
+      });
+    } else {
+      // Add new row
+      index = validationResults.length;
+      
+      // Create placeholder result
+      const placeholderResult = {
+        url: url,
+        row: index,
+        schemaType: 'Processing...',
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: null,
+        validatorGoogleStatus: '🚫 Skipped',
+        validatorSchemaOrgStatus: '🚫 Skipped',
+        notes: ''
+      };
+      
+      validationResults.push(placeholderResult);
+      
+      // Add placeholder row to table
+      updateTableRow(index, placeholderResult);
+    }
+    
+    try {
+      // Process URL using existing function
+      const urlData = { url: url, row: index };
+      const result = await processUrl(urlData);
+      
+      // Update validation results array
+      validationResults[index] = {
+        ...result,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+        notes: validationResults[index].notes || ''
+      };
+      
+      // Update table row with results
+      updateTableRow(index, validationResults[index]);
+      
+      // Clear input field
+      urlInput.value = '';
+      
+      // Scroll to results table
+      resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+    } catch (error) {
+      console.error('Error validating URL:', error);
+      
+      // Update row with error
+      validationResults[index] = {
+        url: url,
+        row: index,
+        schemaType: null,
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: error.message,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+        notes: validationResults[index].notes || ''
+      };
+      
+      updateTableRow(index, validationResults[index]);
+    }
   }
 
   // Toggle help block
