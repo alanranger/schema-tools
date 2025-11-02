@@ -81,12 +81,12 @@
       font-weight: 600;
     }
     .tab-content {
-      display: none;
+      display: none !important;
       padding: 20px;
       border-top: none;
     }
     .tab-content.active {
-      display: block;
+      display: block !important;
     }
     .tab-content h2 {
       color: #2d3748;
@@ -165,6 +165,24 @@
       margin-bottom: 0.75rem;
       color: #2d3748;
       font-size: 1.1rem;
+    }
+    /* Ensure Tab Guide is hidden by default and only shows when active */
+    #guideTab.tab-content {
+      display: none !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+    }
+    #guideTab.tab-content.active {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+    }
+    #guideTab .instructions {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
     .instructions pre {
       background: #ffffff;
@@ -537,7 +555,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.2.3</span>
+    <span class="version">v1.2.6</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -670,7 +688,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   <!-- Schema Validator Tab Content -->
   <div id="validatorTab" class="tab-content">
     <div class="instructions">
-      <strong>🔍 Schema Validator</strong><br>
+      <strong>🔍 Schema Validator</strong><br><button class='secondary' style='float:right;margin-top:-0.25rem' onclick='switchTab("guide")'>Open Tab Guide →</button>
       Validate schema markup on your pages using industry-standard validators. Choose single URL validation or batch processing from CSV.<br><br>
       
       ✅ Works entirely in your browser (no server required).<br>
@@ -725,6 +743,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           </tbody>
         </table>
       </div>
+    </div>
+
     </div>
 
     <!-- Help Block -->
@@ -847,9 +867,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   });
   // Tab switching
   function switchTab(mode) {
+    // Reset all active tabs and contents
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
+    // Activate correct tab based on mode
     if (mode === 'event') {
       document.querySelectorAll('.tab')[0].classList.add('active');
       document.getElementById('eventTab').classList.add('active');
@@ -861,7 +883,38 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       document.getElementById('validatorTab').classList.add('active');
     } else if (mode === 'guide') {
       document.querySelectorAll('.tab')[3].classList.add('active');
-      document.getElementById('guideTab').classList.add('active');
+      const guideTab = document.getElementById('guideTab');
+      console.log('🔍 GUIDE MODE - guideTab found:', !!guideTab);
+      if (guideTab) {
+        guideTab.classList.add('active');
+        guideTab.style.display = 'block';
+        guideTab.style.visibility = 'visible';
+        guideTab.style.opacity = '1';
+        guideTab.style.height = 'auto';
+        guideTab.style.minHeight = '200px';
+        const computedStyle = window.getComputedStyle(guideTab);
+        console.log('🔍 guideTab display:', computedStyle.display);
+        console.log('🔍 guideTab visibility:', computedStyle.visibility);
+        console.log('🔍 guideTab opacity:', computedStyle.opacity);
+        console.log('🔍 guideTab has active class:', guideTab.classList.contains('active'));
+        console.log('🔍 guideTab innerHTML length:', guideTab.innerHTML.length);
+        const instructions = guideTab.querySelector('.instructions');
+        if (instructions) {
+          instructions.style.display = 'block';
+          instructions.style.visibility = 'visible';
+          console.log('🔍 instructions found, content:', instructions.textContent.substring(0, 100));
+        }
+      } else {
+        console.error('❌ guideTab element NOT FOUND!');
+      }
+    }
+    
+    // Safety guard: ensure exactly one visible tab
+    const activeTabs = document.querySelectorAll('.tab-content.active');
+    if (activeTabs.length > 1) {
+      activeTabs.forEach(el => el.classList.remove('active'));
+      const id = mode + 'Tab';
+      document.getElementById(id)?.classList.add('active');
     }
   }
 
