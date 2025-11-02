@@ -7,31 +7,33 @@
   <style>
     * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       padding: 2rem;
-      background: #f8f8f8;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       margin: 0;
     }
     .container {
       max-width: 1200px;
       margin: 0 auto;
       background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
       position: relative;
     }
     .version-badge {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 0.5rem 1rem;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.85rem;
-      font-weight: bold;
+      font-weight: 600;
       z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .version-badge .version {
       display: block;
@@ -40,36 +42,43 @@
     .version-badge .date {
       display: block;
       font-size: 0.75rem;
-      opacity: 0.8;
+      opacity: 0.9;
       margin-top: 0.25rem;
     }
     h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
-      color: #333;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: #2d3748;
       padding-right: 150px;
+      font-weight: 700;
     }
     .tabs {
       display: flex;
       gap: 0.5rem;
       margin-bottom: 2rem;
-      border-bottom: 2px solid #ddd;
+      border-bottom: 2px solid #e2e8f0;
     }
     .tab {
-      padding: 0.75rem 1.5rem;
-      background: #f0f0f0;
+      padding: 0.875rem 1.75rem;
+      background: #f7fafc;
       border: none;
       cursor: pointer;
       font-size: 1rem;
-      border-radius: 6px 6px 0 0;
-      transition: all 0.2s;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.3s ease;
+      color: #4a5568;
+      border-bottom: 3px solid transparent;
     }
     .tab:hover {
-      background: #e0e0e0;
+      background: #edf2f7;
+      color: #2d3748;
     }
     .tab.active {
-      background: #333;
-      color: white;
+      background: white;
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: 600;
     }
     .tab-content {
       display: none;
@@ -78,70 +87,105 @@
       display: block;
     }
     .instructions {
-      background-color: #f4f4f4;
-      padding: 1rem;
-      border-radius: 6px;
+      background: linear-gradient(135deg, #f6f8fb 0%, #edeff2 100%);
+      padding: 1.5rem;
+      border-radius: 10px;
       margin-bottom: 1.5rem;
-      line-height: 1.6;
+      line-height: 1.7;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .instructions strong {
       display: block;
-      margin-bottom: 0.5rem;
-      color: #333;
+      margin-bottom: 0.75rem;
+      color: #2d3748;
+      font-size: 1.1rem;
     }
     .instructions pre {
-      background: #eee;
-      padding: 0.75rem;
-      border-radius: 6px;
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
       overflow-x: auto;
       font-size: 0.9rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
     }
     input[type="file"], select {
       margin-top: 1rem;
-      padding: 0.5rem;
+      padding: 0.75rem 1rem;
       font-size: 1rem;
       width: 100%;
       max-width: 400px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.2s;
+      background: white;
+    }
+    input[type="file"]:hover, select:hover {
+      border-color: #667eea;
+    }
+    input[type="file"]:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     button {
       margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
+      padding: 0.875rem 1.75rem;
       font-size: 1rem;
-      background: #333;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
     button:hover {
-      background: #555;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
     }
     button.secondary {
-      background: #666;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
       margin-left: 0.5rem;
     }
     button.secondary:hover {
-      background: #888;
+      box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
     }
     textarea {
       width: 100%;
       height: 400px;
       margin-top: 1rem;
-      font-family: monospace;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
       font-size: 0.9rem;
-      padding: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      padding: 1.25rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.2s;
+      background: #fafbfc;
+      line-height: 1.6;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: white;
     }
     pre {
-      background: #fff;
-      padding: 1rem;
+      background: #fafbfc;
+      padding: 1.25rem;
       overflow-x: auto;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      line-height: 1.6;
     }
     #categoryFilterContainer {
       margin-top: 1rem;
@@ -149,26 +193,63 @@
     .test-url-section {
       margin-top: 1.5rem;
       padding-top: 1.5rem;
-      border-top: 1px solid #ddd;
+      border-top: 2px solid #e2e8f0;
     }
     .test-url-section input {
       width: 100%;
       max-width: 600px;
-      padding: 0.5rem;
+      padding: 0.75rem 1rem;
       margin-right: 0.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .test-url-section input:hover {
+      border-color: #667eea;
+    }
+    .test-url-section input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     .test-url-section .button-group {
-      margin-top: 0.5rem;
+      margin-top: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
     .warning {
-      color: #c00;
-      font-weight: bold;
+      color: #e53e3e;
+      font-weight: 600;
+    }
+    label {
+      display: block;
+      margin-top: 1.5rem;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 0.95rem;
+    }
+    h3 {
+      color: #2d3748;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    h4 {
+      color: #4a5568;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
+  <div class="version-badge">
+    <span class="version">v1.0.0</span>
+    <span class="date">2025-01-27</span>
+  </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
   <div class="tabs">
@@ -180,11 +261,38 @@
   <div id="eventTab" class="tab-content active">
     <div class="instructions">
       <strong>📅 Event Schema Generator</strong><br>
-      Upload a CSV file of events. The generator will create Event and ItemList schema blocks.<br><br>
-      <strong>Required CSV fields:</strong> Event_Title, Start_Date, End_Date, Event_URL, Event_Image, Location_Business_Name, Location_Address, Excerpt, Category, Workflow_State<br><br>
-      • Only published events with future start dates are included<br>
-      • Events are filtered by category<br>
-      • Schema includes organizer, performer, location with parsed address<br>
+      1. Upload your event CSV file (exported from Squarespace Events).<br>
+      2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>End_Date</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>.<br>
+      3. Select a category filter (or "All Categories") to generate schema for specific event types.<br>
+      4. Click <b>Generate Event Schema</b> to create valid JSON-LD blocks.<br><br>
+      
+      ✅ This tool works entirely offline in your browser.<br>
+      ✅ Only includes structured data compliant with Google Rich Results.<br>
+      ✅ Only published events with future start dates are included automatically.<br>
+      ✅ Schema includes organizer, performer, location with parsed address.<br><br>
+
+      <strong>📄 Data Workflow Summary:</strong><br>
+      <pre>
+Step 1: Export events from Squarespace → events_export.csv
+     ↓
+Step 2: Verify CSV contains all required fields
+     ↓
+Step 3: Upload CSV and select category filter
+     ↓
+Step 4: Generate JSON-LD schema blocks
+     ↓
+Step 5: Paste schema into Squarespace event page (see instructions below)
+      </pre>
+
+      <strong>📌 Squarespace Instructions:</strong><br>
+      • Open your event page in Squarespace.<br>
+      • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
+      • OR insert a <b>Code Block</b> onto the event page.<br>
+      • <b>Paste the entire generated schema block</b> (includes both ItemList and Event schemas).<br>
+      • The schema will include all events matching your selected category filter.<br>
+      • <span class="warning">⚠️ Best Practice:</span> Paste the schema on a main events listing page (e.g., "All Workshops" or category archive page) rather than individual event pages.<br>
+      • For individual event pages, you can generate schema for a single category containing just that event.<br>
+      • Always validate your schema after deployment using the test URL tools below.
     </div>
 
     <label for="eventCsvFile">Upload Event CSV File:</label>
