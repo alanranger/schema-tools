@@ -1831,15 +1831,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           await runSchemaOrgValidator(index, url);
         }
         
-        // Auto-run Rich Results validator if enabled and status is "Not run"
-        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-        if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-          // Don't await - let it run in background
-          runRichResultsValidator(index, url);
+          // Auto-run Rich Results validator if enabled and status is "Not run"
+          const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+          if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+            // Don't await - let it run in background
+            runRichResultsValidator(index, url);
+          }
         }
-      }
-      
-      // Clear input field
+        
+        // Auto-save to Supabase if enabled
+        const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
+        const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
+        if (shouldAutoSave && supabaseAvailable && supabase) {
+          // Wait a moment for external validators to complete, then save
+          setTimeout(async () => {
+            try {
+              await saveToSupabase(index, true); // silent mode for auto-save
+              debugLog(`Auto-saved to Supabase: ${url}`, 'success');
+            } catch (error) {
+              debugLog(`Auto-save failed for ${url}: ${error.message}`, 'error');
+              // Don't show alert for auto-save failures, just log
+            }
+          }, 2000); // 2 second delay to allow external validators to complete
+        }
+        
+        // Clear input field
       urlInput.value = '';
       
       // Scroll to results table
@@ -3204,10 +3220,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         throw error;
       }
       
-      showToast(`✅ Saved to Supabase: ${result.url}`);
-      console.log('Successfully saved to Supabase:', data);
+      if (!silent) {
+        showToast(`✅ Saved to Supabase: ${result.url}`);
+        debugLog('Successfully saved to Supabase:', data);
+      } else {
+        debugLog(`✅ Auto-saved to Supabase: ${result.url}`, 'success');
+      }
       
-      if (saveBtn) {
+      if (saveBtn && !silent) {
         saveBtn.textContent = '✅ Saved';
         setTimeout(() => {
           saveBtn.textContent = 'Save to Supabase';
@@ -3217,12 +3237,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
     } catch (error) {
       console.error('Error saving to Supabase:', error);
-      showToast(`❌ Error saving to Supabase: ${error.message}`, true);
+      if (!silent) {
+        showToast(`❌ Error saving to Supabase: ${error.message}`, true);
+      } else {
+        debugLog(`Auto-save error for ${result.url}: ${error.message}`, 'error');
+      }
       
-      if (saveBtn) {
+      if (saveBtn && !silent) {
         saveBtn.textContent = 'Save to Supabase';
         saveBtn.disabled = false;
       }
+      throw error; // Re-throw for caller to handle
     }
   }
   
