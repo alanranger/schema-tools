@@ -18,8 +18,12 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Fully structured schema output compliant with Google's Rich Results.
 
 ### 3. `unified-schema-generator.html`
-- Combines both tools into one UI.
+- Combines both tools into one UI with three tabs:
+  - **Event Schema**: Generate Event and ItemList schema blocks from CSV
+  - **Product Schema**: Generate Product schema blocks with review support
+  - **Schema Validator**: Validate and enhance schemas from live URLs (NEW!)
 - Designed for future expansion with automatic validation and page scanning.
+- Includes built-in schema validation and enhancement capabilities.
 
 ### 4. `schema-validator.js` (Schema Validator Agent)
 - Automated CLI tool to validate schema markup on live URLs.
@@ -81,6 +85,50 @@ schema-tools/
 5. Select or paste the CSV file.
 6. Generate JSON-LD.
 7. Paste each block into the corresponding Squarespace product or event page (not all in one).
+
+## Unified Schema Generator (Browser Tool)
+
+The `unified-schema-generator.html` tool provides three tabs in one interface:
+
+### Event Schema Tab
+- Upload CSV file with event data
+- Filter by category
+- Generate Event + ItemList schema blocks
+- Copy to clipboard for Squarespace deployment
+
+### Product Schema Tab
+- Upload CSV file with product data
+- Automatically filter reviews (4+ stars only)
+- Generate Product schema blocks with reviews
+- Copy to clipboard for Squarespace deployment
+
+### Schema Validator Tab (NEW!)
+- Upload CSV file with page URLs
+- Automatically validates each URL:
+  - Checks for schema markup presence
+  - Identifies schema types (Product, Event, etc.)
+  - Detects missing required and recommended fields
+  - Shows validation status (✅ Valid / ⚠️ Issues / ❌ No Schema)
+- Generate enhanced schemas with missing fields filled
+- Download enhanced schemas as JSON files
+- Works entirely in browser (no server required)
+
+**Usage:**
+1. Open `unified-schema-generator.html` in your browser
+2. Switch to the "Schema Validator" tab
+3. Upload a CSV file with a `URL`, `Link`, or `Website` column
+4. Click "Validate URLs" to start processing
+5. Review results in the table
+6. Click "Generate Enhanced" button for any URL to download improved schema
+
+**CSV Format for Validator:**
+```csv
+URL,Product Name
+https://www.example.com/product-1,Product One
+https://www.example.com/product-2,Product Two
+```
+
+**Note:** Cross-origin restrictions may prevent fetching some URLs. The validator uses a CORS proxy for cross-origin requests, but some sites may block this. For best results, validate URLs from your own domain.
 
 ## Schema Validation
 

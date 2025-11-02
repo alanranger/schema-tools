@@ -20,19 +20,28 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Injects fixed location, organizer, image
 - Outputs valid Event + ItemList blocks
 
-### 🧪 `unified_schema_generator.html` (experimental)
-- Combines both generators into one file
-- Future: Add auto-validator + fetch from live page
+### ✅ `unified-schema-generator.html` (COMPLETE)
+- Combines both generators into one file with tabbed interface
+- Three tabs:
+  - Event Schema Generator
+  - Product Schema Generator  
+  - Schema Validator (NEW!) - validates URLs from CSV, detects schema types, identifies missing fields, and generates enhanced schemas
+- Includes built-in validation and enhancement logic
+- Works entirely in browser (no server required)
 
 ## Goals for Next Tool Phase
 
-- Automate schema validation using:
-  - https://validator.schema.org
-  - https://search.google.com/test/rich-results
+✅ **COMPLETED:**
+- Schema validation (built into unified generator)
+- Bulk URL validation from CSV
+- Schema enhancement with missing fields
 
+### 🚀 Future Enhancements:
 - Add cleanup and review-merging to CSV uploads
-
 - Crawl live Squarespace URLs to ensure correct schema placement and detect outdated/incomplete pages
+- Add progress indicators for large CSV files
+- Export validation results to Excel/CSV format
+- Add HTML UI for schema enhancer (currently CLI only)
 
 ## Folder Map
 

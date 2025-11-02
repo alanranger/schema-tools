@@ -241,13 +241,77 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .results-table th {
+      background: #f7fafc;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #2d3748;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .results-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      color: #4a5568;
+    }
+    .results-table tr:hover {
+      background: #f9fafb;
+    }
+    .status-valid {
+      color: #38a169;
+      font-weight: 600;
+    }
+    .status-invalid {
+      color: #e53e3e;
+      font-weight: 600;
+    }
+    .status-processing {
+      color: #667eea;
+      font-weight: 600;
+    }
+    .enhance-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      margin: 0.25rem 0;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+    }
+    .missing-fields {
+      font-size: 0.875rem;
+      color: #e53e3e;
+    }
+    .scrollable-container {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.1.0</span>
+    <span class="version">v1.2.0</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -255,6 +319,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('event')">Event Schema</button>
     <button class="tab" onclick="switchTab('product')">Product Schema</button>
+    <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
   </div>
 
   <!-- Event Tab Content -->
@@ -373,6 +438,50 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <button onclick="testGoogleRichResults('productTestUrl')" class="secondary">Test on Google Rich Results</button>
       </div>
     </div>
+  <!-- Schema Validator Tab Content -->
+  <div id="validatorTab" class="tab-content">
+    <div class="instructions">
+      <strong>🔍 Schema Validator</strong><br>
+      1. Upload a CSV file with URLs (must have a column named: <code>URL</code>, <code>Link</code>, or <code>Website</code>).<br>
+      2. The validator will fetch each page and extract schema markup.<br>
+      3. Check for missing required and recommended fields per schema type.<br>
+      4. Generate enhanced schema with missing fields filled (where possible).<br>
+      5. Download enhanced schemas as JSON files.<br><br>
+      
+      ✅ Works entirely in your browser (no server required).<br>
+      ✅ Validates Product, Event, Organization, and other schema types.<br>
+      ✅ Identifies missing fields and provides enhancement suggestions.<br><br>
+      
+      <strong>⚠️ Note:</strong> Cross-origin restrictions may prevent fetching some URLs. Use URLs from the same domain or enable CORS if testing locally.
+    </div>
+
+    <label for="validatorCsvFile">Upload CSV File with URLs:</label>
+    <input type="file" id="validatorCsvFile" accept=".csv" aria-label="Validator CSV file upload">
+    <button onclick="startValidation()">Validate URLs</button>
+
+    <div id="validatorProgress" style="display:none;">
+      <div class="progress-bar">
+        <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      <p id="progressText" style="margin-top: 0.5rem; color: #4a5568;">Processing...</p>
+    </div>
+
+    <div id="validatorResults" class="scrollable-container" style="display:none;">
+      <h3>Validation Results</h3>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Schema Type</th>
+            <th>Status</th>
+            <th>Missing Fields</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="resultsTableBody">
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -387,9 +496,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (mode === 'event') {
       document.querySelectorAll('.tab')[0].classList.add('active');
       document.getElementById('eventTab').classList.add('active');
-    } else {
+    } else if (mode === 'product') {
       document.querySelectorAll('.tab')[1].classList.add('active');
       document.getElementById('productTab').classList.add('active');
+    } else if (mode === 'validator') {
+      document.querySelectorAll('.tab')[2].classList.add('active');
+      document.getElementById('validatorTab').classList.add('active');
     }
   }
 
@@ -613,6 +725,442 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         alert('Error parsing CSV file: ' + error.message);
       }
     });
+  }
+
+  // Schema Validator Tab Logic
+  const SCHEMA_REQUIREMENTS = {
+    Product: {
+      required: ['name', 'url'],
+      recommended: ['description', 'image', 'brand', 'offers', 'aggregateRating', 'review']
+    },
+    Event: {
+      required: ['name', 'startDate'],
+      recommended: ['endDate', 'location', 'organizer', 'offers', 'image', 'description', 'performer']
+    },
+    Organization: {
+      required: ['name'],
+      recommended: ['url', 'logo', 'address', 'contactPoint']
+    },
+    BreadcrumbList: {
+      required: ['itemListElement'],
+      recommended: []
+    },
+    ItemList: {
+      required: ['itemListElement'],
+      recommended: ['name']
+    },
+    LocalBusiness: {
+      required: ['name'],
+      recommended: ['address', 'telephone', 'url', 'openingHours']
+    }
+  };
+
+  const DEFAULT_VALUES = {
+    Product: {
+      brand: { '@type': 'Brand', name: '[REPLACE WITH BRAND NAME]' },
+      offers: {
+        '@type': 'Offer',
+        price: '[REPLACE WITH PRICE]',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+        url: '[AUTO-INFERRED FROM PAGE URL]'
+      },
+      description: '[REPLACE WITH PRODUCT DESCRIPTION]',
+      image: '[REPLACE WITH PRODUCT IMAGE URL]'
+    },
+    Event: {
+      organizer: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        logo: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+        url: 'https://www.alanranger.com'
+      },
+      performer: {
+        '@type': 'Person',
+        name: 'Alan Ranger'
+      },
+      location: {
+        '@type': 'Place',
+        name: '[REPLACE WITH VENUE NAME]',
+        address: {
+          '@type': 'PostalAddress',
+          addressCountry: 'GB'
+        }
+      },
+      offers: {
+        '@type': 'Offer',
+        price: '0.00',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+        validFrom: '[AUTO-INFERRED FROM START DATE]'
+      },
+      description: '[REPLACE WITH EVENT DESCRIPTION]',
+      image: '[REPLACE WITH EVENT IMAGE URL]'
+    }
+  };
+
+  let validationResults = [];
+
+  // Parse CSV and extract URLs
+  function parseCSVForValidation(csvFile) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(csvFile, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const urls = [];
+          const headers = results.meta.fields || [];
+          
+          const urlColumn = headers.find(h => 
+            h.toLowerCase() === 'url' || h.toLowerCase() === 'link' || h.toLowerCase() === 'website'
+          );
+          
+          if (!urlColumn) {
+            reject(new Error('No URL column found. Expected column name: URL, Link, or Website'));
+            return;
+          }
+          
+          results.data.forEach((row, index) => {
+            const url = row[urlColumn];
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+              urls.push({
+                url: url.trim(),
+                row: index + 2,
+                allFields: row
+              });
+            }
+          });
+          
+          resolve(urls);
+        },
+        error: function(error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  // Fetch page and extract JSON-LD
+  async function fetchPageSchema(url) {
+    try {
+      // Use CORS proxy if needed (for cross-origin requests)
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      
+      const response = await fetch(proxyUrl);
+      const data = await response.json();
+      const html = data.contents;
+      
+      // Parse HTML to extract JSON-LD
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+      
+      const jsonLdBlocks = [];
+      scripts.forEach(script => {
+        try {
+          const json = JSON.parse(script.textContent);
+          jsonLdBlocks.push(json);
+        } catch (e) {
+          console.warn('Failed to parse JSON-LD:', e);
+        }
+      });
+      
+      return {
+        url,
+        jsonLd: jsonLdBlocks,
+        schemaFound: jsonLdBlocks.length > 0
+      };
+    } catch (error) {
+      // Fallback: try direct fetch (may fail due to CORS)
+      try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        
+        const jsonLdBlocks = [];
+        scripts.forEach(script => {
+          try {
+            const json = JSON.parse(script.textContent);
+            jsonLdBlocks.push(json);
+          } catch (e) {
+            console.warn('Failed to parse JSON-LD:', e);
+          }
+        });
+        
+        return {
+          url,
+          jsonLd: jsonLdBlocks,
+          schemaFound: jsonLdBlocks.length > 0
+        };
+      } catch (err) {
+        throw new Error(`Failed to fetch ${url}: ${err.message}`);
+      }
+    }
+  }
+
+  // Extract schema types
+  function extractSchemaTypes(jsonLdBlocks) {
+    const types = new Set();
+    
+    jsonLdBlocks.forEach(block => {
+      if (Array.isArray(block)) {
+        block.forEach(item => {
+          if (item['@type']) types.add(item['@type']);
+        });
+      } else if (block['@type']) {
+        types.add(block['@type']);
+      } else if (block['@graph']) {
+        block['@graph'].forEach(item => {
+          if (item['@type']) types.add(item['@type']);
+        });
+      }
+    });
+    
+    return Array.from(types);
+  }
+
+  // Validate schema fields
+  function validateSchemaFields(schema, schemaType) {
+    const missingFields = [];
+    const warnings = [];
+    const requirements = SCHEMA_REQUIREMENTS[schemaType];
+    
+    if (!requirements) {
+      warnings.push(`Unknown schema type: ${schemaType}`);
+      return { missingFields, warnings };
+    }
+    
+    requirements.required.forEach(field => {
+      if (!schema[field]) {
+        missingFields.push(field);
+      }
+    });
+    
+    requirements.recommended.forEach(field => {
+      if (!schema[field]) {
+        warnings.push(`Missing recommended: ${field}`);
+      }
+    });
+    
+    return { missingFields, warnings };
+  }
+
+  // Analyze schemas
+  function analyzeSchemas(jsonLdBlocks, url) {
+    const analysis = {
+      schemaFound: jsonLdBlocks.length > 0,
+      schemaTypes: [],
+      schemas: [],
+      missingFields: [],
+      warnings: [],
+      valid: false
+    };
+    
+    if (jsonLdBlocks.length === 0) {
+      analysis.warnings.push('No schema markup found');
+      return analysis;
+    }
+    
+    analysis.schemaTypes = extractSchemaTypes(jsonLdBlocks);
+    
+    jsonLdBlocks.forEach((block, index) => {
+      let schemas = [];
+      
+      if (block['@graph']) {
+        schemas = block['@graph'];
+      } else if (Array.isArray(block)) {
+        schemas = block;
+      } else {
+        schemas = [block];
+      }
+      
+      schemas.forEach(schema => {
+        const schemaType = schema['@type'];
+        if (schemaType) {
+          const fieldValidation = validateSchemaFields(schema, schemaType);
+          analysis.schemas.push({
+            type: schemaType,
+            schema: schema,
+            missingFields: fieldValidation.missingFields,
+            warnings: fieldValidation.warnings
+          });
+          
+          analysis.missingFields.push(...fieldValidation.missingFields);
+          analysis.warnings.push(...fieldValidation.warnings);
+        }
+      });
+    });
+    
+    analysis.valid = analysis.schemaFound && 
+                     analysis.missingFields.length === 0 && 
+                     analysis.schemaTypes.length > 0;
+    
+    return analysis;
+  }
+
+  // Enhance schema with missing fields
+  function enhanceSchema(schema, schemaType, url) {
+    const enhanced = JSON.parse(JSON.stringify(schema));
+    const defaults = DEFAULT_VALUES[schemaType] || {};
+    const requirements = SCHEMA_REQUIREMENTS[schemaType];
+    
+    if (!requirements) return enhanced;
+    
+    // Add missing required/recommended fields
+    const allFields = [...requirements.required, ...requirements.recommended];
+    allFields.forEach(field => {
+      if (!enhanced[field] && defaults[field] !== undefined) {
+        let value = defaults[field];
+        
+        // Replace placeholders with inferred values
+        if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
+          if (field === 'url') {
+            value = url;
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          // Deep clone and replace placeholders in nested objects
+          value = JSON.parse(JSON.stringify(value));
+          if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
+            value.url = url;
+          }
+        }
+        
+        enhanced[field] = value;
+      }
+    });
+    
+    // Ensure URL is set
+    if (!enhanced.url && url) {
+      enhanced.url = url;
+    }
+    
+    // Ensure @context is set
+    if (!enhanced['@context']) {
+      enhanced['@context'] = 'https://schema.org/';
+    }
+    
+    return enhanced;
+  }
+
+  // Process a single URL
+  async function processUrl(urlData) {
+    const result = {
+      url: urlData.url,
+      row: urlData.row,
+      schemaType: null,
+      valid: false,
+      schemaFound: false,
+      missingFields: [],
+      warnings: [],
+      schemas: [],
+      error: null
+    };
+    
+    try {
+      const pageData = await fetchPageSchema(urlData.url);
+      const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
+      
+      result.schemaFound = analysis.schemaFound;
+      result.schemaType = analysis.schemaTypes.join(', ') || 'None';
+      result.missingFields = [...new Set(analysis.missingFields)];
+      result.warnings = analysis.warnings;
+      result.valid = analysis.valid;
+      result.schemas = analysis.schemas;
+      
+    } catch (error) {
+      result.error = error.message;
+    }
+    
+    return result;
+  }
+
+  // Start validation process
+  async function startValidation() {
+    const fileInput = document.getElementById('validatorCsvFile');
+    if (!fileInput.files.length) {
+      alert('Please upload a CSV file first');
+      return;
+    }
+    
+    const progressDiv = document.getElementById('validatorProgress');
+    const progressBar = document.getElementById('progressBarFill');
+    const progressText = document.getElementById('progressText');
+    const resultsDiv = document.getElementById('validatorResults');
+    const tableBody = document.getElementById('resultsTableBody');
+    
+    try {
+      // Parse CSV
+      const urls = await parseCSVForValidation(fileInput.files[0]);
+      
+      if (urls.length === 0) {
+        alert('No valid URLs found in CSV file');
+        return;
+      }
+      
+      // Show progress
+      progressDiv.style.display = 'block';
+      resultsDiv.style.display = 'block';
+      tableBody.innerHTML = '';
+      validationResults = [];
+      
+      // Process each URL
+      for (let i = 0; i < urls.length; i++) {
+        const urlData = urls[i];
+        progressText.textContent = `Processing ${i + 1} of ${urls.length}: ${urlData.url}`;
+        progressBar.style.width = `${((i + 1) / urls.length) * 100}%`;
+        
+        const result = await processUrl(urlData);
+        validationResults.push(result);
+        
+        // Add row to table
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><a href="${result.url}" target="_blank" style="color: #667eea; text-decoration: none;">${result.url}</a></td>
+          <td>${result.schemaType || 'None'}</td>
+          <td class="${result.error ? 'status-invalid' : result.valid ? 'status-valid' : result.schemaFound ? 'status-invalid' : 'status-invalid'}">
+            ${result.error ? '❌ Error' : result.valid ? '✅ Valid' : result.schemaFound ? '⚠️ Issues' : '❌ No Schema'}
+          </td>
+          <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
+          <td>
+            ${result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${validationResults.length - 1})">Generate Enhanced</button>` : '-'}
+          </td>
+        `;
+        tableBody.appendChild(row);
+      }
+      
+      progressText.textContent = `Completed: ${validationResults.length} URLs processed`;
+      
+    } catch (error) {
+      alert('Error: ' + error.message);
+      progressDiv.style.display = 'none';
+    }
+  }
+
+  // Generate enhanced schema
+  function generateEnhancedSchema(index) {
+    const result = validationResults[index];
+    if (!result || !result.schemas || result.schemas.length === 0) {
+      alert('No schema found to enhance');
+      return;
+    }
+    
+    // Enhance first schema
+    const firstSchema = result.schemas[0];
+    const enhanced = enhanceSchema(firstSchema.schema, firstSchema.type, result.url);
+    
+    // Create downloadable JSON
+    const jsonData = JSON.stringify(enhanced, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `enhanced-schema-${result.url.replace(/[^a-z0-9]/gi, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 </script>
 
