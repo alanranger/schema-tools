@@ -679,7 +679,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.3.2</span>
+    <span class="version">v1.3.3</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1010,52 +1010,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function switchTab(mode) {
     // Reset all active tabs and contents
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => {
+      c.classList.remove('active');
+      c.style.display = 'none';
+    });
     
     // Activate correct tab based on mode
-    if (mode === 'event') {
-      document.querySelectorAll('.tab')[0].classList.add('active');
-      document.getElementById('eventTab').classList.add('active');
-    } else if (mode === 'product') {
-      document.querySelectorAll('.tab')[1].classList.add('active');
-      document.getElementById('productTab').classList.add('active');
-    } else if (mode === 'validator') {
-      document.querySelectorAll('.tab')[2].classList.add('active');
-      document.getElementById('validatorTab').classList.add('active');
-    } else if (mode === 'guide') {
-      document.querySelectorAll('.tab')[3].classList.add('active');
-      const guideTab = document.getElementById('guideTab');
-      console.log('🔍 GUIDE MODE - guideTab found:', !!guideTab);
-      if (guideTab) {
-        guideTab.classList.add('active');
-        guideTab.style.display = 'block';
-        guideTab.style.visibility = 'visible';
-        guideTab.style.opacity = '1';
-        guideTab.style.height = 'auto';
-        guideTab.style.minHeight = '200px';
-        const computedStyle = window.getComputedStyle(guideTab);
-        console.log('🔍 guideTab display:', computedStyle.display);
-        console.log('🔍 guideTab visibility:', computedStyle.visibility);
-        console.log('🔍 guideTab opacity:', computedStyle.opacity);
-        console.log('🔍 guideTab has active class:', guideTab.classList.contains('active'));
-        console.log('🔍 guideTab innerHTML length:', guideTab.innerHTML.length);
-        const instructions = guideTab.querySelector('.instructions');
-        if (instructions) {
-          instructions.style.display = 'block';
-          instructions.style.visibility = 'visible';
-          console.log('🔍 instructions found, content:', instructions.textContent.substring(0, 100));
-        }
-      } else {
-        console.error('❌ guideTab element NOT FOUND!');
-      }
-    }
+    const tabMap = {
+      'event': { tabIndex: 0, contentId: 'eventTab' },
+      'product': { tabIndex: 1, contentId: 'productTab' },
+      'validator': { tabIndex: 2, contentId: 'validatorTab' },
+      'guide': { tabIndex: 3, contentId: 'guideTab' }
+    };
     
-    // Safety guard: ensure exactly one visible tab
-    const activeTabs = document.querySelectorAll('.tab-content.active');
-    if (activeTabs.length > 1) {
-      activeTabs.forEach(el => el.classList.remove('active'));
-      const id = mode + 'Tab';
-      document.getElementById(id)?.classList.add('active');
+    const config = tabMap[mode];
+    if (config) {
+      const tabs = document.querySelectorAll('.tab');
+      if (tabs[config.tabIndex]) {
+        tabs[config.tabIndex].classList.add('active');
+      }
+      const content = document.getElementById(config.contentId);
+      if (content) {
+        content.classList.add('active');
+        content.style.display = 'block';
+      }
     }
   }
   
@@ -2889,8 +2867,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }, 500);
   }
 </script>
-
-  </div>
 
   <!-- Generated Schema Modal -->
   <div id="genBackdrop" class="issues-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="genTitle">
