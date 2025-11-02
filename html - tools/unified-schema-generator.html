@@ -3485,20 +3485,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
   
   // Save to Supabase
-  async function saveToSupabase(index) {
+  async function saveToSupabase(index, silent = false) {
     if (!supabaseAvailable || !supabase) {
-      showToast('Supabase client not initialized. Please refresh the page.', true);
+      const msg = 'Supabase client not initialized. Please refresh the page.';
+      if (!silent) showToast(msg, true);
+      debugLog(msg, 'error');
       return;
     }
     
     const result = validationResults[index];
     if (!result) {
-      showToast('Error: No result found for this row', true);
+      const msg = 'Error: No result found for this row';
+      if (!silent) showToast(msg, true);
+      debugLog(msg, 'error');
       return;
     }
     
     const saveBtn = document.getElementById(`saveBtn_${index}`);
-    if (saveBtn) {
+    if (saveBtn && !silent) {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
     }
@@ -3526,6 +3530,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         }
       }
       
+      debugLog(`Saving to Supabase: ${result.url}`, 'info');
+      debugLog(`  Google Status: ${googleStatus}`, 'info');
+      debugLog(`  Schema.org Status: ${schemaOrgStatus}`, 'info');
+      debugLog(`  Schema Type: ${result.schemaType || 'null'}`, 'info');
+      
       // Insert into Supabase
       const { data, error } = await supabase
         .from('schema_audit_logs')
@@ -3540,6 +3549,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         });
       
       if (error) {
+        debugLog(`Supabase error: ${JSON.stringify(error)}`, 'error');
+        debugLog(`  Code: ${error.code}, Message: ${error.message}, Details: ${JSON.stringify(error.details)}`, 'error');
         throw error;
       }
       
@@ -3558,12 +3569,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         }, 2000);
       }
       
+      return data;
+      
     } catch (error) {
+      const errorMsg = error.message || error.code || JSON.stringify(error);
+      debugLog(`Error saving to Supabase: ${errorMsg}`, 'error');
+      debugLog(`Full error object: ${JSON.stringify(error)}`, 'error');
       console.error('Error saving to Supabase:', error);
+      
       if (!silent) {
-        showToast(`❌ Error saving to Supabase: ${error.message}`, true);
+        showToast(`❌ Error saving to Supabase: ${errorMsg}`, true);
       } else {
-        debugLog(`Auto-save error for ${result.url}: ${error.message}`, 'error');
+        debugLog(`Auto-save error for ${result.url}: ${errorMsg}`, 'error');
       }
       
       if (saveBtn && !silent) {
