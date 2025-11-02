@@ -3340,23 +3340,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusSelect.value = dropdownValue;
       updateValidationStatus(index, 'google', dropdownValue);
       
-      // Store reportUrl in result object for Rich Results button
-      if (validationResults[index] && data.reportUrl) {
+      // Store reportUrl and data in result for later use
+      if (validationResults[index]) {
         validationResults[index].richResultsReportUrl = data.reportUrl;
+        validationResults[index].richResultsData = data;
       }
       
-      // Update Rich Results button to use reportUrl
-      const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
-      if (richResultsBtn && data.reportUrl) {
-        richResultsBtn.onclick = () => {
-          window.open(data.reportUrl, '_blank');
-          const statusSelect = document.getElementById(`googleStatus_${index}`);
-          if (statusSelect) {
-            statusSelect.value = '👀 Opened (reviewing)';
-            updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
-          }
-        };
-      }
+      // Apply external result to finalize status
+      const schemaOrgResult = validationResults[index]?.schemaOrgData;
+      applyExternalResult(index, data, schemaOrgResult);
       
       // Remove tooltip if status is not unknown
       if (data.status !== 'unknown') {
