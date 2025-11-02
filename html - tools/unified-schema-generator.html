@@ -1570,6 +1570,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Enable bulk action buttons
       updateBulkButtons();
       
+      // Auto-run Schema.org validator if enabled and status is "Not run"
+      const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+      const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+      
+      if (shouldAutoRun) {
+        const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+        if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+          await runSchemaOrgValidator(index, url);
+        }
+      }
+      
       // Clear input field
       urlInput.value = '';
       
@@ -2406,6 +2417,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           <option value="⚠️ Warning" ${existingSchemaOrgStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
           <option value="❌ Failed" ${existingSchemaOrgStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
           <option value="👀 Opened (reviewing)" ${existingSchemaOrgStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
+          <option value="🔄 Running..." ${existingSchemaOrgStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
           <option value="Not run" ${existingSchemaOrgStatus === 'Not run' ? 'selected' : ''}>Not run</option>
         </select>
       </td>
@@ -2491,6 +2503,72 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       } else if (type === 'schemaorg') {
         validationResults[index].validatorSchemaOrgStatus = value;
       }
+    }
+  }
+  
+  // Call Schema.org validator API and update dropdown
+  async function runSchemaOrgValidator(index, url) {
+    const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    if (!statusSelect) return;
+    
+    // Set to "Running..." while waiting
+    statusSelect.value = '🔄 Running...';
+    updateValidationStatus(index, 'schemaorg', '🔄 Running...');
+    
+    try {
+      // Determine API base URL (use deployed Vercel URL or local dev)
+      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://schema-tools-bc59tlixo-info-alanrangercs-projects.vercel.app';
+      
+      const apiUrl = `${apiBaseUrl}/api/validator/schemaorg?url=${encodeURIComponent(url)}`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Map API status to dropdown value
+      let dropdownValue = 'Not run';
+      switch (data.status) {
+        case 'passed':
+          dropdownValue = '✅ Passed';
+          break;
+        case 'warnings':
+          dropdownValue = '⚠️ Warning';
+          break;
+        case 'failed':
+          dropdownValue = '❌ Failed';
+          break;
+        case 'unreachable':
+          dropdownValue = 'Not run';
+          // Add tooltip if needed
+          if (statusSelect.title) {
+            statusSelect.title = 'API unreachable';
+          }
+          break;
+        default:
+          dropdownValue = 'Not run';
+      }
+      
+      // Update dropdown
+      statusSelect.value = dropdownValue;
+      updateValidationStatus(index, 'schemaorg', dropdownValue);
+      
+      // Remove tooltip if status is not unreachable
+      if (data.status !== 'unreachable') {
+        statusSelect.removeAttribute('title');
+      }
+      
+    } catch (error) {
+      console.error('Schema.org validator API error:', error);
+      // On error, leave as "Not run" and add tooltip
+      statusSelect.value = 'Not run';
+      statusSelect.title = 'API unreachable';
+      updateValidationStatus(index, 'schemaorg', 'Not run');
     }
   }
   
@@ -2754,6 +2832,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         
         // Update table row immediately
         updateTableRow(i, result);
+        
+        // Auto-run Schema.org validator if enabled and status is "Not run"
+        const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+        const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+        
+        if (shouldAutoRun) {
+          const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${i}`);
+          if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+            await runSchemaOrgValidator(i, urlData.url);
+          }
+        }
         
         // Small delay to allow UI to update
         await new Promise(resolve => setTimeout(resolve, 100));
