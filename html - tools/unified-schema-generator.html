@@ -1391,14 +1391,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     Object.keys(idx).forEach(t => {
       if (!CORE_REQUIRED[t]) return; // only check types we know
       const required = CORE_REQUIRED[t];
-      // Check EACH node individually - if ANY node is missing a required field, flag it
+      // Group nodes by @id to detect duplicates
+      const nodesByKey = {};
       idx[t].forEach((n, nodeIndex) => {
+        // Use @id as key, or fallback to a hash of key properties
+        const key = n['@id'] || JSON.stringify([n['@type'], n.url, n.name]).slice(0, 100);
+        if (!nodesByKey[key]) nodesByKey[key] = [];
+        nodesByKey[key].push({ node: n, index: nodeIndex });
+      });
+      
+      // Check each unique node (by @id/key) - only flag if ALL instances of that unique node are missing the field
+      Object.keys(nodesByKey).forEach(key => {
+        const instances = nodesByKey[key];
+        const firstNode = instances[0].node;
+        
         required.forEach(req => {
-          if (!n.hasOwnProperty(req) || !n[req]) {
+          // Check if this specific node (by key) has the field
+          if (!firstNode.hasOwnProperty(req) || !firstNode[req]) {
             // Only add message if we haven't already flagged this type+field combination
-            const alreadyFlagged = messages.some(m => m.type === t && m.field === req);
+            const alreadyFlagged = messages.some(m => m.type === t && m.field === req && m.key === key);
             if (!alreadyFlagged) {
-              messages.push({ type: t, field: req, nodeIndex });
+              messages.push({ 
+                type: t, 
+                field: req, 
+                nodeIndex: instances[0].index,
+                key: key,
+                instances: instances.length,
+                hasId: !!firstNode['@id']
+              });
             }
           }
         });
@@ -2292,30 +2312,57 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       const jsonLdBlocks = [];
       let detectedTypes = [];
-      scripts.forEach(script => {
+      const blockInfo = []; // Track which blocks have which types
+      scripts.forEach((script, scriptIndex) => {
         try {
           const json = JSON.parse(script.textContent);
           jsonLdBlocks.push(json);
+          const blockTypes = [];
+          
           // Extract types from this block
           if (json['@type']) {
-            if (Array.isArray(json['@type'])) detectedTypes.push(...json['@type']);
-            else detectedTypes.push(json['@type']);
+            const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
+            detectedTypes.push(...types);
+            blockTypes.push(...types);
           }
           if (json['@graph']) {
             json['@graph'].forEach(item => {
               if (item['@type']) {
-                if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
-                else detectedTypes.push(item['@type']);
+                const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+                detectedTypes.push(...types);
+                blockTypes.push(...types);
               }
+            });
+          }
+          
+          // Track block info for duplicate detection
+          if (blockTypes.length > 0) {
+            blockInfo.push({
+              index: scriptIndex,
+              types: blockTypes,
+              hasId: !!json['@id'] || !!(json['@graph'] && json['@graph'].some(n => n['@id'])),
+              isGraph: !!json['@graph']
             });
           }
         } catch (e) {
           console.warn('Failed to parse JSON-LD:', e);
-          debugLog(`Failed to parse JSON-LD block: ${e.message}`, 'error');
+          debugLog(`Failed to parse JSON-LD block ${scriptIndex}: ${e.message}`, 'error');
         }
       });
       
-      debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? detectedTypes.join(', ') : 'None'}`, detectedTypes.length > 0 ? 'success' : 'warn');
+      // Detect duplicate types across blocks
+      const typeCounts = {};
+      detectedTypes.forEach(t => {
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      });
+      const duplicates = Object.keys(typeCounts).filter(t => typeCounts[t] > 1);
+      
+      if (duplicates.length > 0) {
+        debugLog(`⚠️ Duplicate schema types detected: ${duplicates.map(t => `${t} (${typeCounts[t]}x)`).join(', ')}`, 'warn');
+        debugLog(`Block details: ${blockInfo.map(b => `Block ${b.index}: ${b.types.join(',')}${b.hasId ? ' (has @id)' : ''}${b.isGraph ? ' (@graph)' : ''}`).join('; ')}`, 'info');
+      }
+      
+      debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? [...new Set(detectedTypes)].join(', ') : 'None'} (${detectedTypes.length} total, ${[...new Set(detectedTypes)].length} unique)`, detectedTypes.length > 0 ? 'success' : 'warn');
       
       if (schemaTypeCell) {
         const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
@@ -2623,12 +2670,50 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const missingMessages = [];
       missingDetails.forEach(m => {
         const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
+        const nodeInfo = m.hasId ? ` (with @id: ${m.key.includes('#') ? m.key.split('#')[1] : 'root'})` : '';
+        const duplicateInfo = m.instances > 1 ? ` [${m.instances} duplicate instances]` : '';
         if (elsewhere) {
-          missingMessages.push(`${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
+          missingMessages.push(`${m.type}: "${m.field}" missing${nodeInfo}${duplicateInfo}. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
         } else {
-          missingMessages.push(`${m.type}: "${m.field}" missing (add this property to the ${m.type} node).`);
+          missingMessages.push(`${m.type}: "${m.field}" missing${nodeInfo}${duplicateInfo} (add this property to the ${m.type} node).`);
         }
       });
+      
+      // Detect and log duplicates
+      const duplicateGroups = {};
+      allNodes.forEach((n, idx) => {
+        const types = asArray(n['@type']);
+        types.forEach(t => {
+          if (!duplicateGroups[t]) duplicateGroups[t] = [];
+          const key = n['@id'] || JSON.stringify([n['@type'], n.url, n.name]).slice(0, 100);
+          duplicateGroups[t].push({ index: idx, key, hasId: !!n['@id'], node: n });
+        });
+      });
+      
+      const duplicateWarnings = [];
+      Object.keys(duplicateGroups).forEach(t => {
+        const nodes = duplicateGroups[t];
+        const keyCounts = {};
+        nodes.forEach(n => {
+          keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
+        });
+        Object.keys(keyCounts).forEach(key => {
+          if (keyCounts[key] > 1) {
+            const keyName = key.includes('#') ? key.split('#')[1] : 'root';
+            duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicates)'}`);
+          }
+        });
+      });
+      
+      if (duplicateWarnings.length > 0) {
+        debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
+        // Add duplicate warnings to missingMessages for display
+        duplicateWarnings.forEach(w => {
+          missingMessages.push(`⚠️ DUPLICATE: ${w}`);
+        });
+      }
+      
+      debugLog(`Total schema nodes: ${allNodes.length}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
       
       // Store detailed messages in result
       result.missingFieldsDetails = missingMessages;
