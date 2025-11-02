@@ -679,7 +679,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.3.0</span>
+    <span class="version">v1.3.1</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1201,6 +1201,216 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     return null;
   }
+  
+  // ---------- Enhanced Schema Builder ----------
+  const asArray = v => Array.isArray(v) ? v : (v ? [v] : []);
+  const uniq = arr => [...new Set(arr)];
+  function firstNonEmpty(...vals){ for(const v of vals){ if(typeof v==='string' && v.trim()) return v.trim(); } return ''; }
+  
+  function pageMeta(doc, url){
+    const get = s => doc.querySelector(s)?.getAttribute('content') || '';
+    return {
+      url,
+      title: doc.querySelector('h1')?.textContent?.trim() || doc.title || '',
+      ogTitle: get('meta[property="og:title"]'),
+      ogDesc: get('meta[property="og:description"]'),
+      ogImage: get('meta[property="og:image"]'),
+      logo: get('meta[itemprop="logo"]') || get('meta[property="og:logo"]') || '',
+      siteName: get('meta[property="og:site_name"]')
+    };
+  }
+  
+  function ensureId(node, baseUrl, suffix){
+    if (!node['@id']) node['@id'] = baseUrl.replace(/#.*$/,'') + '#' + suffix;
+    return node;
+  }
+  
+  function dedupeById(nodes){
+    const map = new Map();
+    nodes.forEach(n=>{
+      const key = n['@id'] || JSON.stringify([n['@type'], n.name, n.url]);
+      if (!map.has(key)) map.set(key, n);
+    });
+    return [...map.values()];
+  }
+  
+  function prettyScript(json){
+    return `<script type="application/ld+json">\n${JSON.stringify(json, null, 2)}\n</script>`;
+  }
+  
+  function buildBreadcrumbs(doc, url){
+    // 1) Try semantic breadcrumbs in DOM
+    let items = [];
+    const nav = doc.querySelector('nav[aria-label="breadcrumb"], .breadcrumbs, ol.breadcrumb, ul.breadcrumb');
+    if (nav){
+      const links = nav.querySelectorAll('a, [itemprop="item"]');
+      let pos=1;
+      links.forEach(a=>{
+        const href = a.getAttribute('href') || a.getAttribute('content') || '';
+        const name = a.textContent?.trim() || a.getAttribute('title') || '';
+        if (name) items.push({ "@type":"ListItem", position: pos++, name, item: href.startsWith('http') ? href : new URL(href, url).href });
+      });
+    }
+    // 2) Fallback to URL path
+    if (!items.length){
+      const u = new URL(url);
+      const segs = u.pathname.split('/').filter(Boolean);
+      let path=u.origin, pos=1;
+      items.push({ "@type":"ListItem", position: pos++, name: "Home", item: u.origin });
+      for(const s of segs){
+        path += '/' + s;
+        items.push({ "@type":"ListItem", position: pos++, name: decodeURIComponent(s.replace(/-/g,' ')).replace(/\b\w/g,m=>m.toUpperCase()), item: path });
+      }
+    }
+    return {
+      "@type":"BreadcrumbList",
+      "@id": url.replace(/#.*$/,'') + "#breadcrumbs",
+      "itemListElement": items
+    };
+  }
+  
+  async function generateEnhancedFor(url){
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      const data = await res.json();
+      const html = data.contents;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Collect existing JSON-LD
+      const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+      let nodes = [];
+      scripts.forEach(s => {
+        try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
+      });
+      const typesPresent = uniq(nodes.flatMap(n => asArray(n['@type'])));
+      
+      const meta = pageMeta(doc, url);
+      
+      // Seed core nodes (use existing if there, else minimal scaffold)
+      const idx = indexByType(nodes);
+      let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
+      let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
+      let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : (idx.Organization && idx.Organization[0] ? JSON.parse(JSON.stringify(idx.Organization[0])) : null);
+      
+      // Fill obvious gaps
+      const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
+      website.name = siteName || website.name;
+      website.url  = website.url || meta.url;
+      
+      org.name = org.name || siteName || "Alan Ranger Photography";
+      org.url  = org.url  || meta.url;
+      if (!org.logo && meta.logo) org.logo = meta.logo;
+      if (!org.image && meta.ogImage) org.image = meta.ogImage;
+      
+      if (local){
+        local.name = local.name || org.name || siteName;
+        local.url  = local.url || meta.url;
+        if (!local.image && meta.ogImage) local.image = meta.ogImage;
+        if (!local['@type']) local['@type'] = 'LocalBusiness';
+      }
+      
+      // Ensure stable @id
+      website = ensureId(website, url, 'website');
+      org     = ensureId(org,     url, 'org');
+      if (local) local = ensureId(local, url, 'local');
+      
+      // Always add BreadcrumbList (built from DOM or path)
+      const breadcrumbs = buildBreadcrumbs(doc, url);
+      
+      // Keep any Product / Event if present
+      const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
+      const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+      
+      // Merge graph
+      const graph = dedupeById([
+        website,
+        org,
+        ...(local ? [local] : []),
+        breadcrumbs,
+        ...extras
+      ]);
+      
+      // Final JSON-LD
+      return { "@context":"https://schema.org", "@graph": graph };
+    } catch (error) {
+      // Fallback: try direct fetch
+      try {
+        const res = await fetch(url, {mode:'cors'});
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Collect existing JSON-LD
+        const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+        let nodes = [];
+        scripts.forEach(s => {
+          try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
+        });
+        
+        const meta = pageMeta(doc, url);
+        
+        // Seed core nodes
+        const idx = indexByType(nodes);
+        let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
+        let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
+        let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : null;
+        
+        const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
+        website.name = siteName || website.name;
+        website.url  = website.url || meta.url;
+        
+        org.name = org.name || siteName || "Alan Ranger Photography";
+        org.url  = org.url  || meta.url;
+        
+        if (local){
+          local.name = local.name || org.name || siteName;
+          local.url  = local.url || meta.url;
+        }
+        
+        website = ensureId(website, url, 'website');
+        org     = ensureId(org,     url, 'org');
+        if (local) local = ensureId(local, url, 'local');
+        
+        const breadcrumbs = buildBreadcrumbs(doc, url);
+        const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
+        const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+        
+        const graph = dedupeById([
+          website,
+          org,
+          ...(local ? [local] : []),
+          breadcrumbs,
+          ...extras
+        ]);
+        
+        return { "@context":"https://schema.org", "@graph": graph };
+      } catch (err) {
+        throw new Error(`Failed to fetch page: ${err.message}`);
+      }
+    }
+  }
+  
+  // Modal plumbing
+  (function initGenModal(){
+    const backdrop = document.getElementById('genBackdrop');
+    const closeBtn = document.getElementById('genCloseBtn');
+    const copyBtn  = document.getElementById('genCopyBtn');
+    if (closeBtn) closeBtn.onclick = ()=> backdrop.style.display='none';
+    if (backdrop) backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.style.display='none'; };
+    if (copyBtn) copyBtn.onclick = ()=>{
+      const txt = document.getElementById('genJson').textContent;
+      navigator.clipboard.writeText(txt);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(()=> copyBtn.textContent='Copy to Clipboard', 1200);
+    };
+    window.__openGenModal = (url, json)=>{
+      document.getElementById('genMeta').textContent = url;
+      document.getElementById('genJson').textContent = prettyScript(json);
+      backdrop.style.display='flex';
+    };
+  })();
   
   // Copy to clipboard
   function copyToClipboard(outputId) {
@@ -2162,7 +2372,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${existingNotes}</textarea>
       </td>
       <td style="white-space: normal; min-width: 250px;">
-        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${index})">Generate Enhanced</button><br>` : ''}
+        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" id="genBtn_${index}">Generate Enhanced</button><br>` : ''}
         <div style="margin-top: 0.5rem;">
           <button class="enhance-btn secondary" onclick="window.open('${schemaOrgUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
           <button class="enhance-btn secondary" onclick="window.open('${googleUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
@@ -2461,6 +2671,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 </script>
 
+  </div>
+
+  <!-- Generated Schema Modal -->
+  <div id="genBackdrop" class="issues-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+    <div class="issues-modal" style="width:min(880px,94vw)">
+      <h3 id="genTitle">Generated Enhanced Schema</h3>
+      <div class="issues-meta" id="genMeta"></div>
+      <pre id="genJson" class="issues-json" style="max-height:48vh"></pre>
+      <div class="issues-actions">
+        <button class="secondary" id="genCopyBtn">Copy to Clipboard</button>
+        <button class="primary" id="genCloseBtn">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- Issues Modal -->
