@@ -33,21 +33,75 @@ Build a **single HTML tool** that can:
 
 ### 🔧 UI/Logic
 
-- [ ] Create a dropdown to choose between “Event” or “Product” mode
-- [ ] Show different input fields based on selected mode
-- [ ] Parse either event or product CSV based on context
-- [ ] Generate correct structured data output
-- [ ] Add a button to copy output to clipboard
+- [x] Create a dropdown to choose between "Event" or "Product" mode
+- [x] Show different input fields based on selected mode
+- [x] Parse either event or product CSV based on context
+- [x] Generate correct structured data output
+- [x] Add a button to copy output to clipboard
 
 ---
 
 ### 🌍 SEO Validator Integration
 
-- [ ] Add input field for a live URL (optional)
-- [ ] Use API or form submission to test that URL with:
-  - [ ] [Schema.org Validator](https://validator.schema.org)
-  - [ ] [Google Rich Results Test](https://search.google.com/test/rich-results)
-- [ ] Display test result summary or link to full results
+- [x] Add input field for a live URL (optional)
+- [x] Use API or form submission to test that URL with:
+  - [x] [Schema.org Validator](https://validator.schema.org)
+  - [x] [Google Rich Results Test](https://search.google.com/test/rich-results)
+- [x] Display test result summary or link to full results
+
+---
+
+### 📊 Bulk Schema Validator
+
+- [x] Create `csv-schema-validator.js` module
+- [x] Parse uploaded CSV (Column: `URL`, `Link`, or `Website`)
+- [x] For each URL:
+  - [x] Use Puppeteer/fetch to get HTML
+  - [x] Extract all `<script type="application/ld+json">` blocks
+  - [x] Determine schema `@type` (e.g. Event, Product, etc.)
+  - [x] Log missing required and recommended fields per schema type
+  - [x] Return summary: `Valid`, `Missing`, `Warnings`, etc.
+- [x] Generate validator links for Schema.org and Google Rich Results
+- [x] Output results as JSON or readable text summary
+- [x] Add documentation to README.md
+
+---
+
+### 📊 Bulk Schema Validator
+
+- [x] Create `csv-schema-validator.js` module
+- [x] Parse uploaded CSV (Column: `URL`, `Link`, or `Website`)
+- [x] For each URL:
+  - [x] Use Puppeteer/fetch to get HTML
+  - [x] Extract all `<script type="application/ld+json">` blocks
+  - [x] Determine schema `@type` (e.g. Event, Product, etc.)
+  - [x] Log missing required and recommended fields per schema type
+  - [x] Return summary: `Valid`, `Missing`, `Warnings`, etc.
+- [x] Generate validator links for Schema.org and Google Rich Results
+- [x] Output results as JSON or readable text summary
+- [x] Add documentation to README.md
+
+---
+
+### 🔧 Schema Enhancement Agent
+
+- [x] Create `schema-enhancer.js` module
+- [x] Accept validation results JSON file as input
+- [x] Identify schema types from validation results
+- [x] Generate enhanced JSON-LD with missing fields filled
+- [x] Add placeholders for fields requiring manual input
+- [x] Infer values from page URL when possible
+- [x] Support export in JSON format
+- [x] Support export as HTML script tags (ready for Squarespace)
+- [x] Track what fields were added/modified
+- [x] Support single URL enhancement (fetches fresh data)
+- [x] Create Supabase schema design document (optional)
+- [x] Add documentation to README.md
+
+**Limitations:**
+- Cannot automatically infer all field values (requires manual review)
+- Placeholders must be replaced with actual data before deployment
+- Supabase integration not yet implemented (schema design provided)
 
 ---
 
@@ -56,6 +110,10 @@ Build a **single HTML tool** that can:
 - [ ] Add CSV pre-cleaning checks: invalid rows, missing `Product ID`, etc.
 - [ ] Show warning if CSV has invalid/missing fields
 - [ ] Allow user to preview JSON-LD block in a collapsible box
+- [ ] Add HTML UI for bulk validator (browser-based CSV upload)
+- [ ] Add progress bar for bulk validation
+- [ ] Support for Microdata validation
+- [ ] Export validation results to CSV/Excel
 
 ---
 

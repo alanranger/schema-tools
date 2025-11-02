@@ -1,0 +1,26 @@
+{
+  "name": "schema-validator-agent",
+  "version": "1.0.0",
+  "description": "Automated schema validator for testing URLs against Schema.org and Google Rich Results Test",
+  "main": "scripts/schema-validator.js",
+  "scripts": {
+    "validate": "node scripts/schema-validator.js",
+    "validate-csv": "node scripts/csv-schema-validator.js",
+    "enhance": "node scripts/schema-enhancer.js",
+    "test": "node scripts/schema-validator.js"
+  },
+  "keywords": [
+    "schema",
+    "validation",
+    "seo",
+    "schema.org",
+    "google-rich-results"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.5.0",
+    "commander": "^11.1.0"
+  }
+}
+

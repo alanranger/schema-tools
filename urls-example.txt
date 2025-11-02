@@ -1,0 +1,12 @@
+# Example URLs file for batch validation
+# Lines starting with # are ignored
+# One URL per line
+
+# Product pages
+https://www.alanranger.com/shop/product-example-1
+https://www.alanranger.com/shop/product-example-2
+
+# Event pages
+https://www.alanranger.com/workshops/event-example-1
+https://www.alanranger.com/workshops/event-example-2
+

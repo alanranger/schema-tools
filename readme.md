@@ -28,6 +28,25 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Provides detailed validation reports with errors and warnings.
 - See `schema-validator-README.md` for full documentation.
 
+### 5. `csv-schema-validator.js` (Bulk Schema Validator)
+- Accepts CSV files with URLs for bulk validation.
+- For each URL, checks:
+  - Whether schema markup exists
+  - Schema types present (Product, Event, etc.)
+  - Missing required and recommended fields
+  - Overall validity status
+- Generates validator links for Schema.org and Google Rich Results Test.
+- Outputs readable JSON or text summary with pass/fail/warnings.
+- See "Bulk Schema Validation" section below for usage.
+
+### 6. `schema-enhancer.js` (Schema Enhancement Agent)
+- Takes validation results and generates enhanced schema blocks.
+- Automatically fills missing required and recommended fields.
+- Provides placeholders for fields that need manual input.
+- Supports export in JSON or HTML script tag format.
+- Can enhance schemas from validation results or fetch fresh from pages.
+- See "Schema Enhancement" section below for usage.
+
 ## Input Files
 
 - CSV exports from Squarespace (Products & Services panel).
@@ -67,6 +86,8 @@ schema-tools/
 
 After deploying schema to your Squarespace pages, use the Schema Validator Agent to automatically test:
 
+### Single URL Validation
+
 ```bash
 # Install dependencies (first time only)
 npm install
@@ -74,13 +95,135 @@ npm install
 # Validate a single URL
 node scripts/schema-validator.js https://www.alanranger.com/shop/product-name
 
-# Validate multiple URLs
+# Validate multiple URLs from text file
 node scripts/schema-validator.js --batch urls.txt --json --output results.json
+```
+
+### Bulk CSV Validation
+
+Validate multiple URLs from a CSV file:
+
+```bash
+# CSV file must have a column named: URL, Link, or Website
+node scripts/csv-schema-validator.js urls.csv
+
+# Save results to JSON file
+node scripts/csv-schema-validator.js urls.csv --output results.json
+
+# Output as JSON
+node scripts/csv-schema-validator.js urls.csv --json
+
+# Skip validator checks (faster, just analyzes schema markup)
+node scripts/csv-schema-validator.js urls.csv --skip-validators
+```
+
+**CSV Format Example:**
+```csv
+URL,Product Name,Category
+https://www.example.com/product-1,Product One,Workshops
+https://www.example.com/product-2,Product Two,Gear
+```
+
+The bulk validator checks:
+- ✅ Schema markup presence
+- ✅ Schema types (Product, Event, etc.)
+- ✅ Missing required fields
+- ✅ Missing recommended fields
+- ✅ Generates validator links for manual testing
+
+**Output Format:**
+```json
+[
+  {
+    "url": "https://www.example.com/product-123",
+    "schemaType": "Product",
+    "valid": true,
+    "missingFields": [],
+    "warnings": ["Missing recommended field: brand"],
+    "validatorLinks": {
+      "schema": "https://validator.schema.org/#url=...",
+      "google": "https://search.google.com/test/rich-results?url=..."
+    }
+  }
+]
 ```
 
 The validator automatically tests against:
 - https://validator.schema.org
 - https://search.google.com/test/rich-results
+
+### Schema Enhancement
+
+After validation, use the Schema Enhancement Agent to generate improved schema blocks with missing fields filled:
+
+```bash
+# Enhance schemas from validation results
+node scripts/schema-enhancer.js validation-results.json
+
+# Save enhanced schemas to file
+node scripts/schema-enhancer.js validation-results.json --output enhanced-schemas.json
+
+# Export as HTML script tags (ready to paste into Squarespace)
+node scripts/schema-enhancer.js validation-results.json --format html --output enhanced.html
+
+# Enhance a single URL (fetches fresh data from page)
+node scripts/schema-enhancer.js --single-url https://www.alanranger.com/shop/product-name
+
+# Fetch fresh data from pages instead of using validation results
+node scripts/schema-enhancer.js validation-results.json --use-page-data
+```
+
+**Complete Workflow:**
+
+```bash
+# Step 1: Validate URLs
+node scripts/csv-schema-validator.js urls.csv --output validation-results.json
+
+# Step 2: Enhance schemas based on validation results
+node scripts/schema-enhancer.js validation-results.json --format html --output enhanced-schemas.html
+
+# Step 3: Review enhanced schemas and replace placeholders
+# Step 4: Copy HTML script tags and paste into Squarespace pages
+```
+
+**Enhancement Features:**
+- ✅ Fills missing required fields with placeholders or inferred values
+- ✅ Adds recommended fields where defaults exist (e.g., Event organizer, Product brand)
+- ✅ Infers values from page URL when possible
+- ✅ Preserves existing schema structure
+- ✅ Tracks what fields were added
+- ✅ Outputs ready-to-use HTML script tags
+
+**Output Example:**
+```json
+[
+  {
+    "url": "https://www.example.com/product",
+    "timestamp": "2024-01-15T10:30:00.000Z",
+    "enhancedSchemas": [
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "[REPLACE WITH PRODUCT NAME]",
+        "url": "https://www.example.com/product",
+        "brand": {
+          "@type": "Brand",
+          "name": "[REPLACE WITH BRAND NAME]"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "[REPLACE WITH PRICE]",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.example.com/product"
+        }
+      }
+    ],
+    "addedFields": ["brand", "offers", "description"],
+    "notes": []
+  }
+]
+```
 
 ## Notes
 
