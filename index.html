@@ -913,9 +913,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <input type="text" id="singleUrlInput" placeholder="https://www.example.com/page-with-schema" aria-label="Single URL to validate">
       <button onclick="runSingleUrlValidation()" style="margin-top: 0.75rem;">Run Validation</button>
       <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">This will process the URL and display validation results in the table below. Use the validator buttons in the table to open external validators.</p>
-      <label style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
-        <input type="checkbox" id="autoRunExternalChecks" checked style="width: auto; margin: 0;" onchange="saveAutoRunPreference()">
-        <span>Auto-run external checks</span>
+      <label style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+        <input type="checkbox" id="autoSaveToSupabase" style="width: auto; margin: 0;" onchange="saveAutoSavePreference()">
+        <span>Auto-save to Supabase</span>
       </label>
     </div>
 
@@ -1237,6 +1237,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     // Load auto-run preference
     loadAutoRunPreference();
+    // Load auto-save preference
+    loadAutoSavePreference();
   });
   
   // Remove duplicate switchTab definition - it's already at the top
@@ -3031,6 +3033,23 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
         updateValidationNotes(index, notesEl.value);
       }
+    }
+  }
+  
+  // Save auto-save preference to localStorage
+  function saveAutoSavePreference() {
+    const checkbox = document.getElementById('autoSaveToSupabase');
+    if (checkbox) {
+      localStorage.setItem('validator.autoSave', checkbox.checked ? '1' : '0');
+    }
+  }
+  
+  // Load auto-save preference from localStorage
+  function loadAutoSavePreference() {
+    const checkbox = document.getElementById('autoSaveToSupabase');
+    if (checkbox) {
+      const stored = localStorage.getItem('validator.autoSave');
+      checkbox.checked = stored === '1'; // Default to false if not set
     }
   }
   
