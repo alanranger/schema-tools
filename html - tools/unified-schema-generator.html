@@ -1063,6 +1063,87 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+  // Debug Console Logging Functions - MUST be first
+  function debugLog(message, type = 'info') {
+    const consoleContent = document.getElementById('debugConsoleContent');
+    if (!consoleContent) return;
+    
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = `debug-log-entry ${type}`;
+    
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'debug-log-time';
+    timeSpan.textContent = `[${time}]`;
+    
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+    
+    entry.appendChild(timeSpan);
+    entry.appendChild(messageSpan);
+    consoleContent.appendChild(entry);
+    
+    // Auto-scroll to bottom
+    consoleContent.scrollTop = consoleContent.scrollHeight;
+    
+    // Keep max 100 entries to prevent memory issues
+    const entries = consoleContent.querySelectorAll('.debug-log-entry');
+    if (entries.length > 100) {
+      entries[0].remove();
+    }
+  }
+  
+  function clearDebugConsole() {
+    const consoleContent = document.getElementById('debugConsoleContent');
+    if (consoleContent) {
+      consoleContent.innerHTML = '<div class="debug-log-entry success"><span class="debug-log-time"></span>Debug console cleared.</div>';
+    }
+  }
+  
+  function copyDebugConsole() {
+    const consoleContent = document.getElementById('debugConsoleContent');
+    if (!consoleContent) return;
+    
+    const entries = consoleContent.querySelectorAll('.debug-log-entry');
+    const logs = Array.from(entries).map(entry => {
+      const time = entry.querySelector('.debug-log-time')?.textContent || '';
+      const message = entry.textContent.replace(time, '').trim();
+      return `${time} ${message}`;
+    }).join('\n');
+    
+    navigator.clipboard.writeText(logs).then(() => {
+      debugLog('✅ Logs copied to clipboard!', 'success');
+      setTimeout(() => {
+        const lastEntry = consoleContent.querySelector('.debug-log-entry:last-child');
+        if (lastEntry && lastEntry.textContent.includes('copied to clipboard')) {
+          lastEntry.remove();
+        }
+      }, 2000);
+    }).catch(err => {
+      debugLog('❌ Failed to copy logs: ' + err.message, 'error');
+    });
+  }
+  
+  // Override console methods to also log to debug console
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  
+  console.log = function(...args) {
+    originalConsoleLog.apply(console, args);
+    debugLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'info');
+  };
+  
+  console.error = function(...args) {
+    originalConsoleError.apply(console, args);
+    debugLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'error');
+  };
+  
+  console.warn = function(...args) {
+    originalConsoleWarn.apply(console, args);
+    debugLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'warn');
+  };
+
   // Tab switching - MUST be first to work even if other code fails
   window.switchTab = function(mode) {
     debugLog(`switchTab called with mode: ${mode}`, 'info');
