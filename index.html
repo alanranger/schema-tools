@@ -764,7 +764,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.9</span>
+    <span class="version">v1.4.10</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2602,7 +2602,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     try {
       const pageData = await fetchPageSchema(urlData.url, urlData.row);
+      debugLog(`Fetched page data for ${urlData.url}: found ${pageData.jsonLd.length} JSON-LD blocks, schemaType: ${pageData.schemaType}`, 'info');
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
+      debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
       
       // Enhanced missing fields analysis
       let allNodes = [];
@@ -2707,9 +2709,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         statusText = '✅ Valid';
         statusHtml = '<span class="chip-ok">✅ Valid</span>';
       }
-    } else {
-      statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
-    }
+      } else {
+        statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
+      }
+      
+      // Debug log for status determination
+      debugLog(`Status determination for ${result.url}: missingFieldsDetails=${result.missingFieldsDetails?.length || 0}, valid=${result.valid}, schemaFound=${result.schemaFound}, statusClass=${statusClass}`, 'info');
     
     // Store first JSON-LD block if available
     if (result.schemas && result.schemas.length > 0 && result.schemas[0].schema) {
