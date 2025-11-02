@@ -1391,13 +1391,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     Object.keys(idx).forEach(t => {
       if (!CORE_REQUIRED[t]) return; // only check types we know
       const required = CORE_REQUIRED[t];
-      // If there are multiple nodes of this type, union their keys
-      const keys = new Set();
-      idx[t].forEach(n => Object.keys(n).forEach(k => keys.add(k)));
-      required.forEach(req => {
-        if (!keys.has(req)) {
-          messages.push({ type: t, field: req });
-        }
+      // Check EACH node individually - if ANY node is missing a required field, flag it
+      idx[t].forEach((n, nodeIndex) => {
+        required.forEach(req => {
+          if (!n.hasOwnProperty(req) || !n[req]) {
+            // Only add message if we haven't already flagged this type+field combination
+            const alreadyFlagged = messages.some(m => m.type === t && m.field === req);
+            if (!alreadyFlagged) {
+              messages.push({ type: t, field: req, nodeIndex });
+            }
+          }
+        });
       });
     });
     return messages;
