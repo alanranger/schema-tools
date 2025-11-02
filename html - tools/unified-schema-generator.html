@@ -830,7 +830,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
               <th>Schema Type</th>
               <th>Status</th>
               <th>Missing Fields</th>
-              <th>Google Status</th>
+              <th>Rich Results Status</th>
               <th>Schema.org Status</th>
               <th>Notes</th>
               <th>Actions</th>
@@ -2036,7 +2036,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${index})">Generate Enhanced</button><br>` : ''}
         <div style="margin-top: 0.5rem;">
           <button class="enhance-btn secondary" onclick="window.open('${schemaOrgUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
-          <button class="enhance-btn secondary" onclick="window.open('${googleUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Google</button>
+          <button class="enhance-btn secondary" onclick="window.open('${googleUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
         </div>
         ${supabaseAvailable ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>` : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>'}
       </td>
@@ -2346,7 +2346,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       </details>
       <div class="issues-actions">
         <button class="secondary" id="issuesSchemaOrgBtn">Open Schema.org</button>
-        <button class="secondary" id="issuesGoogleBtn">Open Google</button>
+        <button class="secondary" id="issuesGoogleBtn">Open Rich Results</button>
         <button class="primary" id="issuesCloseBtn">Close</button>
       </div>
     </div>
