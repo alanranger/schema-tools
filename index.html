@@ -3374,6 +3374,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           }
         }
         
+        // Auto-save to Supabase if enabled (for CSV batch)
+        const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
+        const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
+        if (shouldAutoSave && supabaseAvailable && supabase) {
+          // Wait a moment for external validators to complete, then save
+          setTimeout(async () => {
+            try {
+              await saveToSupabase(i, true); // silent mode for auto-save
+              debugLog(`Auto-saved to Supabase: ${urlData.url}`, 'success');
+            } catch (error) {
+              debugLog(`Auto-save failed for ${urlData.url}: ${error.message}`, 'error');
+              // Don't show alert for auto-save failures, just log
+            }
+          }, 2000); // 2 second delay to allow external validators to complete
+        }
+        
         // Small delay to allow UI to update
         await new Promise(resolve => setTimeout(resolve, 100));
       }
