@@ -2325,6 +2325,94 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     });
   }
 
+  // Server fallback: Fetch JSON-LD via server when client-side fails
+  async function fetchPageSchemaServer(url) {
+    try {
+      // Determine API base URL
+      let apiBaseUrl;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        apiBaseUrl = 'http://localhost:3000';
+      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
+        apiBaseUrl = 'https://schema-tools-six.vercel.app';
+      } else {
+        apiBaseUrl = window.location.origin;
+      }
+      
+      const apiUrl = `${apiBaseUrl}/api/fetch-jsonld?url=${encodeURIComponent(url)}`;
+      debugLog(`Calling server fallback API: ${apiUrl}`, 'info');
+      
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Server API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        throw new Error(data.error || 'Server API error');
+      }
+      
+      debugLog(`Server fallback: found ${data.count} JSON-LD blocks`, data.count > 0 ? 'success' : 'warn');
+      
+      // Process scripts to extract types and detect duplicates
+      const allNodes = [];
+      const typeMap = new Map(); // type -> @id -> count
+      
+      data.scripts.forEach(block => {
+        try {
+          const nodes = flattenJsonLd(block, []);
+          nodes.forEach(node => {
+            allNodes.push(node);
+            const types = asArray(node['@type']);
+            types.forEach(type => {
+              const idKey = node['@id'] || 'NO_ID';
+              const mapKey = `${type}|${idKey}`;
+              typeMap.set(mapKey, (typeMap.get(mapKey) || 0) + 1);
+            });
+          });
+        } catch (e) {
+          debugLog(`Error processing server block: ${e.message}`, 'warn');
+        }
+      });
+      
+      // Extract unique types
+      const uniqueTypes = new Set();
+      allNodes.forEach(node => {
+        const types = asArray(node['@type']);
+        types.forEach(t => uniqueTypes.add(t));
+      });
+      
+      // Detect duplicates (excluding global injections)
+      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
+      const duplicateWarnings = [];
+      
+      typeMap.forEach((count, mapKey) => {
+        if (count > 1) {
+          const [type, idKey] = mapKey.split('|');
+          const isGlobal = idKey !== 'NO_ID' && globalPatterns.some(p => idKey.includes(p));
+          if (!isGlobal) {
+            const idLabel = idKey === 'NO_ID' ? 'NO_ID' : `#${idKey.split('#')[1]}`;
+            duplicateWarnings.push(`⚠️ DUPLICATE: ${type} (${idLabel}) × ${count}`);
+          }
+        }
+      });
+      
+      return {
+        url,
+        jsonLd: data.scripts,
+        schemaFound: data.count > 0,
+        schemaType: Array.from(uniqueTypes).join(', '),
+        serverFallback: true,
+        duplicateWarnings: duplicateWarnings,
+        blockCount: data.count
+      };
+      
+    } catch (error) {
+      debugLog(`Server fallback failed: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
   // Fetch page and extract JSON-LD
   async function fetchPageSchema(url, progressIndex) {
     const schemaTypeCell = progressIndex !== undefined ? document.getElementById(`schemaTypeCell_${progressIndex}`) : null;
@@ -2941,7 +3029,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       if (schemaTypeCell) {
-        const types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
+        let types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
+        // Remove server badge if already present (it's added during processing)
+        types = types.replace(/\s*\(server\)\s*$/, '');
+        // Add server badge back if this was a server fallback
+        if (localParse?.serverFallback) {
+          types = types + ' (server)';
+        }
         schemaTypeCell.textContent = types;
       }
       
@@ -2979,7 +3073,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       if (schemaTypeCell) {
-        const types = localParse?.schemaType || localParse?.types?.join(', ') || 'None';
+        let types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
+        // Remove server badge if already present (it's added during processing)
+        types = types.replace(/\s*\(server\)\s*$/, '');
+        // Add server badge back if this was a server fallback
+        if (localParse?.serverFallback) {
+          types = types + ' (server)';
+        }
         schemaTypeCell.textContent = types;
       }
     } else {
