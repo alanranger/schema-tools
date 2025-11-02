@@ -133,12 +133,20 @@ export default async function handler(req, res) {
       errors.push('No structured data found on page');
     }
 
-    // Return response
+    // Return response with debug info
     return res.status(200).json({
       status,
       errors: errors.slice(0, 10), // Limit to 10 errors
       warnings: warnings.slice(0, 10), // Limit to 10 warnings
-      cached: false
+      cached: false,
+      // Include debug info to help diagnose parsing issues
+      _debug: {
+        errorCount,
+        warningCount,
+        itemCount,
+        summaryPatternMatched: !!summaryMatch,
+        htmlSnippet: html.substring(0, 1000) // First 1000 chars for debugging
+      }
     });
 
   } catch (error) {
