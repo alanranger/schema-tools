@@ -2311,8 +2311,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           }
         } catch (e) {
           console.warn('Failed to parse JSON-LD:', e);
+          debugLog(`Failed to parse JSON-LD block: ${e.message}`, 'error');
         }
       });
+      
+      debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? detectedTypes.join(', ') : 'None'}`, detectedTypes.length > 0 ? 'success' : 'warn');
       
       if (schemaTypeCell) {
         const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
@@ -2610,6 +2613,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       });
       
       const missingDetails = computeMissingFields(allNodes);
+      debugLog(`Computed missing fields: ${missingDetails.length} issue(s) found`, missingDetails.length > 0 ? 'warn' : 'success');
+      if (missingDetails.length > 0) {
+        debugLog(`Missing fields details: ${JSON.stringify(missingDetails)}`, 'warn');
+      }
+      
       const missingMessages = [];
       missingDetails.forEach(m => {
         const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
@@ -2623,6 +2631,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Store detailed messages in result
       result.missingFieldsDetails = missingMessages;
       result.missingFieldsBadges = missingDetails;
+      
+      debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
       
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
@@ -2672,6 +2682,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusClass = 'error';
       statusText = '❌ Error';
       statusHtml = '<span class="chip-issues" title="View details">⛔ Error</span>';
+    } else if (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) {
+      // Prioritize missingFieldsDetails - if it has items, show Issues
+      statusClass = 'issues';
+      statusText = '⚠️ Issues';
+      statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
     } else if (result.valid) {
       statusClass = 'valid';
       statusText = '✅ Valid';
