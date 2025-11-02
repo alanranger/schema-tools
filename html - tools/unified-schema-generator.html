@@ -1006,8 +1006,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       initSupabase();
     }
   });
-  // Tab switching
-  function switchTab(mode) {
+  
+  // Tab switching - ensure it's available globally
+  window.switchTab = function(mode) {
+    console.log('switchTab called with mode:', mode);
     // Reset all active tabs and contents
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => {
@@ -1033,9 +1035,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       if (content) {
         content.classList.add('active');
         content.style.display = 'block';
+        console.log('Tab activated:', config.contentId);
+      } else {
+        console.error('Tab content not found:', config.contentId);
       }
+    } else {
+      console.error('Unknown tab mode:', mode);
     }
-  }
+  };
   
   // Progress bar helpers
   function renderProgress(cell) {
