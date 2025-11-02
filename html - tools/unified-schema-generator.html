@@ -706,7 +706,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.0</span>
+    <span class="version">v1.4.1</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2530,19 +2530,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     try {
       // Determine API base URL (use deployed Vercel URL or local dev)
-      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'
-        : 'https://schema-tools-8j4szcplh-info-alanrangercs-projects.vercel.app';
+      // Use stable production URL if available, otherwise detect from current hostname
+      let apiBaseUrl;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        apiBaseUrl = 'http://localhost:3000';
+      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
+        apiBaseUrl = 'https://schema-tools-six.vercel.app';
+      } else {
+        // Fallback: use current origin
+        apiBaseUrl = window.location.origin;
+      }
       
       const apiUrl = `${apiBaseUrl}/api/validator/schemaorg?url=${encodeURIComponent(url)}`;
       
+      console.log('Calling Schema.org API:', apiUrl);
+      
       const response = await fetch(apiUrl);
       
+      console.log('Schema.org API response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+        const errorText = await response.text();
+        console.error('Schema.org API error response:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
       }
       
       const data = await response.json();
+      
+      console.log('Schema.org API response:', data);
       
       // Map API status to dropdown value
       let dropdownValue = 'Not run';
@@ -2578,10 +2593,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
     } catch (error) {
       console.error('Schema.org validator API error:', error);
+      console.error('Error stack:', error.stack);
       // On error, leave as "Not run" and add tooltip
       statusSelect.value = 'Not run';
-      statusSelect.title = 'API unreachable';
+      statusSelect.title = 'API unreachable: ' + error.message;
       updateValidationStatus(index, 'schemaorg', 'Not run');
+      
+      // Add error note to Notes cell
+      const notesEl = document.getElementById(`notes_${index}`);
+      if (notesEl) {
+        const currentNotes = notesEl.value || '';
+        const notePrefix = currentNotes.includes('Schema.org:') ? '' : 'Schema.org: ';
+        const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
+        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+        updateValidationNotes(index, notesEl.value);
+      }
     }
   }
   
@@ -2596,11 +2622,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     try {
       // Determine API base URL (use deployed Vercel URL or local dev)
-      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'
-        : 'https://schema-tools-8j4szcplh-info-alanrangercs-projects.vercel.app';
+      // Use stable production URL if available, otherwise detect from current hostname
+      let apiBaseUrl;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        apiBaseUrl = 'http://localhost:3000';
+      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
+        apiBaseUrl = 'https://schema-tools-six.vercel.app';
+      } else {
+        // Fallback: use current origin
+        apiBaseUrl = window.location.origin;
+      }
       
       const apiUrl = `${apiBaseUrl}/api/validator/richresults`;
+      
+      console.log('Calling Rich Results API:', apiUrl, 'for URL:', url);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -2610,11 +2645,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         body: JSON.stringify({ url: url })
       });
       
+      console.log('Rich Results API response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+        const errorText = await response.text();
+        console.error('Rich Results API error response:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
       }
       
       const data = await response.json();
+      
+      console.log('Rich Results API response:', data);
       
       if (!data.ok) {
         // Handle error response
@@ -2682,16 +2723,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
     } catch (error) {
       console.error('Rich Results validator API error:', error);
+      console.error('Error stack:', error.stack);
       // On error, leave as "Not run" and add tooltip
       statusSelect.value = 'Not run';
-      statusSelect.title = 'API error';
+      statusSelect.title = 'API error: ' + error.message;
       updateValidationStatus(index, 'google', 'Not run');
       
       // Add error note to Notes cell
       const notesEl = document.getElementById(`notes_${index}`);
       if (notesEl) {
         const currentNotes = notesEl.value || '';
-        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + 'Rich Results: API error';
+        const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
+        const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
+        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
         updateValidationNotes(index, notesEl.value);
       }
     }
