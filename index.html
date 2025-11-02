@@ -1501,6 +1501,25 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       });
       const typesPresent = uniq(nodes.flatMap(n => asArray(n['@type'])));
       
+      // Detect which global schema types already exist (by @id pattern matching global injections)
+      const baseUrl = url.replace(/#.*$/,'');
+      const existingIds = new Set();
+      nodes.forEach(n => {
+        if (n['@id']) existingIds.add(n['@id']);
+      });
+      
+      // Check for global injection patterns (common @id patterns from header/footer injections)
+      const hasGlobalWebsite = existingIds.has(baseUrl + '#website') || 
+                               nodes.some(n => n['@type'] === 'WebSite' && n['@id'] && n['@id'].includes('#website'));
+      const hasGlobalOrg = existingIds.has(baseUrl + '#org') ||
+                          nodes.some(n => {
+                            const types = asArray(n['@type']);
+                            return (types.includes('Organization') || types.includes('LocalBusiness')) && 
+                                   n['@id'] && n['@id'].includes('#org');
+                          });
+      const hasGlobalLocal = existingIds.has(baseUrl + '#local') ||
+                            nodes.some(n => n['@type'] === 'LocalBusiness' && n['@id'] && n['@id'].includes('#local'));
+      
       const meta = pageMeta(doc, url);
       
       // Seed core nodes (use existing if there, else minimal scaffold)
@@ -1526,29 +1545,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         if (!local['@type']) local['@type'] = 'LocalBusiness';
       }
       
-      // Ensure stable @id
-      website = ensureId(website, url, 'website');
-      org     = ensureId(org,     url, 'org');
-      if (local) local = ensureId(local, url, 'local');
+      // Ensure stable @id (only if we're going to include them)
+      if (!hasGlobalWebsite) website = ensureId(website, url, 'website');
+      if (!hasGlobalOrg) org = ensureId(org, url, 'org');
+      if (local && !hasGlobalLocal) local = ensureId(local, url, 'local');
       
-      // Always add BreadcrumbList (built from DOM or path)
+      // Always add BreadcrumbList (built from DOM or path) - page-specific
       const breadcrumbs = buildBreadcrumbs(doc, url);
       
-      // Keep any Product / Event if present
+      // Keep any Product / Event if present (page-specific types)
       const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
       const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
       
-      // Merge graph
-      const graph = dedupeById([
-        website,
-        org,
-        ...(local ? [local] : []),
-        breadcrumbs,
-        ...extras
-      ]);
+      // Build graph - only include global types if they don't already exist globally
+      const graph = [];
+      
+      // Add WebSite only if not already in global injections
+      if (!hasGlobalWebsite) {
+        graph.push(website);
+      }
+      
+      // Add Organization only if not already in global injections
+      if (!hasGlobalOrg) {
+        graph.push(org);
+      }
+      
+      // Add LocalBusiness only if not already in global injections AND if it exists
+      if (local && !hasGlobalLocal) {
+        graph.push(local);
+      }
+      
+      // Always add breadcrumbs (page-specific)
+      if (breadcrumbs.itemListElement && breadcrumbs.itemListElement.length > 0) {
+        graph.push(breadcrumbs);
+      }
+      
+      // Always add page-specific types
+      graph.push(...extras);
+      
+      // Deduplicate by @id
+      const finalGraph = dedupeById(graph);
       
       // Final JSON-LD
-      return { "@context":"https://schema.org", "@graph": graph };
+      return { "@context":"https://schema.org", "@graph": finalGraph };
     } catch (error) {
       // Fallback: try direct fetch
       try {
