@@ -103,25 +103,36 @@ The `unified-schema-generator.html` tool provides three tabs in one interface:
 - Copy to clipboard for Squarespace deployment
 
 ### Schema Validator Tab (NEW!)
-- Upload CSV file with page URLs
-- Automatically validates each URL:
-  - Checks for schema markup presence
-  - Identifies schema types (Product, Event, etc.)
-  - Detects missing required and recommended fields
-  - Shows validation status (✅ Valid / ⚠️ Issues / ❌ No Schema)
-- Generate enhanced schemas with missing fields filled
-- Download enhanced schemas as JSON files
-- Works entirely in browser (no server required)
+- **Single URL Validation**: Quick validation for individual pages
+  - Enter a URL and click "Run Validation"
+  - Opens both Schema.org and Google Rich Results validators in new tabs
+  - Perfect for quick checks before deploying schema
+  
+- **Batch CSV Validation**: Validate multiple URLs at once
+  - Upload CSV file with page URLs
+  - Automatically validates each URL:
+    - Checks for schema markup presence
+    - Identifies schema types (Product, Event, etc.)
+    - Detects missing required and recommended fields
+    - Shows validation status (✅ Valid / ⚠️ Issues / ❌ No Schema)
+  - Generate enhanced schemas with missing fields filled
+  - Download enhanced schemas as JSON and HTML files
+  - Works entirely in browser (no server required)
 
 **Usage:**
 1. Open `unified-schema-generator.html` in your browser
 2. Switch to the "Schema Validator" tab
-3. Click "Download Template CSV" to get a sample CSV file with the correct format
-4. Fill in your URLs in the CSV file
-5. Upload the CSV file
-6. Click "Validate URLs" to start processing
-7. Review results in the table
-8. Click "Generate Enhanced" button for any URL to download improved schema (JSON and HTML formats)
+3. **For single URL validation:**
+   - Enter a URL in the "Validate a Single URL" field
+   - Click "Run Validation" to open both validators in new tabs
+4. **For batch validation:**
+   - Click "Download Template CSV" to get a sample CSV file with the correct format
+   - Fill in your URLs in the CSV file
+   - Upload the CSV file
+   - Click "Validate URLs" to start processing
+   - Review results in the table
+   - Click "Generate Enhanced" button for any URL to download improved schema (JSON and HTML formats)
+   - Use "Schema.org" and "Google" buttons in the Actions column to manually validate specific URLs
 
 **CSV Format for Validator:**
 ```csv
@@ -131,12 +142,15 @@ https://www.example.com/product-2,Product Two,Products
 ```
 
 **Features (v1.2.1):**
-- ✅ Real-time progress indicator during validation
+- ✅ Single URL validation with one-click access to both validators
+- ✅ Real-time progress indicator during batch validation
 - ✅ Template CSV download for easy setup
 - ✅ Enhanced schema generation with multiple schema support (@graph structure)
 - ✅ Downloads both JSON and HTML script tag formats
-- ✅ Improved table UI with status badges
+- ✅ Improved table UI with status badges and validator links
 - ✅ Better error handling and processing status display
+- ✅ Collapsible help section explaining validators
+- ✅ Validator links in results table for quick manual validation
 
 ## Schema Validation
 
