@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     let warningCount = 0;
     let itemCount = 0;
     
-    // Try the combined pattern first
+    // Try the combined pattern first (most common: "0 ERRORS 0 WARNINGS 5 ITEMS")
     const summaryMatch = html.match(/(\d+)\s+ERRORS?\s+(\d+)\s+WARNINGS?\s+(\d+)\s+ITEMS?/i);
     
     if (summaryMatch) {
@@ -74,14 +74,27 @@ export default async function handler(req, res) {
       warningCount = parseInt(summaryMatch[2], 10);
       itemCount = parseInt(summaryMatch[3], 10);
     } else {
-      // Fallback: try to find individual counts
-      const errorMatch = html.match(/(\d+)\s+ERRORS?/i);
-      const warningMatch = html.match(/(\d+)\s+WARNINGS?/i);
-      const itemMatch = html.match(/(\d+)\s+ITEMS?/i);
+      // Fallback: try to find individual counts (they might be in separate HTML elements)
+      // Look for patterns like "0 ERRORS" anywhere in the HTML, not just together
+      const errorMatches = html.match(/(\d+)\s+ERRORS?/gi);
+      const warningMatches = html.match(/(\d+)\s+WARNINGS?/gi);
+      const itemMatches = html.match(/(\d+)\s+ITEMS?/gi);
       
-      if (errorMatch) errorCount = parseInt(errorMatch[1], 10);
-      if (warningMatch) warningCount = parseInt(warningMatch[1], 10);
-      if (itemMatch) itemCount = parseInt(itemMatch[1], 10);
+      // Extract the first number from each match (they should all be the same number)
+      if (errorMatches && errorMatches.length > 0) {
+        const firstErrorMatch = errorMatches[0].match(/(\d+)/);
+        if (firstErrorMatch) errorCount = parseInt(firstErrorMatch[1], 10);
+      }
+      
+      if (warningMatches && warningMatches.length > 0) {
+        const firstWarningMatch = warningMatches[0].match(/(\d+)/);
+        if (firstWarningMatch) warningCount = parseInt(firstWarningMatch[1], 10);
+      }
+      
+      if (itemMatches && itemMatches.length > 0) {
+        const firstItemMatch = itemMatches[0].match(/(\d+)/);
+        if (firstItemMatch) itemCount = parseInt(firstItemMatch[1], 10);
+      }
     }
     
     // Determine status based on actual counts
@@ -138,15 +151,8 @@ export default async function handler(req, res) {
       status,
       errors: errors.slice(0, 10), // Limit to 10 errors
       warnings: warnings.slice(0, 10), // Limit to 10 warnings
-      cached: false,
-      // Include debug info to help diagnose parsing issues
-      _debug: {
-        errorCount,
-        warningCount,
-        itemCount,
-        summaryPatternMatched: !!summaryMatch,
-        htmlSnippet: html.substring(0, 1000) // First 1000 chars for debugging
-      }
+      cached: false
+      // Debug info removed for cleaner response - check Vercel logs if needed
     });
 
   } catch (error) {
