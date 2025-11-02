@@ -679,7 +679,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.3.1</span>
+    <span class="version">v1.3.2</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -839,6 +839,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <input type="file" id="validatorCsvFile" accept=".csv" aria-label="Validator CSV file upload" onchange="onFileUpload()">
       <button onclick="startValidation()">Validate URLs</button>
       <button onclick="downloadTemplateCSV()" class="secondary" style="margin-left: 0.5rem;">Download Template CSV</button>
+      <button id="exportAllBtn" onclick="exportAllEnhanced()" class="secondary" style="margin-left: 0.5rem;" disabled>Export All Enhanced</button>
+      <button id="saveAllBtn" onclick="saveAllToSupabase()" class="secondary" style="margin-left: 0.5rem;" disabled>Save All to Supabase</button>
 
     <div id="validatorProgress" style="display:none; margin-top: 1.5rem;">
       <div class="progress-bar">
@@ -2624,10 +2626,179 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       progressText.textContent = `Completed: ${validationResults.length} URLs processed`;
       progressBar.style.width = '100%';
       
+      // Enable bulk action buttons
+      updateBulkButtons();
+      
     } catch (error) {
       alert('Error: ' + error.message);
       progressDiv.style.display = 'none';
       console.error('Validation error:', error);
+    }
+  }
+  
+  // Update bulk action buttons state
+  function updateBulkButtons() {
+    const exportBtn = document.getElementById('exportAllBtn');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    
+    const hasResults = validationResults && validationResults.length > 0;
+    
+    if (exportBtn) {
+      exportBtn.disabled = !hasResults;
+    }
+    
+    if (saveAllBtn) {
+      saveAllBtn.disabled = !hasResults || !supabaseAvailable;
+    }
+  }
+  
+  // Export all enhanced schemas
+  async function exportAllEnhanced() {
+    const exportBtn = document.getElementById('exportAllBtn');
+    if (!exportBtn || exportBtn.disabled) return;
+    
+    if (!validationResults || validationResults.length === 0) {
+      alert('No validation results to export');
+      return;
+    }
+    
+    exportBtn.disabled = true;
+    exportBtn.textContent = 'Generating...';
+    
+    try {
+      const pages = [];
+      const processedUrls = new Set();
+      
+      for (const result of validationResults) {
+        if (!result.url || processedUrls.has(result.url)) continue;
+        processedUrls.add(result.url);
+        
+        try {
+          const json = await generateEnhancedFor(result.url);
+          pages.push({
+            url: result.url,
+            json: json
+          });
+        } catch (error) {
+          console.warn(`Failed to generate enhanced schema for ${result.url}:`, error);
+          // Continue with other URLs
+        }
+      }
+      
+      const payload = {
+        createdAt: new Date().toISOString(),
+        pages: pages
+      };
+      
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      a.download = `enhanced-schema-batch-${timestamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast(`✅ Exported ${pages.length} enhanced schemas`);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Error exporting enhanced schemas: ' + error.message);
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = 'Export All Enhanced';
+    }
+  }
+  
+  // Save all results to Supabase
+  async function saveAllToSupabase() {
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    if (!saveAllBtn || saveAllBtn.disabled) return;
+    
+    if (!supabaseAvailable || !supabase) {
+      showToast('Supabase client not initialized. Please refresh the page.', true);
+      return;
+    }
+    
+    if (!validationResults || validationResults.length === 0) {
+      alert('No validation results to save');
+      return;
+    }
+    
+    saveAllBtn.disabled = true;
+    saveAllBtn.textContent = 'Saving...';
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    try {
+      for (let i = 0; i < validationResults.length; i++) {
+        const result = validationResults[i];
+        if (!result || !result.url) continue;
+        
+        try {
+          // Get current status values from DOM
+          const googleStatusEl = document.getElementById(`googleStatus_${i}`);
+          const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${i}`);
+          const notesEl = document.getElementById(`notes_${i}`);
+          
+          const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || '🚫 Skipped';
+          const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || '🚫 Skipped';
+          const notes = notesEl ? notesEl.value : result.notes || '';
+          
+          // Prepare schema JSON
+          let schemaJsonRaw = null;
+          if (result.schemas && result.schemas.length > 0) {
+            if (result.schemas.length === 1) {
+              schemaJsonRaw = result.schemas[0].schema;
+            } else {
+              schemaJsonRaw = {
+                '@context': 'https://schema.org',
+                '@graph': result.schemas.map(s => s.schema)
+              };
+            }
+          }
+          
+          // Insert into Supabase
+          const { data, error } = await supabase
+            .from('schema_audit_logs')
+            .insert({
+              url: result.url,
+              timestamp: new Date().toISOString(),
+              validator_google_status: googleStatus,
+              validator_schemaorg_status: schemaOrgStatus,
+              schema_type_detected: result.schemaType || null,
+              schema_json_raw: schemaJsonRaw,
+              schema_notes: notes || null
+            });
+          
+          if (error) {
+            throw error;
+          }
+          
+          successCount++;
+          
+        } catch (error) {
+          console.error(`Failed to save ${result.url}:`, error);
+          errorCount++;
+          // Continue with other rows
+        }
+      }
+      
+      if (successCount > 0) {
+        showToast(`✅ Saved ${successCount} result${successCount !== 1 ? 's' : ''} to Supabase${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+      } else {
+        showToast(`❌ Failed to save results: ${errorCount} error${errorCount !== 1 ? 's' : ''}`, true);
+      }
+      
+    } catch (error) {
+      console.error('Save all error:', error);
+      showToast('Error saving results: ' + error.message, true);
+    } finally {
+      saveAllBtn.disabled = false;
+      saveAllBtn.textContent = 'Save All to Supabase';
     }
   }
 
