@@ -1275,21 +1275,42 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
     list.innerHTML = '';
     let missing = [];
+    
+    // Check multiple sources for missing fields
     try {
+      // First priority: detailed messages from dataset
       if (rowData.tr && rowData.tr.dataset.missingDetail) {
         missing = JSON.parse(rowData.tr.dataset.missingDetail);
-      } else if (rowData.missingFields) {
-        missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
+      } 
+      // Second priority: missingFields array from result
+      else if (rowData.missingFields) {
+        if (Array.isArray(rowData.missingFields)) {
+          missing = rowData.missingFields;
+        } else if (typeof rowData.missingFields === 'string') {
+          missing = rowData.missingFields.split(',').map(s => s.trim()).filter(Boolean);
+        }
       }
-    } catch(_) {}
+      // Third priority: check if there are badges but no details
+      else if (rowData.tr && rowData.tr.dataset.missingBadges) {
+        const badges = JSON.parse(rowData.tr.dataset.missingBadges);
+        if (badges && badges.length > 0) {
+          missing = badges.map(b => `${b.type}: "${b.field}" missing`);
+        }
+      }
+    } catch(e) {
+      debugLog('Error parsing missing fields: ' + e.message, 'error');
+    }
+    
     if (missing.length === 0) {
       const li = document.createElement('li');
-      li.textContent = 'No missing required fields detected.';
+      li.textContent = '✅ No missing required fields detected.';
+      li.style.color = '#48bb78';
+      li.style.fontWeight = '600';
       list.appendChild(li);
     } else {
       missing.forEach(f => {
         const li = document.createElement('li');
-        li.textContent = f;
+        li.textContent = typeof f === 'string' ? f : (f.message || `${f.type}: ${f.field}`);
         list.appendChild(li);
       });
     }
@@ -2596,12 +2617,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusHtml = '<span class="chip-ok">✅ Valid</span>';
     } else if (result.schemaFound) {
       // Check if we have missing fields badges or missing fields
-      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
+      // Use the detailed badges first, then fallback to missingFields array
+      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
+                               (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
         statusClass = 'issues';
         statusText = '⚠️ Issues';
         statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
       } else {
+        // No missing fields = valid
         statusClass = 'valid';
         statusText = '✅ Valid';
         statusHtml = '<span class="chip-ok">✅ Valid</span>';
