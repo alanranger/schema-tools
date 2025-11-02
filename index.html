@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Schema Generator - Events & Products</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      padding: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      max-width: 95vw;
+      width: 100%;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      position: relative;
+    }
+    .version-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .version-badge .version {
+      display: block;
+      font-size: 1rem;
+    }
+    .version-badge .date {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.9;
+      margin-top: 0.25rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: #2d3748;
+      padding-right: 150px;
+      font-weight: 700;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .tab {
+      padding: 0.875rem 1.75rem;
+      background: #f7fafc;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.3s ease;
+      color: #4a5568;
+      border-bottom: 3px solid transparent;
+    }
+    .tab:hover {
+      background: #edf2f7;
+      color: #2d3748;
+    }
+    .tab.active {
+      background: white;
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: 600;
+    }
+    .tab-content {
+      display: none !important;
+      padding: 20px;
+      border-top: none;
+    }
+    .tab-content.active {
+      display: block !important;
+    }
+    .tab-content h2 {
+      color: #2d3748;
+      font-size: 1.75rem;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+    }
+    .tab-content h3 {
+      color: #4a5568;
+      font-size: 1.25rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    .tab-content p {
+      color: #4a5568;
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    .tab-content ul {
+      color: #4a5568;
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+    .tab-content li {
+      margin-bottom: 0.5rem;
+    }
+    .tab-content code {
+      background: #f7fafc;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #667eea;
+    }
+    .instructions {
+      background: linear-gradient(135deg, #f6f8fb 0%, #edeff2 100%);
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      color: #4a5568;
+    }
+    .instructions h2 {
+      color: #2d3748;
+      font-size: 1.75rem;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+    }
+    .instructions h3 {
+      color: #4a5568;
+      font-size: 1.25rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    .instructions p {
+      color: #4a5568;
+      margin-bottom: 1rem;
+    }
+    .instructions ul {
+      color: #4a5568;
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+    .instructions li {
+      margin-bottom: 0.5rem;
+    }
+    .instructions strong {
+      display: block;
+      margin-bottom: 0.75rem;
+      color: #2d3748;
+      font-size: 1.1rem;
+    }
+    /* Ensure Tab Guide is hidden by default and only shows when active */
+    #guideTab.tab-content {
+      display: none !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+    }
+    #guideTab.tab-content.active {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+    }
+    #guideTab .instructions {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    .instructions pre {
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    input[type="file"], select {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.2s;
+      background: white;
+    }
+    input[type="file"]:hover, select:hover {
+      border-color: #667eea;
+    }
+    input[type="file"]:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.875rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+      margin-left: 0.5rem;
+    }
+    button.secondary:hover {
+      box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+    }
+    textarea {
+      width: 100%;
+      height: 400px;
+      margin-top: 1rem;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+      padding: 1.25rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.2s;
+      background: #fafbfc;
+      line-height: 1.6;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: white;
+    }
+    pre {
+      background: #fafbfc;
+      padding: 1.25rem;
+      overflow-x: auto;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      line-height: 1.6;
+    }
+    #categoryFilterContainer {
+      margin-top: 1rem;
+    }
+    .test-url-section {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid #e2e8f0;
+    }
+    .test-url-section input {
+      width: 100%;
+      max-width: 600px;
+      padding: 0.75rem 1rem;
+      margin-right: 0.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .test-url-section input:hover {
+      border-color: #667eea;
+    }
+    .test-url-section input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .test-url-section .button-group {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .warning {
+      color: #e53e3e;
+      font-weight: 600;
+    }
+    label {
+      display: block;
+      margin-top: 1.5rem;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 0.95rem;
+    }
+    h3 {
+      color: #2d3748;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    h4 {
+      color: #4a5568;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      background: white;
+      border-radius: 8px;
+      overflow: visible;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      table-layout: auto;
+    }
+    .results-table th {
+      background: #f7fafc;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #2d3748;
+      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .results-table th:nth-child(1) { min-width: 250px; } /* Page URL */
+    .results-table th:nth-child(2) { min-width: 200px; } /* Schema Type */
+    .results-table th:nth-child(3) { min-width: 120px; } /* Status */
+    .results-table th:nth-child(4) { min-width: 180px; } /* Missing Fields */
+    .results-table th:nth-child(5) { min-width: 180px; } /* Rich Results Status (external) */
+    .results-table th:nth-child(6) { min-width: 180px; } /* Schema.org Status (external) */
+    .results-table th:nth-child(7) { min-width: 200px; } /* Notes */
+    .results-table th:nth-child(8) { min-width: 280px; } /* Actions */
+    .status-badge.no-schema {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    .status-select {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      min-width: 120px;
+    }
+    .status-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+    .notes-textarea {
+      width: 100%;
+      min-width: 180px;
+      max-width: 220px;
+      min-height: 60px;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .notes-textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+    .save-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      margin: 0.25rem 0;
+      background: #48bb78;
+      color: white;
+    }
+    .save-btn:hover {
+      background: #38a169;
+    }
+    .save-btn:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 1.5rem;
+      background: #48bb78;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.error {
+      background: #e53e3e;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    .results-table td {
+      padding: 0.75rem 1rem;
+      vertical-align: top;
+    }
+    .results-table td:nth-child(1) { 
+      white-space: normal; 
+      word-break: break-all;
+      min-width: 250px;
+      max-width: 350px;
+    } /* Page URL */
+    .results-table td:nth-child(2) { 
+      white-space: normal; 
+      min-width: 200px;
+      max-width: 300px;
+    } /* Schema Type */
+    .results-table td:nth-child(3) { 
+      white-space: nowrap; 
+      min-width: 120px;
+    } /* Status */
+    .results-table td.missing-fields {
+      white-space: normal;
+      min-width: 180px;
+      max-width: 250px;
+    }
+    .results-table td:last-child {
+      white-space: normal;
+      min-width: 280px;
+      width: auto;
+    }
+    .results-table td:last-child .enhance-btn,
+    .results-table td:last-child .save-btn {
+      display: inline-block;
+      white-space: nowrap;
+      margin: 0.25rem 0;
+    }
+    .results-table tr:hover {
+      background: #f9fafb;
+    }
+    .status-valid {
+      color: #38a169;
+      font-weight: 600;
+    }
+    .status-invalid {
+      color: #e53e3e;
+      font-weight: 600;
+    }
+    .status-processing {
+      color: #667eea;
+      font-weight: 600;
+    }
+    .enhance-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      margin: 0.25rem 0;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+    }
+    .missing-fields {
+      font-size: 0.875rem;
+      color: #e53e3e;
+    }
+    .scrollable-container {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #fafbfc;
+    }
+    .url-link {
+      color: #667eea;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .url-link:hover {
+      text-decoration: underline;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .status-badge.valid {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    .status-badge.issues {
+      background: #feebc8;
+      color: #744210;
+    }
+    .status-badge.error {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+    .status-badge.no-schema {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    .single-url-section {
+      background: #f7fafc;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      border: 2px solid #e2e8f0;
+    }
+    .single-url-section label {
+      margin-top: 0;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    .single-url-section input {
+      width: 100%;
+      max-width: 600px;
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .help-block {
+      background: #f0f7ff;
+      border-left: 4px solid #667eea;
+      padding: 1rem 1.5rem;
+      margin-top: 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .help-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+    .help-block-content {
+      display: none;
+      margin-top: 1rem;
+      color: #4a5568;
+      line-height: 1.7;
+    }
+    .help-block-content.active {
+      display: block;
+    }
+    .help-block-icon {
+      transition: transform 0.3s ease;
+    }
+    .help-block.expanded .help-block-icon {
+      transform: rotate(180deg);
+    }
+    .batch-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e2e8f0;
+    }
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .progress {
+      width: 160px;
+      height: 8px;
+      background: #eee;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c4dff, #4fc3f7);
+      transition: width 0.25s ease;
+    }
+    .progress-label {
+      font-size: 0.85rem;
+      color: #555;
+      min-width: 72px;
+    }
+    /* Issues Modal */
+    .issues-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 20, 33, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .issues-modal {
+      width: min(760px, 94vw);
+      max-height: 80vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+      padding: 1.25rem 1.5rem;
+    }
+    .issues-modal h3 {
+      margin: 0.2rem 0 0.8rem 0;
+      font-size: 1.15rem;
+    }
+    .issues-meta {
+      font-size: 0.9rem;
+      color: #555;
+      margin: 0.5rem 0 1rem;
+    }
+    .issues-list {
+      margin: 0.25rem 0 0.75rem 1rem;
+    }
+    .issues-list li {
+      margin: 0.2rem 0;
+    }
+    .issues-json {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 0.75rem;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.82rem;
+    }
+    .issues-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    .chip-issues {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fde68a;
+      color: #92400e;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      border: 1px solid #f59e0b;
+    }
+    .chip-issues:hover {
+      filter: brightness(0.98);
+    }
+    .chip-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #22c55e;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.5rem;
+      background: #fff3cd;
+      color: #7a5b00;
+      border: 1px solid #ffe08a;
+      margin: 0.1rem 0.15rem;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="version-badge">
+    <span class="version">v1.4.0</span>
+    <span class="date">2025-11-02</span>
+  </div>
+  <h1>Unified Schema Generator - Events & Products</h1>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('event')">Event Schema</button>
+    <button class="tab" onclick="switchTab('product')">Product Schema</button>
+    <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
+    <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
+  </div>
+
+  <!-- Event Tab Content -->
+  <div id="eventTab" class="tab-content active">
+    <div class="instructions">
+      <strong>📅 Event Schema Generator</strong><br>
+      1. Upload your event CSV file (exported from Squarespace Events).<br>
+      2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>End_Date</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>.<br>
+      3. Select a category filter (or "All Categories") to generate schema for specific event types.<br>
+      4. Click <b>Generate Event Schema</b> to create valid JSON-LD blocks.<br><br>
+      
+      ✅ This tool works entirely offline in your browser.<br>
+      ✅ Only includes structured data compliant with Google Rich Results.<br>
+      ✅ Only published events with future start dates are included automatically.<br>
+      ✅ Schema includes organizer, performer, location with parsed address.<br><br>
+
+      <strong>📄 Data Workflow Summary:</strong><br>
+      <pre>
+Step 1: Export events from Squarespace → events_export.csv
+     ↓
+Step 2: Verify CSV contains all required fields
+     ↓
+Step 3: Upload CSV and select category filter
+     ↓
+Step 4: Generate JSON-LD schema blocks
+     ↓
+Step 5: Paste schema into Squarespace event page (see instructions below)
+      </pre>
+
+      <strong>📌 Squarespace Instructions:</strong><br>
+      • Open your event page in Squarespace.<br>
+      • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
+      • OR insert a <b>Code Block</b> onto the event page.<br>
+      • <b>Paste the entire generated schema block</b> (includes both ItemList and Event schemas).<br>
+      • The schema will include all events matching your selected category filter.<br>
+      • <span class="warning">⚠️ Best Practice:</span> Paste the schema on a main events listing page (e.g., "All Workshops" or category archive page) rather than individual event pages.<br>
+      • For individual event pages, you can generate schema for a single category containing just that event.<br>
+      • Always validate your schema after deployment using the test URL tools below.
+    </div>
+
+    <label for="eventCsvFile">Upload Event CSV File:</label>
+    <input type="file" id="eventCsvFile" accept=".csv" aria-label="Event CSV file upload">
+    
+    <div id="eventCategoryFilterContainer" style="display:none;">
+      <p>Select category to generate schema for:</p>
+      <select id="eventCategoryFilter" aria-label="Event category filter"></select>
+      <button onclick="generateEventSchema()">Generate Event Schema</button>
+    </div>
+
+    <h3>Generated JSON-LD Schema:</h3>
+    <pre id="eventOutput"></pre>
+    <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
+
+    <div class="test-url-section">
+      <h4>Test Generated Schema:</h4>
+      <p>Paste a URL containing your schema to validate it:</p>
+      <label for="eventTestUrl">Test URL:</label>
+      <input type="text" id="eventTestUrl" placeholder="https://example.com/page-with-schema" aria-label="Event test URL">
+      <div class="button-group">
+        <button onclick="testSchemaOrg('eventTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('eventTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Tab Content -->
+  <div id="productTab" class="tab-content">
+    <div class="instructions">
+      <strong>🛠 Product Schema Generator</strong><br>
+      1. Upload your product CSV/XLSX file (e.g. <code>products_with_review_data_final.xlsx</code>).<br>
+      2. Ensure it includes these fields: <code>name</code>, <code>description</code>, <code>image</code>, <code>url</code>, <code>price</code>, <code>review_count</code>, <code>average_rating</code>, <code>reviews</code>.<br>
+      3. Reviews rated below 4★ are ignored automatically.<br>
+      4. Products without valid reviews will NOT include an <code>aggregateRating</code> or <code>review</code> block.<br>
+      5. Click <b>Generate Schema</b> to create a valid JSON-LD block per product.<br><br>
+
+      ✅ This tool works entirely offline in your browser.<br>
+      ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
+
+      <strong>📄 Data Workflow Summary:</strong><br>
+      <pre>
+Step 1: Export from Squarespace → products_Nov-02_11-15-24AM.csv
+     ↓
+Step 2: Clean + filter → products_Jul-21_01-43-36PM cleaned.xlsx
+     ↓
+Step 3: Add reviews (OCR or manual) → products_with_review_data_final.xlsx
+     ↓
+Step 4: Final JSON-LD export → alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+     ↓
+Step 5: Paste ONLY relevant schema into Squarespace product page
+      </pre>
+
+      <strong>📌 Squarespace Instructions:</strong><br>
+      • Open your product page in Squarespace.<br>
+      • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
+      • OR insert a <b>Code Block</b> onto the product page.<br>
+      • <b>Paste only the schema for that specific product.</b><br>
+      • <span class="warning">⚠️ Do NOT paste all schemas into every product page.</span><br>
+      • One schema block per product, on its matching product page only.
+    </div>
+
+    <label for="productCsvFile">Upload Product CSV/XLSX File:</label>
+    <input type="file" id="productCsvFile" accept=".csv,.xlsx" aria-label="Product CSV/XLSX file upload">
+    <button onclick="generateProductSchema()">Generate Product Schema</button>
+
+    <h3>Generated JSON-LD Schema:</h3>
+    <textarea id="productOutput" readonly></textarea>
+    <button onclick="copyToClipboard('productOutput')">Copy to Clipboard</button>
+
+    <div class="test-url-section">
+      <h4>Test Generated Schema:</h4>
+      <p>Paste a URL containing your schema to validate it:</p>
+      <label for="productTestUrl">Test URL:</label>
+      <input type="text" id="productTestUrl" placeholder="https://example.com/page-with-schema" aria-label="Product test URL">
+      <div class="button-group">
+        <button onclick="testSchemaOrg('productTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('productTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schema Validator Tab Content -->
+  <div id="validatorTab" class="tab-content">
+    <div class="instructions">
+      <strong>🔍 Schema Validator</strong><br><button class='secondary' style='float:right;margin-top:-0.25rem' onclick='switchTab("guide")'>Open Tab Guide →</button>
+      Validate schema markup on your pages using industry-standard validators. Choose single URL validation or batch processing from CSV.<br><br>
+      
+      ✅ Works entirely in your browser (no server required).<br>
+      ✅ Validates Product, Event, Organization, and other schema types.<br>
+      ✅ Identifies missing fields and provides enhancement suggestions.<br><br>
+      
+      <strong>⚠️ Note:</strong> Cross-origin restrictions may prevent fetching some URLs. Use URLs from the same domain or enable CORS if testing locally.
+    </div>
+
+    <!-- Single URL Validator Section -->
+    <div class="single-url-section">
+      <label for="singleUrlInput">Validate a Single URL:</label>
+      <input type="text" id="singleUrlInput" placeholder="https://www.example.com/page-with-schema" aria-label="Single URL to validate">
+      <button onclick="runSingleUrlValidation()" style="margin-top: 0.75rem;">Run Validation</button>
+      <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">This will process the URL and display validation results in the table below. Use the validator buttons in the table to open external validators.</p>
+      <label style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+        <input type="checkbox" id="autoRunExternalChecks" checked style="width: auto; margin: 0;" onchange="saveAutoRunPreference()">
+        <span>Auto-run external checks</span>
+      </label>
+    </div>
+
+    <!-- Batch CSV Validator Section -->
+    <div class="batch-section">
+      <label for="validatorCsvFile" style="margin-top: 0;">Upload CSV File with URLs:</label>
+      <p style="margin-top: 0.5rem; margin-bottom: 1rem; color: #4a5568; font-size: 0.95rem; font-style: italic;">
+        Use this to batch validate multiple URLs from your site for schema health.
+      </p>
+      <input type="file" id="validatorCsvFile" accept=".csv" aria-label="Validator CSV file upload" onchange="onFileUpload()">
+      <button onclick="startValidation()">Validate URLs</button>
+      <button onclick="downloadTemplateCSV()" class="secondary" style="margin-left: 0.5rem;">Download Template CSV</button>
+      <button id="exportAllBtn" onclick="exportAllEnhanced()" class="secondary" style="margin-left: 0.5rem;" disabled>Export All Enhanced</button>
+      <button id="saveAllBtn" onclick="saveAllToSupabase()" class="secondary" style="margin-left: 0.5rem;" disabled>Save All to Supabase</button>
+
+    <div id="validatorProgress" style="display:none; margin-top: 1.5rem;">
+      <div class="progress-bar">
+        <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      <p id="progressText" style="margin-top: 0.75rem; color: #4a5568; font-size: 0.95rem;">Processing...</p>
+    </div>
+
+    <div id="validatorResults" style="display:none; margin-top: 2rem;">
+      <h3>Validation Results</h3>
+      <p style="margin-top: 0.5rem; margin-bottom: 1rem; color: #4a5568; font-size: 0.9rem; font-style: italic;">
+        External validators open in a new tab. Due to cross-origin limits, results can't be read automatically — set the status after reviewing.
+      </p>
+      <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button onclick="setAllExternalStatusTo('Passed')" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Set all Not run → Passed</button>
+        <button onclick="resetAllExternalStatus()" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Reset all to Not run</button>
+      </div>
+      <div class="scrollable-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Page URL</th>
+              <th>Schema Type</th>
+              <th>Status</th>
+              <th>Missing Fields</th>
+              <th>Rich Results Status (external)</th>
+              <th>Schema.org Status (external)</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    </div>
+
+    <!-- Help Block -->
+    <div class="help-section" style="margin-top:1rem;padding:1rem;background:#f9f9f9;border-radius:8px;">
+      <strong>ℹ️ How to Read Results:</strong>
+      <ul style="margin-top:0.5rem;">
+        <li><b>Schema Type</b>: Type(s) detected from JSON-LD (<code>@type</code> values).</li>
+        <li><b>Status</b>: "Error" means fetch failed; "OK" means schema was found.</li>
+        <li><b>Skipped</b>: Offline mode—external validators not queried.</li>
+        <li><b>Schema.org / Google Buttons</b>: Open page in respective validators for manual checks.</li>
+        <li><b>Save to Supabase</b>: (Optional) Stores results if DB logging is enabled.</li>
+      </ul>
+    </div>
+
+    <div class="help-block" onclick="toggleHelpBlock()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleHelpBlock()" role="button" tabindex="0" aria-expanded="false" id="helpBlock">
+      <div class="help-block-header">
+        <span>ℹ️ About Schema Validators</span>
+        <span class="help-block-icon">▼</span>
+      </div>
+      <div class="help-block-content" id="helpBlockContent">
+        <strong>Schema.org Validator:</strong><br>
+        Validates that your schema markup follows the Schema.org vocabulary specifications. Checks for correct syntax, required fields, and proper structure. Essential for ensuring your schema is semantically correct.<br><br>
+        
+        <strong>Google Rich Results Test:</strong><br>
+        Tests whether your schema qualifies for Google's rich results (enhanced search listings). Shows which rich result types are detected and any issues that might prevent them from appearing in search results.<br><br>
+        
+        <strong>Results:</strong><br>
+        Validation results are displayed in the table above. For detailed analysis, you'll need to manually review the validator pages opened in new tabs. When Supabase integration is connected, results can be automatically captured and stored for analysis.<br><br>
+        
+        <strong>Note:</strong> Both validators open in new browser tabs so you can review the detailed results while keeping this tool open.
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Guide Tab Content -->
+  <div id="guideTab" class="tab-content">
+    <div class="instructions" style="max-width: 100%;">
+      <h2>🧠 Tool Guide: What Each Tab Does</h2>
+
+      <p>This tool contains several tabs, each with a specific use:</p>
+
+      <h3>🟢 Event Schema</h3>
+      <ul>
+        <li>Use this tab to generate JSON-LD Event schema from a CSV of your photography workshops.</li>
+        <li>Supports <code>location</code>, <code>performer</code>, <code>offers</code>, and <code>organizer</code> fields.</li>
+        <li>Paste the resulting schema into a code block on your Squarespace event page.</li>
+      </ul>
+
+      <h3>🔵 Product Schema</h3>
+      <ul>
+        <li>Generates <code>Product</code> schema from a CSV of lessons, vouchers, or services.</li>
+        <li>Automatically filters out products with weak or missing reviews.</li>
+        <li>Paste the JSON-LD into product pages on Squarespace.</li>
+      </ul>
+
+      <h3>🟡 Schema Validator</h3>
+      <ul>
+        <li>Enter one or more live URLs (CSV or single entry support coming).</li>
+        <li>Fetches the page content and validates all structured data inside it.</li>
+        <li>Flags missing or invalid fields and optionally builds an enhanced schema block you can download.</li>
+        <li>Use this to <strong>audit</strong>, <strong>debug</strong>, or <strong>improve</strong> existing Squarespace pages.</li>
+      </ul>
+
+      <h3>📌 Best Practices</h3>
+      <ul>
+        <li>Only insert schema relevant to the page (don't paste every product on every product page).</li>
+        <li>Always validate using the <strong>Schema Validator</strong> before and after injecting schema.</li>
+        <li>Use <code>&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages.</li>
+      </ul>
+
+      <h3>🔧 Upcoming Features</h3>
+      <ul>
+        <li>Support for validating a single URL directly (no CSV needed).</li>
+        <li>Supabase integration to track schema versions and history.</li>
+        <li>AI suggestions for schema fixes.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  // Tab switching - MUST be first to work even if other code fails
+  window.switchTab = function(mode) {
+    console.log('switchTab called with mode:', mode);
+    // Reset all active tabs and contents
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => {
+      c.classList.remove('active');
+      c.style.display = 'none';
+    });
+    
+    // Activate correct tab based on mode
+    const tabMap = {
+      'event': { tabIndex: 0, contentId: 'eventTab' },
+      'product': { tabIndex: 1, contentId: 'productTab' },
+      'validator': { tabIndex: 2, contentId: 'validatorTab' },
+      'guide': { tabIndex: 3, contentId: 'guideTab' }
+    };
+    
+    const config = tabMap[mode];
+    if (config) {
+      const tabs = document.querySelectorAll('.tab');
+      if (tabs[config.tabIndex]) {
+        tabs[config.tabIndex].classList.add('active');
+      }
+      const content = document.getElementById(config.contentId);
+      if (content) {
+        content.classList.add('active');
+        content.style.display = 'block';
+        console.log('Tab activated:', config.contentId);
+      } else {
+        console.error('Tab content not found:', config.contentId);
+      }
+    } else {
+      console.error('Unknown tab mode:', mode);
+    }
+  };
+  
+  // Supabase Configuration
+  const SUPABASE_URL = 'https://igzvwbvgvmzvvzoclufx.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
+  
+  // Initialize Supabase client (wait for library to load)
+  let supabase = null;
+  let supabaseAvailable = false;
+  
+  // Wait for Supabase library to load
+  function initSupabase() {
+    // Check for Supabase library loaded via CDN (UMD build)
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseAvailable = true;
+        console.log('✅ Supabase client initialized successfully');
+        
+        // Update bulk buttons state when Supabase is available
+        updateBulkButtons();
+        
+        return true;
+      } catch (error) {
+        console.error('Failed to initialize Supabase client:', error);
+      }
+    }
+    return false;
+  }
+  
+  // Try to initialize when script loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!initSupabase()) {
+        // Retry after delays
+        setTimeout(initSupabase, 500);
+        setTimeout(initSupabase, 1500);
+      }
+    });
+  } else {
+    if (!initSupabase()) {
+      // Retry after delays
+      setTimeout(initSupabase, 500);
+      setTimeout(initSupabase, 1500);
+    }
+  }
+  
+  // Final retry after all scripts load
+  window.addEventListener('load', function() {
+    if (!supabaseAvailable) {
+      initSupabase();
+    }
+    // Load auto-run preference
+    loadAutoRunPreference();
+  });
+  
+  // Remove duplicate switchTab definition - it's already at the top
+  
+  // Progress bar helpers
+  function renderProgress(cell) {
+    cell.innerHTML = `
+      <div class="progress-wrap">
+        <div class="progress"><span style="width:0%"></span></div>
+        <div class="progress-label">0%</div>
+      </div>`;
+  }
+  
+  function setProgress(cell, pct, text) {
+    const bar = cell.querySelector('.progress > span');
+    const lbl = cell.querySelector('.progress-label');
+    if (bar) { bar.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
+    if (lbl) { lbl.textContent = (text ? text + ' · ' : '') + Math.round(pct) + '%'; }
+  }
+  
+  function markProgressError(cell) {
+    const bar = cell.querySelector('.progress > span');
+    if (bar) { bar.style.background = 'linear-gradient(90deg,#ff5252,#ff8a80)'; }
+  }
+  
+  // ---- Issues modal helpers ----
+  function openIssuesModal(rowData) {
+    const backdrop = document.getElementById('issuesBackdrop');
+    const meta = document.getElementById('issuesMeta');
+    const list = document.getElementById('issuesList');
+    const json = document.getElementById('issuesJson');
+    const btnSchema = document.getElementById('issuesSchemaOrgBtn');
+    const btnGoogle = document.getElementById('issuesGoogleBtn');
+    const closeBtn = document.getElementById('issuesCloseBtn');
+    
+    meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
+    list.innerHTML = '';
+    let missing = [];
+    try {
+      if (rowData.tr && rowData.tr.dataset.missingDetail) {
+        missing = JSON.parse(rowData.tr.dataset.missingDetail);
+      } else if (rowData.missingFields) {
+        missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
+      }
+    } catch(_) {}
+    if (missing.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No missing required fields detected.';
+      list.appendChild(li);
+    } else {
+      missing.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f;
+        list.appendChild(li);
+      });
+    }
+    
+    json.textContent = (rowData.firstJsonLd || '').trim();
+    
+    btnSchema.onclick = () => window.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
+    btnGoogle.onclick = () => window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(rowData.url), '_blank');
+    
+    function close() {
+      backdrop.style.display = 'none';
+      document.removeEventListener('keydown', esc);
+      backdrop.onclick = null;
+    }
+    function esc(e) {
+      if (e.key === 'Escape') close();
+    }
+    closeBtn.onclick = close;
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) close();
+    };
+    document.addEventListener('keydown', esc);
+    
+    backdrop.style.display = 'flex';
+  }
+  
+  // Build a minimal rowData snapshot from a <tr>
+  function getRowDataFromTr(tr) {
+    const tds = tr.querySelectorAll('td');
+    const url = tds[0]?.querySelector('a')?.href || tds[0]?.textContent?.trim() || '';
+    // keep a handle to <tr> so we can read dataset fields
+    const trRef = tr;
+    const schemaType = tds[1]?.textContent?.trim() || '';
+    const missing = tds[3]?.textContent?.trim() || '';
+    // store first JSON-LD snippet in a dataset if available when row was computed
+    const firstJson = tr.dataset.firstJsonld || '';
+    // Get index from row to find validation result
+    const rowIndex = Array.from(tr.parentNode.children).indexOf(tr);
+    const result = validationResults[rowIndex];
+    const missingFields = result && result.missingFields ? result.missingFields : (missing ? missing.split(',').map(s => s.trim()).filter(Boolean) : []);
+    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson, tr: trRef };
+  }
+  
+  // ---- Schema core fields (minimal, safe set) ----
+  const CORE_REQUIRED = {
+    WebSite:      ["name", "url"],
+    Organization: ["name"],
+    LocalBusiness:["name"]   // keep minimal; address/telephone vary a lot
+  };
+  
+  // Flatten any JSON-LD object/array/@graph into a list of typed nodes
+  function flattenJsonLd(node, out = []) {
+    if (!node) return out;
+    if (Array.isArray(node)) { node.forEach(n=>flattenJsonLd(n, out)); return out; }
+    if (node['@graph']) { flattenJsonLd(node['@graph'], out); }
+    if (node['@type']) out.push(node);
+    return out;
+  }
+  
+  // Build a map: type -> array of nodes for that type
+  function indexByType(nodes) {
+    const idx = {};
+    nodes.forEach(n => {
+      const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+      types.forEach(t => {
+        (idx[t] ||= []).push(n);
+      });
+    });
+    return idx;
+  }
+  
+  // Inspect which types are present and which required fields are missing per type
+  function computeMissingFields(allNodes) {
+    const idx = indexByType(allNodes);
+    const messages = [];
+    Object.keys(idx).forEach(t => {
+      if (!CORE_REQUIRED[t]) return; // only check types we know
+      const required = CORE_REQUIRED[t];
+      // If there are multiple nodes of this type, union their keys
+      const keys = new Set();
+      idx[t].forEach(n => Object.keys(n).forEach(k => keys.add(k)));
+      required.forEach(req => {
+        if (!keys.has(req)) {
+          messages.push({ type: t, field: req });
+        }
+      });
+    });
+    return messages;
+  }
+  
+  // Try to find a candidate value for a field in OTHER types (so we can suggest)
+  function findFieldElsewhere(allNodes, field, exceptType) {
+    for (const n of allNodes) {
+      const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+      if (types.includes(exceptType)) continue;
+      if (n[field]) return { fromType: types.join(','), value: (''+n[field]).slice(0,120) };
+    }
+    return null;
+  }
+  
+  // ---------- Enhanced Schema Builder ----------
+  const asArray = v => Array.isArray(v) ? v : (v ? [v] : []);
+  const uniq = arr => [...new Set(arr)];
+  function firstNonEmpty(...vals){ for(const v of vals){ if(typeof v==='string' && v.trim()) return v.trim(); } return ''; }
+  
+  function pageMeta(doc, url){
+    const get = s => doc.querySelector(s)?.getAttribute('content') || '';
+    return {
+      url,
+      title: doc.querySelector('h1')?.textContent?.trim() || doc.title || '',
+      ogTitle: get('meta[property="og:title"]'),
+      ogDesc: get('meta[property="og:description"]'),
+      ogImage: get('meta[property="og:image"]'),
+      logo: get('meta[itemprop="logo"]') || get('meta[property="og:logo"]') || '',
+      siteName: get('meta[property="og:site_name"]')
+    };
+  }
+  
+  function ensureId(node, baseUrl, suffix){
+    if (!node['@id']) node['@id'] = baseUrl.replace(/#.*$/,'') + '#' + suffix;
+    return node;
+  }
+  
+  function dedupeById(nodes){
+    const map = new Map();
+    nodes.forEach(n=>{
+      const key = n['@id'] || JSON.stringify([n['@type'], n.name, n.url]);
+      if (!map.has(key)) map.set(key, n);
+    });
+    return [...map.values()];
+  }
+  
+  function prettyScript(json){
+    return `<script type="application/ld+json">\n${JSON.stringify(json, null, 2)}\n<\/script>`;
+  }
+  
+  function buildBreadcrumbs(doc, url){
+    // 1) Try semantic breadcrumbs in DOM
+    let items = [];
+    const nav = doc.querySelector('nav[aria-label="breadcrumb"], .breadcrumbs, ol.breadcrumb, ul.breadcrumb');
+    if (nav){
+      const links = nav.querySelectorAll('a, [itemprop="item"]');
+      let pos=1;
+      links.forEach(a=>{
+        const href = a.getAttribute('href') || a.getAttribute('content') || '';
+        const name = a.textContent?.trim() || a.getAttribute('title') || '';
+        if (name) items.push({ "@type":"ListItem", position: pos++, name, item: href.startsWith('http') ? href : new URL(href, url).href });
+      });
+    }
+    // 2) Fallback to URL path
+    if (!items.length){
+      const u = new URL(url);
+      const segs = u.pathname.split('/').filter(Boolean);
+      let path=u.origin, pos=1;
+      items.push({ "@type":"ListItem", position: pos++, name: "Home", item: u.origin });
+      for(const s of segs){
+        path += '/' + s;
+        items.push({ "@type":"ListItem", position: pos++, name: decodeURIComponent(s.replace(/-/g,' ')).replace(/\b\w/g,m=>m.toUpperCase()), item: path });
+      }
+    }
+    return {
+      "@type":"BreadcrumbList",
+      "@id": url.replace(/#.*$/,'') + "#breadcrumbs",
+      "itemListElement": items
+    };
+  }
+  
+  async function generateEnhancedFor(url){
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      const data = await res.json();
+      const html = data.contents;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Collect existing JSON-LD
+      const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+      let nodes = [];
+      scripts.forEach(s => {
+        try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
+      });
+      const typesPresent = uniq(nodes.flatMap(n => asArray(n['@type'])));
+      
+      const meta = pageMeta(doc, url);
+      
+      // Seed core nodes (use existing if there, else minimal scaffold)
+      const idx = indexByType(nodes);
+      let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
+      let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
+      let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : (idx.Organization && idx.Organization[0] ? JSON.parse(JSON.stringify(idx.Organization[0])) : null);
+      
+      // Fill obvious gaps
+      const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
+      website.name = siteName || website.name;
+      website.url  = website.url || meta.url;
+      
+      org.name = org.name || siteName || "Alan Ranger Photography";
+      org.url  = org.url  || meta.url;
+      if (!org.logo && meta.logo) org.logo = meta.logo;
+      if (!org.image && meta.ogImage) org.image = meta.ogImage;
+      
+      if (local){
+        local.name = local.name || org.name || siteName;
+        local.url  = local.url || meta.url;
+        if (!local.image && meta.ogImage) local.image = meta.ogImage;
+        if (!local['@type']) local['@type'] = 'LocalBusiness';
+      }
+      
+      // Ensure stable @id
+      website = ensureId(website, url, 'website');
+      org     = ensureId(org,     url, 'org');
+      if (local) local = ensureId(local, url, 'local');
+      
+      // Always add BreadcrumbList (built from DOM or path)
+      const breadcrumbs = buildBreadcrumbs(doc, url);
+      
+      // Keep any Product / Event if present
+      const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
+      const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+      
+      // Merge graph
+      const graph = dedupeById([
+        website,
+        org,
+        ...(local ? [local] : []),
+        breadcrumbs,
+        ...extras
+      ]);
+      
+      // Final JSON-LD
+      return { "@context":"https://schema.org", "@graph": graph };
+    } catch (error) {
+      // Fallback: try direct fetch
+      try {
+        const res = await fetch(url, {mode:'cors'});
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Collect existing JSON-LD
+        const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+        let nodes = [];
+        scripts.forEach(s => {
+          try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
+        });
+        
+        const meta = pageMeta(doc, url);
+        
+        // Seed core nodes
+        const idx = indexByType(nodes);
+        let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
+        let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
+        let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : null;
+        
+        const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
+        website.name = siteName || website.name;
+        website.url  = website.url || meta.url;
+        
+        org.name = org.name || siteName || "Alan Ranger Photography";
+        org.url  = org.url  || meta.url;
+        
+        if (local){
+          local.name = local.name || org.name || siteName;
+          local.url  = local.url || meta.url;
+        }
+        
+        website = ensureId(website, url, 'website');
+        org     = ensureId(org,     url, 'org');
+        if (local) local = ensureId(local, url, 'local');
+        
+        const breadcrumbs = buildBreadcrumbs(doc, url);
+        const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
+        const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+        
+        const graph = dedupeById([
+          website,
+          org,
+          ...(local ? [local] : []),
+          breadcrumbs,
+          ...extras
+        ]);
+        
+        return { "@context":"https://schema.org", "@graph": graph };
+      } catch (err) {
+        throw new Error(`Failed to fetch page: ${err.message}`);
+      }
+    }
+  }
+  
+  // Modal plumbing
+  (function initGenModal(){
+    const backdrop = document.getElementById('genBackdrop');
+    const closeBtn = document.getElementById('genCloseBtn');
+    const copyBtn  = document.getElementById('genCopyBtn');
+    if (closeBtn) closeBtn.onclick = ()=> backdrop.style.display='none';
+    if (backdrop) backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.style.display='none'; };
+    if (copyBtn) copyBtn.onclick = ()=>{
+      const txt = document.getElementById('genJson').textContent;
+      navigator.clipboard.writeText(txt);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(()=> copyBtn.textContent='Copy to Clipboard', 1200);
+    };
+    window.__openGenModal = (url, json)=>{
+      document.getElementById('genMeta').textContent = url;
+      document.getElementById('genJson').textContent = prettyScript(json);
+      backdrop.style.display='flex';
+    };
+  })();
+  
+  // Copy to clipboard
+  function copyToClipboard(outputId) {
+    const element = document.getElementById(outputId);
+    const text = element.tagName === 'TEXTAREA' ? element.value : element.textContent;
+    
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Schema copied to clipboard!');
+    }, function(err) {
+      alert('Failed to copy text: ' + err);
+    });
+  }
+
+  // Test URL functions
+  function testSchemaOrg(inputId) {
+    const url = document.getElementById(inputId).value;
+    if (!url) {
+      alert('Please enter a URL to test');
+      return;
+    }
+    window.open('https://validator.schema.org/#url=' + encodeURIComponent(url), '_blank');
+  }
+
+  function testGoogleRichResults(inputId) {
+    const url = document.getElementById(inputId).value;
+    if (!url) {
+      alert('Please enter a URL to test');
+      return;
+    }
+    window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
+  }
+
+  // Single URL validation
+  async function runSingleUrlValidation() {
+    const urlInput = document.getElementById('singleUrlInput');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+      alert('Please enter a URL to validate');
+      return;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      alert('Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+    
+    // Show results table
+    const resultsDiv = document.getElementById('validatorResults');
+    resultsDiv.style.display = 'block';
+    
+      // Check if URL already exists in results
+      const existingIndex = validationResults.findIndex(r => r.url === url);
+      let index;
+      
+      if (existingIndex >= 0) {
+        // Update existing row
+        index = existingIndex;
+        
+        // Show processing status with progress bar
+        updateTableRow(index, {
+          url: url,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
+          validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
+          notes: validationResults[index].notes || ''
+        });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 5, 'Queued');
+        }
+      } else {
+        // Add new row
+        index = validationResults.length;
+        
+        // Create placeholder result
+        const placeholderResult = {
+          url: url,
+          row: index,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: 'Not run',
+          validatorSchemaOrgStatus: 'Not run',
+          notes: ''
+        };
+        
+        validationResults.push(placeholderResult);
+        
+        // Add placeholder row to table
+        updateTableRow(index, placeholderResult);
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 5, 'Queued');
+        }
+      }
+    
+    try {
+      // Process URL using existing function
+      const urlData = { url: url, row: index };
+      const result = await processUrl(urlData);
+      
+      // Update validation results array
+      validationResults[index] = {
+        ...result,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
+        notes: validationResults[index].notes || ''
+      };
+      
+      // Update table row with results
+      updateTableRow(index, validationResults[index]);
+      
+      // Enable bulk action buttons
+      updateBulkButtons();
+      
+      // Auto-run Schema.org validator if enabled and status is "Not run"
+      const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+      const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+      
+      if (shouldAutoRun) {
+        const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+        if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+          await runSchemaOrgValidator(index, url);
+        }
+        
+        // Auto-run Rich Results validator if enabled and status is "Not run"
+        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+        if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+          // Don't await - let it run in background
+          runRichResultsValidator(index, url);
+        }
+      }
+      
+      // Clear input field
+      urlInput.value = '';
+      
+      // Scroll to results table
+      resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+    } catch (error) {
+      console.error('Error validating URL:', error);
+      
+      // Update row with error
+      validationResults[index] = {
+        url: url,
+        row: index,
+        schemaType: null,
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: error.message,
+        validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
+        notes: validationResults[index]?.notes || ''
+      };
+      
+      updateTableRow(index, validationResults[index]);
+      
+      // Enable bulk action buttons (even if error)
+      updateBulkButtons();
+    }
+  }
+
+  // Toggle help block
+  function toggleHelpBlock() {
+    const helpBlock = document.getElementById('helpBlock');
+    const content = document.getElementById('helpBlockContent');
+    
+    helpBlock.classList.toggle('expanded');
+    content.classList.toggle('active');
+    helpBlock.setAttribute('aria-expanded', helpBlock.classList.contains('expanded'));
+  }
+
+  // Event Schema Generation
+  let events = [];
+
+  document.getElementById('eventCsvFile').addEventListener('change', function(e) {
+    Papa.parse(e.target.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        events = results.data;
+        
+        const categories = [...new Set(
+          events.map(e => (e['Category'] || '').split(',')[0].trim()).filter(Boolean)
+        )];
+        
+        const filterSelect = document.getElementById('eventCategoryFilter');
+        filterSelect.innerHTML = '<option value="__ALL__">All Categories</option>';
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          filterSelect.appendChild(opt);
+        });
+        document.getElementById('eventCategoryFilterContainer').style.display = 'block';
+      }
+    });
+  });
+
+  function parseAddress(locationAddressRaw) {
+    if (!locationAddressRaw || typeof locationAddressRaw !== "string") return {
+      "@type": "PostalAddress",
+      "addressCountry": "GB"
+    };
+
+    const parts = locationAddressRaw.split(",").map(p => p.trim()).filter(Boolean).reverse();
+    const address = { "@type": "PostalAddress" };
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+
+      if (!address.addressCountry && /^(United Kingdom|UK)$/i.test(part)) {
+        address.addressCountry = "GB";
+      } else if (!address.postalCode && /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(part)) {
+        address.postalCode = part.toUpperCase();
+      } else if (!address.addressRegion) {
+        address.addressRegion = part;
+      } else if (!address.addressLocality) {
+        address.addressLocality = part;
+      } else if (!address.streetAddress) {
+        address.streetAddress = part;
+      }
+    }
+
+    if (!address.addressCountry) address.addressCountry = "GB";
+    return address;
+  }
+
+  function generateEventSchema() {
+    const selectedCategory = document.getElementById('eventCategoryFilter').value;
+    const today = new Date().toISOString().split('T')[0];
+    const filtered = events.filter(e =>
+      (selectedCategory === "__ALL__" || (e['Category'] || '').split(',')[0].trim() === selectedCategory) &&
+      e['Start_Date'] >= today &&
+      e['Workflow_State'] === 'Published'
+    );
+
+    const itemList = {
+      "@type": "ItemList",
+      "name": selectedCategory === "__ALL__" ? "Events" : selectedCategory + " Events",
+      "itemListElement": filtered.map((event, i) => ({
+        "@type": "ListItem",
+        "position": i + 1,
+        "url": event['Event_URL']
+      }))
+    };
+
+    const eventList = filtered.map(event => ({
+      "@type": "Event",
+      "name": event['Event_Title'],
+      "startDate": event['Start_Date'],
+      "endDate": event['End_Date'],
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "image": event['Event_Image'],
+      "organizer": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+        "url": "https://www.alanranger.com"
+      },
+      "location": {
+        "@type": "Place",
+        "name": event['Location_Business_Name'],
+        "address": parseAddress(event['Location_Address'])
+      },
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": event['Event_URL'],
+        "validFrom": event['Start_Date']
+      },
+      "description": event['Excerpt'],
+      "url": event['Event_URL']
+    }));
+
+    const fullSchema = {
+      "@context": "https://schema.org",
+      "@graph": [itemList, ...eventList]
+    };
+
+    const json = JSON.stringify(fullSchema, null, 2);
+    const scriptEl = document.createElement('script');
+    scriptEl.type = 'application/ld+json';
+    scriptEl.textContent = json;
+    document.getElementById('eventOutput').textContent = scriptEl.outerHTML;
+  }
+
+  // Product Schema Generation
+  function generateProductSchema() {
+    const fileInput = document.getElementById('productCsvFile');
+    const output = document.getElementById('productOutput');
+
+    if (!fileInput.files.length) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
+
+    Papa.parse(fileInput.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const products = results.data;
+
+        const outputSchema = products.map(product => {
+          let reviews = [];
+          try {
+            reviews = JSON.parse(product.reviews || '[]').filter(r => Number(r.rating) >= 4);
+          } catch (e) {
+            reviews = [];
+          }
+          
+          const reviewCount = reviews.length;
+          const averageRating = reviewCount > 0 ? (
+            reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviewCount
+          ).toFixed(1) : null;
+
+          let schema = {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.image,
+            "description": product.description,
+            "url": product.url
+          };
+
+          if (reviewCount > 0) {
+            schema.aggregateRating = {
+              "@type": "AggregateRating",
+              "ratingValue": averageRating,
+              "reviewCount": reviewCount
+            };
+
+            schema.review = reviews.map(r => ({
+              "@type": "Review",
+              "author": r.author,
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": r.rating,
+                "bestRating": "5",
+                "worstRating": "1"
+              },
+              "reviewBody": r.body
+            }));
+          }
+
+          return '<script type="application/ld+json">\n' + JSON.stringify(schema, null, 2) + '\n<\/script>';
+        }).join('\n\n');
+
+        output.value = outputSchema;
+      },
+      error: function(error) {
+        alert('Error parsing CSV file: ' + error.message);
+      }
+    });
+  }
+
+  // File upload handler for validator tab
+  function onFileUpload() {
+    const fileInput = document.getElementById('validatorCsvFile');
+    if (fileInput.files.length > 0) {
+      const fileName = fileInput.files[0].name;
+      console.log('CSV file selected:', fileName);
+      // File is ready for validation
+    }
+  }
+
+  // Download template CSV file
+  function downloadTemplateCSV() {
+    const csvContent = 'URL,Page Name,Category\nhttps://www.example.com/product-1,Product One,Products\nhttps://www.example.com/product-2,Product Two,Products\nhttps://www.example.com/event-1,Event One,Events\nhttps://www.example.com/event-2,Event Two,Events';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'validator-urls-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Schema Validator Tab Logic
+  const SCHEMA_REQUIREMENTS = {
+    Product: {
+      required: ['name', 'url'],
+      recommended: ['description', 'image', 'brand', 'offers', 'aggregateRating', 'review']
+    },
+    Event: {
+      required: ['name', 'startDate'],
+      recommended: ['endDate', 'location', 'organizer', 'offers', 'image', 'description', 'performer']
+    },
+    Organization: {
+      required: ['name'],
+      recommended: ['url', 'logo', 'address', 'contactPoint']
+    },
+    BreadcrumbList: {
+      required: ['itemListElement'],
+      recommended: []
+    },
+    ItemList: {
+      required: ['itemListElement'],
+      recommended: ['name']
+    },
+    LocalBusiness: {
+      required: ['name'],
+      recommended: ['address', 'telephone', 'url', 'openingHours']
+    }
+  };
+
+  const DEFAULT_VALUES = {
+    Product: {
+      brand: { '@type': 'Brand', name: '[REPLACE WITH BRAND NAME]' },
+      offers: {
+        '@type': 'Offer',
+        price: '[REPLACE WITH PRICE]',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+        url: '[AUTO-INFERRED FROM PAGE URL]'
+      },
+      description: '[REPLACE WITH PRODUCT DESCRIPTION]',
+      image: '[REPLACE WITH PRODUCT IMAGE URL]'
+    },
+    Event: {
+      organizer: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        logo: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+        url: 'https://www.alanranger.com'
+      },
+      performer: {
+        '@type': 'Person',
+        name: 'Alan Ranger'
+      },
+      location: {
+        '@type': 'Place',
+        name: '[REPLACE WITH VENUE NAME]',
+        address: {
+          '@type': 'PostalAddress',
+          addressCountry: 'GB'
+        }
+      },
+      offers: {
+        '@type': 'Offer',
+        price: '0.00',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+        validFrom: '[AUTO-INFERRED FROM START DATE]'
+      },
+      description: '[REPLACE WITH EVENT DESCRIPTION]',
+      image: '[REPLACE WITH EVENT IMAGE URL]'
+    }
+  };
+
+  let validationResults = [];
+
+  // Parse CSV and extract URLs
+  function parseCSVForValidation(csvFile) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(csvFile, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const urls = [];
+          const headers = results.meta.fields || [];
+          
+          const urlColumn = headers.find(h => 
+            h.toLowerCase() === 'url' || h.toLowerCase() === 'link' || h.toLowerCase() === 'website'
+          );
+          
+          if (!urlColumn) {
+            reject(new Error('No URL column found. Expected column name: URL, Link, or Website'));
+            return;
+          }
+          
+          results.data.forEach((row, index) => {
+            const url = row[urlColumn];
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+              urls.push({
+                url: url.trim(),
+                row: index + 2,
+                allFields: row
+              });
+            }
+          });
+          
+          resolve(urls);
+        },
+        error: function(error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  // Fetch page and extract JSON-LD
+  async function fetchPageSchema(url, progressIndex) {
+    const schemaTypeCell = progressIndex !== undefined ? document.getElementById(`schemaTypeCell_${progressIndex}`) : null;
+    
+    try {
+      // Use CORS proxy if needed (for cross-origin requests)
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      
+      if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
+      const response = await fetch(proxyUrl);
+      const data = await response.json();
+      const html = data.contents;
+      
+      if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
+      
+      // Parse HTML to extract JSON-LD
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+      
+      if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
+      
+      const jsonLdBlocks = [];
+      let detectedTypes = [];
+      scripts.forEach(script => {
+        try {
+          const json = JSON.parse(script.textContent);
+          jsonLdBlocks.push(json);
+          // Extract types from this block
+          if (json['@type']) {
+            if (Array.isArray(json['@type'])) detectedTypes.push(...json['@type']);
+            else detectedTypes.push(json['@type']);
+          }
+          if (json['@graph']) {
+            json['@graph'].forEach(item => {
+              if (item['@type']) {
+                if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
+                else detectedTypes.push(item['@type']);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to parse JSON-LD:', e);
+        }
+      });
+      
+      if (schemaTypeCell) {
+        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+        setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+      }
+      
+      return {
+        url,
+        jsonLd: jsonLdBlocks,
+        schemaFound: jsonLdBlocks.length > 0,
+        schemaType: detectedTypes.length ? detectedTypes.join(', ') : 'None'
+      };
+    } catch (error) {
+      // Fallback: try direct fetch (may fail due to CORS)
+      try {
+        if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
+        const response = await fetch(url, { mode: 'cors' });
+        const htmlText = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        
+        if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
+        
+        // Extract all JSON-LD blocks
+        const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+        let detectedTypes = [];
+        scripts.forEach(s => {
+          try {
+            const data = JSON.parse(s.textContent.trim());
+            if (data['@type']) {
+              if (Array.isArray(data['@type'])) detectedTypes.push(...data['@type']);
+              else detectedTypes.push(data['@type']);
+            }
+            // Also check @graph structure
+            if (data['@graph']) {
+              data['@graph'].forEach(item => {
+                if (item['@type']) {
+                  if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
+                  else detectedTypes.push(item['@type']);
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('Invalid JSON-LD block', err);
+          }
+        });
+        
+        if (schemaTypeCell) {
+          const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+          setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+        }
+        
+        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+        
+        const jsonLdBlocks = [];
+        scripts.forEach(script => {
+          try {
+            const json = JSON.parse(script.textContent);
+            jsonLdBlocks.push(json);
+          } catch (e) {
+            console.warn('Failed to parse JSON-LD:', e);
+          }
+        });
+        
+        return {
+          url,
+          jsonLd: jsonLdBlocks,
+          schemaFound: jsonLdBlocks.length > 0,
+          schemaType: schemaType
+        };
+      } catch (err) {
+        if (schemaTypeCell) {
+          markProgressError(schemaTypeCell);
+          setProgress(schemaTypeCell, 100, 'Error');
+        }
+        throw new Error(`Failed to fetch ${url}: ${err.message}`);
+      }
+    }
+  }
+
+  // Extract schema types
+  function extractSchemaTypes(jsonLdBlocks) {
+    const types = new Set();
+    
+    jsonLdBlocks.forEach(block => {
+      if (Array.isArray(block)) {
+        block.forEach(item => {
+          if (item['@type']) types.add(item['@type']);
+        });
+      } else if (block['@type']) {
+        types.add(block['@type']);
+      } else if (block['@graph']) {
+        block['@graph'].forEach(item => {
+          if (item['@type']) types.add(item['@type']);
+        });
+      }
+    });
+    
+    return Array.from(types);
+  }
+
+  // Validate schema fields
+  function validateSchemaFields(schema, schemaType) {
+    const missingFields = [];
+    const warnings = [];
+    const requirements = SCHEMA_REQUIREMENTS[schemaType];
+    
+    if (!requirements) {
+      warnings.push(`Unknown schema type: ${schemaType}`);
+      return { missingFields, warnings };
+    }
+    
+    requirements.required.forEach(field => {
+      if (!schema[field]) {
+        missingFields.push(field);
+      }
+    });
+    
+    requirements.recommended.forEach(field => {
+      if (!schema[field]) {
+        warnings.push(`Missing recommended: ${field}`);
+      }
+    });
+    
+    return { missingFields, warnings };
+  }
+
+  // Analyze schemas
+  function analyzeSchemas(jsonLdBlocks, url) {
+    const analysis = {
+      schemaFound: jsonLdBlocks.length > 0,
+      schemaTypes: [],
+      schemas: [],
+      missingFields: [],
+      warnings: [],
+      valid: false
+    };
+    
+    if (jsonLdBlocks.length === 0) {
+      analysis.warnings.push('No schema markup found');
+      return analysis;
+    }
+    
+    analysis.schemaTypes = extractSchemaTypes(jsonLdBlocks);
+    
+    jsonLdBlocks.forEach((block, index) => {
+      let schemas = [];
+      
+      if (block['@graph']) {
+        schemas = block['@graph'];
+      } else if (Array.isArray(block)) {
+        schemas = block;
+      } else {
+        schemas = [block];
+      }
+      
+      schemas.forEach(schema => {
+        const schemaType = schema['@type'];
+        if (schemaType) {
+          const fieldValidation = validateSchemaFields(schema, schemaType);
+          analysis.schemas.push({
+            type: schemaType,
+            schema: schema,
+            missingFields: fieldValidation.missingFields,
+            warnings: fieldValidation.warnings
+          });
+          
+          analysis.missingFields.push(...fieldValidation.missingFields);
+          analysis.warnings.push(...fieldValidation.warnings);
+        }
+      });
+    });
+    
+    analysis.valid = analysis.schemaFound && 
+                     analysis.missingFields.length === 0 && 
+                     analysis.schemaTypes.length > 0;
+    
+    return analysis;
+  }
+
+  // Helper: Process placeholder value and replace with inferred data
+  function processPlaceholderValue(value, field, url) {
+    if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
+      return (field === 'url' && url) ? url : value;
+    }
+    
+    if (typeof value === 'object' && value !== null) {
+      const cloned = JSON.parse(JSON.stringify(value));
+      if (field === 'offers' && cloned.url && cloned.url.includes('[AUTO-INFERRED')) {
+        cloned.url = url;
+      }
+      return cloned;
+    }
+    
+    return value;
+  }
+
+  // Helper: Fill a single field with default or placeholder
+  function fillFieldValue(enhanced, field, defaults, url, isRequired) {
+    if (enhanced[field] && (!Array.isArray(enhanced[field]) || enhanced[field].length > 0)) {
+      return; // Field already has value
+    }
+    
+    if (field === 'url' && url) {
+      enhanced[field] = url;
+      return;
+    }
+    
+    if (defaults[field] !== undefined) {
+      enhanced[field] = processPlaceholderValue(defaults[field], field, url);
+      return;
+    }
+    
+    if (isRequired) {
+      enhanced[field] = `[REPLACE WITH ${field.toUpperCase()}]`;
+    }
+  }
+
+  // Helper: Ensure basic schema structure
+  function ensureBasicSchemaStructure(enhanced, schemaType, url) {
+    if (!enhanced['@context']) {
+      enhanced['@context'] = 'https://schema.org/';
+    }
+    if (!enhanced['@type'] && schemaType) {
+      enhanced['@type'] = schemaType;
+    }
+    if (!enhanced.url && url) {
+      enhanced.url = url;
+    }
+  }
+
+  // Helper: Apply schema-specific enhancements
+  function applySchemaSpecificEnhancements(enhanced, schemaType, url) {
+    if (schemaType === 'Product' && enhanced.offers && typeof enhanced.offers === 'object' && !enhanced.offers.url && url) {
+      enhanced.offers.url = url;
+    }
+    
+    if (schemaType === 'Event' && enhanced.location && typeof enhanced.location === 'object' && !enhanced.location.address) {
+      enhanced.location.address = DEFAULT_VALUES.Event.location.address;
+    }
+  }
+
+  // Enhance schema with missing fields
+  function enhanceSchema(schema, schemaType, url) {
+    const enhanced = JSON.parse(JSON.stringify(schema));
+    const defaults = DEFAULT_VALUES[schemaType] || {};
+    const requirements = SCHEMA_REQUIREMENTS[schemaType];
+    
+    if (!requirements) {
+      ensureBasicSchemaStructure(enhanced, schemaType, url);
+      return enhanced;
+    }
+    
+    ensureBasicSchemaStructure(enhanced, schemaType, url);
+    
+    // Fill missing required fields
+    requirements.required.forEach(field => {
+      fillFieldValue(enhanced, field, defaults, url, true);
+    });
+    
+    // Fill missing recommended fields
+    requirements.recommended.forEach(field => {
+      fillFieldValue(enhanced, field, defaults, url, false);
+    });
+    
+    applySchemaSpecificEnhancements(enhanced, schemaType, url);
+    
+    return enhanced;
+  }
+
+  // Process a single URL
+  async function processUrl(urlData) {
+    const result = {
+      url: urlData.url,
+      row: urlData.row,
+      schemaType: null,
+      valid: false,
+      schemaFound: false,
+      missingFields: [],
+      warnings: [],
+      schemas: [],
+      error: null
+    };
+    
+    try {
+      const pageData = await fetchPageSchema(urlData.url, urlData.row);
+      const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
+      
+      // Enhanced missing fields analysis
+      let allNodes = [];
+      pageData.jsonLd.forEach(block => {
+        try {
+          allNodes = flattenJsonLd(block, allNodes);
+        } catch(_) {}
+      });
+      
+      const missingDetails = computeMissingFields(allNodes);
+      const missingMessages = [];
+      missingDetails.forEach(m => {
+        const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
+        if (elsewhere) {
+          missingMessages.push(`${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
+        } else {
+          missingMessages.push(`${m.type}: "${m.field}" missing (add this property to the ${m.type} node).`);
+        }
+      });
+      
+      // Store detailed messages in result
+      result.missingFieldsDetails = missingMessages;
+      result.missingFieldsBadges = missingDetails;
+      
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+      if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
+        setProgress(schemaTypeCell, 100, 'Done');
+        // Replace progress bar with actual schema type after a brief delay
+        setTimeout(() => {
+          schemaTypeCell.textContent = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
+        }, 500);
+      }
+      
+      result.schemaFound = analysis.schemaFound;
+      // Use schemaType from fetchPageSchema if available, otherwise use analysis
+      result.schemaType = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
+      result.missingFields = [...new Set(analysis.missingFields)];
+      result.warnings = analysis.warnings;
+      result.valid = analysis.valid;
+      result.schemas = analysis.schemas;
+      
+    } catch (error) {
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+      if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
+        markProgressError(schemaTypeCell);
+        setProgress(schemaTypeCell, 100, 'Error');
+      }
+      result.error = error.message;
+    }
+    
+    return result;
+  }
+
+  // Update table row with result
+  function updateTableRow(index, result) {
+    const tableBody = document.getElementById('resultsTableBody');
+    let row = tableBody.children[index];
+    
+    if (!row) {
+      // Create new row if it doesn't exist
+      row = document.createElement('tr');
+      tableBody.appendChild(row);
+    }
+    
+    // Determine status badge class and text
+    let statusClass = 'no-schema';
+    let statusText = '❌ No Schema';
+    let statusHtml = '';
+    if (result.error) {
+      statusClass = 'error';
+      statusText = '❌ Error';
+      statusHtml = '<span class="chip-issues" title="View details">⛔ Error</span>';
+    } else if (result.valid) {
+      statusClass = 'valid';
+      statusText = '✅ Valid';
+      statusHtml = '<span class="chip-ok">✅ Valid</span>';
+    } else if (result.schemaFound) {
+      // Check if we have missing fields badges or missing fields
+      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
+      if (hasMissingFields) {
+        statusClass = 'issues';
+        statusText = '⚠️ Issues';
+        statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
+      } else {
+        statusClass = 'valid';
+        statusText = '✅ Valid';
+        statusHtml = '<span class="chip-ok">✅ Valid</span>';
+      }
+    } else {
+      statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
+    }
+    
+    // Store first JSON-LD block if available
+    if (result.schemas && result.schemas.length > 0 && result.schemas[0].schema) {
+      try {
+        const firstJson = JSON.stringify(result.schemas[0].schema, null, 2);
+        row.dataset.firstJsonld = firstJson.slice(0, 6000);
+      } catch (_) {}
+    }
+    
+    // Store missing fields details
+    if (result.missingFieldsDetails) {
+      row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
+    }
+    
+    // Get existing values if row already exists
+    const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
+    const existingSchemaOrgStatus = result.validatorSchemaOrgStatus || 'Not run';
+    const existingNotes = result.notes || '';
+    
+    // Update row content
+    const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
+    // Use reportUrl from API if available, otherwise fallback to default
+    const googleUrl = result.richResultsReportUrl || 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
+    
+    row.innerHTML = `
+      <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
+      <td id="schemaTypeCell_${index}">${result.schemaType === 'Processing...' ? '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>' : (result.schemaType || 'None')}</td>
+      <td id="statusCell_${index}">${statusHtml}</td>
+      <td class="missing-fields" id="missingFieldsCell_${index}">${result.missingFieldsBadges && result.missingFieldsBadges.length > 0 ? result.missingFieldsBadges.map(m => `<span class="badge" title="${result.missingFieldsDetails ? result.missingFieldsDetails.find(x=>x.startsWith(m.type+':')) : ''}">${m.type}:${m.field}</span>`).join(' ') : (result.missingFields && result.missingFields.length > 0 ? result.missingFields.join(', ') : '—')}</td>
+      <td>
+        <select class="status-select" id="googleStatus_${index}" onchange="updateValidationStatus(${index}, 'google', this.value)">
+          <option value="✅ Passed" ${existingGoogleStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
+          <option value="⚠️ Warning" ${existingGoogleStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
+          <option value="❌ Failed" ${existingGoogleStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
+          <option value="👀 Opened (reviewing)" ${existingGoogleStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
+          <option value="🔄 Running..." ${existingGoogleStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
+          <option value="Not run" ${existingGoogleStatus === 'Not run' ? 'selected' : ''}>Not run</option>
+        </select>
+      </td>
+      <td>
+        <select class="status-select" id="schemaOrgStatus_${index}" onchange="updateValidationStatus(${index}, 'schemaorg', this.value)">
+          <option value="✅ Passed" ${existingSchemaOrgStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
+          <option value="⚠️ Warning" ${existingSchemaOrgStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
+          <option value="❌ Failed" ${existingSchemaOrgStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
+          <option value="👀 Opened (reviewing)" ${existingSchemaOrgStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
+          <option value="🔄 Running..." ${existingSchemaOrgStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
+          <option value="Not run" ${existingSchemaOrgStatus === 'Not run' ? 'selected' : ''}>Not run</option>
+        </select>
+      </td>
+      <td>
+        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${existingNotes}</textarea>
+      </td>
+      <td style="white-space: normal; min-width: 250px;">
+        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" id="genBtn_${index}">Generate Enhanced</button><br>` : ''}
+        <div style="margin-top: 0.5rem;">
+          <button class="enhance-btn secondary" id="schemaOrgBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
+          <button class="enhance-btn secondary" id="richResultsBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
+        </div>
+        ${supabaseAvailable ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>` : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>'}
+      </td>
+    `;
+    
+    // Add click handlers for external validator buttons
+    const schemaOrgBtn = document.getElementById(`schemaOrgBtn_${index}`);
+    const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
+    if (schemaOrgBtn) {
+      schemaOrgBtn.onclick = () => {
+        window.open(schemaOrgUrl, '_blank');
+        // Auto-mark as opened
+        const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+        if (statusSelect) {
+          statusSelect.value = '👀 Opened (reviewing)';
+          updateValidationStatus(index, 'schemaorg', '👀 Opened (reviewing)');
+        }
+      };
+    }
+    if (richResultsBtn) {
+      // Use reportUrl from API if available, otherwise use default
+      const reportUrl = result.richResultsReportUrl || googleUrl;
+      richResultsBtn.onclick = () => {
+        window.open(reportUrl, '_blank');
+        // Auto-mark as opened
+        const statusSelect = document.getElementById(`googleStatus_${index}`);
+        if (statusSelect) {
+          statusSelect.value = '👀 Opened (reviewing)';
+          updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
+        }
+      };
+    }
+    
+    // Store validation status in result object
+    if (!result.validatorGoogleStatus) {
+      result.validatorGoogleStatus = 'Not run';
+    }
+    if (!result.validatorSchemaOrgStatus) {
+      result.validatorSchemaOrgStatus = 'Not run';
+    }
+    if (!result.notes) {
+      result.notes = '';
+    }
+    
+    // Add click handler to status cell if it has issues or error
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    if (statusCell && (statusClass === 'issues' || statusClass === 'error')) {
+      const chip = statusCell.querySelector('.chip-issues');
+      if (chip) {
+        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+      }
+    }
+    
+    // Add click handler to Generate Enhanced button
+    const genBtn = document.getElementById(`genBtn_${index}`);
+    if (genBtn) {
+      genBtn.onclick = async () => {
+        const url = result.url;
+        try {
+          const json = await generateEnhancedFor(url);
+          window.__openGenModal(url, json);
+        } catch (e) {
+          alert('Failed to generate enhanced schema: ' + e.message);
+        }
+      };
+    }
+  }
+  
+  // Update validation status in memory
+  function updateValidationStatus(index, type, value) {
+    if (validationResults[index]) {
+      if (type === 'google') {
+        validationResults[index].validatorGoogleStatus = value;
+      } else if (type === 'schemaorg') {
+        validationResults[index].validatorSchemaOrgStatus = value;
+      }
+    }
+  }
+  
+  // Call Schema.org validator API and update dropdown
+  async function runSchemaOrgValidator(index, url) {
+    const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    if (!statusSelect) return;
+    
+    // Set to "Running..." while waiting
+    statusSelect.value = '🔄 Running...';
+    updateValidationStatus(index, 'schemaorg', '🔄 Running...');
+    
+    try {
+      // Determine API base URL (use deployed Vercel URL or local dev)
+      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://schema-tools-8j4szcplh-info-alanrangercs-projects.vercel.app';
+      
+      const apiUrl = `${apiBaseUrl}/api/validator/schemaorg?url=${encodeURIComponent(url)}`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Map API status to dropdown value
+      let dropdownValue = 'Not run';
+      switch (data.status) {
+        case 'passed':
+          dropdownValue = '✅ Passed';
+          break;
+        case 'warnings':
+          dropdownValue = '⚠️ Warning';
+          break;
+        case 'failed':
+          dropdownValue = '❌ Failed';
+          break;
+        case 'unreachable':
+          dropdownValue = 'Not run';
+          // Add tooltip if needed
+          if (statusSelect.title) {
+            statusSelect.title = 'API unreachable';
+          }
+          break;
+        default:
+          dropdownValue = 'Not run';
+      }
+      
+      // Update dropdown
+      statusSelect.value = dropdownValue;
+      updateValidationStatus(index, 'schemaorg', dropdownValue);
+      
+      // Remove tooltip if status is not unreachable
+      if (data.status !== 'unreachable') {
+        statusSelect.removeAttribute('title');
+      }
+      
+    } catch (error) {
+      console.error('Schema.org validator API error:', error);
+      // On error, leave as "Not run" and add tooltip
+      statusSelect.value = 'Not run';
+      statusSelect.title = 'API unreachable';
+      updateValidationStatus(index, 'schemaorg', 'Not run');
+    }
+  }
+  
+  // Call Google Rich Results validator API and update dropdown
+  async function runRichResultsValidator(index, url) {
+    const statusSelect = document.getElementById(`googleStatus_${index}`);
+    if (!statusSelect) return;
+    
+    // Set to "Running..." while waiting
+    statusSelect.value = '🔄 Running...';
+    updateValidationStatus(index, 'google', '🔄 Running...');
+    
+    try {
+      // Determine API base URL (use deployed Vercel URL or local dev)
+      const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://schema-tools-8j4szcplh-info-alanrangercs-projects.vercel.app';
+      
+      const apiUrl = `${apiBaseUrl}/api/validator/richresults`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        // Handle error response
+        const errorMsg = data.error || 'Unknown error';
+        statusSelect.value = 'Not run';
+        statusSelect.title = errorMsg;
+        updateValidationStatus(index, 'google', 'Not run');
+        
+        // Add error note to Notes cell
+        const notesEl = document.getElementById(`notes_${index}`);
+        if (notesEl) {
+          const currentNotes = notesEl.value || '';
+          const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
+          notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+          updateValidationNotes(index, notesEl.value);
+        }
+        
+        return;
+      }
+      
+      // Map API status to dropdown value
+      let dropdownValue = 'Not run';
+      switch (data.status) {
+        case 'eligible':
+          dropdownValue = '✅ Passed';
+          break;
+        case 'warnings':
+          dropdownValue = '⚠️ Warning';
+          break;
+        case 'ineligible':
+          dropdownValue = '❌ Failed';
+          break;
+        case 'unknown':
+        default:
+          dropdownValue = 'Not run';
+          statusSelect.title = 'Status unknown';
+      }
+      
+      // Update dropdown
+      statusSelect.value = dropdownValue;
+      updateValidationStatus(index, 'google', dropdownValue);
+      
+      // Store reportUrl in result object for Rich Results button
+      if (validationResults[index] && data.reportUrl) {
+        validationResults[index].richResultsReportUrl = data.reportUrl;
+      }
+      
+      // Update Rich Results button to use reportUrl
+      const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
+      if (richResultsBtn && data.reportUrl) {
+        richResultsBtn.onclick = () => {
+          window.open(data.reportUrl, '_blank');
+          const statusSelect = document.getElementById(`googleStatus_${index}`);
+          if (statusSelect) {
+            statusSelect.value = '👀 Opened (reviewing)';
+            updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
+          }
+        };
+      }
+      
+      // Remove tooltip if status is not unknown
+      if (data.status !== 'unknown') {
+        statusSelect.removeAttribute('title');
+      }
+      
+    } catch (error) {
+      console.error('Rich Results validator API error:', error);
+      // On error, leave as "Not run" and add tooltip
+      statusSelect.value = 'Not run';
+      statusSelect.title = 'API error';
+      updateValidationStatus(index, 'google', 'Not run');
+      
+      // Add error note to Notes cell
+      const notesEl = document.getElementById(`notes_${index}`);
+      if (notesEl) {
+        const currentNotes = notesEl.value || '';
+        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + 'Rich Results: API error';
+        updateValidationNotes(index, notesEl.value);
+      }
+    }
+  }
+  
+  // Save auto-run preference to localStorage
+  function saveAutoRunPreference() {
+    const checkbox = document.getElementById('autoRunExternalChecks');
+    if (checkbox) {
+      localStorage.setItem('validator.autoExternal', checkbox.checked ? '1' : '0');
+    }
+  }
+  
+  // Load auto-run preference from localStorage
+  function loadAutoRunPreference() {
+    const stored = localStorage.getItem('validator.autoExternal');
+    const checkbox = document.getElementById('autoRunExternalChecks');
+    if (checkbox) {
+      checkbox.checked = stored !== '0'; // Default to true if not set
+    }
+  }
+  
+  // Update notes in memory
+  function updateValidationNotes(index, value) {
+    if (validationResults[index]) {
+      validationResults[index].notes = value;
+    }
+  }
+  
+  // Bulk helper: Set all external status dropdowns to a specific value
+  function setAllExternalStatusTo(status) {
+    const statusValue = status === 'Passed' ? '✅ Passed' : status;
+    const rows = document.querySelectorAll('#resultsTableBody tr');
+    let updatedCount = 0;
+    
+    rows.forEach((row) => {
+      // Get index from row's first cell's ID or dataset
+      const firstCell = row.querySelector('td');
+      if (!firstCell) return;
+      
+      // Find the index by checking the status select IDs
+      const googleSelect = row.querySelector('select[id^="googleStatus_"]');
+      const schemaOrgSelect = row.querySelector('select[id^="schemaOrgStatus_"]');
+      
+      if (googleSelect) {
+        const index = parseInt(googleSelect.id.replace('googleStatus_', ''));
+        if (!isNaN(index) && googleSelect.value === 'Not run') {
+          googleSelect.value = statusValue;
+          updateValidationStatus(index, 'google', statusValue);
+          updatedCount++;
+        }
+      }
+      
+      if (schemaOrgSelect) {
+        const index = parseInt(schemaOrgSelect.id.replace('schemaOrgStatus_', ''));
+        if (!isNaN(index) && schemaOrgSelect.value === 'Not run') {
+          schemaOrgSelect.value = statusValue;
+          updateValidationStatus(index, 'schemaorg', statusValue);
+          updatedCount++;
+        }
+      }
+    });
+    
+    showToast(`✅ Updated ${updatedCount} "Not run" status${updatedCount !== 1 ? 'es' : ''} to ${statusValue}`);
+  }
+  
+  // Bulk helper: Reset all external status dropdowns to "Not run"
+  function resetAllExternalStatus() {
+    const rows = document.querySelectorAll('#resultsTableBody tr');
+    let updatedCount = 0;
+    
+    rows.forEach((row) => {
+      const googleSelect = row.querySelector('select[id^="googleStatus_"]');
+      const schemaOrgSelect = row.querySelector('select[id^="schemaOrgStatus_"]');
+      
+      if (googleSelect) {
+        const index = parseInt(googleSelect.id.replace('googleStatus_', ''));
+        if (!isNaN(index)) {
+          googleSelect.value = 'Not run';
+          updateValidationStatus(index, 'google', 'Not run');
+          updatedCount++;
+        }
+      }
+      
+      if (schemaOrgSelect) {
+        const index = parseInt(schemaOrgSelect.id.replace('schemaOrgStatus_', ''));
+        if (!isNaN(index)) {
+          schemaOrgSelect.value = 'Not run';
+          updateValidationStatus(index, 'schemaorg', 'Not run');
+          updatedCount++;
+        }
+      }
+    });
+    
+    showToast(`✅ Reset ${updatedCount} external status${updatedCount !== 1 ? 'es' : ''} to "Not run"`);
+  }
+  
+  // Save to Supabase
+  async function saveToSupabase(index) {
+    if (!supabaseAvailable || !supabase) {
+      showToast('Supabase client not initialized. Please refresh the page.', true);
+      return;
+    }
+    
+    const result = validationResults[index];
+    if (!result) {
+      showToast('Error: No result found for this row', true);
+      return;
+    }
+    
+    const saveBtn = document.getElementById(`saveBtn_${index}`);
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+    
+    try {
+      // Get current status values
+      const googleStatusEl = document.getElementById(`googleStatus_${index}`);
+      const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${index}`);
+      const notesEl = document.getElementById(`notes_${index}`);
+      
+      const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || 'Not run';
+      const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || 'Not run';
+      const notes = notesEl ? notesEl.value : result.notes || '';
+      
+      // Prepare schema JSON
+      let schemaJsonRaw = null;
+      if (result.schemas && result.schemas.length > 0) {
+        if (result.schemas.length === 1) {
+          schemaJsonRaw = result.schemas[0].schema;
+        } else {
+          schemaJsonRaw = {
+            '@context': 'https://schema.org',
+            '@graph': result.schemas.map(s => s.schema)
+          };
+        }
+      }
+      
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('schema_audit_logs')
+        .insert({
+          url: result.url,
+          timestamp: new Date().toISOString(),
+          validator_google_status: googleStatus,
+          validator_schemaorg_status: schemaOrgStatus,
+          schema_type_detected: result.schemaType || null,
+          schema_json_raw: schemaJsonRaw,
+          schema_notes: notes || null
+        });
+      
+      if (error) {
+        throw error;
+      }
+      
+      showToast(`✅ Saved to Supabase: ${result.url}`);
+      console.log('Successfully saved to Supabase:', data);
+      
+      if (saveBtn) {
+        saveBtn.textContent = '✅ Saved';
+        setTimeout(() => {
+          saveBtn.textContent = 'Save to Supabase';
+          saveBtn.disabled = false;
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+      showToast(`❌ Error saving to Supabase: ${error.message}`, true);
+      
+      if (saveBtn) {
+        saveBtn.textContent = 'Save to Supabase';
+        saveBtn.disabled = false;
+      }
+    }
+  }
+  
+  // Show toast notification
+  function showToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${isError ? 'error' : ''}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  }
+
+  // Start validation process
+  async function startValidation() {
+    const fileInput = document.getElementById('validatorCsvFile');
+    if (!fileInput.files.length) {
+      alert('Please upload a CSV file first');
+      return;
+    }
+    
+    const progressDiv = document.getElementById('validatorProgress');
+    const progressBar = document.getElementById('progressBarFill');
+    const progressText = document.getElementById('progressText');
+    const resultsDiv = document.getElementById('validatorResults');
+    const tableBody = document.getElementById('resultsTableBody');
+    
+    try {
+      // Parse CSV
+      const urls = await parseCSVForValidation(fileInput.files[0]);
+      
+      if (urls.length === 0) {
+        alert('No valid URLs found in CSV file');
+        return;
+      }
+      
+      // Show progress
+      progressDiv.style.display = 'block';
+      resultsDiv.style.display = 'block';
+      tableBody.innerHTML = '';
+      validationResults = [];
+      
+      // Initialize rows with processing status
+      urls.forEach((urlData, index) => {
+        const placeholderResult = {
+          url: urlData.url,
+          row: urlData.row,
+          schemaType: null,
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: 'Not run',
+          validatorSchemaOrgStatus: 'Not run',
+          notes: '',
+          processing: true
+        };
+        validationResults.push(placeholderResult);
+        updateTableRow(index, {
+          ...placeholderResult,
+          schemaType: 'Processing...',
+          error: null
+        });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 10, 'Queued');
+        }
+      });
+      
+      // Process each URL
+      for (let i = 0; i < urls.length; i++) {
+        const urlData = urls[i];
+        progressText.textContent = `Processing ${i + 1} of ${urls.length}: ${urlData.url}`;
+        progressBar.style.width = `${((i + 1) / urls.length) * 100}%`;
+        
+        // Update row to show processing status
+        updateTableRow(i, {
+          url: urlData.url,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null
+        });
+        const schemaTypeCell = document.getElementById(`schemaTypeCell_${i}`);
+        if (schemaTypeCell) {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 10, 'Queued');
+        }
+        
+        // Process URL
+        const result = await processUrl(urlData);
+        validationResults[i] = result;
+        
+        // Update table row immediately
+        updateTableRow(i, result);
+        
+        // Auto-run Schema.org validator if enabled and status is "Not run"
+        const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+        const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+        
+        if (shouldAutoRun) {
+          const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${i}`);
+          if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+            await runSchemaOrgValidator(i, urlData.url);
+          }
+          
+          // Auto-run Rich Results validator if enabled and status is "Not run"
+          const googleStatusSelect = document.getElementById(`googleStatus_${i}`);
+          if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+            // Don't await - let it run in background
+            runRichResultsValidator(i, urlData.url);
+          }
+        }
+        
+        // Small delay to allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      progressText.textContent = `Completed: ${validationResults.length} URLs processed`;
+      progressBar.style.width = '100%';
+      
+      // Enable bulk action buttons
+      updateBulkButtons();
+      
+    } catch (error) {
+      alert('Error: ' + error.message);
+      progressDiv.style.display = 'none';
+      console.error('Validation error:', error);
+    }
+  }
+  
+  // Update bulk action buttons state
+  function updateBulkButtons() {
+    const exportBtn = document.getElementById('exportAllBtn');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    
+    const hasResults = validationResults && validationResults.length > 0;
+    
+    if (exportBtn) {
+      exportBtn.disabled = !hasResults;
+    }
+    
+    if (saveAllBtn) {
+      saveAllBtn.disabled = !hasResults || !supabaseAvailable;
+    }
+    
+    console.log('Bulk buttons updated:', { hasResults, supabaseAvailable, exportEnabled: hasResults, saveEnabled: hasResults && supabaseAvailable });
+  }
+  
+  // Export all enhanced schemas
+  async function exportAllEnhanced() {
+    const exportBtn = document.getElementById('exportAllBtn');
+    if (!exportBtn || exportBtn.disabled) return;
+    
+    if (!validationResults || validationResults.length === 0) {
+      alert('No validation results to export');
+      return;
+    }
+    
+    exportBtn.disabled = true;
+    exportBtn.textContent = 'Generating...';
+    
+    try {
+      const pages = [];
+      const processedUrls = new Set();
+      
+      for (const result of validationResults) {
+        if (!result.url || processedUrls.has(result.url)) continue;
+        processedUrls.add(result.url);
+        
+        try {
+          const json = await generateEnhancedFor(result.url);
+          pages.push({
+            url: result.url,
+            json: json
+          });
+        } catch (error) {
+          console.warn(`Failed to generate enhanced schema for ${result.url}:`, error);
+          // Continue with other URLs
+        }
+      }
+      
+      const payload = {
+        createdAt: new Date().toISOString(),
+        pages: pages
+      };
+      
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      a.download = `enhanced-schema-batch-${timestamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast(`✅ Exported ${pages.length} enhanced schemas`);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Error exporting enhanced schemas: ' + error.message);
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = 'Export All Enhanced';
+    }
+  }
+  
+  // Save all results to Supabase
+  async function saveAllToSupabase() {
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    if (!saveAllBtn || saveAllBtn.disabled) return;
+    
+    if (!supabaseAvailable || !supabase) {
+      showToast('Supabase client not initialized. Please refresh the page.', true);
+      return;
+    }
+    
+    if (!validationResults || validationResults.length === 0) {
+      alert('No validation results to save');
+      return;
+    }
+    
+    saveAllBtn.disabled = true;
+    saveAllBtn.textContent = 'Saving...';
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    try {
+      for (let i = 0; i < validationResults.length; i++) {
+        const result = validationResults[i];
+        if (!result || !result.url) continue;
+        
+        try {
+          // Get current status values from DOM
+          const googleStatusEl = document.getElementById(`googleStatus_${i}`);
+          const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${i}`);
+          const notesEl = document.getElementById(`notes_${i}`);
+          
+          const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || '🚫 Skipped';
+          const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || '🚫 Skipped';
+          const notes = notesEl ? notesEl.value : result.notes || '';
+          
+          // Prepare schema JSON
+          let schemaJsonRaw = null;
+          if (result.schemas && result.schemas.length > 0) {
+            if (result.schemas.length === 1) {
+              schemaJsonRaw = result.schemas[0].schema;
+            } else {
+              schemaJsonRaw = {
+                '@context': 'https://schema.org',
+                '@graph': result.schemas.map(s => s.schema)
+              };
+            }
+          }
+          
+          // Insert into Supabase
+          const { data, error } = await supabase
+            .from('schema_audit_logs')
+            .insert({
+              url: result.url,
+              timestamp: new Date().toISOString(),
+              validator_google_status: googleStatus,
+              validator_schemaorg_status: schemaOrgStatus,
+              schema_type_detected: result.schemaType || null,
+              schema_json_raw: schemaJsonRaw,
+              schema_notes: notes || null
+            });
+          
+          if (error) {
+            throw error;
+          }
+          
+          successCount++;
+          
+        } catch (error) {
+          console.error(`Failed to save ${result.url}:`, error);
+          errorCount++;
+          // Continue with other rows
+        }
+      }
+      
+      if (successCount > 0) {
+        showToast(`✅ Saved ${successCount} result${successCount !== 1 ? 's' : ''} to Supabase${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+      } else {
+        showToast(`❌ Failed to save results: ${errorCount} error${errorCount !== 1 ? 's' : ''}`, true);
+      }
+      
+    } catch (error) {
+      console.error('Save all error:', error);
+      showToast('Error saving results: ' + error.message, true);
+    } finally {
+      saveAllBtn.disabled = false;
+      saveAllBtn.textContent = 'Save All to Supabase';
+    }
+  }
+
+  // Generate enhanced schema
+  function generateEnhancedSchema(index) {
+    const result = validationResults[index];
+    if (!result || !result.schemas || result.schemas.length === 0) {
+      alert('No schema found to enhance');
+      return;
+    }
+    
+    // Enhance all schemas if multiple exist
+    const enhancedSchemas = result.schemas.map(schemaData => {
+      return enhanceSchema(schemaData.schema, schemaData.type, result.url);
+    });
+    
+    // If single schema, download as single JSON
+    // If multiple schemas, create @graph structure
+    let jsonData;
+    if (enhancedSchemas.length === 1) {
+      jsonData = JSON.stringify(enhancedSchemas[0], null, 2);
+    } else {
+      // Use @graph structure for multiple schemas
+      const graphSchema = {
+        '@context': 'https://schema.org',
+        '@graph': enhancedSchemas
+      };
+      jsonData = JSON.stringify(graphSchema, null, 2);
+    }
+    
+    // Create downloadable JSON
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const sanitizedUrl = result.url.replace(/https?:\/\//g, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    a.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Also create HTML script tag version as .txt file
+    const txtBlob = new Blob([`<script type="application/ld+json">\n${jsonData}\n<\/script>`], { type: 'text/plain' });
+    const txtUrl = URL.createObjectURL(txtBlob);
+    const txtA = document.createElement('a');
+    txtA.href = txtUrl;
+    txtA.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.txt`;
+    setTimeout(() => {
+      document.body.appendChild(txtA);
+      txtA.click();
+      document.body.removeChild(txtA);
+      URL.revokeObjectURL(txtUrl);
+    }, 500);
+  }
+  // End of script - ensure proper closure
+</script>
+<!-- Generated Schema Modal -->
+  <div id="genBackdrop" class="issues-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+    <div class="issues-modal" style="width:min(880px,94vw)">
+      <h3 id="genTitle">Generated Enhanced Schema</h3>
+      <div class="issues-meta" id="genMeta"></div>
+      <pre id="genJson" class="issues-json" style="max-height:48vh"></pre>
+      <div class="issues-actions">
+        <button class="secondary" id="genCopyBtn">Copy to Clipboard</button>
+        <button class="primary" id="genCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issues Modal -->
+  <div id="issuesBackdrop" class="issues-backdrop" role="dialog" aria-modal="true" aria-labelledby="issuesTitle">
+    <div class="issues-modal">
+      <h3 id="issuesTitle">Schema Issues</h3>
+      <div id="issuesMeta" class="issues-meta"></div>
+      <ul id="issuesList" class="issues-list"></ul>
+      <details>
+        <summary>Preview first JSON-LD block on page</summary>
+        <pre id="issuesJson" class="issues-json"></pre>
+      </details>
+      <div class="issues-actions">
+        <button class="secondary" id="issuesSchemaOrgBtn">Open Schema.org</button>
+        <button class="secondary" id="issuesGoogleBtn">Open Rich Results</button>
+        <button class="primary" id="issuesCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+
