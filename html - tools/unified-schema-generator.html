@@ -1555,8 +1555,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Update validation results array
       validationResults[index] = {
         ...result,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || '🚫 Skipped',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || '🚫 Skipped',
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
         notes: validationResults[index].notes || ''
       };
       
