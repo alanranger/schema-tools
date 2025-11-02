@@ -1542,6 +1542,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Update table row with results
       updateTableRow(index, validationResults[index]);
       
+      // Enable bulk action buttons
+      updateBulkButtons();
+      
       // Clear input field
       urlInput.value = '';
       
@@ -1568,8 +1571,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       };
       
       updateTableRow(index, validationResults[index]);
-    }
-  }
+      
+      // Enable bulk action buttons
+      updateBulkButtons();
+      
+    } catch (error) {
 
   // Toggle help block
   function toggleHelpBlock() {
