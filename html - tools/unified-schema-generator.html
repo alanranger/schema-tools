@@ -685,21 +685,55 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   // Supabase Configuration
   const SUPABASE_URL = 'https://igzvwbvgvmzvvzoclufx.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
   
-  // Initialize Supabase client
-  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  // Initialize Supabase client (wait for library to load)
+  let supabase = null;
+  let supabaseAvailable = false;
   
-  // Check if Supabase is available
-  const supabaseAvailable = !!supabase;
-  
-  if (!supabaseAvailable) {
-    console.warn('Supabase client not available. Save functionality will be disabled.');
+  // Wait for Supabase library to load
+  function initSupabase() {
+    // Check for Supabase library loaded via CDN (UMD build)
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseAvailable = true;
+        console.log('✅ Supabase client initialized successfully');
+        return true;
+      } catch (error) {
+        console.error('Failed to initialize Supabase client:', error);
+      }
+    }
+    return false;
   }
+  
+  // Try to initialize when script loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!initSupabase()) {
+        // Retry after delays
+        setTimeout(initSupabase, 500);
+        setTimeout(initSupabase, 1500);
+      }
+    });
+  } else {
+    if (!initSupabase()) {
+      // Retry after delays
+      setTimeout(initSupabase, 500);
+      setTimeout(initSupabase, 1500);
+    }
+  }
+  
+  // Final retry after all scripts load
+  window.addEventListener('load', function() {
+    if (!supabaseAvailable) {
+      initSupabase();
+    }
+  });
   // Tab switching
   function switchTab(mode) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1428,6 +1462,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusText = '⚠️ Issues';
     }
     
+    // Get existing values if row already exists
+    const existingGoogleStatus = result.validatorGoogleStatus || '🚫 Skipped';
+    const existingSchemaOrgStatus = result.validatorSchemaOrgStatus || '🚫 Skipped';
+    const existingNotes = result.notes || '';
+    
     // Update row content
     const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
     const googleUrl = 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
@@ -1438,13 +1477,157 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <td><span class="status-badge ${statusClass}">${statusText}</span></td>
       <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
       <td>
-        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${index})">Generate Enhanced</button>` : '-'}
+        <select class="status-select" id="googleStatus_${index}" onchange="updateValidationStatus(${index}, 'google', this.value)">
+          <option value="✅ Passed" ${existingGoogleStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
+          <option value="❌ Failed" ${existingGoogleStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
+          <option value="🚫 Skipped" ${existingGoogleStatus === '🚫 Skipped' ? 'selected' : ''}>🚫 Skipped</option>
+        </select>
+      </td>
+      <td>
+        <select class="status-select" id="schemaOrgStatus_${index}" onchange="updateValidationStatus(${index}, 'schemaorg', this.value)">
+          <option value="✅ Passed" ${existingSchemaOrgStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
+          <option value="❌ Failed" ${existingSchemaOrgStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
+          <option value="🚫 Skipped" ${existingSchemaOrgStatus === '🚫 Skipped' ? 'selected' : ''}>🚫 Skipped</option>
+        </select>
+      </td>
+      <td>
+        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${existingNotes}</textarea>
+      </td>
+      <td>
+        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${index})">Generate Enhanced</button><br>` : ''}
         <div style="margin-top: 0.5rem;">
           <button class="enhance-btn secondary" onclick="window.open('${schemaOrgUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
           <button class="enhance-btn secondary" onclick="window.open('${googleUrl}', '_blank')" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Google</button>
         </div>
+        ${supabaseAvailable ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>` : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>'}
       </td>
     `;
+    
+    // Store validation status in result object
+    if (!result.validatorGoogleStatus) {
+      result.validatorGoogleStatus = '🚫 Skipped';
+    }
+    if (!result.validatorSchemaOrgStatus) {
+      result.validatorSchemaOrgStatus = '🚫 Skipped';
+    }
+    if (!result.notes) {
+      result.notes = '';
+    }
+  }
+  
+  // Update validation status in memory
+  function updateValidationStatus(index, type, value) {
+    if (validationResults[index]) {
+      if (type === 'google') {
+        validationResults[index].validatorGoogleStatus = value;
+      } else if (type === 'schemaorg') {
+        validationResults[index].validatorSchemaOrgStatus = value;
+      }
+    }
+  }
+  
+  // Update notes in memory
+  function updateValidationNotes(index, value) {
+    if (validationResults[index]) {
+      validationResults[index].notes = value;
+    }
+  }
+  
+  // Save to Supabase
+  async function saveToSupabase(index) {
+    if (!supabaseAvailable || !supabase) {
+      showToast('Supabase client not initialized. Please refresh the page.', true);
+      return;
+    }
+    
+    const result = validationResults[index];
+    if (!result) {
+      showToast('Error: No result found for this row', true);
+      return;
+    }
+    
+    const saveBtn = document.getElementById(`saveBtn_${index}`);
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+    
+    try {
+      // Get current status values
+      const googleStatusEl = document.getElementById(`googleStatus_${index}`);
+      const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${index}`);
+      const notesEl = document.getElementById(`notes_${index}`);
+      
+      const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || '🚫 Skipped';
+      const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || '🚫 Skipped';
+      const notes = notesEl ? notesEl.value : result.notes || '';
+      
+      // Prepare schema JSON
+      let schemaJsonRaw = null;
+      if (result.schemas && result.schemas.length > 0) {
+        if (result.schemas.length === 1) {
+          schemaJsonRaw = result.schemas[0].schema;
+        } else {
+          schemaJsonRaw = {
+            '@context': 'https://schema.org',
+            '@graph': result.schemas.map(s => s.schema)
+          };
+        }
+      }
+      
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('schema_audit_logs')
+        .insert({
+          url: result.url,
+          timestamp: new Date().toISOString(),
+          validator_google_status: googleStatus,
+          validator_schemaorg_status: schemaOrgStatus,
+          schema_type_detected: result.schemaType || null,
+          schema_json_raw: schemaJsonRaw,
+          schema_notes: notes || null
+        });
+      
+      if (error) {
+        throw error;
+      }
+      
+      showToast(`✅ Saved to Supabase: ${result.url}`);
+      console.log('Successfully saved to Supabase:', data);
+      
+      if (saveBtn) {
+        saveBtn.textContent = '✅ Saved';
+        setTimeout(() => {
+          saveBtn.textContent = 'Save to Supabase';
+          saveBtn.disabled = false;
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+      showToast(`❌ Error saving to Supabase: ${error.message}`, true);
+      
+      if (saveBtn) {
+        saveBtn.textContent = 'Save to Supabase';
+        saveBtn.disabled = false;
+      }
+    }
+  }
+  
+  // Show toast notification
+  function showToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${isError ? 'error' : ''}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
   }
 
   // Start validation process

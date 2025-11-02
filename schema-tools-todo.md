@@ -101,7 +101,30 @@ Build a **single HTML tool** that can:
 **Limitations:**
 - Cannot automatically infer all field values (requires manual review)
 - Placeholders must be replaced with actual data before deployment
-- Supabase integration not yet implemented (schema design provided)
+
+---
+
+### 🗃️ Supabase Integration (COMPLETE v1.3.0)
+
+- [x] Create `schema_audit_logs` table in Supabase
+- [x] Add Supabase JS client library to HTML tool
+- [x] Configure Supabase credentials (URL and anonymous key)
+- [x] Add status dropdowns for Google and Schema.org validators
+- [x] Add notes textarea for each validation result
+- [x] Implement "Save to Supabase" button functionality
+- [x] Store validation results with all metadata
+- [x] Toast notifications for save success/failure
+- [x] Console logging for debugging
+- [x] Update documentation (README.md and handover-cursor-ai.md)
+
+**Table Schema:**
+- `url` (text) - Validated page URL
+- `timestamp` (timestamptz) - Validation timestamp
+- `validator_google_status` (text) - Google Rich Results status
+- `validator_schemaorg_status` (text) - Schema.org validator status
+- `schema_type_detected` (text) - Detected schema types
+- `schema_json_raw` (jsonb) - Raw schema JSON from page
+- `schema_notes` (text) - Manual notes
 
 ---
 

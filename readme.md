@@ -295,6 +295,78 @@ node scripts/schema-enhancer.js validation-results.json --format html --output e
 ]
 ```
 
+## Supabase Integration (Schema Audit Logs)
+
+The unified schema generator includes Supabase integration to store validation results and audit logs. This allows you to track schema validation history over time.
+
+### Setup
+
+1. **Supabase Table Created**: The `schema_audit_logs` table has been created automatically with the following schema:
+   - `url` (text) - The validated page URL
+   - `timestamp` (timestamp) - When the validation was performed
+   - `validator_google_status` (text) - Status from Google Rich Results Test (✅ Passed / ❌ Failed / 🚫 Skipped)
+   - `validator_schemaorg_status` (text) - Status from Schema.org Validator (✅ Passed / ❌ Failed / 🚫 Skipped)
+   - `schema_type_detected` (text) - Detected schema types (e.g., "Product", "Event")
+   - `schema_json_raw` (jsonb) - The raw schema JSON found on the page
+   - `schema_notes` (text) - Manual notes about the validation
+
+2. **Configuration**: Supabase credentials are already configured in `unified-schema-generator.html`:
+   - Supabase URL: `https://igzvwbvgvmzvvzoclufx.supabase.co`
+   - Uses anonymous key for browser-based access
+
+### Usage
+
+1. **Validate URLs**: Use the Schema Validator tab to validate URLs from CSV
+2. **Set Status**: Use the dropdown menus to set Google and Schema.org validation status
+3. **Add Notes**: Enter notes in the textarea for each URL
+4. **Save to Supabase**: Click "Save to Supabase" button for each row
+5. **View Results**: Check Supabase dashboard or query the `schema_audit_logs` table
+
+### Table Schema
+
+```sql
+CREATE TABLE schema_audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  url TEXT NOT NULL,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  validator_google_status TEXT,
+  validator_schemaorg_status TEXT,
+  schema_type_detected TEXT,
+  schema_json_raw JSONB,
+  schema_notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Features
+
+- ✅ Manual status input for Google and Schema.org validators
+- ✅ Notes field for each validation
+- ✅ Automatic storage of detected schema JSON
+- ✅ Toast notifications for save success/failure
+- ✅ Console logging for debugging
+
+### Querying Results
+
+```sql
+-- Get all validations for a specific URL
+SELECT * FROM schema_audit_logs 
+WHERE url = 'https://www.example.com/page' 
+ORDER BY timestamp DESC;
+
+-- Get all failed validations
+SELECT * FROM schema_audit_logs 
+WHERE validator_google_status = '❌ Failed' 
+   OR validator_schemaorg_status = '❌ Failed'
+ORDER BY timestamp DESC;
+
+-- Get validation history
+SELECT url, validator_google_status, validator_schemaorg_status, timestamp 
+FROM schema_audit_logs 
+ORDER BY timestamp DESC 
+LIMIT 100;
+```
+
 ## Notes
 
 - You must not inject multiple schema blocks on unrelated pages. Only paste the matching product's schema on its correct Squarespace page.

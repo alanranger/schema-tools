@@ -20,7 +20,7 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Injects fixed location, organizer, image
 - Outputs valid Event + ItemList blocks
 
-### ✅ `unified-schema-generator.html` (v1.2.1 - COMPLETE)
+### ✅ `unified-schema-generator.html` (v1.3.0 - COMPLETE)
 - Combines both generators into one file with tabbed interface
 - Three tabs:
   - Event Schema Generator
@@ -35,6 +35,13 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
   - Downloads both JSON and HTML script tag formats
   - Improved UI with status badges and better error handling
   - Better table rendering with processing status updates
+- **New in v1.3.0:**
+  - **Supabase Integration**: Store validation results in `schema_audit_logs` table
+  - Manual status input dropdowns for Google and Schema.org validators
+  - Notes textarea for each validation result
+  - "Save to Supabase" button for each URL row
+  - Toast notifications for save success/failure
+  - Automatic storage of schema JSON and validation metadata
 
 ## Goals for Next Tool Phase
 
@@ -47,12 +54,17 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Multiple schema support (@graph structure)
 - Dual format downloads (JSON + HTML script tags)
 
-### 🚀 Future Enhancements:
-- Add cleanup and review-merging to CSV uploads
-- Crawl live Squarespace URLs to ensure correct schema placement and detect outdated/incomplete pages
-- Export validation results to Excel/CSV format
-- Add batch enhancement for all URLs at once
-- Add filtering/sorting options in results table
+### 🗃️ Supabase Integration (COMPLETE)
+- **Table**: `schema_audit_logs` created and configured
+- **Fields**: url, timestamp, validator_google_status, validator_schemaorg_status, schema_type_detected, schema_json_raw, schema_notes
+- **Features**:
+  - Browser-based saves using Supabase JS client
+  - Manual status input for validators
+  - Notes capture
+  - Automatic schema JSON storage
+  - Toast notifications for user feedback
+- **Credentials**: Configured in unified-schema-generator.html
+- **Usage**: Click "Save to Supabase" button after setting validation status and notes
 
 ## Folder Map
 
