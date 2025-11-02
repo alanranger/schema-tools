@@ -2400,6 +2400,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
       }
     }
+    
+    // Add click handler to Generate Enhanced button
+    const genBtn = document.getElementById(`genBtn_${index}`);
+    if (genBtn) {
+      genBtn.onclick = async () => {
+        const url = result.url;
+        try {
+          const json = await generateEnhancedFor(url);
+          window.__openGenModal(url, json);
+        } catch (e) {
+          alert('Failed to generate enhanced schema: ' + e.message);
+        }
+      };
+    }
   }
   
   // Update validation status in memory
