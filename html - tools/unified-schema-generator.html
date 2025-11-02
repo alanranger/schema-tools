@@ -14,7 +14,7 @@
       margin: 0;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1800px;
       margin: 0 auto;
       background: white;
       padding: 2.5rem;
@@ -340,6 +340,7 @@
       font-weight: 600;
       color: #2d3748;
       border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
     }
     .status-badge.no-schema {
       background: #e2e8f0;
@@ -359,7 +360,7 @@
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
     .notes-textarea {
-      width: 200px;
+      width: 250px;
       min-height: 60px;
       padding: 0.5rem;
       font-size: 0.875rem;
@@ -413,8 +414,13 @@
       }
     }
     .results-table td {
-      padding: 0.75rem;
+      white-space: nowrap;
+      padding: 0.75rem 1rem;
       vertical-align: top;
+    }
+    .results-table td.missing-fields {
+      white-space: normal;
+      max-width: 300px;
     }
     .results-table tr:hover {
       background: #f9fafb;
