@@ -2616,9 +2616,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusText = '✅ Valid';
       statusHtml = '<span class="chip-ok">✅ Valid</span>';
     } else if (result.schemaFound) {
-      // Check if we have missing fields badges or missing fields
-      // Use the detailed badges first, then fallback to missingFields array
-      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
+      // Check if we have missing fields - prioritize detailed analysis over simple array
+      // Only show Issues if we actually have missing fields from the detailed analysis
+      const hasMissingFields = (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) ||
+                               (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
                                (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
         statusClass = 'issues';
@@ -2642,10 +2643,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       } catch (_) {}
     }
     
-    // Store missing fields details
-    if (result.missingFieldsDetails) {
-      row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
-    }
+      // Store missing fields details
+      if (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) {
+        row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
+      }
+      // Also store badges for fallback
+      if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
+        row.dataset.missingBadges = JSON.stringify(result.missingFieldsBadges);
+      }
     
     // Get existing values if row already exists
     const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
