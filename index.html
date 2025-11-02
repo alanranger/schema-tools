@@ -754,13 +754,17 @@
       font-size: 0.75rem;
       margin-right: 0.5rem;
     }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.4</span>
+    <span class="version">v1.4.5</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2720,21 +2724,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (genBtn) {
       genBtn.onclick = async () => {
         const url = result.url;
+        const originalText = genBtn.textContent;
+        const originalDisabled = genBtn.disabled;
+        
         try {
+          // Update button state immediately
           genBtn.disabled = true;
-          genBtn.textContent = 'Generating...';
+          genBtn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> Fetching page...';
+          genBtn.style.opacity = '0.7';
+          genBtn.style.cursor = 'wait';
+          
+          // Force UI update
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          debugLog(`Starting enhanced schema generation for: ${url}`, 'info');
+          
+          // Update progress
+          genBtn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> Parsing schema...';
+          debugLog('Fetching page HTML...', 'info');
+          
           const json = await generateEnhancedFor(url);
+          
+          debugLog('Schema generation completed successfully', 'success');
+          
+          genBtn.innerHTML = '<span style="display:inline-block;">✅</span> Opening modal...';
+          
+          // Small delay to show success state
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
           if (window.__openGenModal) {
             window.__openGenModal(url, json);
           } else {
             alert('Error: Modal function not initialized. Please refresh the page.');
           }
         } catch (e) {
-          alert('Failed to generate enhanced schema: ' + e.message);
           debugLog('Generate Enhanced error: ' + e.message, 'error');
+          debugLog('Error stack: ' + (e.stack || 'No stack trace'), 'error');
+          alert('Failed to generate enhanced schema: ' + e.message);
         } finally {
+          // Reset button state
           genBtn.disabled = false;
-          genBtn.textContent = 'Generate Enhanced';
+          genBtn.textContent = originalText;
+          genBtn.style.opacity = '1';
+          genBtn.style.cursor = 'pointer';
         }
       };
     }
