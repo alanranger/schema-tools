@@ -50,72 +50,87 @@ export default async function handler(req, res) {
     const warnings = [];
 
     // Look for the validation summary pattern: "X ERRORS Y WARNINGS Z ITEMS"
-    // This appears in the HTML as text content, often in a heading or summary div
-    const summaryMatch = html.match(/(\d+)\s*ERRORS?\s*(\d+)\s*WARNINGS?\s*(\d+)\s*ITEMS?/i);
+    // Schema.org validator shows this in various formats, try multiple patterns
+    const patterns = [
+      // Pattern 1: "0 ERRORS 0 WARNINGS 5 ITEMS" (most common)
+      /(\d+)\s+ERRORS?\s+(\d+)\s+WARNINGS?\s+(\d+)\s+ITEMS?/i,
+      // Pattern 2: "0 ERRORS, 0 WARNINGS, 5 ITEMS" (with commas)
+      /(\d+)\s+ERRORS?,\s*(\d+)\s+WARNINGS?,\s*(\d+)\s+ITEMS?/i,
+      // Pattern 3: Separate elements (e.g., in different tags)
+      /(\d+)\s*ERRORS?/i,
+      /(\d+)\s*WARNINGS?/i,
+      /(\d+)\s*ITEMS?/i
+    ];
+    
+    let errorCount = 0;
+    let warningCount = 0;
+    let itemCount = 0;
+    
+    // Try the combined pattern first
+    const summaryMatch = html.match(/(\d+)\s+ERRORS?\s+(\d+)\s+WARNINGS?\s+(\d+)\s+ITEMS?/i);
     
     if (summaryMatch) {
-      const errorCount = parseInt(summaryMatch[1], 10);
-      const warningCount = parseInt(summaryMatch[2], 10);
-      const itemCount = parseInt(summaryMatch[3], 10);
+      errorCount = parseInt(summaryMatch[1], 10);
+      warningCount = parseInt(summaryMatch[2], 10);
+      itemCount = parseInt(summaryMatch[3], 10);
+    } else {
+      // Fallback: try to find individual counts
+      const errorMatch = html.match(/(\d+)\s+ERRORS?/i);
+      const warningMatch = html.match(/(\d+)\s+WARNINGS?/i);
+      const itemMatch = html.match(/(\d+)\s+ITEMS?/i);
       
-      // Determine status based on actual counts
-      if (errorCount > 0) {
-        status = 'failed';
-      } else if (warningCount > 0) {
-        status = 'warnings';
-      } else {
-        status = 'passed';
+      if (errorMatch) errorCount = parseInt(errorMatch[1], 10);
+      if (warningMatch) warningCount = parseInt(warningMatch[1], 10);
+      if (itemMatch) itemCount = parseInt(itemMatch[1], 10);
+    }
+    
+    // Determine status based on actual counts
+    if (errorCount > 0) {
+      status = 'failed';
+      // Try to extract error messages
+      const errorSectionMatch = html.match(/<[^>]*class[^>]*error[^>]*>([\s\S]*?)<\/[^>]*>/gi);
+      if (errorSectionMatch) {
+        errorSectionMatch.slice(0, Math.min(errorCount, 10)).forEach(match => {
+          const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          if (text && text.length < 200 && !text.match(/^\d+\s*ERRORS?$/i)) {
+            errors.push(text);
+          }
+        });
       }
       
-      // Try to extract error messages if there are errors
-      if (errorCount > 0) {
-        // Look for error list items or error messages in the HTML
-        // Schema.org validator typically shows errors in a structured format
-        const errorSectionMatch = html.match(/<[^>]*class[^>]*error[^>]*>([\s\S]*?)<\/[^>]*>/gi);
-        if (errorSectionMatch) {
-          errorSectionMatch.slice(0, Math.min(errorCount, 10)).forEach(match => {
-            const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            if (text && text.length < 200 && !text.match(/^\d+\s*ERRORS?$/i)) {
-              errors.push(text);
-            }
-          });
-        }
-        
-        // If we couldn't extract errors, at least note the count
-        if (errors.length === 0 && errorCount > 0) {
-          errors.push(`${errorCount} validation error${errorCount > 1 ? 's' : ''} found`);
-        }
+      // If we couldn't extract errors, at least note the count
+      if (errors.length === 0 && errorCount > 0) {
+        errors.push(`${errorCount} validation error${errorCount > 1 ? 's' : ''} found`);
+      }
+    } else if (warningCount > 0) {
+      status = 'warnings';
+      // Try to extract warning messages
+      const warningSectionMatch = html.match(/<[^>]*class[^>]*warning[^>]*>([\s\S]*?)<\/[^>]*>/gi);
+      if (warningSectionMatch) {
+        warningSectionMatch.slice(0, Math.min(warningCount, 10)).forEach(match => {
+          const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          if (text && text.length < 200 && !text.match(/^\d+\s*WARNINGS?$/i)) {
+            warnings.push(text);
+          }
+        });
       }
       
-      // Try to extract warning messages if there are warnings
-      if (warningCount > 0) {
-        const warningSectionMatch = html.match(/<[^>]*class[^>]*warning[^>]*>([\s\S]*?)<\/[^>]*>/gi);
-        if (warningSectionMatch) {
-          warningSectionMatch.slice(0, Math.min(warningCount, 10)).forEach(match => {
-            const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            if (text && text.length < 200 && !text.match(/^\d+\s*WARNINGS?$/i)) {
-              warnings.push(text);
-            }
-          });
-        }
-        
-        // If we couldn't extract warnings, at least note the count
-        if (warnings.length === 0 && warningCount > 0) {
-          warnings.push(`${warningCount} warning${warningCount > 1 ? 's' : ''} found`);
-        }
+      // If we couldn't extract warnings, at least note the count
+      if (warnings.length === 0 && warningCount > 0) {
+        warnings.push(`${warningCount} warning${warningCount > 1 ? 's' : ''} found`);
       }
     } else {
-      // Fallback: Look for other indicators if summary pattern not found
-      // Check for "No errors found" or similar success messages
-      if (html.match(/no\s+errors?\s+found/i) || html.match(/validation\s+successful/i)) {
-        status = 'passed';
-      } else if (html.match(/no\s+structured\s+data/i)) {
-        status = 'failed';
-        errors.push('No structured data found on page');
-      } else {
-        // If we can't determine, default to warnings (conservative)
-        status = 'warnings';
-      }
+      // 0 errors and 0 warnings = passed
+      status = 'passed';
+    }
+    
+    // Debug logging (remove in production if needed)
+    console.log(`Schema.org parsing: errors=${errorCount}, warnings=${warningCount}, items=${itemCount}, status=${status}`);
+    
+    // If we found item count but couldn't determine status, and there are items, it's likely passed
+    if (status === 'passed' && itemCount === 0 && html.match(/no\s+structured\s+data/i)) {
+      status = 'failed';
+      errors.push('No structured data found on page');
     }
 
     // Return response
