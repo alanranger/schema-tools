@@ -1,0 +1,867 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "1-day Photography Workshops",
+  "itemListElement": [
+    {
+      "@type": "Event",
+      "name": "Example Workshop 1",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-1",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-1",
+      "position": 1
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 2",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-2",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-2",
+      "position": 2
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 3",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-3",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-3",
+      "position": 3
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 4",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-4",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-4",
+      "position": 4
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 5",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-5",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-5",
+      "position": 5
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 6",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-6",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-6",
+      "position": 6
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 7",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-7",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-7",
+      "position": 7
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 8",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-8",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-8",
+      "position": 8
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 9",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-9",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-9",
+      "position": 9
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 10",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-10",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-10",
+      "position": 10
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 11",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-11",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-11",
+      "position": 11
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 12",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-12",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-12",
+      "position": 12
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 13",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-13",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-13",
+      "position": 13
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 14",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-14",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-14",
+      "position": 14
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 15",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-15",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-15",
+      "position": 15
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 16",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-16",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-16",
+      "position": 16
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 17",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-17",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-17",
+      "position": 17
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 18",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-18",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-18",
+      "position": 18
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 19",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-19",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-19",
+      "position": 19
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 20",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-20",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-20",
+      "position": 20
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 21",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-21",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-21",
+      "position": 21
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 22",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-22",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-22",
+      "position": 22
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 23",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-23",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-23",
+      "position": 23
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 24",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-24",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-24",
+      "position": 24
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 25",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-25",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-25",
+      "position": 25
+    },
+    {
+      "@type": "Event",
+      "name": "Example Workshop 26",
+      "startDate": "2025-08-15T10:00",
+      "endDate": "2025-08-15T14:00",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "On Location \u2013 UK",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "UK",
+          "addressCountry": "GB"
+        }
+      },
+      "image": "https://www.alanranger.com/images/workshop.jpg",
+      "description": "A one-day photography workshop with Alan Ranger.",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/workshop-26",
+        "price": "95",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "url": "https://www.alanranger.com/workshop-26",
+      "position": 26
+    }
+  ]
+}
+</script>

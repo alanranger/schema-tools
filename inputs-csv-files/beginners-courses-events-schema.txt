@@ -1,0 +1,1805 @@
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Photography Courses",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-rrkhn"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-bds4t"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-y3262"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-w5nkt"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2sj27"
+      },
+      {
+        "@type": "ListItem",
+        "position": 6,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-9b3t3"
+      },
+      {
+        "@type": "ListItem",
+        "position": 7,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dhecf"
+      },
+      {
+        "@type": "ListItem",
+        "position": 8,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2k99k"
+      },
+      {
+        "@type": "ListItem",
+        "position": 9,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nzwzx"
+      },
+      {
+        "@type": "ListItem",
+        "position": 10,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct1"
+      },
+      {
+        "@type": "ListItem",
+        "position": 11,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-zbcfe"
+      },
+      {
+        "@type": "ListItem",
+        "position": 12,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct2"
+      },
+      {
+        "@type": "ListItem",
+        "position": 13,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-4pp2p"
+      },
+      {
+        "@type": "ListItem",
+        "position": 14,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct3"
+      },
+      {
+        "@type": "ListItem",
+        "position": 15,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8s2ka"
+      },
+      {
+        "@type": "ListItem",
+        "position": 16,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8ar5x"
+      },
+      {
+        "@type": "ListItem",
+        "position": 17,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1"
+      },
+      {
+        "@type": "ListItem",
+        "position": 18,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wc34j"
+      },
+      {
+        "@type": "ListItem",
+        "position": 19,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2"
+      },
+      {
+        "@type": "ListItem",
+        "position": 20,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-3yj3h"
+      },
+      {
+        "@type": "ListItem",
+        "position": 21,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3"
+      },
+      {
+        "@type": "ListItem",
+        "position": 22,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2n74k"
+      },
+      {
+        "@type": "ListItem",
+        "position": 23,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dg9pz"
+      },
+      {
+        "@type": "ListItem",
+        "position": 24,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nhjlm"
+      },
+      {
+        "@type": "ListItem",
+        "position": 25,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wk1"
+      },
+      {
+        "@type": "ListItem",
+        "position": 26,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-kdh5k"
+      },
+      {
+        "@type": "ListItem",
+        "position": 27,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-"
+      },
+      {
+        "@type": "ListItem",
+        "position": 28,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-n8l4l"
+      },
+      {
+        "@type": "ListItem",
+        "position": 29,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-be4sb"
+      },
+      {
+        "@type": "ListItem",
+        "position": 30,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-7cd64"
+      },
+      {
+        "@type": "ListItem",
+        "position": 31,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-3"
+      },
+      {
+        "@type": "ListItem",
+        "position": 32,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-wk2"
+      },
+      {
+        "@type": "ListItem",
+        "position": 33,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-1"
+      },
+      {
+        "@type": "ListItem",
+        "position": 34,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-s2klg"
+      },
+      {
+        "@type": "ListItem",
+        "position": 35,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hl4tm"
+      },
+      {
+        "@type": "ListItem",
+        "position": 36,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-7breh"
+      },
+      {
+        "@type": "ListItem",
+        "position": 37,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-mw83l"
+      },
+      {
+        "@type": "ListItem",
+        "position": 38,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-42ynf"
+      },
+      {
+        "@type": "ListItem",
+        "position": 39,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-4"
+      },
+      {
+        "@type": "ListItem",
+        "position": 40,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hnp3g"
+      },
+      {
+        "@type": "ListItem",
+        "position": 41,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-55f3d"
+      },
+      {
+        "@type": "ListItem",
+        "position": 42,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dfe"
+      },
+      {
+        "@type": "ListItem",
+        "position": 43,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-xx94r"
+      },
+      {
+        "@type": "ListItem",
+        "position": 44,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-5"
+      },
+      {
+        "@type": "ListItem",
+        "position": 45,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-1"
+      },
+      {
+        "@type": "ListItem",
+        "position": 46,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-2"
+      },
+      {
+        "@type": "ListItem",
+        "position": 47,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-3"
+      },
+      {
+        "@type": "ListItem",
+        "position": 48,
+        "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-6"
+      }
+    ]
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 1 of 3 -3-9",
+    "startDate": "2025-09-03T00:00:00",
+    "endDate": "2025-09-03T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "03/09/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-rrkhn",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-rrkhn",
+      "validFrom": "2025-07-25T16:40:19.088211"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry - Sep",
+    "startDate": "2025-09-08T00:00:00",
+    "endDate": "2025-09-08T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "08/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-bds4t",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-bds4t",
+      "validFrom": "2025-07-25T16:40:19.088428"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 2 of 3 - 10/9",
+    "startDate": "2025-09-10T00:00:00",
+    "endDate": "2025-09-10T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "10/09/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-y3262",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-y3262",
+      "validFrom": "2025-07-25T16:40:19.088599"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Sep",
+    "startDate": "2025-09-11T00:00:00",
+    "endDate": "2025-09-11T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "11/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-w5nkt",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-w5nkt",
+      "validFrom": "2025-07-25T16:40:19.088761"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Sep",
+    "startDate": "2025-09-15T00:00:00",
+    "endDate": "2025-09-15T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "15/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2sj27",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2sj27",
+      "validFrom": "2025-07-25T16:40:19.088941"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 3 of 3 - 17-9",
+    "startDate": "2025-09-17T00:00:00",
+    "endDate": "2025-09-17T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "17/09/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-9b3t3",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-9b3t3",
+      "validFrom": "2025-07-25T16:40:19.089110"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry 9-18",
+    "startDate": "2025-09-18T00:00:00",
+    "endDate": "2025-09-18T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "18/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dhecf",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dhecf",
+      "validFrom": "2025-07-25T16:40:19.089271"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry Sep",
+    "startDate": "2025-09-22T00:00:00",
+    "endDate": "2025-09-22T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "22/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2k99k",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2k99k",
+      "validFrom": "2025-07-25T16:40:19.089435"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry 25-9",
+    "startDate": "2025-09-25T00:00:00",
+    "endDate": "2025-09-25T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "25/09/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nzwzx",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nzwzx",
+      "validFrom": "2025-07-25T16:40:19.089592"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Oct",
+    "startDate": "2025-10-02T00:00:00",
+    "endDate": "2025-10-02T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "02/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct1",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct1",
+      "validFrom": "2025-07-25T16:40:19.089884"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry 6-10",
+    "startDate": "2025-10-06T00:00:00",
+    "endDate": "2025-10-06T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "06/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-zbcfe",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-zbcfe",
+      "validFrom": "2025-07-25T16:40:19.090038"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Oct",
+    "startDate": "2025-10-09T00:00:00",
+    "endDate": "2025-10-09T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "09/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct2",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct2",
+      "validFrom": "2025-07-25T16:40:19.090193"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry 13-10",
+    "startDate": "2025-10-13T00:00:00",
+    "endDate": "2025-10-13T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "13/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-4pp2p",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-4pp2p",
+      "validFrom": "2025-07-25T16:40:19.090350"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry Oct",
+    "startDate": "2025-10-16T00:00:00",
+    "endDate": "2025-10-16T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "16/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct3",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-oct3",
+      "validFrom": "2025-07-25T16:40:19.090506"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry 20-10",
+    "startDate": "2025-10-20T00:00:00",
+    "endDate": "2025-10-20T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "20/10/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8s2ka",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8s2ka",
+      "validFrom": "2025-07-25T16:40:19.090660"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Nov",
+    "startDate": "2025-11-03T00:00:00",
+    "endDate": "2025-11-03T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "03/11/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8ar5x",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-8ar5x",
+      "validFrom": "2025-07-25T16:40:19.090812"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 1 of 3 - 4-11",
+    "startDate": "2025-11-04T00:00:00",
+    "endDate": "2025-11-04T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "04/11/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1",
+      "validFrom": "2025-07-25T16:40:19.090963"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Nov",
+    "startDate": "2025-11-10T00:00:00",
+    "endDate": "2025-11-10T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "10/11/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wc34j",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wc34j",
+      "validFrom": "2025-07-25T16:40:19.091114"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 2 of 3 -11-11",
+    "startDate": "2025-11-11T00:00:00",
+    "endDate": "2025-11-11T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "11/11/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2",
+      "validFrom": "2025-07-25T16:40:19.091269"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry Nov",
+    "startDate": "2025-11-17T00:00:00",
+    "endDate": "2025-11-17T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "17/11/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-3yj3h",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-3yj3h",
+      "validFrom": "2025-07-25T16:40:19.091420"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 3 of 3 -18-11",
+    "startDate": "2025-11-18T00:00:00",
+    "endDate": "2025-11-18T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "18/11/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3",
+      "validFrom": "2025-07-25T16:40:19.091571"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry 2-12",
+    "startDate": "2025-12-02T00:00:00",
+    "endDate": "2025-12-02T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "02/12/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2n74k",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-2n74k",
+      "validFrom": "2025-07-25T16:40:19.091724"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry 9-12",
+    "startDate": "2025-12-09T00:00:00",
+    "endDate": "2025-12-09T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "09/12/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dg9pz",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dg9pz",
+      "validFrom": "2025-07-25T16:40:19.091874"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry 16-12",
+    "startDate": "2025-12-16T00:00:00",
+    "endDate": "2025-12-16T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "16/12/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nhjlm",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-nhjlm",
+      "validFrom": "2025-07-25T16:40:19.092025"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Jan",
+    "startDate": "2026-01-06T00:00:00",
+    "endDate": "2026-01-06T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "06/01/2026Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wk1",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-wk1",
+      "validFrom": "2025-07-25T16:40:19.092175"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 1 of 3 -7-1",
+    "startDate": "2026-01-07T00:00:00",
+    "endDate": "2026-01-07T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "07/01/2026Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-kdh5k",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-kdh5k",
+      "validFrom": "2025-07-25T16:40:19.092322"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Jan",
+    "startDate": "2026-01-13T00:00:00",
+    "endDate": "2026-01-13T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "13/01/2026Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-",
+      "validFrom": "2025-07-25T16:40:19.092473"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 2 of 3 - 14-1",
+    "startDate": "2026-01-14T00:00:00",
+    "endDate": "2026-01-14T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "14/01/2026Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-n8l4l",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-n8l4l",
+      "validFrom": "2025-07-25T16:40:19.092618"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry Jan",
+    "startDate": "2026-01-20T00:00:00",
+    "endDate": "2026-01-20T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "20/01/2026Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-be4sb",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-be4sb",
+      "validFrom": "2025-07-25T16:40:19.092769"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes - Week 3 of 3 - 21-1",
+    "startDate": "2026-01-21T00:00:00",
+    "endDate": "2026-01-21T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "21/01/2026Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-7cd64",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-7cd64",
+      "validFrom": "2025-07-25T16:40:19.092917"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry",
+    "startDate": "2025-07-16T00:00:00",
+    "endDate": "2025-07-16T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1739790053633-OK80ELPCAKC96CKJLXA3/beginners-photography-courses.jpg",
+    "description": "16/07/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-3",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Alan Ranger Photography",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, West Midlands, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-3",
+      "validFrom": "2025-07-25T16:40:19.093070"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Jul",
+    "startDate": "2025-07-09T00:00:00",
+    "endDate": "2025-07-09T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1739790053633-OK80ELPCAKC96CKJLXA3/beginners-photography-courses.jpg",
+    "description": "09/07/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-wk2",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Alan Ranger Photography",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, West Midlands, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-wk2",
+      "validFrom": "2025-07-25T16:40:19.093219"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Jul",
+    "startDate": "2025-07-02T00:00:00",
+    "endDate": "2025-07-02T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1739790053633-OK80ELPCAKC96CKJLXA3/beginners-photography-courses.jpg",
+    "description": "02/07/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-1",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Alan Ranger Photography",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, West Midlands, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-week-1",
+      "validFrom": "2025-07-25T16:40:19.093369"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry Jun",
+    "startDate": "2025-06-26T00:00:00",
+    "endDate": "2025-06-26T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "26/06/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-s2klg",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-s2klg",
+      "validFrom": "2025-07-25T16:40:19.093721"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry Jun",
+    "startDate": "2025-06-19T00:00:00",
+    "endDate": "2025-06-19T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "19/06/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hl4tm",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hl4tm",
+      "validFrom": "2025-07-25T16:40:19.093910"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry Jun",
+    "startDate": "2025-06-12T00:00:00",
+    "endDate": "2025-06-12T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "12/06/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-7breh",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-7breh",
+      "validFrom": "2025-07-25T16:40:19.094062"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 3 of 3 - Coventry -May",
+    "startDate": "2025-06-10T00:00:00",
+    "endDate": "2025-06-10T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "10/06/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-mw83l",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-mw83l",
+      "validFrom": "2025-07-25T16:40:19.094212"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 3 of 3 - 4-6",
+    "startDate": "2025-06-04T00:00:00",
+    "endDate": "2025-06-04T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "04/06/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-42ynf",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk3-42ynf",
+      "validFrom": "2025-07-25T16:40:19.094362"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime - 4/6",
+    "startDate": "2025-06-04T00:00:00",
+    "endDate": "2025-06-04T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "04/06/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-4",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-4",
+      "validFrom": "2025-07-25T16:40:19.094512"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 2 of 3 - Coventry May",
+    "startDate": "2025-06-03T00:00:00",
+    "endDate": "2025-06-03T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "03/06/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hnp3g",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-hnp3g",
+      "validFrom": "2025-07-25T16:40:19.094666"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 2 of 3 - 28-5",
+    "startDate": "2025-05-28T00:00:00",
+    "endDate": "2025-05-28T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "28/05/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-55f3d",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk2-55f3d",
+      "validFrom": "2025-07-25T16:40:19.094836"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Camera Courses For Beginners - Week 1 of 3 - Coventry May",
+    "startDate": "2025-05-27T00:00:00",
+    "endDate": "2025-05-27T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1629536412755-A3NEF7ZNBOQ1044I8WVM/beginners-photography-courses.jpg",
+    "description": "27/05/2025Coventry - 3-week camera courses for beginners - Everything to get off Automatic mode and learn how to be more creative with Composition and Camera",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dfe",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom, CV4 9HW",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/camera-courses-for-beginners-coventry-dfe",
+      "validFrom": "2025-07-25T16:40:19.094990"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "Lightroom Classic Photo Editing Classes -Week 1 of 3 -21-5",
+    "startDate": "2025-05-21T00:00:00",
+    "endDate": "2025-05-21T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675589565448-JHL9406XQ7598QHPOLW5/-LIGHTROOM+COURSE+BLACK.png",
+    "description": "21/05/2025Coventry - Lightroom photo editing classes - Learn how to use Lightroom Classic on this 3-week course. From the organisation and workflow to editing",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-xx94r",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "Place",
+      "name": "Coventry",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom, CV4 9HP",
+        "addressCountry": "United Kingdom"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/lightroom-photo-editing-classes-wk1-xx94r",
+      "validFrom": "2025-07-25T16:40:19.095145"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime-19/5",
+    "startDate": "2025-05-19T00:00:00",
+    "endDate": "2025-05-19T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "19/05/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-5",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-5",
+      "validFrom": "2025-07-25T16:40:19.095292"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime -8/4",
+    "startDate": "2025-04-08T00:00:00",
+    "endDate": "2025-04-08T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "08/04/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-1",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-1",
+      "validFrom": "2025-07-25T16:40:19.095437"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime - 6/3",
+    "startDate": "2025-03-06T00:00:00",
+    "endDate": "2025-03-06T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "06/03/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-2",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-2",
+      "validFrom": "2025-07-25T16:40:19.095582"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime -12/2",
+    "startDate": "2025-02-12T00:00:00",
+    "endDate": "2025-02-12T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "12/02/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-3",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-3",
+      "validFrom": "2025-07-25T16:40:19.095731"
+    }
+  },
+  {
+    "@type": "Event",
+    "name": "RPS Courses - RPS Distinctions Course - Enrol Anytime - 20/1",
+    "startDate": "2025-01-20T00:00:00",
+    "endDate": "2025-01-20T00:00:00",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1685445150893-KNP35P159NIWH07BZSXM/RPS-Distinctions-photography-course.jpg",
+    "description": "20/01/2025RPS Courses - RPS Distinctions - Enrol Anytime - Online Mentoring sessions to gain a distinction with the Royal Photographic Society via Zoom",
+    "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-6",
+    "organizer": {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com"
+    },
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://www.alanranger.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": 99,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.alanranger.com/beginners-photography-lessons/rps-courses-rps-distinctions-mentoring-6",
+      "validFrom": "2025-07-25T16:40:19.095877"
+    }
+  }
+]
+</script>

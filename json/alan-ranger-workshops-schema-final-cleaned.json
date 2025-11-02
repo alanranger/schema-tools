@@ -1,0 +1,3251 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      "name": "Alan Ranger Workshops",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#1"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#2"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#3"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#4"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#5"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#6"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#7"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 8,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#8"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 9,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#9"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 10,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#10"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 11,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#11"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 12,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#12"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 13,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#13"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 14,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#14"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 15,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#15"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 16,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#16"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 17,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#17"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 18,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#18"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 19,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#19"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 20,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#20"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 21,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#21"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 22,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#22"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 23,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#23"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 24,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#24"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 25,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#25"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 26,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#26"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 27,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#27"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 28,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#28"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 29,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#29"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 30,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#30"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 31,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#31"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 32,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#32"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 33,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#33"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 34,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#34"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 35,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#35"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 36,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#36"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 37,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#37"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 38,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#38"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 39,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#39"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 40,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#40"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 41,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#41"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 42,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#42"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 43,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#43"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 44,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#44"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 45,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#45"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 46,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#46"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 47,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#47"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 48,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#48"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 49,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#49"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 50,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#50"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 51,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#51"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 52,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#52"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 53,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#53"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 54,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#54"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 55,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#55"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 56,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#56"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 57,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#57"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 58,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#58"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 59,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#59"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 60,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#60"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 61,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#61"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 62,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#62"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 63,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#63"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 64,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#64"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 65,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#65"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 66,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#66"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 67,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#67"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 68,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#68"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 69,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#69"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 70,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#70"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 71,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#71"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 72,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#72"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 73,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#73"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 74,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#74"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 75,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#75"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 76,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#76"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 77,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#77"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 78,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#78"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 79,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#79"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 80,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#80"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 81,
+          "item": {
+            "@id": "https://www.alanranger.com/photography-workshops#81"
+          }
+        }
+      ]
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#1",
+      "name": "Peak District Photography Workshops - Heathers Sunset",
+      "startDate": "2025-08-16",
+      "endDate": "2025-08-16",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "S32 1BE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1682259056748-3WSS8Y2YXIWFFQDIYR4F/Surprise+View+7.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunset"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#2",
+      "name": "Peak District Photography Workshops - Heathers Sunrise",
+      "startDate": "2025-08-17",
+      "endDate": "2025-08-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Staffordshire - Upper Hulme",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "ST13 8UA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700303596327-DSMX2LGQ05VGSLNLKQIC/The+Roaches.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunrise"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#3",
+      "name": "Long Exposure Photography Workshop - Burnham on Sea Sunset",
+      "startDate": "2025-08-23",
+      "endDate": "2025-08-23",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Somerset",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "TA8 2ET",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546345535824-FU1FQXB42JQ9VCKIOEWN/burnham+still-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-burnham-on-sea"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#4",
+      "name": "Long Exposure Photography Workshop - Kenilworth 28/8",
+      "startDate": "2025-08-28",
+      "endDate": "2025-08-28",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Kenilworth",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV8 1ND",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675345926122-FG9G39T5F3OOT1CNEZMP/kenilworth+defenses.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth4"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#5",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Aug",
+      "startDate": "2025-08-31",
+      "endDate": "2025-08-31",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HP",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-summer"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#6",
+      "name": "Landscape Photography Workshops Yorkshire | Coast and Moors",
+      "startDate": "2025-09-04",
+      "endDate": "2025-09-07",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "North Yorkshire Moors and Coast",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "TS12 1HA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707212564861-65XIJN9NGEKXOO8C2J73/North+Yorkshire+Photography+Workshop.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/landscape-photography-workshops-yorkshire"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#7",
+      "name": "Norfolk Photography Workshop | Cromer to Hunstanton",
+      "startDate": "2025-09-12",
+      "endDate": "2025-09-14",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Norfolk",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "NR25 7ND",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1670327540020-BBW67S1689K55ALBBY4X/Thornham+-+1+Sep+2020.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/norfolk-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#8",
+      "name": "Sunset Photographic Workshop - Chesterton Windmill 16-09",
+      "startDate": "2025-09-16",
+      "endDate": "2025-09-16",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV33 9LB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#9",
+      "name": "Lake District Photography Workshop Late Summer in Cumbria",
+      "startDate": "2025-09-19",
+      "endDate": "2025-09-21",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Lake District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CA12 4RE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1538928327366-YR9B778G2HGSWZ6N3B21/morning+calm-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lake-district-photography-workshop-late-summer"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#10",
+      "name": "Long Exposure Photography Workshop - Sunset | Kenilworth",
+      "startDate": "2025-09-23",
+      "endDate": "2025-09-23",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Kenilworth",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV8 1NG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1677346062246-6DAXRO5SKD1LJ1TBFEL2/kenilworth+defenses.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth1"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#11",
+      "name": "Coventry Evening Urban Architecture Photography Workshop ",
+      "startDate": "2025-09-24",
+      "endDate": "2025-09-24",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV1 5FB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546344708108-3P21C5HFHMEO7XP2F2LT/ST+MICHAEL+SUBDUING+THE+DEVIL+-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/urban-architecture-photography-workshop-coventry"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#12",
+      "name": "Hartland Quay, Devon Seascape Photography Workshops",
+      "startDate": "2025-09-26",
+      "endDate": "2025-09-28",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Devon",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "EX39 6DB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1674565120064-MZONL9LFH2Z0RH81Z9CT/Atlantic+Force.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/hartland-quay-photography-devon-seascapes"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#13",
+      "name": "Sunset Photographic Workshop - Chesterton Windmill 01-10",
+      "startDate": "2025-10-01",
+      "endDate": "2025-10-01",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV33 9LB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j-9akd5"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#14",
+      "name": "Yorkshire Dales Photography Workshop - Landscape Photography",
+      "startDate": "2025-10-03",
+      "endDate": "2025-10-05",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Yorkshire Dales",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LA6 3ET",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700307464816-8M6DYZWM365TXZAVTZ25/Windskill+%2305+-+Nov+2023.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/yorkshire-dales-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#15",
+      "name": "Fairy Glen Betws-y-Coed Photography Workshops - Wales - Oct",
+      "startDate": "2025-10-04",
+      "endDate": "2025-10-04",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Snowdonia National Park",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL24 0SG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1740502341422-AGUUE085W47A3L7137NG/Fairy+Glen+4.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-wales"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#16",
+      "name": "Dartmoor Photography Workshop | Woodlands, Moors and Tors",
+      "startDate": "2025-10-10",
+      "endDate": "2025-10-12",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Dartmoor",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "PL20 6SW",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1696250238091-17YK0FSUYXO7SIFLMVPW/wistmans-wood+2.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/dartmoor-photography-workshop-woodlands"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#17",
+      "name": "Woodland Photography Walk | Coventry | Piles Coppice",
+      "startDate": "2025-10-17",
+      "endDate": "2025-10-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Coventry CV3 2ZZ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography Walk Piles Coppice  Brandon Wood - Warwickshire",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-piles-coppice"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#18",
+      "name": "Peak District Photography Workshops Padley Gorge | 10-18",
+      "startDate": "2025-10-18",
+      "endDate": "2025-10-18",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "S32 2JA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714559760976-6CZKC2X0XATXWIR0Q0X6/Peak+District+Photography+workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-winter"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#19",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Oct",
+      "startDate": "2025-10-19",
+      "endDate": "2025-10-19",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HP",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-autumn"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#20",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 24/10",
+      "startDate": "2025-10-24",
+      "endDate": "2025-10-24",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-29oct"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#21",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 25/10",
+      "startDate": "2025-10-25",
+      "endDate": "2025-10-25",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-30oct"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#22",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 26/10",
+      "startDate": "2025-10-26",
+      "endDate": "2025-10-26",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-31oct"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#23",
+      "name": "Batsford Arboretum Autumn Photography Workshop -29/10",
+      "startDate": "2025-10-29",
+      "endDate": "2025-10-29",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-1nov"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#24",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 30/10",
+      "startDate": "2025-10-30",
+      "endDate": "2025-10-30",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-2nov"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#25",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 31/10",
+      "startDate": "2025-10-31",
+      "endDate": "2025-10-31",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-3nov"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#26",
+      "name": "Peak District Photography Workshops Padley Gorge | 1-11",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-01",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "S32 2JA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1699522410481-3RW7I6IHD1I8ZVWQDSZ0/photographing-autumn.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#27",
+      "name": "Peak District Photography Workshops Padley Gorge | 2-11",
+      "startDate": "2025-11-02",
+      "endDate": "2025-11-02",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "S32 2JA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1699522410481-3RW7I6IHD1I8ZVWQDSZ0/photographing-autumn.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn-2"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#28",
+      "name": "Woodland Photography Walk | Kenilworth | Crackley Woods",
+      "startDate": "2025-11-07",
+      "endDate": "2025-11-07",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Kenilworth",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV8",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography WalkCrackley Woods, Kenilworth, Warwickshire",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-kenilworth-crackley-woods"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#29",
+      "name": "Abstract and Macro Photography Workshop - Warwickshire",
+      "startDate": "2025-11-08",
+      "endDate": "2025-11-08",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Alan Ranger Photography",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Coventry",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1734085795822-KGL13H1JB15QFAVBP4IU/Abstract+and+Macro+Photography+Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#30",
+      "name": "Lake District Photography Workshops | Autumn in Cumbria",
+      "startDate": "2025-11-14",
+      "endDate": "2025-11-16",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Lake District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CA12 4RL",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1695040431348-9BC1ENVF8Z9C0N6CR5UZ/blea+tarn-2.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lake-district-photography-workshop-autumn"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#31",
+      "name": "Suffolk Landscape Photography Workshop - Long Exposure",
+      "startDate": "2025-11-21",
+      "endDate": "2025-11-23",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Suffolk",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "IP18 6EJ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1715078273140-XM8AQE8L1BX1V7RQSKKE/Southwold+Pier+%2301+-+Feb+2024.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/suffolk-landscape-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#32",
+      "name": "Wales Photography Workshop Pistyll Rhaeadr and Lake Vyrnwy ",
+      "startDate": "2025-11-29",
+      "endDate": "2025-11-30",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Wales - Dee Valley",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL20 7LD",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1538936266800-X7E25G1Y68K21JET6YMU/Lake+Vyrnwy+-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/wales-photography-workshop-vyrnwy-pistyll-rhaeadr"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#33",
+      "name": "Woodland Photography Walk | Solihull | Hay Woods - Winter",
+      "startDate": "2025-12-05",
+      "endDate": "2025-12-05",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Solihull",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV35 7JQ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-solihull-hay-woods"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#34",
+      "name": "Woodland Photography Walk - Coventry - Tile Hill Wood ",
+      "startDate": "2025-12-08",
+      "endDate": "2025-12-08",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Coventry",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography WalkTile Hill Wood - Coventry",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-tile-hill"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#35",
+      "name": "Woodland Photography Walk - Solihull - Hay Woods - Winter",
+      "startDate": "2026-01-02",
+      "endDate": "2026-01-02",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Solihull",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV35 7JQ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-hay-woods"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#36",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass 11-1",
+      "startDate": "2026-01-11",
+      "endDate": "2026-01-11",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HP",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-winter"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#37",
+      "name": " Dorset Photography Workshop | Jurassic Coast Photography",
+      "startDate": "2026-01-16",
+      "endDate": "2026-01-18",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Dorset",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "BH20 4AB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546347241014-RTAHXH3JAKUBFBF94325/durdle+door-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/dorset-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#38",
+      "name": "Lake District Photography Workshop | Winter in Cumbria",
+      "startDate": "2026-01-23",
+      "endDate": "2026-01-25",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Lake District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CA12 4RE",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1691231609767-VEBH04YA7HAYTMU55D5D/Friars%2BCrag.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lake-district-photography-workshop-winter"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#39",
+      "name": "Gower Peninsula Photo Workshop - Landscape Photography Wales",
+      "startDate": "2026-01-30",
+      "endDate": "2026-02-01",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "wales - Gower Peninsular",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "SA3 2EH",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1715702651783-0ANOHJQAGONUXKLRV1TM/Gower+%2311+-+May+2024.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/landscape-photography-wales-gower-peninsular"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#40",
+      "name": "Woodland Photography Walk - Coventry Tile Hill NR - Winter",
+      "startDate": "2026-02-02",
+      "endDate": "2026-02-02",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Coventry",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography WalkTile Hill Wood - Coventry",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-cv4"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#41",
+      "name": "Hartland Quay, Devon Seascape Photography Workshop",
+      "startDate": "2026-02-19",
+      "endDate": "2026-02-22",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Devon",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "EX39 6DB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1674565120064-MZONL9LFH2Z0RH81Z9CT/Atlantic+Force.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/hartland-quay-devon-seascapes-ynfcl"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#42",
+      "name": "Northumberland Landscape Photography Workshop | 4 Days | Feb",
+      "startDate": "2026-02-26",
+      "endDate": "2026-03-01",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Northumberland",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "TD15 2UA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707213523267-M43SC9SL8KNU8S7Z6MJ7/Northumberland+Landscape+Photography+Workshop+%282%29.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/northumberland-landscape-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#43",
+      "name": "Ireland Photography Workshop | Landscapes Southern Ireland",
+      "startDate": "2026-03-05",
+      "endDate": "2026-03-09",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Ireland - Dingle",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "V92 P956",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1677346509314-C2AKCUSTJ30QVKO7L8YD/Coumeenoole+Strand+2.jpg"
+      ],
+      "description": "Location - Ireland Photography WorkshopDingle, Southern Ireland",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/dingle-kerry-ireland-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#44",
+      "name": "Fairy Glen Betws-y-Coed Photography Workshop -  Wales",
+      "startDate": "2026-03-07",
+      "endDate": "2026-03-07",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Wales - Snowdonia",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL24 0SG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707215037398-4NEW80LYQQ2XQX73MZYH/Fairy+Glen+Betws-y-Coed+Photography+Workshop.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-betws-y-coed-photography"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#45",
+      "name": "Landscape Photography Snowdonia Photography Workshop",
+      "startDate": "2026-03-07",
+      "endDate": "2026-03-08",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Wales - Snowdonia",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL24 0EL",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1696850796928-3GQA4UMZ6SHN0O83WJWJ/Snowdonia+Landscape+Photography+Workshop.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/landscape-photography-snowdonia-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#46",
+      "name": "Lake District Photography Workshop | Spring in Cumbria",
+      "startDate": "2026-03-20",
+      "endDate": "2026-03-22",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Lake District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CA12 4QG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1538928085823-H07VOW50MWIZ6EKCTFH1/blea+mirror-Alan-Ranger-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lake-district-photography-workshop-spring"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#47",
+      "name": "Sunset Photographic Workshop - Chesterton Windmill 30-3",
+      "startDate": "2026-03-30",
+      "endDate": "2026-03-30",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV33 9LB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#48",
+      "name": "Long Exposure Photography Workshop - Kenilworth 31-3",
+      "startDate": "2026-03-31",
+      "endDate": "2026-03-31",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Kenilworth",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV8 1ND",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675345926122-FG9G39T5F3OOT1CNEZMP/kenilworth+defenses.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth2"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#49",
+      "name": "Long Exposure Photo Workshop - Sunset - Kenilworth - Apr",
+      "startDate": "2026-04-13",
+      "endDate": "2026-04-13",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Kenilworth",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV8 1NG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1741367268682-VQY1Z5HZAGVFN4V74YPD/Moon.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photo-workshop-sunset-kenilworth"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#50",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Apr",
+      "startDate": "2026-04-19",
+      "endDate": "2026-04-19",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HP",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-spring"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#51",
+      "name": "Bluebell Photography Workshop | Warwickshire | 20 Apr",
+      "startDate": "2026-04-20",
+      "endDate": "2026-04-20",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-20"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#52",
+      "name": "Bluebell Photography Workshop | Warwickshire | 21 Apr",
+      "startDate": "2026-04-21",
+      "endDate": "2026-04-21",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-21"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#53",
+      "name": "Bluebell Photography Workshop | Warwickshire | 22 Apr ",
+      "startDate": "2026-04-22",
+      "endDate": "2026-04-22",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-22"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#54",
+      "name": "Bluebell Photography Workshop | Warwickshire | 23 Apr",
+      "startDate": "2026-04-23",
+      "endDate": "2026-04-23",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-23"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#55",
+      "name": "Bluebell Photography Workshop | Warwickshire | 24 Apr",
+      "startDate": "2026-04-24",
+      "endDate": "2026-04-24",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-24"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#56",
+      "name": "Bluebell Photography Workshop | Warwickshire | 25 Apr",
+      "startDate": "2026-04-25",
+      "endDate": "2026-04-25",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-25"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#57",
+      "name": "Bluebell Photography Workshop | Warwickshire | 26 Apr",
+      "startDate": "2026-04-26",
+      "endDate": "2026-04-26",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-17"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#58",
+      "name": "Bluebell Photography Workshop | Warwickshire | 27 Apr",
+      "startDate": "2026-04-27",
+      "endDate": "2026-04-27",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-18"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#59",
+      "name": "Bluebell Photography Workshop | Warwickshire | 28 Apr",
+      "startDate": "2026-04-28",
+      "endDate": "2026-04-28",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-19"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#60",
+      "name": "Bluebell Photography Workshop | Warwickshire | 29 Apr",
+      "startDate": "2026-04-29",
+      "endDate": "2026-04-29",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-29"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#61",
+      "name": "Bluebell Photography Workshop | Warwickshire | 30 Apr",
+      "startDate": "2026-04-30",
+      "endDate": "2026-04-30",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-30"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#62",
+      "name": "Bluebell Photography Workshop | Warwickshire | 01 May",
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-01",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "B95 5BG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-01"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#63",
+      "name": "Woodland Photography Walk | Meriden | Millisons Wood",
+      "startDate": "2026-05-03",
+      "endDate": "2026-05-03",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Meriden",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV5 9AS",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography WalkMillisons Wood Nature Reserve, Meriden, Warwickshire",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-meriden-millisons-wood"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#64",
+      "name": "Fairy Glen Betws-y-Coed Photography Workshop - Wales - May",
+      "startDate": "2026-05-08",
+      "endDate": "2026-05-08",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Snowdonia National Park",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL24 0SG",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1739453577809-DTGISJZ35FIE7U21YIOJ/Fairy+Glen+2.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-betws-y-coed"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#65",
+      "name": "Menai and Anglesey Photography Workshop | Wales | May",
+      "startDate": "2026-05-08",
+      "endDate": "2026-05-10",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Wales - Anglesey",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL60 6LA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546342807877-4AF2AFH94TL5RIE914UZ/Llanddwyn+Island+II-Photography-Workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/anglesey-photography-workshop-wales"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#66",
+      "name": "Peak District Photography Workshops Padley Gorge - 16-5",
+      "startDate": "2026-05-16",
+      "endDate": "2026-05-16",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "S32 2JA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714493375483-G5PG1FYXR8VXFG6VNF6J/peak+district+photography.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-spring"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#67",
+      "name": "Abstract and Macro Photography Workshop Warwickshire - May",
+      "startDate": "2026-05-17",
+      "endDate": "2026-05-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HW",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1734084297980-W42TDI502DA8I78VBBO5/Abstract%2Band%2BMacro%2BPhotography%2BWorkshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop-coventry"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#68",
+      "name": "Garden Photography Workshops | Private Garden | Coventry",
+      "startDate": "2026-05-17",
+      "endDate": "2026-05-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HW",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1630230262554-WWSOU1WKBUV46Y6A095X/_.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop-mxyms"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#69",
+      "name": "Sunset Photography Workshop - Chesterton Windmill 18-5",
+      "startDate": "2026-05-18",
+      "endDate": "2026-05-18",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV33 9LB",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348269382-80B9O6W1H3BZNIMXZI7Q/chesterton-windmill-photography-workshops.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#70",
+      "name": "Sezincote Garden Photography - Mughal palace in Cotswolds",
+      "startDate": "2026-05-29",
+      "endDate": "2026-05-29",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Gloucestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "GL56 9AW",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1715078225982-X01ZZ737OV5I7IFI0W5Q/sezincote+garden+photography.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sezincote-garden-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#71",
+      "name": "Lavender Photography Workshop Gloucestershire at Sunset 4",
+      "startDate": "2026-07-04",
+      "endDate": "2026-07-04",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Cotswolds",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "WR12 7JR",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700307138506-ZKLVZEG55N58GETAAWJT/Provence+en+Angleterre.jpg"
+      ],
+      "description": "Lavender Photography",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset-19"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#72",
+      "name": "Lavender Photography Workshop Gloucestershire at Sunset",
+      "startDate": "2026-07-11",
+      "endDate": "2026-07-11",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Cotswolds",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "WR12 7JR",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700307138506-ZKLVZEG55N58GETAAWJT/Provence+en+Angleterre.jpg"
+      ],
+      "description": "Lavender Photography",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#73",
+      "name": "Garden Photography Workshop | Private Garden | Coventry",
+      "startDate": "2026-07-12",
+      "endDate": "2026-07-12",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV4 9HW",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1630230262554-WWSOU1WKBUV46Y6A095X/_.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#74",
+      "name": "Nant Mill Photography Workshop - Woodlands and Waterfalls ",
+      "startDate": "2025-06-07",
+      "endDate": "2025-06-07",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Wales",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "LL11 3BT",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1603790147896-C4ALG2VYZK9T1U7BOQXZ/limbs.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/nant-mill-woodlands"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#75",
+      "name": "Landscape Photography Workshops Yorkshire | Coastlines",
+      "startDate": "2025-05-15",
+      "endDate": "2025-05-18",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "North Yorkshire Moors and Coast",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "TS12 1HA",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707212564861-65XIJN9NGEKXOO8C2J73/North+Yorkshire+Photography+Workshop.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/landscape-photography-workshops-yorkshire-coast"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#76",
+      "name": "Somerset Photography Workshops | Hills, Woodlands, Marshes",
+      "startDate": "2025-05-09",
+      "endDate": "2025-05-11",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Somerset",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "BA6 9LZ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1597912700532-D49TYVNKD1LRCOL0M8IU/somerset-photography-workshop.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/somerset-photography-workshop"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#77",
+      "name": "Woodland Photography Walk | Leamington Spa | Oakley Wood",
+      "startDate": "2025-03-21",
+      "endDate": "2025-03-21",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Leamington Spa",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "CV33 9QP",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg"
+      ],
+      "description": "Location - Woodland Photography WalkOakley Wood Crematorium - CV33 9QP",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-leamington-oakley-wood"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#78",
+      "name": "Exmoor Photography Workshops - Seascapes | Lynmouth",
+      "startDate": "2025-03-15",
+      "endDate": "2025-03-16",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "North Devon/Exmoor",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "EX35 6EQ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1547714389865-FFD4IC72F5OYSMAFOVGT/timeless+memories-Alan-Ranger-Photography.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/exmoor-photography-workshops-seascapes-lynmouth"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#79",
+      "name": "Peak District Photography Workshops - Heathers Sunrise |",
+      "startDate": "2024-08-24",
+      "endDate": "2024-08-24",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Staffordshire - Upper Hulme",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "ST13 8TY",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700303622633-FX3Z99NDIYVQSFXYLD5G/The+Roaches.jpg"
+      ],
+      "description": "",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-sunrise-heathers"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#80",
+      "name": "Poppy Fields Photography Workshop - Worcs | Sunrise 9/6",
+      "startDate": "2024-06-09",
+      "endDate": "2024-06-09",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Worcestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "DY7 5LZ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1539008898994-ESG75007CGBM7JYKMWIT/poppy+glow-Photography-Workshops.jpg"
+      ],
+      "description": "Description - poppy fields photography WorkshopLandscape PhotographyRolling hills full of poppies takes some beating. Join me for one of the poppy field photography location shoots from early June to end of June in Worcestershire - These are provisional dates and may change depending on mother nature.This is one of the best flowering meadow scenes you will witness.On this poppy fields photography Workshop Alan will guide you through:focusing in low lighttonal range and shadow and highlight recognitioncomposition and designing the shot in the darklong exposure, set-up and calculating the right amount of timeItinerary - poppy fields photography WorkshopMeet at designated locationWorkshop Briefing, preparation and set-upShoot, review images and get individual tuitionEvent finish",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunrise"
+      }
+    },
+    {
+      "@type": "Event",
+      "@id": "https://www.alanranger.com/photography-workshops#81",
+      "name": "Poppy Fields Photography Workshop - Worcs | Sunset 8/6",
+      "startDate": "2024-06-08",
+      "endDate": "2024-06-08",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Worcestershire",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "DY7 5LZ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1539008898994-ESG75007CGBM7JYKMWIT/poppy+glow-Photography-Workshops.jpg"
+      ],
+      "description": "Description - poppy fields photography WorkshopLandscape PhotographyRolling hills full of poppies takes some beating. Join me for one of the poppy field photography location shoots from early June to end of June in Worcestershire - These are provisional dates and may change depending on mother nature.This is one of the best flowering meadow scenes you will witness.On this Workshop Alan will guide you through:focusing in low lighttonal range and shadow and highlight recognitioncomposition and designing the shot in the darklong exposure, set-up and calculating the right amount of timeItinerary - poppy fields photography WorkshopMeet at designated locationWorkshop Briefing, preparation and set-upShoot, review images and get individual tuitionEvent finish",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "price": "0.00",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunset"
+      }
+    }
+  ]
+}

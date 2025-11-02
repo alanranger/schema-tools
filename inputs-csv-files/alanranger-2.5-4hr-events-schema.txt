@@ -1,0 +1,6 @@
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "2.5–4hr Photography Workshops",
+  "itemListElement": []
+}
