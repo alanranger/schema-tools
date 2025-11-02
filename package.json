@@ -1,6 +1,7 @@
 {
   "name": "schema-validator-agent",
   "version": "1.0.0",
+  "type": "module",
   "description": "Automated schema validator for testing URLs against Schema.org and Google Rich Results Test",
   "main": "scripts/schema-validator.js",
   "scripts": {
