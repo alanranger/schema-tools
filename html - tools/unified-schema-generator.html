@@ -760,7 +760,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.3</span>
+    <span class="version">v1.4.4</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1578,19 +1578,77 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   
   // Modal plumbing
   (function initGenModal(){
-    const backdrop = document.getElementById('genBackdrop');
-    const closeBtn = document.getElementById('genCloseBtn');
-    const copyBtn  = document.getElementById('genCopyBtn');
-    if (backdrop && closeBtn) closeBtn.onclick = ()=> backdrop.style.display='none';
-    if (backdrop) backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.style.display='none'; };
-    if (copyBtn) copyBtn.onclick = ()=>{
-      const txt = document.getElementById('genJson');
-      if (txt) {
-        navigator.clipboard.writeText(txt.textContent);
-        copyBtn.textContent = 'Copied!';
-        setTimeout(()=> copyBtn.textContent='Copy to Clipboard', 1200);
+    // Function to setup copy button handler
+    function setupCopyButton() {
+      const copyBtn = document.getElementById('genCopyBtn');
+      const jsonEl = document.getElementById('genJson');
+      if (copyBtn && jsonEl) {
+        copyBtn.onclick = async () => {
+          try {
+            const text = jsonEl.textContent || jsonEl.innerText;
+            if (!text || text.trim().length === 0) {
+              alert('No content to copy');
+              return;
+            }
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(text);
+              copyBtn.textContent = '✅ Copied!';
+              setTimeout(() => copyBtn.textContent = 'Copy to Clipboard', 2000);
+            } else {
+              // Fallback: use textarea method for older browsers
+              const textarea = document.createElement('textarea');
+              textarea.value = text;
+              textarea.style.position = 'fixed';
+              textarea.style.left = '-999999px';
+              document.body.appendChild(textarea);
+              textarea.select();
+              textarea.setSelectionRange(0, 99999); // For mobile devices
+              
+              try {
+                document.execCommand('copy');
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => copyBtn.textContent = 'Copy to Clipboard', 2000);
+              } catch (err) {
+                alert('Failed to copy. Please select and copy manually.');
+                debugLog('Copy failed: ' + err.message, 'error');
+              } finally {
+                document.body.removeChild(textarea);
+              }
+            }
+          } catch (err) {
+            alert('Failed to copy to clipboard: ' + err.message);
+            debugLog('Copy error: ' + err.message, 'error');
+          }
+        };
       }
-    };
+    }
+    
+    // Setup close button and backdrop
+    function setupCloseButton() {
+      const backdrop = document.getElementById('genBackdrop');
+      const closeBtn = document.getElementById('genCloseBtn');
+      if (backdrop && closeBtn) {
+        closeBtn.onclick = () => backdrop.style.display = 'none';
+        backdrop.onclick = (e) => {
+          if (e.target === backdrop) backdrop.style.display = 'none';
+        };
+      }
+    }
+    
+    // Try to setup immediately if DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setupCopyButton();
+        setupCloseButton();
+      });
+    } else {
+      setupCopyButton();
+      setupCloseButton();
+    }
+    
+    // Also setup when modal is opened (in case elements weren't ready earlier)
     window.__openGenModal = (url, json)=>{
       const backdropEl = document.getElementById('genBackdrop');
       const metaEl = document.getElementById('genMeta');
@@ -1601,6 +1659,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       if (metaEl) metaEl.textContent = url;
       if (jsonEl) jsonEl.textContent = prettyScript(json);
+      
+      // Re-attach copy button handler in case it wasn't set up earlier
+      setupCopyButton();
+      
       backdropEl.style.display='flex';
     };
   })();
