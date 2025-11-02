@@ -2412,11 +2412,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         });
         
         if (schemaTypeCell) {
-          const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
-          setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+          const uniqueTypes = [...new Set(detectedTypes)];
+          const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
+          setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
         }
         
-        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
+        const uniqueTypes = [...new Set(detectedTypes)];
+        const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
         
         const jsonLdBlocks = [];
         scripts.forEach(script => {
