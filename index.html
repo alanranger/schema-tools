@@ -2729,7 +2729,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         setProgress(schemaTypeCell, 100, 'Done');
         // Replace progress bar with actual schema type after a brief delay
         setTimeout(() => {
-          schemaTypeCell.textContent = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
+          const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || 'None').split(',').map(t => t.trim()))];
+          schemaTypeCell.textContent = uniqueTypes.join(', ');
         }, 500);
       }
       
