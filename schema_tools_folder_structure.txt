@@ -1,0 +1,393 @@
+schema_tools_extracted/
+  Schema Tools/
+    alanranger-product-schema-workflow-expanded.md
+    .git/
+      AUTO_MERGE
+      COMMIT_EDITMSG
+      config
+      description
+      FETCH_HEAD
+      HEAD
+      index
+      ORIG_HEAD
+      hooks/
+        applypatch-msg.sample
+        commit-msg.sample
+        fsmonitor-watchman.sample
+        post-update.sample
+        pre-applypatch.sample
+        pre-commit.sample
+        pre-merge-commit.sample
+        pre-push.sample
+        pre-rebase.sample
+        pre-receive.sample
+        prepare-commit-msg.sample
+        push-to-checkout.sample
+        sendemail-validate.sample
+        update.sample
+      info/
+        exclude
+      logs/
+        HEAD
+        refs/
+          heads/
+            main
+          remotes/
+            origin/
+              main
+      objects/
+        02/
+          63686d8bfa826aac940bbb38b90d809d938a8b
+        03/
+          6bbdb41f7b646d729e03d903734ec5c09c5488
+        05/
+          587daffb8ac3afe7f5c16e842e4f13ee5f7394
+        07/
+          15b98773a442b4f63b6343d730c571d94258b8
+        0a/
+          2701ca0998abc06c532c6ab9497b871b2698ef
+        0d/
+          bb2e8aae509b29e7008add5146c8ad82940400
+        0f/
+          37c5efcfa9858391ffcc822a10a8b4872f641d
+        14/
+          144cd1e6c9a47b38d0c9b50e7ce931f08eacc6
+        15/
+          4ca18eb2dfc693d295d09818e67a05cd18ad5c
+        19/
+          4b74e11511ed8d19a66154fdc489736cd73da6
+        1f/
+          282796858335bcc73a7809996828300ff1edd3
+        23/
+          1d21db13cd4ac66cf156e14e15178d6521a141
+        25/
+          bd04a33019b4df6512d7ef6ebf47daca29a317
+        29/
+          13fd5023d8fb7a0a4b464af7757cdcad59b372
+          2ce2e78062d6b5f770e217ec5da179fedb9e13
+        2b/
+          3d0da68922489755c095e2e23a41a5189b650b
+          b0c9276d49c790287f91ae516ff4d7b735c17a
+        2d/
+          cf7d7b58282342ea7c1cc206e1de1a19cf61fa
+        30/
+          50584de2e8be27ae9d99351a0bf26ccc5a4d25
+          9046f79c5de2a4b774727e04747918b2bc40a5
+          c53ad0d658435c16e9a2e1e9357b57818c71ba
+        34/
+          286a94f1cc0e95db4d1ee8612133a1e0960ff0
+          615cf1dd51cfbb204841c0c23edc88ef800b2a
+        39/
+          542f16ec8b734e9c5f93f750c1e6962583ab20
+        3a/
+          d2034a10f2f7f70b2c55223d02b146c3c08f5b
+        3b/
+          07fd6f59e20935076e1bd62e0c36a6170a65d3
+          d6880014fad869fe0c33ab6de0b1f887ec8979
+        41/
+          0527f1871307dd4b753eb8a57aa0711ded416e
+        43/
+          1a04d5b9177bb37a7aa9cddb46a5a37ba96759
+          9f245addba00e1b58d03f1f74a51e3ba04f999
+        4c/
+          61d7fa8f20c31492c318cfcc9bf3a2f10ea705
+        4d/
+          931e4938a7ff1e138faebc5fc5a3304732aae2
+        4e/
+          2e3f00b6e3e7f68869b01dbdccf3406e12d49e
+        55/
+          1458f27ca238306179fc61ed129bb8b0614e13
+          84a82c5e803316733dac29c9d5ed0b08093832
+        58/
+          37e0f153a7d72c8374fefef326b9b3d9f457ec
+        59/
+          0487951f400dc922e772a60ee5fc4d14dc961c
+          d9b0d87d62d0a529bd1352297754c50d1eb6c6
+        5c/
+          a76a24bc70287814bc7058b87dc845e409a6e2
+        61/
+          4c8bcd6b052d6410e9ffd16ff5ceee48b8396a
+        62/
+          2be7314f0731167b672755826ca3afeed8cf95
+          33a8973170cc25e55789255d80f22b9898699d
+        64/
+          e02d8b74203cfefd5b9f7c8116e9d482aca1e6
+        69/
+          0593887f89babd49114217782f36b89c6dee90
+        6d/
+          6d90f1e390533df4f4d821e271113b333ec90f
+        6e/
+          6d43d3fdefd73005f44550c13a963933e54cf0
+        6f/
+          886ada5ecd0db7ee26aa671060d7c119b3a6fe
+        72/
+          855cc49e314ac47a8820980beb5f881414fa5b
+        76/
+          de51b9b465bb8d2c039d1a999ae9325e680db3
+        78/
+          5d7c241d499c3f689aaeb8c1a473bd68504ab3
+        82/
+          0b8695888a34ab0c99da94b496ed06ecaba10e
+        83/
+          c9e4c769bffb6941d75794e7f4d6014951145c
+          f8d81712a123a397c22d3f9eacc3d3284c9af6
+        84/
+          46f127ec01f8139a52c6ec98077033bc179026
+        89/
+          b6cd9a175a6ef866eddb835c685a104fec0a3e
+          df0cc897d2ddd6467e3ed862fa85fbae584a1b
+        8a/
+          228bc26830df4b42901db32fd38005269caa26
+          f057faacf6b713c194ab83cfc003ef6252bd7a
+        8f/
+          12dd9f214481eb25b8db46ef3f276790bd4f69
+        90/
+          035c91640a5f2038b1edd4b654031d62761070
+        95/
+          ba354a276979aa95263955fe5ff6525a9b8497
+        a0/
+          987e89d87100e7ae6995d3825ccaf9371f30dd
+        a3/
+          1023ecf9048027ccc1035385c0ffed1216b19c
+        a5/
+          a3aed74b114e918061119e0617eafce985275c
+        a6/
+          28e92228620b02cf23614e3d608afd12999741
+          a4f1fdb48205ad7ced8399a04b6f116d4d90ab
+        a9/
+          9f70732aee032a79d1633aff5c7ed3335f934a
+        ab/
+          468c7afde5b11c5fc249685b68908a405c15e2
+        ad/
+          09d2d9186d119f34c368474f954af4be251e64
+        b0/
+          4640fa1486468ee536c552d56d4ca32f41ecb4
+          5bcabc78f27132582cf5788f6617bda51595d4
+        bb/
+          a672a6b73a9dd4a43173b05395b19e5da451ef
+        bd/
+          2041152f0cdb9230e9452c8665a5a7a89bacd2
+        be/
+          991a297f757d743322de86d237e8f1122f49d9
+        bf/
+          a650312b081dbaa7bc6d075541986d9a9a0cab
+        c0/
+          585fe1d0853d77512f42214059ac2ec340efe3
+          f5fe5b6de71b6775729de8449107186434d63c
+        c5/
+          f9f3fc647ff5f995d950305816317cb0483ad3
+        c9/
+          8e8986c23cf16662710969a570b41edf909fce
+        ca/
+          317d06964890fb873df872e9c207cfef505dec
+          c0f56780b1a27474e0f79823f832f5070cad9f
+        cb/
+          6d6fb768bb33cbd7b3d6871a5e4aa2fed08a63
+        cc/
+          69687d2afb08cf7a1e90857e21a2357ea6a934
+        cf/
+          297266861ffe85ad7d10b806b5302afc0db8de
+        d6/
+          5a6e0c6bcf6cd87344eccadb89b4da737ff29e
+        d8/
+          3addff606b89230755a4745df359fa24e7a457
+        dd/
+          8cc76a9b928d2233a57e505d016ebf63efc157
+        e2/
+          4a4153b3576103942f4d72583a0f91f4959173
+          f59d88f5952aa556ececf9850f946188945034
+        e4/
+          3758eb20fc01a1c2687fbd87c776d9bc5cf733
+        ed/
+          690632177c5add25342d034e144cbb649f3123
+          a2dbbb94c4a925f5a1978d1e71e1f03a1ab12f
+        f1/
+          79284306acfef2d01cbff04eca46d7937a1ce9
+        f5/
+          719a4cf03b2450a569a89d31859ea54c309755
+        fd/
+          0b29063d62cd532176440cb112c6ac5f1b1631
+        fe/
+          1a37c0dbaed94e3192ffe1701c00fa012c83c6
+        info/
+        pack/
+      refs/
+        heads/
+          main
+        remotes/
+          origin/
+            main
+        tags/
+    data/
+    html - tools/
+      event-schema-generator-v3-FINAL-address-fixed (1).html
+      product-schema-generator-v1-alanranger.html
+      product-schema-generator-v2-alanranger-WITH-HELP.html
+      product-schema-generator-v3-alanranger-FULL-INSTRUCTIONS.html
+      product-schema-generator-v4-alanranger-WORKFLOW-UPDATED.html
+      reviews-1 - original.js
+      reviews-1.js
+      reviews-2.js
+      reviews-3.js
+      reviews-full.js
+      reviews-squarespace.js
+      reviews.js
+    inputs-csv-files/
+      1-day-workshops-schema-injection.txt
+      2-5-day-photography-workshops-schema.txt
+      2-5-day-workshops-schema-final.txt
+      2-5-day-workshops-schema.txt
+      2-5hr-workshops-schema-injection.txt
+      alanranger-2-5-day-events-schema.txt
+      alanranger-2.5-4hr-events-schema (1).txt
+      alanranger-2.5-4hr-events-schema-script-wrapped.txt
+      alanranger-2.5-4hr-events-schema.txt
+      alanranger-events-schema-injection-ready.txt
+      alanranger_events_schema.txt
+      alanranger_full_81_events_schema.txt
+      alanranger_full_event_schema.txt
+      alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+      all workshop events schema injection script type=applicationld+json.txt
+      beginners-courses-events-schema.txt
+      beginners-photography-lessons-schema (1).txt
+      beginners-photography-lessons-schema (2).txt
+      beginners-photography-lessons-schema (3).txt
+      beginners-photography-lessons-schema (4).txt
+      beginners-photography-lessons-schema (5).txt
+      beginners-photography-lessons-schema (6).txt
+      beginners-photography-lessons-schema--REGENERATED.txt
+      beginners-photography-lessons-schema-all.txt
+      beginners-photography-lessons-schema.txt
+      classes schema.txt
+      combined product_reviews.csv
+      event_mappings_with_readable_ids.csv
+      event_mappings_with_reviewer.csv
+      full_listitem_event_mapping.csv
+      latest trustpilot reviews.csv
+      listitem_event_alignment_check.csv
+      listitem_event_mapping.csv
+      listitem_event_position_audit.csv
+      photography-courses-all-schema.txt
+      photography-lessons-schema (1).txt
+      photography-lessons-schema.txt
+      products_Jul-21_01-43-36PM cleaned.xlsx
+      products_Jul-21_01-43-36PM.csv
+      products_Nov-02_11-15-24AM.csv
+      products_with_review_data_final.xlsx
+      product_schemas_all_final working.xlsx
+      reviews_cleaned_and_event_mapped.csv
+      reviews_cleaned_final.csv
+      reviews_exported_full_metadata re-mapped.csv
+      reviews_exported_full_metadata.csv
+      reviews_full_export.csv
+      review_event_tags.csv
+      schema-1-day-photography-workshops-FINAL.txt
+      schema-1-day-photography-workshops-FULL.txt
+      schema-1-day-photography-workshops.txt
+      schema-1-day-workshops-COMPLETE.txt
+      schema-2-5-days-events.txt
+      squarespace reviews.xlsm
+      trustpilot all reviews.csv
+      trustpilot all reviews.csv.xlsm
+      trustpilot_reviews_event_mapped.csv
+      Wikidata_Sheet_for_Alan_Ranger.csv
+    json/
+      alan-ranger-workshops-schema-81.json
+      alan-ranger-workshops-schema-FINAL (1).json
+      alan-ranger-workshops-schema-final-cleaned.json
+      alan-ranger-workshops-schema-final.json
+      alan-ranger-workshops-schema-hybrid.json
+      alanranger-81-events-schema.json
+      alanranger-events-schema-full.json
+      alanranger_combined_event_schema.json
+      event_collection_combined_schema.json
+      event_collection_schema_block_FINAL.json
+      event_collection_schema_combined.json
+    outputs/
+    Schema Tools/
+      alanranger-product-schema-workflow-expanded.md
+      html - tools/
+        event-schema-generator-v3-FINAL-address-fixed (1).html
+        product-schema-generator-v1-alanranger.html
+        product-schema-generator-v2-alanranger-WITH-HELP.html
+        product-schema-generator-v3-alanranger-FULL-INSTRUCTIONS.html
+        product-schema-generator-v4-alanranger-WORKFLOW-UPDATED.html
+        reviews-1 - original.js
+        reviews-1.js
+        reviews-2.js
+        reviews-3.js
+        reviews-full.js
+        reviews-squarespace.js
+        reviews.js
+      inputs-csv-files/
+        1-day-workshops-schema-injection.txt
+        2-5-day-photography-workshops-schema.txt
+        2-5-day-workshops-schema-final.txt
+        2-5-day-workshops-schema.txt
+        2-5hr-workshops-schema-injection.txt
+        alanranger-2-5-day-events-schema.txt
+        alanranger-2.5-4hr-events-schema (1).txt
+        alanranger-2.5-4hr-events-schema-script-wrapped.txt
+        alanranger-2.5-4hr-events-schema.txt
+        alanranger-events-schema-injection-ready.txt
+        alanranger_events_schema.txt
+        alanranger_full_81_events_schema.txt
+        alanranger_full_event_schema.txt
+        alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+        all workshop events schema injection script type=applicationld+json.txt
+        beginners-courses-events-schema.txt
+        beginners-photography-lessons-schema (1).txt
+        beginners-photography-lessons-schema (2).txt
+        beginners-photography-lessons-schema (3).txt
+        beginners-photography-lessons-schema (4).txt
+        beginners-photography-lessons-schema (5).txt
+        beginners-photography-lessons-schema (6).txt
+        beginners-photography-lessons-schema--REGENERATED.txt
+        beginners-photography-lessons-schema-all.txt
+        beginners-photography-lessons-schema.txt
+        classes schema.txt
+        combined product_reviews.csv
+        event_mappings_with_readable_ids.csv
+        event_mappings_with_reviewer.csv
+        full_listitem_event_mapping.csv
+        latest trustpilot reviews.csv
+        listitem_event_alignment_check.csv
+        listitem_event_mapping.csv
+        listitem_event_position_audit.csv
+        photography-courses-all-schema.txt
+        photography-lessons-schema (1).txt
+        photography-lessons-schema.txt
+        products_Jul-21_01-43-36PM cleaned.xlsx
+        products_Jul-21_01-43-36PM.csv
+        products_Nov-02_11-15-24AM.csv
+        products_with_review_data_final.xlsx
+        product_schemas_all_final working.xlsx
+        reviews_cleaned_and_event_mapped.csv
+        reviews_cleaned_final.csv
+        reviews_exported_full_metadata re-mapped.csv
+        reviews_exported_full_metadata.csv
+        reviews_full_export.csv
+        review_event_tags.csv
+        schema-1-day-photography-workshops-FINAL.txt
+        schema-1-day-photography-workshops-FULL.txt
+        schema-1-day-photography-workshops.txt
+        schema-1-day-workshops-COMPLETE.txt
+        schema-2-5-days-events.txt
+        squarespace reviews.xlsm
+        trustpilot all reviews.csv
+        trustpilot all reviews.csv.xlsm
+        trustpilot_reviews_event_mapped.csv
+        Wikidata_Sheet_for_Alan_Ranger.csv
+      json/
+        alan-ranger-workshops-schema-81.json
+        alan-ranger-workshops-schema-FINAL (1).json
+        alan-ranger-workshops-schema-final-cleaned.json
+        alan-ranger-workshops-schema-final.json
+        alan-ranger-workshops-schema-hybrid.json
+        alanranger-81-events-schema.json
+        alanranger-events-schema-full.json
+        alanranger_combined_event_schema.json
+        event_collection_combined_schema.json
+        event_collection_schema_block_FINAL.json
+        event_collection_schema_combined.json
+    scripts/
