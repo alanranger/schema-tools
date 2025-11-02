@@ -764,7 +764,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.5.3</span>
+    <span class="version">v1.5.4</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2843,6 +2843,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const statusCell = document.getElementById(`statusCell_${index}`);
     const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
     const notesEl = document.getElementById(`notes_${index}`);
+    const row = document.getElementById('resultsTableBody')?.children[index];
     
     // Update external status columns
     const richSelect = document.getElementById(`googleStatus_${index}`);
@@ -2856,8 +2857,26 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Prefer externals if both passed
     if (richPassed && schemaPassed) {
-      const statusHtml = missingCount ? '<span class="chip-issues" title="View details">⚠️ Issues</span>' : '<span class="chip-ok">✅ Valid</span>';
-      if (statusCell) statusCell.innerHTML = statusHtml;
+      // Only show Issues if there are actual missing fields (not just duplicates)
+      const realIssues = missing.filter(m => {
+        if (typeof m === 'string') {
+          return !m.includes('DUPLICATE') && !m.includes('⚠️ DUPLICATE');
+        }
+        return true;
+      });
+      const hasRealIssues = realIssues.length > 0;
+      
+      const statusHtml = hasRealIssues ? '<span class="chip-issues" title="View details">⚠️ Issues</span>' : '<span class="chip-ok">✅ Valid</span>';
+      if (statusCell) {
+        statusCell.innerHTML = statusHtml;
+        // Re-attach click handler if Issues
+        if (hasRealIssues && row) {
+          const chip = statusCell.querySelector('.chip-issues');
+          if (chip) {
+            chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+          }
+        }
+      }
       
       if (schemaTypeCell) {
         const types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
@@ -2886,7 +2905,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ? '<span class="chip-issues" title="View details">⚠️ Issues</span>'
         : '<span class="chip-ok">✅ Valid</span>';
       
-      if (statusCell) statusCell.innerHTML = statusHtml;
+      if (statusCell) {
+        statusCell.innerHTML = statusHtml;
+        // Re-attach click handler if Issues
+        if (hasMissing && row) {
+          const chip = statusCell.querySelector('.chip-issues');
+          if (chip) {
+            chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+          }
+        }
+      }
       
       if (schemaTypeCell) {
         const types = localParse?.schemaType || localParse?.types?.join(', ') || 'None';
