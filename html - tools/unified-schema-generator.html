@@ -663,13 +663,23 @@
       border-radius: 12px;
       padding: 0.35rem 0.6rem;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.5rem;
+      background: #fff3cd;
+      color: #7a5b00;
+      border: 1px solid #ffe08a;
+      margin: 0.1rem 0.15rem;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.2.9</span>
+    <span class="version">v1.3.0</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1076,7 +1086,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
     list.innerHTML = '';
-    const missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : (rowData.missingFields ? String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean) : []);
+    let missing = [];
+    try {
+      if (rowData.tr && rowData.tr.dataset.missingDetail) {
+        missing = JSON.parse(rowData.tr.dataset.missingDetail);
+      } else if (rowData.missingFields) {
+        missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
+      }
+    } catch(_) {}
     if (missing.length === 0) {
       const li = document.createElement('li');
       li.textContent = 'No missing required fields detected.';
@@ -1115,6 +1132,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function getRowDataFromTr(tr) {
     const tds = tr.querySelectorAll('td');
     const url = tds[0]?.querySelector('a')?.href || tds[0]?.textContent?.trim() || '';
+    // keep a handle to <tr> so we can read dataset fields
+    const trRef = tr;
     const schemaType = tds[1]?.textContent?.trim() || '';
     const missing = tds[3]?.textContent?.trim() || '';
     // store first JSON-LD snippet in a dataset if available when row was computed
@@ -1123,7 +1142,64 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const rowIndex = Array.from(tr.parentNode.children).indexOf(tr);
     const result = validationResults[rowIndex];
     const missingFields = result && result.missingFields ? result.missingFields : (missing ? missing.split(',').map(s => s.trim()).filter(Boolean) : []);
-    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson };
+    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson, tr: trRef };
+  }
+  
+  // ---- Schema core fields (minimal, safe set) ----
+  const CORE_REQUIRED = {
+    WebSite:      ["name", "url"],
+    Organization: ["name"],
+    LocalBusiness:["name"]   // keep minimal; address/telephone vary a lot
+  };
+  
+  // Flatten any JSON-LD object/array/@graph into a list of typed nodes
+  function flattenJsonLd(node, out = []) {
+    if (!node) return out;
+    if (Array.isArray(node)) { node.forEach(n=>flattenJsonLd(n, out)); return out; }
+    if (node['@graph']) { flattenJsonLd(node['@graph'], out); }
+    if (node['@type']) out.push(node);
+    return out;
+  }
+  
+  // Build a map: type -> array of nodes for that type
+  function indexByType(nodes) {
+    const idx = {};
+    nodes.forEach(n => {
+      const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+      types.forEach(t => {
+        (idx[t] ||= []).push(n);
+      });
+    });
+    return idx;
+  }
+  
+  // Inspect which types are present and which required fields are missing per type
+  function computeMissingFields(allNodes) {
+    const idx = indexByType(allNodes);
+    const messages = [];
+    Object.keys(idx).forEach(t => {
+      if (!CORE_REQUIRED[t]) return; // only check types we know
+      const required = CORE_REQUIRED[t];
+      // If there are multiple nodes of this type, union their keys
+      const keys = new Set();
+      idx[t].forEach(n => Object.keys(n).forEach(k => keys.add(k)));
+      required.forEach(req => {
+        if (!keys.has(req)) {
+          messages.push({ type: t, field: req });
+        }
+      });
+    });
+    return messages;
+  }
+  
+  // Try to find a candidate value for a field in OTHER types (so we can suggest)
+  function findFieldElsewhere(allNodes, field, exceptType) {
+    for (const n of allNodes) {
+      const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+      if (types.includes(exceptType)) continue;
+      if (n[field]) return { fromType: types.join(','), value: (''+n[field]).slice(0,120) };
+    }
+    return null;
   }
   
   // Copy to clipboard
@@ -1950,6 +2026,29 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const pageData = await fetchPageSchema(urlData.url, urlData.row);
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       
+      // Enhanced missing fields analysis
+      let allNodes = [];
+      pageData.jsonLd.forEach(block => {
+        try {
+          allNodes = flattenJsonLd(block, allNodes);
+        } catch(_) {}
+      });
+      
+      const missingDetails = computeMissingFields(allNodes);
+      const missingMessages = [];
+      missingDetails.forEach(m => {
+        const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
+        if (elsewhere) {
+          missingMessages.push(`${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
+        } else {
+          missingMessages.push(`${m.type}: "${m.field}" missing (add this property to the ${m.type} node).`);
+        }
+      });
+      
+      // Store detailed messages in result
+      result.missingFieldsDetails = missingMessages;
+      result.missingFieldsBadges = missingDetails;
+      
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
         setProgress(schemaTypeCell, 100, 'Done');
@@ -2003,9 +2102,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusText = '✅ Valid';
       statusHtml = '<span class="chip-ok">✅ Valid</span>';
     } else if (result.schemaFound) {
-      statusClass = 'issues';
-      statusText = '⚠️ Issues';
-      statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
+      // Check if we have missing fields badges or missing fields
+      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
+      if (hasMissingFields) {
+        statusClass = 'issues';
+        statusText = '⚠️ Issues';
+        statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
+      } else {
+        statusClass = 'valid';
+        statusText = '✅ Valid';
+        statusHtml = '<span class="chip-ok">✅ Valid</span>';
+      }
     } else {
       statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
     }
@@ -2016,6 +2123,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const firstJson = JSON.stringify(result.schemas[0].schema, null, 2);
         row.dataset.firstJsonld = firstJson.slice(0, 6000);
       } catch (_) {}
+    }
+    
+    // Store missing fields details
+    if (result.missingFieldsDetails) {
+      row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
     }
     
     // Get existing values if row already exists
@@ -2031,7 +2143,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
       <td id="schemaTypeCell_${index}">${result.schemaType === 'Processing...' ? '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>' : (result.schemaType || 'None')}</td>
       <td id="statusCell_${index}">${statusHtml}</td>
-      <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
+      <td class="missing-fields" id="missingFieldsCell_${index}">${result.missingFieldsBadges && result.missingFieldsBadges.length > 0 ? result.missingFieldsBadges.map(m => `<span class="badge" title="${result.missingFieldsDetails ? result.missingFieldsDetails.find(x=>x.startsWith(m.type+':')) : ''}">${m.type}:${m.field}</span>`).join(' ') : (result.missingFields && result.missingFields.length > 0 ? result.missingFields.join(', ') : '—')}</td>
       <td>
         <select class="status-select" id="googleStatus_${index}" onchange="updateValidationStatus(${index}, 'google', this.value)">
           <option value="✅ Passed" ${existingGoogleStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
