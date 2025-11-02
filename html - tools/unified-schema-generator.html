@@ -1319,6 +1319,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     json.textContent = (rowData.firstJsonLd || '').trim();
     
+    // Add copy button handler for JSON-LD
+    const copyJsonBtn = document.getElementById('issuesCopyJsonBtn');
+    if (copyJsonBtn) {
+      copyJsonBtn.onclick = async () => {
+        const jsonText = json.textContent.trim();
+        if (!jsonText) {
+          alert('No JSON-LD content to copy');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(jsonText);
+          copyJsonBtn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            copyJsonBtn.textContent = 'Copy JSON-LD';
+          }, 2000);
+        } catch (err) {
+          // Fallback for older browsers
+          const textarea = document.createElement('textarea');
+          textarea.value = jsonText;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            copyJsonBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+              copyJsonBtn.textContent = 'Copy JSON-LD';
+            }, 2000);
+          } catch (e) {
+            alert('Failed to copy. Please select and copy manually.');
+          }
+          document.body.removeChild(textarea);
+        }
+      };
+    }
+    
     btnSchema.onclick = () => window.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
     btnGoogle.onclick = () => window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(rowData.url), '_blank');
     
@@ -4043,6 +4080,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <ul id="issuesList" class="issues-list"></ul>
       <details>
         <summary>Preview first JSON-LD block on page</summary>
+        <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+          <button class="secondary" id="issuesCopyJsonBtn" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Copy JSON-LD</button>
+        </div>
         <pre id="issuesJson" class="issues-json"></pre>
       </details>
       <div class="issues-actions">
