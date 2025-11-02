@@ -706,7 +706,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.3.8</span>
+    <span class="version">v1.4.0</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2460,8 +2460,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       };
     }
     if (richResultsBtn) {
+      // Use reportUrl from API if available, otherwise use default
+      const reportUrl = result.richResultsReportUrl || googleUrl;
       richResultsBtn.onclick = () => {
-        window.open(googleUrl, '_blank');
+        window.open(reportUrl, '_blank');
         // Auto-mark as opened
         const statusSelect = document.getElementById(`googleStatus_${index}`);
         if (statusSelect) {
@@ -2596,7 +2598,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Determine API base URL (use deployed Vercel URL or local dev)
       const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3000'
-        : 'https://schema-tools-cpeeveyoh-info-alanrangercs-projects.vercel.app';
+        : 'https://schema-tools-2xyqyek60-info-alanrangercs-projects.vercel.app';
       
       const apiUrl = `${apiBaseUrl}/api/validator/richresults`;
       
