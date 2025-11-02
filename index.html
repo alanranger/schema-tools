@@ -2566,7 +2566,36 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           markProgressError(schemaTypeCell);
           setProgress(schemaTypeCell, 100, 'Error');
         }
-        throw new Error(`Failed to fetch ${url}: ${err.message}`);
+        
+        // Server fallback when local parsing fails
+        debugLog(`Local parse failed for ${url}, trying server fallback...`, 'warn');
+        if (schemaTypeCell) {
+          setProgress(schemaTypeCell, 10, 'Server fallback...');
+        }
+        
+        try {
+          const serverData = await fetchPageSchemaServer(url);
+          
+          if (schemaTypeCell) {
+            setProgress(schemaTypeCell, 100, 'Done');
+            setTimeout(() => {
+              const schemaTypeText = serverData.schemaType || '—';
+              schemaTypeCell.textContent = serverData.schemaFound ? `${schemaTypeText} (server)` : '—';
+            }, 500);
+          }
+          
+          // Store server fallback flag for later use
+          serverData.parsePath = 'server';
+          serverData.localParseFailed = true;
+          
+          return serverData;
+        } catch (serverError) {
+          if (schemaTypeCell) {
+            markProgressError(schemaTypeCell);
+            setProgress(schemaTypeCell, 100, 'Error');
+          }
+          throw new Error(`Both local and server parsing failed: ${err.message}`);
+        }
       }
     }
   }
@@ -2914,20 +2943,44 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         setProgress(schemaTypeCell, 100, 'Done');
         // Replace progress bar with actual schema type after a brief delay
         setTimeout(() => {
-          const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || 'None').split(',').map(t => t.trim()))];
-          schemaTypeCell.textContent = uniqueTypes.join(', ');
+          const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+          const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+          const serverBadge = pageData.serverFallback ? ' (server)' : '';
+          schemaTypeCell.textContent = schemaTypeText + serverBadge;
         }, 500);
       }
       
       result.schemaFound = analysis.schemaFound;
       // Use schemaType from fetchPageSchema if available, otherwise use analysis
       // Show unique types only to avoid confusion from duplicates
-      const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || 'None').split(',').map(t => t.trim()))];
-      result.schemaType = uniqueTypes.join(', ');
+      const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+      const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+      const serverBadge = pageData.serverFallback ? ' (server)' : '';
+      result.schemaType = schemaTypeText + serverBadge;
       result.missingFields = [...new Set(analysis.missingFields)];
       result.warnings = analysis.warnings;
       result.valid = analysis.valid;
       result.schemas = analysis.schemas;
+      
+      // Add parse path note
+      if (result.localParseFailed && result.serverFallback) {
+        const parseNote = `Local parse: blocked. Server parse: success (${result.blockCount} blocks).`;
+        if (!result.notes) {
+          result.notes = parseNote;
+        } else if (!result.notes.includes('Server parse')) {
+          result.notes = parseNote + '\n' + result.notes;
+        }
+      } else if (!result.localParseFailed && result.schemaFound) {
+        const parseNote = 'Local parse: success.';
+        if (!result.notes || !result.notes.includes('Local parse')) {
+          result.notes = (result.notes || '') + (result.notes ? '\n' : '') + parseNote;
+        }
+      } else if (result.serverFallback && !result.schemaFound) {
+        const parseNote = 'Server fallback: no JSON-LD found.';
+        if (!result.notes || !result.notes.includes('Server fallback')) {
+          result.notes = (result.notes || '') + (result.notes ? '\n' : '') + parseNote;
+        }
+      }
       
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
@@ -3040,8 +3093,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       if (notesEl) {
-        notesEl.value = 'Local parse skipped (cached or blocked). External validation passed ✅';
-        updateValidationNotes(index, notesEl.value);
+        let noteText = '';
+        if (localParse?.localParseFailed && localParse?.serverFallback) {
+          noteText = `Local parse: blocked. Server parse: success (${localParse.blockCount || 0} blocks). External validation passed ✅`;
+        } else {
+          noteText = 'Local parse skipped (cached or blocked). External validation passed ✅';
+        }
+        notesEl.value = noteText;
+        updateValidationNotes(index, noteText);
       }
       
       // Store in result object
