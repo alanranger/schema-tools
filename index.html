@@ -764,7 +764,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.5.1</span>
+    <span class="version">v1.5.2</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2791,6 +2791,135 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return result;
   }
 
+  // Helper: Mark as "reviewing" when external validator is opened
+  function markReviewing(index, which) {
+    const label = which === 'schema' ? 'Schema.org' : 'Rich Results';
+    const notesEl = document.getElementById(`notes_${index}`);
+    if (notesEl) {
+      notesEl.value = `👀 Opened ${label} (reviewing)…`;
+      updateValidationNotes(index, notesEl.value);
+      
+      // Auto-clear after 5s if still pending
+      setTimeout(() => {
+        const currentNotes = notesEl.value || '';
+        if (currentNotes.includes('reviewing')) {
+          notesEl.value = currentNotes.replace(/👀 Opened .* \(reviewing\)…\s*/g, '').trim();
+          updateValidationNotes(index, notesEl.value);
+        }
+      }, 5000);
+    }
+  }
+
+  // Helper: Apply external validator results and finalize row status
+  function applyExternalResult(index, richResult, schemaOrgResult) {
+    const result = validationResults[index];
+    if (!result) return;
+    
+    // Get current DOM elements
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+    const notesEl = document.getElementById(`notes_${index}`);
+    
+    // Clean up "reviewing" notes
+    if (notesEl) {
+      let notes = notesEl.value || '';
+      if (richResult) notes = notes.replace(/👀 Opened Rich Results.*\n?/g, '').trim();
+      if (schemaOrgResult) notes = notes.replace(/👀 Opened Schema\.org.*\n?/g, '').trim();
+      notesEl.value = notes;
+      updateValidationNotes(index, notes);
+    }
+    
+    // Finalize status based on external results
+    finalizeRowStatus(index, result, richResult, schemaOrgResult);
+  }
+
+  // Helper: Finalize row status prioritizing external validators
+  function finalizeRowStatus(index, localParse, rich, schemaOrg) {
+    const richPassed = rich?.status === 'eligible' && rich?.verdict === 'PASS';
+    const schemaPassed = schemaOrg?.status === 'passed';
+    const missing = localParse?.missingFieldsDetails || localParse?.missingFieldsBadges || localParse?.missingFields || [];
+    const missingCount = Array.isArray(missing) ? missing.length : (missing ? 1 : 0);
+    
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+    const notesEl = document.getElementById(`notes_${index}`);
+    
+    // Update external status columns
+    const richSelect = document.getElementById(`googleStatus_${index}`);
+    const schemaSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    if (richSelect) {
+      setSelect(richSelect, richPassed ? '✅ Passed' : (rich ? '❌ Failed' : 'Not run'));
+    }
+    if (schemaSelect) {
+      setSelect(schemaSelect, schemaPassed ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
+    }
+    
+    // Prefer externals if both passed
+    if (richPassed && schemaPassed) {
+      const statusHtml = missingCount ? '<span class="chip-issues" title="View details">⚠️ Issues</span>' : '<span class="chip-ok">✅ Valid</span>';
+      if (statusCell) statusCell.innerHTML = statusHtml;
+      
+      if (schemaTypeCell) {
+        const types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
+        schemaTypeCell.textContent = types;
+      }
+      
+      if (notesEl) {
+        notesEl.value = 'Local parse skipped (cached or blocked). External validation passed ✅';
+        updateValidationNotes(index, notesEl.value);
+      }
+      
+      // Store in result object
+      if (validationResults[index]) {
+        validationResults[index].validatorGoogleStatus = '✅ Passed';
+        validationResults[index].validatorSchemaOrgStatus = '✅ Passed';
+        validationResults[index].statusOverride = 'external-passed';
+      }
+      
+      return;
+    }
+    
+    // Use local result if externals didn't both pass
+    if (localParse?.schemaFound || localParse?.schemaType) {
+      const hasMissing = missingCount > 0;
+      const statusHtml = hasMissing 
+        ? '<span class="chip-issues" title="View details">⚠️ Issues</span>'
+        : '<span class="chip-ok">✅ Valid</span>';
+      
+      if (statusCell) statusCell.innerHTML = statusHtml;
+      
+      if (schemaTypeCell) {
+        const types = localParse?.schemaType || localParse?.types?.join(', ') || 'None';
+        schemaTypeCell.textContent = types;
+      }
+    } else {
+      if (statusCell) statusCell.innerHTML = '<span class="status-badge no-schema">❌ No Schema</span>';
+      if (schemaTypeCell) schemaTypeCell.textContent = 'None';
+    }
+    
+    // Store status in result object
+    if (validationResults[index]) {
+      validationResults[index].statusOverride = 'local';
+    }
+  }
+
+  // Helper: Set select dropdown value
+  function setSelect(selectEl, value) {
+    if (!selectEl) return;
+    // Find the option that matches (by value or text)
+    for (let option of selectEl.options) {
+      if (option.value === value || option.textContent === value) {
+        selectEl.value = option.value;
+        updateValidationStatus(
+          parseInt(selectEl.id.match(/\d+/)?.[0] || '0'),
+          selectEl.id.includes('google') ? 'google' : 'schemaorg',
+          option.value
+        );
+        break;
+      }
+    }
+  }
+
   // Update table row with result
   function updateTableRow(index, result) {
     const tableBody = document.getElementById('resultsTableBody');
@@ -2911,7 +3040,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const schemaOrgBtn = document.getElementById(`schemaOrgBtn_${index}`);
     const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
     if (schemaOrgBtn) {
-      schemaOrgBtn.onclick = () => {
+        schemaOrgBtn.onclick = () => {
         window.open(schemaOrgUrl, '_blank');
         // Auto-mark as opened
         const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
@@ -2919,6 +3048,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           statusSelect.value = '👀 Opened (reviewing)';
           updateValidationStatus(index, 'schemaorg', '👀 Opened (reviewing)');
         }
+        // Mark as reviewing
+        markReviewing(index, 'schema');
       };
     }
     if (richResultsBtn) {
@@ -2932,6 +3063,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           statusSelect.value = '👀 Opened (reviewing)';
           updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
         }
+        // Mark as reviewing
+        markReviewing(index, 'rich');
       };
     }
     
