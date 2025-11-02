@@ -304,6 +304,40 @@
       max-height: 600px;
       overflow-y: auto;
       margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #fafbfc;
+    }
+    .url-link {
+      color: #667eea;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .url-link:hover {
+      text-decoration: underline;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .status-badge.valid {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    .status-badge.issues {
+      background: #feebc8;
+      color: #744210;
+    }
+    .status-badge.error {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+    .status-badge.no-schema {
+      background: #e2e8f0;
+      color: #4a5568;
     }
   </style>
 </head>
@@ -311,7 +345,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.2.0</span>
+    <span class="version">v1.2.1</span>
     <span class="date">2025-11-02</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -438,6 +472,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <button onclick="testGoogleRichResults('productTestUrl')" class="secondary">Test on Google Rich Results</button>
       </div>
     </div>
+  </div>
+
   <!-- Schema Validator Tab Content -->
   <div id="validatorTab" class="tab-content">
     <div class="instructions">
@@ -456,31 +492,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     </div>
 
     <label for="validatorCsvFile">Upload CSV File with URLs:</label>
-    <input type="file" id="validatorCsvFile" accept=".csv" aria-label="Validator CSV file upload">
+    <input type="file" id="validatorCsvFile" accept=".csv" aria-label="Validator CSV file upload" onchange="onFileUpload()">
     <button onclick="startValidation()">Validate URLs</button>
+    <button onclick="downloadTemplateCSV()" class="secondary" style="margin-left: 0.5rem;">Download Template CSV</button>
 
-    <div id="validatorProgress" style="display:none;">
+    <div id="validatorProgress" style="display:none; margin-top: 1.5rem;">
       <div class="progress-bar">
         <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
       </div>
-      <p id="progressText" style="margin-top: 0.5rem; color: #4a5568;">Processing...</p>
+      <p id="progressText" style="margin-top: 0.75rem; color: #4a5568; font-size: 0.95rem;">Processing...</p>
     </div>
 
-    <div id="validatorResults" class="scrollable-container" style="display:none;">
+    <div id="validatorResults" style="display:none; margin-top: 2rem;">
       <h3>Validation Results</h3>
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th>URL</th>
-            <th>Schema Type</th>
-            <th>Status</th>
-            <th>Missing Fields</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="resultsTableBody">
-        </tbody>
-      </table>
+      <div class="scrollable-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Page URL</th>
+              <th>Schema Type</th>
+              <th>Status</th>
+              <th>Missing Fields</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody">
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -725,6 +764,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         alert('Error parsing CSV file: ' + error.message);
       }
     });
+  }
+
+  // File upload handler for validator tab
+  function onFileUpload() {
+    const fileInput = document.getElementById('validatorCsvFile');
+    if (fileInput.files.length > 0) {
+      const fileName = fileInput.files[0].name;
+      console.log('CSV file selected:', fileName);
+      // File is ready for validation
+    }
+  }
+
+  // Download template CSV file
+  function downloadTemplateCSV() {
+    const csvContent = 'URL,Page Name,Category\nhttps://www.example.com/product-1,Product One,Products\nhttps://www.example.com/product-2,Product Two,Products\nhttps://www.example.com/event-1,Event One,Events\nhttps://www.example.com/event-2,Event Two,Events';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'validator-urls-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // Schema Validator Tab Logic
@@ -1006,39 +1069,100 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const defaults = DEFAULT_VALUES[schemaType] || {};
     const requirements = SCHEMA_REQUIREMENTS[schemaType];
     
-    if (!requirements) return enhanced;
-    
-    // Add missing required/recommended fields
-    const allFields = [...requirements.required, ...requirements.recommended];
-    allFields.forEach(field => {
-      if (!enhanced[field] && defaults[field] !== undefined) {
-        let value = defaults[field];
-        
-        // Replace placeholders with inferred values
-        if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
-          if (field === 'url') {
-            value = url;
-          }
-        } else if (typeof value === 'object' && value !== null) {
-          // Deep clone and replace placeholders in nested objects
-          value = JSON.parse(JSON.stringify(value));
-          if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
-            value.url = url;
-          }
-        }
-        
-        enhanced[field] = value;
+    if (!requirements) {
+      // Ensure @context and @type are set even for unknown types
+      if (!enhanced['@context']) {
+        enhanced['@context'] = 'https://schema.org/';
       }
-    });
-    
-    // Ensure URL is set
-    if (!enhanced.url && url) {
-      enhanced.url = url;
+      if (!enhanced['@type'] && schemaType) {
+        enhanced['@type'] = schemaType;
+      }
+      if (!enhanced.url && url) {
+        enhanced.url = url;
+      }
+      return enhanced;
     }
     
     // Ensure @context is set
     if (!enhanced['@context']) {
       enhanced['@context'] = 'https://schema.org/';
+    }
+    
+    // Ensure @type is set
+    if (!enhanced['@type']) {
+      enhanced['@type'] = schemaType;
+    }
+    
+    // Fill missing required fields first
+    requirements.required.forEach(field => {
+      if (!enhanced[field] || (Array.isArray(enhanced[field]) && enhanced[field].length === 0)) {
+        // Try to infer from URL
+        if (field === 'url' && url) {
+          enhanced[field] = url;
+        } else if (defaults[field] !== undefined) {
+          let value = defaults[field];
+          
+          // Replace placeholders with inferred values
+          if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
+            if (field === 'url') {
+              value = url;
+            }
+          } else if (typeof value === 'object' && value !== null) {
+            // Deep clone and replace placeholders in nested objects
+            value = JSON.parse(JSON.stringify(value));
+            if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
+              value.url = url;
+            }
+          }
+          
+          enhanced[field] = value;
+        } else {
+          // Generic placeholder for required fields
+          enhanced[field] = `[REPLACE WITH ${field.toUpperCase()}]`;
+        }
+      }
+    });
+    
+    // Fill missing recommended fields (only if defaults exist)
+    requirements.recommended.forEach(field => {
+      if (!enhanced[field] || (Array.isArray(enhanced[field]) && enhanced[field].length === 0)) {
+        if (defaults[field] !== undefined) {
+          let value = defaults[field];
+          
+          // Replace placeholders with inferred values
+          if (typeof value === 'string' && value.includes('[AUTO-INFERRED')) {
+            if (field === 'url') {
+              value = url;
+            }
+          } else if (typeof value === 'object' && value !== null) {
+            // Deep clone and replace placeholders in nested objects
+            value = JSON.parse(JSON.stringify(value));
+            if (field === 'offers' && value.url && value.url.includes('[AUTO-INFERRED')) {
+              value.url = url;
+            }
+          }
+          
+          enhanced[field] = value;
+        }
+      }
+    });
+    
+    // Special handling for nested objects
+    if (schemaType === 'Product' && enhanced.offers && typeof enhanced.offers === 'object') {
+      if (!enhanced.offers.url && url) {
+        enhanced.offers.url = url;
+      }
+    }
+    
+    if (schemaType === 'Event' && enhanced.location && typeof enhanced.location === 'object') {
+      if (!enhanced.location.address) {
+        enhanced.location.address = DEFAULT_VALUES.Event.location.address;
+      }
+    }
+    
+    // Ensure URL is set
+    if (!enhanced.url && url) {
+      enhanced.url = url;
     }
     
     return enhanced;
@@ -1076,6 +1200,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return result;
   }
 
+  // Update table row with result
+  function updateTableRow(index, result) {
+    const tableBody = document.getElementById('resultsTableBody');
+    let row = tableBody.children[index];
+    
+    if (!row) {
+      // Create new row if it doesn't exist
+      row = document.createElement('tr');
+      tableBody.appendChild(row);
+    }
+    
+    // Determine status badge class and text
+    let statusClass = 'no-schema';
+    let statusText = '❌ No Schema';
+    if (result.error) {
+      statusClass = 'error';
+      statusText = '❌ Error';
+    } else if (result.valid) {
+      statusClass = 'valid';
+      statusText = '✅ Valid';
+    } else if (result.schemaFound) {
+      statusClass = 'issues';
+      statusText = '⚠️ Issues';
+    }
+    
+    // Update row content
+    row.innerHTML = `
+      <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
+      <td>${result.schemaType || 'None'}</td>
+      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+      <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
+      <td>
+        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${index})">Generate Enhanced</button>` : '-'}
+      </td>
+    `;
+  }
+
   // Start validation process
   async function startValidation() {
     const fileInput = document.getElementById('validatorCsvFile');
@@ -1105,36 +1266,64 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       tableBody.innerHTML = '';
       validationResults = [];
       
+      // Initialize rows with processing status
+      urls.forEach((urlData, index) => {
+        const placeholderResult = {
+          url: urlData.url,
+          row: urlData.row,
+          schemaType: null,
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          processing: true
+        };
+        validationResults.push(placeholderResult);
+        updateTableRow(index, {
+          ...placeholderResult,
+          schemaType: 'Processing...',
+          error: null
+        });
+      });
+      
       // Process each URL
       for (let i = 0; i < urls.length; i++) {
         const urlData = urls[i];
         progressText.textContent = `Processing ${i + 1} of ${urls.length}: ${urlData.url}`;
         progressBar.style.width = `${((i + 1) / urls.length) * 100}%`;
         
-        const result = await processUrl(urlData);
-        validationResults.push(result);
+        // Update row to show processing status
+        updateTableRow(i, {
+          url: urlData.url,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null
+        });
         
-        // Add row to table
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><a href="${result.url}" target="_blank" style="color: #667eea; text-decoration: none;">${result.url}</a></td>
-          <td>${result.schemaType || 'None'}</td>
-          <td class="${result.error ? 'status-invalid' : result.valid ? 'status-valid' : result.schemaFound ? 'status-invalid' : 'status-invalid'}">
-            ${result.error ? '❌ Error' : result.valid ? '✅ Valid' : result.schemaFound ? '⚠️ Issues' : '❌ No Schema'}
-          </td>
-          <td class="missing-fields">${result.missingFields.length > 0 ? result.missingFields.join(', ') : 'None'}</td>
-          <td>
-            ${result.schemas.length > 0 ? `<button class="enhance-btn" onclick="generateEnhancedSchema(${validationResults.length - 1})">Generate Enhanced</button>` : '-'}
-          </td>
-        `;
-        tableBody.appendChild(row);
+        // Process URL
+        const result = await processUrl(urlData);
+        validationResults[i] = result;
+        
+        // Update table row immediately
+        updateTableRow(i, result);
+        
+        // Small delay to allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       progressText.textContent = `Completed: ${validationResults.length} URLs processed`;
+      progressBar.style.width = '100%';
       
     } catch (error) {
       alert('Error: ' + error.message);
       progressDiv.style.display = 'none';
+      console.error('Validation error:', error);
     }
   }
 
@@ -1146,21 +1335,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return;
     }
     
-    // Enhance first schema
-    const firstSchema = result.schemas[0];
-    const enhanced = enhanceSchema(firstSchema.schema, firstSchema.type, result.url);
+    // Enhance all schemas if multiple exist
+    const enhancedSchemas = result.schemas.map(schemaData => {
+      return enhanceSchema(schemaData.schema, schemaData.type, result.url);
+    });
+    
+    // If single schema, download as single JSON
+    // If multiple schemas, create @graph structure
+    let jsonData;
+    if (enhancedSchemas.length === 1) {
+      jsonData = JSON.stringify(enhancedSchemas[0], null, 2);
+    } else {
+      // Use @graph structure for multiple schemas
+      const graphSchema = {
+        '@context': 'https://schema.org',
+        '@graph': enhancedSchemas
+      };
+      jsonData = JSON.stringify(graphSchema, null, 2);
+    }
     
     // Create downloadable JSON
-    const jsonData = JSON.stringify(enhanced, null, 2);
     const blob = new Blob([jsonData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `enhanced-schema-${result.url.replace(/[^a-z0-9]/gi, '-')}.json`;
+    const sanitizedUrl = result.url.replace(/https?:\/\//g, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    a.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    // Also create HTML script tag version
+    const htmlBlob = new Blob([`<script type="application/ld+json">\n${jsonData}\n<\/script>`], { type: 'text/html' });
+    const htmlUrl = URL.createObjectURL(htmlBlob);
+    const htmlA = document.createElement('a');
+    htmlA.href = htmlUrl;
+    htmlA.download = `enhanced-schema-${sanitizedUrl}-${Date.now()}.html`;
+    setTimeout(() => {
+      document.body.appendChild(htmlA);
+      htmlA.click();
+      document.body.removeChild(htmlA);
+      URL.revokeObjectURL(htmlUrl);
+    }, 500);
   }
 </script>
 

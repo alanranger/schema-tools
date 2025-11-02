@@ -116,19 +116,27 @@ The `unified-schema-generator.html` tool provides three tabs in one interface:
 **Usage:**
 1. Open `unified-schema-generator.html` in your browser
 2. Switch to the "Schema Validator" tab
-3. Upload a CSV file with a `URL`, `Link`, or `Website` column
-4. Click "Validate URLs" to start processing
-5. Review results in the table
-6. Click "Generate Enhanced" button for any URL to download improved schema
+3. Click "Download Template CSV" to get a sample CSV file with the correct format
+4. Fill in your URLs in the CSV file
+5. Upload the CSV file
+6. Click "Validate URLs" to start processing
+7. Review results in the table
+8. Click "Generate Enhanced" button for any URL to download improved schema (JSON and HTML formats)
 
 **CSV Format for Validator:**
 ```csv
-URL,Product Name
-https://www.example.com/product-1,Product One
-https://www.example.com/product-2,Product Two
+URL,Page Name,Category
+https://www.example.com/product-1,Product One,Products
+https://www.example.com/product-2,Product Two,Products
 ```
 
-**Note:** Cross-origin restrictions may prevent fetching some URLs. The validator uses a CORS proxy for cross-origin requests, but some sites may block this. For best results, validate URLs from your own domain.
+**Features (v1.2.1):**
+- ✅ Real-time progress indicator during validation
+- ✅ Template CSV download for easy setup
+- ✅ Enhanced schema generation with multiple schema support (@graph structure)
+- ✅ Downloads both JSON and HTML script tag formats
+- ✅ Improved table UI with status badges
+- ✅ Better error handling and processing status display
 
 ## Schema Validation
 

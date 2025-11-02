@@ -20,14 +20,21 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Injects fixed location, organizer, image
 - Outputs valid Event + ItemList blocks
 
-### ✅ `unified-schema-generator.html` (COMPLETE)
+### ✅ `unified-schema-generator.html` (v1.2.1 - COMPLETE)
 - Combines both generators into one file with tabbed interface
 - Three tabs:
   - Event Schema Generator
   - Product Schema Generator  
-  - Schema Validator (NEW!) - validates URLs from CSV, detects schema types, identifies missing fields, and generates enhanced schemas
+  - Schema Validator - validates URLs from CSV, detects schema types, identifies missing fields, and generates enhanced schemas
 - Includes built-in validation and enhancement logic
 - Works entirely in browser (no server required)
+- **New in v1.2.1:**
+  - Template CSV download button for easy setup
+  - Real-time progress indicators during validation
+  - Enhanced schema generation with @graph support for multiple schemas
+  - Downloads both JSON and HTML script tag formats
+  - Improved UI with status badges and better error handling
+  - Better table rendering with processing status updates
 
 ## Goals for Next Tool Phase
 
@@ -35,13 +42,17 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Schema validation (built into unified generator)
 - Bulk URL validation from CSV
 - Schema enhancement with missing fields
+- Template CSV download for validator
+- Real-time progress indicators
+- Multiple schema support (@graph structure)
+- Dual format downloads (JSON + HTML script tags)
 
 ### 🚀 Future Enhancements:
 - Add cleanup and review-merging to CSV uploads
 - Crawl live Squarespace URLs to ensure correct schema placement and detect outdated/incomplete pages
-- Add progress indicators for large CSV files
 - Export validation results to Excel/CSV format
-- Add HTML UI for schema enhancer (currently CLI only)
+- Add batch enhancement for all URLs at once
+- Add filtering/sorting options in results table
 
 ## Folder Map
 

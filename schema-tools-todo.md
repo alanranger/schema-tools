@@ -107,13 +107,18 @@ Build a **single HTML tool** that can:
 
 ### 🧪 Optional Enhancements
 
+- [x] Add HTML UI for bulk validator (browser-based CSV upload) - **COMPLETED v1.2.0**
+- [x] Add progress bar for bulk validation - **COMPLETED v1.2.1**
+- [x] Template CSV download for easy setup - **COMPLETED v1.2.1**
+- [x] Enhanced schema generation with multiple schema support - **COMPLETED v1.2.1**
+- [x] Dual format downloads (JSON + HTML) - **COMPLETED v1.2.1**
 - [ ] Add CSV pre-cleaning checks: invalid rows, missing `Product ID`, etc.
 - [ ] Show warning if CSV has invalid/missing fields
 - [ ] Allow user to preview JSON-LD block in a collapsible box
-- [ ] Add HTML UI for bulk validator (browser-based CSV upload)
-- [ ] Add progress bar for bulk validation
 - [ ] Support for Microdata validation
 - [ ] Export validation results to CSV/Excel
+- [ ] Add batch enhancement for all URLs at once
+- [ ] Add filtering/sorting options in results table
 
 ---
 
