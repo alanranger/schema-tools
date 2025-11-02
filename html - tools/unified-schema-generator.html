@@ -2501,43 +2501,68 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function setAllExternalStatusTo(status) {
     const statusValue = status === 'Passed' ? '✅ Passed' : status;
     const rows = document.querySelectorAll('#resultsTableBody tr');
-    rows.forEach((row, index) => {
-      const googleSelect = document.getElementById(`googleStatus_${index}`);
-      const schemaOrgSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    let updatedCount = 0;
+    
+    rows.forEach((row) => {
+      // Get index from row's first cell's ID or dataset
+      const firstCell = row.querySelector('td');
+      if (!firstCell) return;
       
-      if (googleSelect && googleSelect.value === 'Not run') {
-        googleSelect.value = statusValue;
-        updateValidationStatus(index, 'google', statusValue);
+      // Find the index by checking the status select IDs
+      const googleSelect = row.querySelector('select[id^="googleStatus_"]');
+      const schemaOrgSelect = row.querySelector('select[id^="schemaOrgStatus_"]');
+      
+      if (googleSelect) {
+        const index = parseInt(googleSelect.id.replace('googleStatus_', ''));
+        if (!isNaN(index) && googleSelect.value === 'Not run') {
+          googleSelect.value = statusValue;
+          updateValidationStatus(index, 'google', statusValue);
+          updatedCount++;
+        }
       }
       
-      if (schemaOrgSelect && schemaOrgSelect.value === 'Not run') {
-        schemaOrgSelect.value = statusValue;
-        updateValidationStatus(index, 'schemaorg', statusValue);
+      if (schemaOrgSelect) {
+        const index = parseInt(schemaOrgSelect.id.replace('schemaOrgStatus_', ''));
+        if (!isNaN(index) && schemaOrgSelect.value === 'Not run') {
+          schemaOrgSelect.value = statusValue;
+          updateValidationStatus(index, 'schemaorg', statusValue);
+          updatedCount++;
+        }
       }
     });
     
-    showToast(`✅ Updated all "Not run" statuses to ${statusValue}`);
+    showToast(`✅ Updated ${updatedCount} "Not run" status${updatedCount !== 1 ? 'es' : ''} to ${statusValue}`);
   }
   
   // Bulk helper: Reset all external status dropdowns to "Not run"
   function resetAllExternalStatus() {
     const rows = document.querySelectorAll('#resultsTableBody tr');
-    rows.forEach((row, index) => {
-      const googleSelect = document.getElementById(`googleStatus_${index}`);
-      const schemaOrgSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    let updatedCount = 0;
+    
+    rows.forEach((row) => {
+      const googleSelect = row.querySelector('select[id^="googleStatus_"]');
+      const schemaOrgSelect = row.querySelector('select[id^="schemaOrgStatus_"]');
       
       if (googleSelect) {
-        googleSelect.value = 'Not run';
-        updateValidationStatus(index, 'google', 'Not run');
+        const index = parseInt(googleSelect.id.replace('googleStatus_', ''));
+        if (!isNaN(index)) {
+          googleSelect.value = 'Not run';
+          updateValidationStatus(index, 'google', 'Not run');
+          updatedCount++;
+        }
       }
       
       if (schemaOrgSelect) {
-        schemaOrgSelect.value = 'Not run';
-        updateValidationStatus(index, 'schemaorg', 'Not run');
+        const index = parseInt(schemaOrgSelect.id.replace('schemaOrgStatus_', ''));
+        if (!isNaN(index)) {
+          schemaOrgSelect.value = 'Not run';
+          updateValidationStatus(index, 'schemaorg', 'Not run');
+          updatedCount++;
+        }
       }
     });
     
-    showToast('✅ Reset all external statuses to "Not run"');
+    showToast(`✅ Reset ${updatedCount} external status${updatedCount !== 1 ? 'es' : ''} to "Not run"`);
   }
   
   // Save to Supabase
