@@ -2365,15 +2365,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? [...new Set(detectedTypes)].join(', ') : 'None'} (${detectedTypes.length} total, ${[...new Set(detectedTypes)].length} unique)`, detectedTypes.length > 0 ? 'success' : 'warn');
       
       if (schemaTypeCell) {
-        const schemaType = detectedTypes.length ? detectedTypes.join(', ') : 'None';
-        setProgress(schemaTypeCell, detectedTypes.length ? 85 : 70, detectedTypes.length ? 'Detected' : 'Scanning');
+        const uniqueTypes = [...new Set(detectedTypes)];
+        const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
+        setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
       }
       
       return {
         url,
         jsonLd: jsonLdBlocks,
         schemaFound: jsonLdBlocks.length > 0,
-        schemaType: detectedTypes.length ? detectedTypes.join(', ') : 'None'
+        schemaType: detectedTypes.length ? [...new Set(detectedTypes)].join(', ') : 'None'
       };
     } catch (error) {
       // Fallback: try direct fetch (may fail due to CORS)
@@ -2732,7 +2733,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       result.schemaFound = analysis.schemaFound;
       // Use schemaType from fetchPageSchema if available, otherwise use analysis
-      result.schemaType = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
+      // Show unique types only to avoid confusion from duplicates
+      const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || 'None').split(',').map(t => t.trim()))];
+      result.schemaType = uniqueTypes.join(', ');
       result.missingFields = [...new Set(analysis.missingFields)];
       result.warnings = analysis.warnings;
       result.valid = analysis.valid;
