@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Schema Generator with Reviews (Alan Ranger)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    .instructions {
+      background-color: #f4f4f4;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      margin-top: 1rem;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Product Schema Generator with Reviews (Alan Ranger)</h1>
+
+
+
+<div class="instructions">
+  <strong>🛠 Instructions:</strong><br>
+  1. Upload your product CSV/XLSX file (e.g. <code>products_with_review_data_final.xlsx</code>).<br>
+  2. Ensure it includes these fields: <code>name</code>, <code>description</code>, <code>image</code>, <code>url</code>, <code>price</code>, <code>review_count</code>, <code>average_rating</code>, <code>reviews</code>.<br>
+  3. Reviews rated below 4★ are ignored automatically.<br>
+  4. Products without valid reviews will NOT include an <code>aggregateRating</code> or <code>review</code> block.<br>
+  5. Click <b>Generate Schema</b> to create a valid JSON-LD block per product.<br><br>
+
+  ✅ This tool works entirely offline in your browser.<br>
+  ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
+
+  <strong>📄 Data Workflow Summary:</strong><br>
+  <pre style="background:#eee; padding:0.75rem; border-radius:6px;">
+  Step 1: Export base list → products_Jul-21_01-43-36PM cleaned.xlsx
+       ↓
+  Step 2: Inject reviews (OCR or manual) → products_with_review_data_final.xlsx
+       ↓
+  Step 3: Final output schema → alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+       ↓
+  Step 4: Copy per-product schema into Squarespace
+  </pre>
+
+  <strong>📌 Squarespace Instructions:</strong><br>
+  • Open your product page in Squarespace.<br>
+  • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
+  • OR insert a <b>Code Block</b> onto the product page.<br>
+  • <b>Paste only the schema for that specific product.</b><br>
+  • <span style="color:#c00;">⚠️ Do NOT paste all schemas into every product page.</span><br>
+  • One schema block per product, on its matching product page only.
+</div>
+
+
+
+<input type="file" id="csvFile" accept=".csv">
+<button onclick="generateSchema()">Generate Schema</button>
+
+<h3>Generated JSON-LD Schema:</h3>
+<textarea id="output" readonly></textarea>
+
+<script>
+  function generateSchema() {
+    const fileInput = document.getElementById('csvFile');
+    const output = document.getElementById('output');
+
+    if (!fileInput.files.length) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      const text = event.target.result;
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',');
+      const data = lines.slice(1).map(row => {
+        const cols = row.split(',');
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[h.trim()] = cols[i]?.trim();
+        });
+        return obj;
+      });
+
+      const outputSchema = data.map(product => {
+        const reviews = JSON.parse(product.reviews || '[]').filter(r => Number(r.rating) >= 4);
+        const reviewCount = reviews.length;
+        const averageRating = reviewCount > 0 ? (
+          reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviewCount
+        ).toFixed(1) : null;
+
+        let schema = {
+          "@context": "https://schema.org/",
+          "@type": "Product",
+          "name": product.name,
+          "image": product.image,
+          "description": product.description,
+          "url": product.url
+        };
+
+        if (reviewCount > 0) {
+          schema.aggregateRating = {
+            "@type": "AggregateRating",
+            "ratingValue": averageRating,
+            "reviewCount": reviewCount
+          };
+
+          schema.review = reviews.map(r => ({
+            "@type": "Review",
+            "author": r.author,
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": r.rating,
+              "bestRating": "5",
+              "worstRating": "1"
+            },
+            "reviewBody": r.body
+          }));
+        }
+
+        return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
+      }).join('\n\n');
+
+      output.value = outputSchema;
+    };
+
+    reader.readAsText(fileInput.files[0]);
+  }
+</script>
+
+</body>
+</html>

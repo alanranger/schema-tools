@@ -1,0 +1,1437 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "2.5–4hr Photography Workshops",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@type": "Event",
+        "name": "Peak District Photography Workshops - Heathers Sunset",
+        "startDate": "2025-08-16T18:00:00:00+01:00",
+        "endDate": "2025-08-16T21:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "16/08/2025Peak District photography workshops -based around Hathersage in Derbyshire for spectacular viewing points with plenty of heathers as the sun sets",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1682259056748-3WSS8Y2YXIWFFQDIYR4F/Surprise+View+7.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunset",
+        "location": {
+          "@type": "Place",
+          "name": "Peak District",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "6 Mayfield Terrace, Hathersage, England, S32 1BE, United Kingdom",
+            "addressLocality": "S32 1BE",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunset"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@type": "Event",
+        "name": "Peak District Photography Workshops - Heathers Sunrise",
+        "startDate": "2025-08-17T05:15:00:00+01:00",
+        "endDate": "2025-08-17T09:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "17/08/2025Peak District Photography Workshop - around Hathersage and the Roaches for spectacular viewing points with plenty of heathers | Sunrise Staffordshire",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700303596327-DSMX2LGQ05VGSLNLKQIC/The+Roaches.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunrise",
+        "location": {
+          "@type": "Place",
+          "name": "Staffordshire - Upper Hulme",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Leek, ST13 8UA, United Kingdom",
+            "addressLocality": "ST13 8UA",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-heathers-sunrise"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@type": "Event",
+        "name": "Long Exposure Photography Workshop - Burnham on Sea Sunset",
+        "startDate": "2025-08-23T17:30:00:00+01:00",
+        "endDate": "2025-08-23T20:15:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "23/08/2025Burnham on Sea Lighthouse | Long exposure photography workshop, sunset and iconic coastline images from this famous lighthouse in Somerset, UK",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546345535824-FU1FQXB42JQ9VCKIOEWN/burnham+still-Photography-Workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-burnham-on-sea",
+        "location": {
+          "@type": "Place",
+          "name": "Somerset",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Burnham-on-Sea, TA8 2ET, United Kingdom",
+            "addressLocality": "TA8 2ET",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-burnham-on-sea"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+        "@type": "Event",
+        "name": "Long Exposure Photography Workshop - Kenilworth 28/8",
+        "startDate": "2025-08-28T18:15:00:00+01:00",
+        "endDate": "2025-08-28T20:45:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "28/08/2025Kenilworth - Learn long exposure photography and make interesting movement shots on this photography workshop night shoot around Kenilworth Castle.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675345926122-FG9G39T5F3OOT1CNEZMP/kenilworth+defenses.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth4",
+        "location": {
+          "@type": "Place",
+          "name": "Kenilworth",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Castle Hill, Kenilworth, England, CV8 1ND, United Kingdom",
+            "addressLocality": "CV8 1ND",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth4"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 8,
+      "item": {
+        "@type": "Event",
+        "name": "Sunset Photographic Workshop - Chesterton Windmill 16-09",
+        "startDate": "2025-09-16T18:00:00:00+01:00",
+        "endDate": "2025-09-16T20:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "16/09/2025Warwickshire - Chesterton Windmill - Practise and learn long exposures and composition at this famous Midlands landmark windmill on this night shoot.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j",
+        "location": {
+          "@type": "Place",
+          "name": "Warwickshire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Windmill Hill Ln, England, CV33 9LB, United Kingdom",
+            "addressLocality": "CV33 9LB",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 10,
+      "item": {
+        "@type": "Event",
+        "name": "Long Exposure Photography Workshop - Sunset | Kenilworth",
+        "startDate": "2025-09-23T17:30:00:00+01:00",
+        "endDate": "2025-09-23T19:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "10/04/2025Kenilworth - Learn long exposure photography and make interesting movement shots on this photography workshop night shoot around Kenilworth Castle.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1677346062246-6DAXRO5SKD1LJ1TBFEL2/kenilworth+defenses.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth1",
+        "location": {
+          "@type": "Place",
+          "name": "Kenilworth",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "36 Castle Rd, England, CV8 1NG, United Kingdom",
+            "addressLocality": "CV8 1NG",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth1"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 11,
+      "item": {
+        "@type": "Event",
+        "name": "Coventry Evening Urban Architecture Photography Workshop ",
+        "startDate": "2025-09-24T18:00:00:00+01:00",
+        "endDate": "2025-09-24T20:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "24/09/2025Coventry - Once City of Culture - Explore the new and old surrounding area to create Urban Architecture Photography with Alan on this night shoot.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546344708108-3P21C5HFHMEO7XP2F2LT/ST+MICHAEL+SUBDUING+THE+DEVIL+-Photography-Workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/urban-architecture-photography-workshop-coventry",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1 Priory St, England, CV1 5FB, United Kingdom",
+            "addressLocality": "CV1 5FB",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/urban-architecture-photography-workshop-coventry"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 13,
+      "item": {
+        "@type": "Event",
+        "name": "Sunset Photographic Workshop - Chesterton Windmill 01-10",
+        "startDate": "2025-10-01T17:30:00:00+01:00",
+        "endDate": "2025-10-01T20:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "01/10/2025Warwickshire - Chesterton Windmill - Practise and learn long exposures and composition at this famous Midlands landmark windmill on this night shoot.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j-9akd5",
+        "location": {
+          "@type": "Place",
+          "name": "Warwickshire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Windmill Hill Ln, England, CV33 9LB, United Kingdom",
+            "addressLocality": "CV33 9LB",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring-7gw7j-9akd5"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 15,
+      "item": {
+        "@type": "Event",
+        "name": "Fairy Glen Betws-y-Coed Photography Workshops - Wales - Oct",
+        "startDate": "2025-10-04T10:00:00:00+01:00",
+        "endDate": "2025-10-04T13:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "09/05/2025Fairy Glen Betws-y-Coed Photography Workshop - A magical serene gorge through the river Conwy provides a great opportunity to practise long exposure",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1740502341422-AGUUE085W47A3L7137NG/Fairy+Glen+4.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-wales",
+        "location": {
+          "@type": "Place",
+          "name": "Snowdonia National Park",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Betws-y-Coed, Wales, LL24 0SG, United Kingdom",
+            "addressLocality": "LL24 0SG",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-wales"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 17,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk | Coventry | Piles Coppice",
+        "startDate": "2025-10-17T09:30:00:00+01:00",
+        "endDate": "2025-10-17T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "17/10/2025Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-piles-coppice",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Coventry CV3 2ZZ, United Kingdom",
+            "addressLocality": "Coventry CV3 2ZZ",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-piles-coppice"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 28,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk | Kenilworth | Crackley Woods",
+        "startDate": "2025-11-07T09:30:00:00+01:00",
+        "endDate": "2025-11-07T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "07/11/2025Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-kenilworth-crackley-woods",
+        "location": {
+          "@type": "Place",
+          "name": "Kenilworth",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Crackley Ln, England, CV8, United Kingdom",
+            "addressLocality": "CV8",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-kenilworth-crackley-woods"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 29,
+      "item": {
+        "@type": "Event",
+        "name": "Abstract and Macro Photography Workshop - Warwickshire",
+        "startDate": "2025-11-08T10:00:00:00+01:00",
+        "endDate": "2025-11-08T12:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "08/11/2025Warwickshire - Abstract and Macro Photography Workshops. Learn how to photograph macro images with an award-winning professional photographer.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1734085795822-KGL13H1JB15QFAVBP4IU/Abstract+and+Macro+Photography+Workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop",
+        "location": {
+          "@type": "Place",
+          "name": "Alan Ranger Photography",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "45 Hathaway Road, Coventry, United Kingdom",
+            "addressLocality": "Coventry",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 33,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk | Solihull | Hay Woods - Winter",
+        "startDate": "2025-12-05T09:30:00:00+01:00",
+        "endDate": "2025-12-05T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "05/12/2025Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-solihull-hay-woods",
+        "location": {
+          "@type": "Place",
+          "name": "Solihull",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Haywood Ln, Rowington, England, CV35 7JQ, United Kingdom",
+            "addressLocality": "CV35 7JQ",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-solihull-hay-woods"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 34,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk - Coventry - Tile Hill Wood ",
+        "startDate": "2025-12-08T09:30:00:00+01:00",
+        "endDate": "2025-12-08T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "02/02/2026Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-tile-hill",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Banner Lane, Coventry, United Kingdom",
+            "addressLocality": "Coventry",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-tile-hill"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 35,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk - Solihull - Hay Woods - Winter",
+        "startDate": "2026-01-02T09:30:00:00+01:00",
+        "endDate": "2026-01-02T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "02/01/2026Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through a woodland with a camera under the support of a professional photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-hay-woods",
+        "location": {
+          "@type": "Place",
+          "name": "Solihull",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Haywood Ln, Rowington, England, CV35 7JQ, United Kingdom",
+            "addressLocality": "CV35 7JQ",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-hay-woods"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 40,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk - Coventry Tile Hill NR - Winter",
+        "startDate": "2026-02-02T09:30:00:00+01:00",
+        "endDate": "2026-02-02T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "02/02/2026Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodland NR with a camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-cv4",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Banner Lane, Coventry, United Kingdom",
+            "addressLocality": "Coventry",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-coventry-cv4"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 44,
+      "item": {
+        "@type": "Event",
+        "name": "Fairy Glen Betws-y-Coed Photography Workshop -  Wales",
+        "startDate": "2026-03-07T10:00:00:00+01:00",
+        "endDate": "2026-03-07T13:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "07/03/2025Fairy Glen Betws-y-Coed Photography Workshop - A magical serene gorge through the river Conwy provides a great opportunity to practise long exposure",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707215037398-4NEW80LYQQ2XQX73MZYH/Fairy+Glen+Betws-y-Coed+Photography+Workshop.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-betws-y-coed-photography",
+        "location": {
+          "@type": "Place",
+          "name": "Wales - Snowdonia",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Snowdonia National Park, Betws-y-Coed, Wales, LL24 0SG, United Kingdom",
+            "addressLocality": "LL24 0SG",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-betws-y-coed-photography"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 47,
+      "item": {
+        "@type": "Event",
+        "name": "Sunset Photographic Workshop - Chesterton Windmill 30-3",
+        "startDate": "2026-03-30T17:30:00:00+01:00",
+        "endDate": "2026-03-30T19:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "30/03/2026Warwickshire - Chesterton Windmill - Practise and learn long exposures and composition at this famous Midlands landmark windmill on this night shoot.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348903737-ZZOPNMPKQI3BIO8NTQJA/chesterton-windmill-photography-workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring",
+        "location": {
+          "@type": "Place",
+          "name": "Warwickshire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Windmill Hill Ln, England, CV33 9LB, United Kingdom",
+            "addressLocality": "CV33 9LB",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-spring"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 48,
+      "item": {
+        "@type": "Event",
+        "name": "Long Exposure Photography Workshop - Kenilworth 31-3",
+        "startDate": "2026-03-31T18:00:00:00+01:00",
+        "endDate": "2026-03-31T20:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "12/05/2025Kenilworth - Learn long exposure photography and make interesting movement shots on this photography workshop night shoot around Kenilworth Castle.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675345926122-FG9G39T5F3OOT1CNEZMP/kenilworth+defenses.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth2",
+        "location": {
+          "@type": "Place",
+          "name": "Kenilworth",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Castle Hill, Kenilworth, England, CV8 1ND, United Kingdom",
+            "addressLocality": "CV8 1ND",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photography-workshop-kenilworth2"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 49,
+      "item": {
+        "@type": "Event",
+        "name": "Long Exposure Photo Workshop - Sunset - Kenilworth - Apr",
+        "startDate": "2026-04-13T18:30:00:00+01:00",
+        "endDate": "2026-04-13T20:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "20/05/2025Kenilworth - Learn long exposure photography and make interesting movement shots on this photography workshop night shoot around Kenilworth Castle.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1741367268682-VQY1Z5HZAGVFN4V74YPD/Moon.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photo-workshop-sunset-kenilworth",
+        "location": {
+          "@type": "Place",
+          "name": "Kenilworth",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "38 castle rd, England, CV8 1NG, United Kingdom",
+            "addressLocality": "CV8 1NG",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/long-exposure-photo-workshop-sunset-kenilworth"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 63,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk | Meriden | Millisons Wood",
+        "startDate": "2026-05-03T09:30:00:00+01:00",
+        "endDate": "2026-05-03T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "04/05/2025Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-meriden-millisons-wood",
+        "location": {
+          "@type": "Place",
+          "name": "Meriden",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Albert Road, CV5 9AS, United Kingdom",
+            "addressLocality": "CV5 9AS",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-meriden-millisons-wood"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 64,
+      "item": {
+        "@type": "Event",
+        "name": "Fairy Glen Betws-y-Coed Photography Workshop - Wales - May",
+        "startDate": "2026-05-08T10:00:00:00+01:00",
+        "endDate": "2026-05-08T13:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "08/05/2026Fairy Glen Betws-y-Coed Photography Workshop - A magical serene gorge through the river Conwy provides a great opportunity to practise long exposure",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1739453577809-DTGISJZ35FIE7U21YIOJ/Fairy+Glen+2.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-betws-y-coed",
+        "location": {
+          "@type": "Place",
+          "name": "Snowdonia National Park",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Betws-y-Coed, Wales, LL24 0SG, United Kingdom",
+            "addressLocality": "LL24 0SG",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/fairy-glen-photography-betws-y-coed"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 67,
+      "item": {
+        "@type": "Event",
+        "name": "Abstract and Macro Photography Workshop Warwickshire - May",
+        "startDate": "2026-05-17T10:00:00:00+01:00",
+        "endDate": "2026-05-17T12:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "17/05/2026Warwickshire - Abstract and Macro Photography Workshops. Learn how to photograph macro images with an award-winning professional photographer.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1734084297980-W42TDI502DA8I78VBBO5/Abstract%2Band%2BMacro%2BPhotography%2BWorkshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop-coventry",
+        "location": {
+          "@type": "Place",
+          "name": "Warwickshire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "45 Hathaway Road, Coventry, England, CV4 9HW, United Kingdom",
+            "addressLocality": "CV4 9HW",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/abstract-and-macro-photography-workshop-coventry"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 68,
+      "item": {
+        "@type": "Event",
+        "name": "Garden Photography Workshops | Private Garden | Coventry",
+        "startDate": "2026-05-17T15:00:00:00+01:00",
+        "endDate": "2026-05-17T17:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "17/05/2026Coventry - Garden Photography Workshop- macro, close-up or abstract - gardens offer endless opportunities to practise and perfect image-making.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1630230262554-WWSOU1WKBUV46Y6A095X/_.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop-mxyms",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "45 Hathaway Road, Coventry, CV4 9HW, United Kingdom",
+            "addressLocality": "CV4 9HW",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop-mxyms"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 69,
+      "item": {
+        "@type": "Event",
+        "name": "Sunset Photography Workshop - Chesterton Windmill 18-5",
+        "startDate": "2026-05-18T18:30:00:00+01:00",
+        "endDate": "2026-05-18T21:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "29/05/2025Warwickshire - Chesterton Windmill - Practise and learn long exposure and composition at this famous windmill on this photography night shoot.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1546348269382-80B9O6W1H3BZNIMXZI7Q/chesterton-windmill-photography-workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-photography-workshop",
+        "location": {
+          "@type": "Place",
+          "name": "Warwickshire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Windmill Hill Ln, England, CV33 9LB, United Kingdom",
+            "addressLocality": "CV33 9LB",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/sunset-chesterton-windmill-photography-workshop"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 70,
+      "item": {
+        "@type": "Event",
+        "name": "Sezincote Garden Photography - Mughal palace in Cotswolds",
+        "startDate": "2026-05-29T11:00:00:00+01:00",
+        "endDate": "2026-05-29T13:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "29/05/2026Gloucestershire - A visit to Sezincote Gardens, Mughal Palace to enjoy garden photography at the impressive estate’s grounds | Moreton on Marsh",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1715078225982-X01ZZ737OV5I7IFI0W5Q/sezincote+garden+photography.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/sezincote-garden-photography-workshop",
+        "location": {
+          "@type": "Place",
+          "name": "Gloucestershire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1 Icehouse Ln, Sezincote, England, GL56 9AW, United Kingdom",
+            "addressLocality": "GL56 9AW",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/sezincote-garden-photography-workshop"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 71,
+      "item": {
+        "@type": "Event",
+        "name": "Lavender Photography Workshop Gloucestershire at Sunset 4",
+        "startDate": "2026-07-04T17:00:00:00+01:00",
+        "endDate": "2026-07-04T20:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "04/07/2026Cotswolds - Lavender Photography Workshop at spectacular Lavender fields. Shoot into the sunset hours for amazing colour and scenes - Gloucestershire",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700307138506-ZKLVZEG55N58GETAAWJT/Provence+en+Angleterre.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset-19",
+        "location": {
+          "@type": "Place",
+          "name": "Cotswolds",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "7 Manor Barns, Snowshill, England, WR12 7JR, United Kingdom",
+            "addressLocality": "WR12 7JR",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset-19"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 72,
+      "item": {
+        "@type": "Event",
+        "name": "Lavender Photography Workshop Gloucestershire at Sunset",
+        "startDate": "2026-07-11T17:00:00:00+01:00",
+        "endDate": "2026-07-11T20:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "11/07/2026Cotswolds - Lavender Photography Workshop at spectacular Lavender fields. Shoot into the sunset hours for amazing colour and scenes - Gloucestershire",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700307138506-ZKLVZEG55N58GETAAWJT/Provence+en+Angleterre.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset",
+        "location": {
+          "@type": "Place",
+          "name": "Cotswolds",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "7 Manor Barns, Snowshill, England, WR12 7JR, United Kingdom",
+            "addressLocality": "WR12 7JR",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/lavender-photography-workshop-sunset"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 73,
+      "item": {
+        "@type": "Event",
+        "name": "Garden Photography Workshop | Private Garden | Coventry",
+        "startDate": "2026-07-12T15:00:00:00+01:00",
+        "endDate": "2026-07-12T17:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "12/07/2026Coventry - Garden Photography Workshop- macro, close-up or abstract - gardens offer endless opportunities to practise and perfect image-making.",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1630230262554-WWSOU1WKBUV46Y6A095X/_.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "45 Hathaway Road, Coventry, CV4 9HW, United Kingdom",
+            "addressLocality": "CV4 9HW",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/garden-photography-workshop"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 74,
+      "item": {
+        "@type": "Event",
+        "name": "Nant Mill Photography Workshop - Woodlands and Waterfalls ",
+        "startDate": "2025-06-07T10:00:00:00+01:00",
+        "endDate": "2025-06-07T14:00:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "07/06/2025Nant Mill Photography Workshop - Wrexham  - Wander and shoot from the banks of the River Clywedog and visit waterfalls set in an enchanting woodland",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1603790147896-C4ALG2VYZK9T1U7BOQXZ/limbs.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/nant-mill-woodlands",
+        "location": {
+          "@type": "Place",
+          "name": "Wales",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "LL11 3BT, United Kingdom",
+            "addressLocality": "LL11 3BT",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/nant-mill-woodlands"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 77,
+      "item": {
+        "@type": "Event",
+        "name": "Woodland Photography Walk | Leamington Spa | Oakley Wood",
+        "startDate": "2025-03-21T09:30:00:00+01:00",
+        "endDate": "2025-03-21T11:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "05/03/2025Woodland Photography Walk - Enjoy and learn in a 2hr informal walk through woodlands with any camera under the support of a professional Photographer",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978483227-AGNBKSFNJEJ0VP2ERGWQ/Down+Under.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-leamington-oakley-wood",
+        "location": {
+          "@type": "Place",
+          "name": "Leamington Spa",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Oakley Wood Crematorium, CV33 9QP, United Kingdom",
+            "addressLocality": "CV33 9QP",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/woodland-photography-walk-leamington-oakley-wood"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 79,
+      "item": {
+        "@type": "Event",
+        "name": "Peak District Photography Workshops - Heathers Sunrise |",
+        "startDate": "2024-08-24T05:15:00:00+01:00",
+        "endDate": "2024-08-24T09:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "24/08/2024Peak District Photography - based around the Roaches and Ramshaw Rocks with spectacular viewing points and plenty of heathers to shoot for landscapes",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1700303622633-FX3Z99NDIYVQSFXYLD5G/The+Roaches.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-sunrise-heathers",
+        "location": {
+          "@type": "Place",
+          "name": "Staffordshire - Upper Hulme",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Roach Road, Leek, England, ST13 8TY, United Kingdom",
+            "addressLocality": "ST13 8TY",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-sunrise-heathers"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 80,
+      "item": {
+        "@type": "Event",
+        "name": "Poppy Fields Photography Workshop - Worcs | Sunrise 9/6",
+        "startDate": "2024-06-09T05:00:00:00+01:00",
+        "endDate": "2024-06-09T07:30:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "09/06/2024Kidderminster - Poppy Fields Photography Workshops Sunrise - A field full of red poppies is a sight to experience | Subject to seasonal variation",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1539008898994-ESG75007CGBM7JYKMWIT/poppy+glow-Photography-Workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunrise",
+        "location": {
+          "@type": "Place",
+          "name": "Worcestershire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Kinver, England, DY7 5LZ, United Kingdom",
+            "addressLocality": "DY7 5LZ",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunrise"
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 81,
+      "item": {
+        "@type": "Event",
+        "name": "Poppy Fields Photography Workshop - Worcs | Sunset 8/6",
+        "startDate": "2024-06-08T19:15:00:00+01:00",
+        "endDate": "2024-06-08T21:45:00:00+01:00",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "description": "08/06/2024Kidderminster - Poppy Fields Photography Workshops Sunset - A field full of red poppies is a sight to experience | Subject to seasonal variation",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1539008898994-ESG75007CGBM7JYKMWIT/poppy+glow-Photography-Workshops.jpg",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunset",
+        "location": {
+          "@type": "Place",
+          "name": "Worcestershire",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Kinver, England, DY7 5LZ, United Kingdom",
+            "addressLocality": "DY7 5LZ",
+            "postalCode": "",
+            "addressCountry": "GB"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "url": "https://www.alanranger.com"
+        },
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "45.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/poppy-fields-photography-workshop-sunset"
+        }
+      }
+    }
+  ]
+}
+</script>

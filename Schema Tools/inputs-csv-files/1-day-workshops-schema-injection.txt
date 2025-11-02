@@ -1,0 +1,975 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      "name": "1-Day Photography Workshops",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-summer"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-winter"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-autumn"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-29oct"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-30oct"
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-31oct"
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-1nov"
+        },
+        {
+          "@type": "ListItem",
+          "position": 8,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-2nov"
+        },
+        {
+          "@type": "ListItem",
+          "position": 9,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-3nov"
+        },
+        {
+          "@type": "ListItem",
+          "position": 10,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn"
+        },
+        {
+          "@type": "ListItem",
+          "position": 11,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn-2"
+        },
+        {
+          "@type": "ListItem",
+          "position": 12,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-winter"
+        },
+        {
+          "@type": "ListItem",
+          "position": 13,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-spring"
+        },
+        {
+          "@type": "ListItem",
+          "position": 14,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-20"
+        },
+        {
+          "@type": "ListItem",
+          "position": 15,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-21"
+        },
+        {
+          "@type": "ListItem",
+          "position": 16,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-22"
+        },
+        {
+          "@type": "ListItem",
+          "position": 17,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-23"
+        },
+        {
+          "@type": "ListItem",
+          "position": 18,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-24"
+        },
+        {
+          "@type": "ListItem",
+          "position": 19,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-25"
+        },
+        {
+          "@type": "ListItem",
+          "position": 20,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-17"
+        },
+        {
+          "@type": "ListItem",
+          "position": 21,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-18"
+        },
+        {
+          "@type": "ListItem",
+          "position": 22,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-19"
+        },
+        {
+          "@type": "ListItem",
+          "position": 23,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-29"
+        },
+        {
+          "@type": "ListItem",
+          "position": 24,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-30"
+        },
+        {
+          "@type": "ListItem",
+          "position": 25,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-01"
+        },
+        {
+          "@type": "ListItem",
+          "position": 26,
+          "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-spring"
+        }
+      ]
+    },
+    {
+      "@type": "Event",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Aug",
+      "startDate": "2025-08-31",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg",
+      "description": "31/08/2025Coventry - The Secrets of Woodland Photography - open to all levels, experience, and camera. 1-Day Masterclass combining theory and practicals.",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-summer",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-summer"
+    },
+    {
+      "@type": "Event",
+      "name": "Peak District Photography Workshops Padley Gorge | 10-18",
+      "startDate": "2025-10-18",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": "Upper Padley, Grindleford, S32 2JA, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714559760976-6CZKC2X0XATXWIR0Q0X6/Peak+District+Photography+workshops.jpg",
+      "description": "18/10/2025Peak District Photography Workshops - Padley Gorge - a narrow, tree-lined gorge with a river so provides ample opportunity for macro &amp; movement shots",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-winter",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-winter"
+    },
+    {
+      "@type": "Event",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Oct",
+      "startDate": "2025-10-19",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg",
+      "description": "19/10/2025Coventry - The Secrets of Woodland Photography - open to all levels, experience, and camera. 1-Day Masterclass combining theory and practicals.",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-autumn",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-autumn"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 24/10",
+      "startDate": "2025-10-24",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "24/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-29oct",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-29oct"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 25/10",
+      "startDate": "2025-10-25",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "25/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-30oct",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-30oct"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 26/10",
+      "startDate": "2025-10-26",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "26/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-31oct",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-31oct"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop -29/10",
+      "startDate": "2025-10-29",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "29/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-1nov",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-1nov"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 30/10",
+      "startDate": "2025-10-30",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "30/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-2nov",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-2nov"
+    },
+    {
+      "@type": "Event",
+      "name": "Batsford Arboretum Autumn Photography Workshop - 31/10",
+      "startDate": "2025-10-31",
+      "location": {
+        "@type": "Place",
+        "name": " Batsford Arboretum - Gloucestershire",
+        "address": "England, GL56 9AE, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1675347700488-3E0I5HD2RWPTEA20AQ1D/Autumn+Leaves.jpg",
+      "description": "31/10/2025Gloucestershire - Batsford Arboretum Autumn Photography Workshops are a must for autumn colour - open to all levels and experience and camera",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-3nov",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/batsford-arboretum-autumn-photography-3nov"
+    },
+    {
+      "@type": "Event",
+      "name": "Peak District Photography Workshops Padley Gorge | 1-11",
+      "startDate": "2025-11-01",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": "Upper Padley, Grindleford, S32 2JA, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1699522410481-3RW7I6IHD1I8ZVWQDSZ0/photographing-autumn.jpg",
+      "description": "01/11/2025Peak District Photography Workshops - Padley Gorge - a narrow, tree-lined gorge with a river so provides ample opportunity for macro &amp; movement shots",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn"
+    },
+    {
+      "@type": "Event",
+      "name": "Peak District Photography Workshops Padley Gorge | 2-11",
+      "startDate": "2025-11-02",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": "Upper Padley, Grindleford, S32 2JA, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1699522410481-3RW7I6IHD1I8ZVWQDSZ0/photographing-autumn.jpg",
+      "description": "02/11/2025Peak District Photography Workshops - Padley Gorge - a narrow, tree-lined gorge with a river so provides ample opportunity for macro &amp; movement shots",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn-2",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-autumn-2"
+    },
+    {
+      "@type": "Event",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass 11-1",
+      "startDate": "2026-01-11",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg",
+      "description": "18/01/2025Coventry - The Secrets of Woodland Photography - open to all levels, experience, and camera.  1-Day Masterclass combining theory and practicals.",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-winter",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-winter"
+    },
+    {
+      "@type": "Event",
+      "name": "The Secrets of Woodland Photography - 1-Day Masterclass Apr",
+      "startDate": "2026-04-19",
+      "location": {
+        "@type": "Place",
+        "name": "Coventry",
+        "address": "45 Hathaway Road, Coventry, England, CV4 9HP, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1687442036373-6Q6GKKLKEX4UZ00OFCMU/Plant%2BHill%2BWoods%2B%252311%2B-%2BJan%2B2022.jpg",
+      "description": "13/04/2025Coventry - The Secrets of Woodland Photography - open to all levels, experience, and camera. 1-Day Masterclass combining theory and practicals.",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-spring",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/secrets-of-woodland-photography-masterclass-spring"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 20 Apr",
+      "startDate": "2026-04-20",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "20/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-20",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-20"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 21 Apr",
+      "startDate": "2026-04-21",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "21/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-21",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-21"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 22 Apr ",
+      "startDate": "2026-04-22",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "22/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-22",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-22"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 23 Apr",
+      "startDate": "2026-04-23",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "23/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-23",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-23"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 24 Apr",
+      "startDate": "2026-04-24",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "24/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-24",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-24"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 25 Apr",
+      "startDate": "2026-04-25",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "25/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-25",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-25"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 26 Apr",
+      "startDate": "2026-04-26",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "26/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-17",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-17"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 27 Apr",
+      "startDate": "2026-04-27",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "27/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-18",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-18"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 28 Apr",
+      "startDate": "2026-04-28",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "28/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-19",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-19"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 29 Apr",
+      "startDate": "2026-04-29",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "29/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-29",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-29"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 30 Apr",
+      "startDate": "2026-04-30",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "30/04/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-30",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-30"
+    },
+    {
+      "@type": "Event",
+      "name": "Bluebell Photography Workshop | Warwickshire | 01 May",
+      "startDate": "2026-05-01",
+      "location": {
+        "@type": "Place",
+        "name": "Warwickshire",
+        "address": "England, B95 5BG, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1709978458896-3LYJ0YBU7A1VGPI2OD4B/Bluebell+Woodlands+-+Sunrise.jpg",
+      "description": "01/05/2026Warwickshire - Sunrise or afternoon bluebell photography workshop in a private Bluebell Woodlands with a professional, award-winning photographer",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-01",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/bluebell-photography-photo-workshop-warwickshire-01"
+    },
+    {
+      "@type": "Event",
+      "name": "Peak District Photography Workshops Padley Gorge - 16-5",
+      "startDate": "2026-05-16",
+      "location": {
+        "@type": "Place",
+        "name": "Peak District",
+        "address": "Upper Padley, Grindleford, S32 2JA, United Kingdom"
+      },
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714493375483-G5PG1FYXR8VXFG6VNF6J/peak+district+photography.jpg",
+      "description": "24/05/2025Peak District Photography Workshops - Padley Gorge - a narrow, tree-lined gorge with a river so provides ample opportunity for macro &amp; movement shots",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Person",
+        "name": "Alan Ranger",
+        "url": "https://www.alanranger.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "99.00",
+        "priceCurrency": "GBP",
+        "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-spring",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-25"
+      },
+      "url": "https://www.alanranger.com/photographic-workshops-near-me/peak-district-photography-workshops-spring"
+    }
+  ]
+}
+</script>

@@ -1,0 +1,12 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      "name": "Photography Lessons",
+      "itemListElement": []
+    }
+  ]
+}
+</script>

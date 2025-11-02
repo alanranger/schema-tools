@@ -1,0 +1,65 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      "@id": "#itemlist",
+      "name": "All Photography Events",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "url": "https://www.alanranger.com/event/example-1"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "url": "https://www.alanranger.com/event/example-2"
+        }
+      ]
+    },
+    {
+      "@type": "Event",
+      "@id": "#event-1",
+      "name": "Woodland Photography Workshop",
+      "startDate": "2025-08-03T09:00",
+      "endDate": "2025-08-03T12:30",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": {
+        "@type": "Place",
+        "name": "Wyre Forest",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Kidderminster",
+          "addressRegion": "Worcestershire",
+          "postalCode": "DY14 9XQ",
+          "addressCountry": "GB"
+        }
+      },
+      "image": [
+        "https://static1.squarespace.com/path/to/event-image.jpg"
+      ],
+      "description": "Explore woodland compositions and camera techniques.",
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.alanranger.com/event/example-1",
+        "price": "85",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-07-01T00:00"
+      },
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "organizer": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "url": "https://www.alanranger.com"
+      }
+    }
+  ]
+}
+</script>
