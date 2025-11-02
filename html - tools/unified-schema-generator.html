@@ -3224,6 +3224,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         statusSelect.removeAttribute('title');
       }
       
+      // Store schema.org data in result
+      if (validationResults[index]) {
+        validationResults[index].schemaOrgData = data;
+      }
+      
+      // Apply external result to finalize status
+      const richResult = validationResults[index]?.richResultsData;
+      applyExternalResult(index, richResult, data);
+      
     } catch (error) {
       console.error('Schema.org validator API error:', error);
       console.error('Error stack:', error.stack);
