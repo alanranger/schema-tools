@@ -42,6 +42,13 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
   - "Save to Supabase" button for each URL row
   - Toast notifications for save success/failure
   - Automatic storage of schema JSON and validation metadata
+- **New in v1.4.0:**
+  - **Code Quality Improvements**: Comprehensive refactoring to meet SonarLint standards
+  - Reduced cognitive complexity (all functions ≤ 15)
+  - Modernized JavaScript syntax (globalThis, for...of, structuredClone)
+  - Improved error handling with proper exception logging
+  - Enhanced accessibility (added title attributes to select elements)
+  - Better code maintainability and readability
 
 ## Goals for Next Tool Phase
 

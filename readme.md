@@ -152,6 +152,19 @@ https://www.example.com/product-2,Product Two,Products
 - ✅ Collapsible help section explaining validators
 - ✅ Validator links in results table for quick manual validation
 
+**Code Quality Improvements (v1.4.0):**
+- ✅ Refactored to reduce cognitive complexity (all functions ≤ 15)
+- ✅ Replaced `window` with `globalThis` for better cross-platform compatibility
+- ✅ Converted `.forEach()` loops to `for...of` loops for better performance
+- ✅ Replaced `removeChild()` with modern `.remove()` method
+- ✅ Improved error handling with proper exception logging
+- ✅ Replaced `JSON.parse(JSON.stringify())` with `structuredClone()` for deep cloning
+- ✅ Extracted nested ternary operations for better readability
+- ✅ Removed unnecessary escape characters in regex patterns
+- ✅ Fixed redundant variable assignments
+- ✅ Added accessibility attributes (`title`) to select elements
+- ✅ Improved code maintainability and readability throughout
+
 ## Schema Validation
 
 After deploying schema to your Squarespace pages, use the Schema Validator Agent to automatically test:
@@ -366,6 +379,18 @@ FROM schema_audit_logs
 ORDER BY timestamp DESC 
 LIMIT 100;
 ```
+
+## Code Quality & Standards
+
+This project follows modern JavaScript best practices and meets SonarLint code quality standards:
+
+- ✅ All functions have cognitive complexity ≤ 15
+- ✅ Uses modern JavaScript syntax (`globalThis`, `for...of`, `structuredClone`)
+- ✅ Proper error handling with exception logging
+- ✅ Accessibility attributes included for screen readers
+- ✅ Clean, maintainable code structure
+
+See `CHANGELOG.md` for detailed version history and improvements.
 
 ## Notes
 

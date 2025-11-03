@@ -135,6 +135,11 @@ Build a **single HTML tool** that can:
 - [x] Template CSV download for easy setup - **COMPLETED v1.2.1**
 - [x] Enhanced schema generation with multiple schema support - **COMPLETED v1.2.1**
 - [x] Dual format downloads (JSON + HTML) - **COMPLETED v1.2.1**
+- [x] Code quality improvements and refactoring - **COMPLETED v1.4.0**
+  - Reduced cognitive complexity to ≤15 for all functions
+  - Modernized JavaScript syntax (globalThis, for...of, structuredClone)
+  - Improved error handling and accessibility
+  - Enhanced code maintainability
 - [ ] Add CSV pre-cleaning checks: invalid rows, missing `Product ID`, etc.
 - [ ] Show warning if CSV has invalid/missing fields
 - [ ] Allow user to preview JSON-LD block in a collapsible box
