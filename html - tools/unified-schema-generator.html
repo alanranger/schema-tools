@@ -3111,7 +3111,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return `
       <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
       <td id="schemaTypeCell_${index}">${schemaTypeHtml}</td>
-      <td id="statusCell_${index}">${statusHtml}</td>
+      <td id="statusCell_${index}" style="white-space: normal; line-height: 1.6;">${statusHtml}</td>
       <td class="missing-fields" id="missingFieldsCell_${index}">${missingFieldsHtml}</td>
       <td>
         <select class="status-select" id="googleStatus_${index}" title="Google Rich Results Status" onchange="updateValidationStatus(${index}, 'google', this.value)">
