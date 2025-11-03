@@ -4478,11 +4478,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Add informational detections
   function addInformationalDetections(allNodes, result) {
-    const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
-    if (breadcrumbNodes.length > 0) {
-      debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
+    try {
+      const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
+      if (breadcrumbNodes.length > 0) {
+        debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
+        if (!result.info) result.info = [];
+        result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
+      }
+    } catch (error) {
+      console.error('[⚠] Error in addInformationalDetections:', error);
+      // Ensure result.info exists even if error occurs
       if (!result.info) result.info = [];
-      result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
     }
   }
 
@@ -4524,14 +4530,33 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Merge analysis results into result object
   function mergeAnalysisResults(result, analysis) {
-    result.missingFields = [...new Set([...result.missingFields, ...analysis.missingFields])];
-    result.warnings = [...new Set([...result.warnings, ...analysis.warnings])];
-    if (analysis.info && analysis.info.length > 0) {
-      if (!result.info) result.info = [];
-      result.info = [...new Set([...result.info, ...analysis.info])];
+    // CRITICAL: Ensure arrays are initialized before spreading
+    result.missingFields = result.missingFields || [];
+    result.warnings = result.warnings || [];
+    result.info = result.info || [];
+    
+    analysis.missingFields = analysis.missingFields || [];
+    analysis.warnings = analysis.warnings || [];
+    analysis.info = analysis.info || [];
+    
+    try {
+      result.missingFields = [...new Set([...result.missingFields, ...analysis.missingFields])];
+      result.warnings = [...new Set([...result.warnings, ...analysis.warnings])];
+      if (analysis.info && analysis.info.length > 0) {
+        result.info = [...new Set([...result.info, ...analysis.info])];
+      }
+    } catch (error) {
+      console.error('[⚠] Error merging analysis results:', error);
+      // Fallback: just assign directly
+      result.missingFields = [...result.missingFields || [], ...analysis.missingFields || []];
+      result.warnings = [...result.warnings || [], ...analysis.warnings || []];
+      if (analysis.info && analysis.info.length > 0) {
+        result.info = [...result.info || [], ...analysis.info];
+      }
     }
+    
     result.valid = analysis.valid;
-    result.schemas = analysis.schemas;
+    result.schemas = analysis.schemas || [];
     
     // CRITICAL: Preserve schemaFound - never overwrite if it's already true
     if (result.schemaFound === true) {
@@ -4647,17 +4672,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
       
       // CRITICAL: Store result in validationResults BEFORE calling updateTableRow
+      // Ensure all arrays are initialized
       validationResults[urlData.row] = {
         ...result,
         schemaFound: result.schemaFound, // Ensure schemaFound is preserved
-        schemaType: result.schemaType || (initialAnalysis.schemaTypes.join(', ') || '—'), // Ensure schemaType is set
+        schemaType: result.schemaType || (initialAnalysis.schemaTypes.join(', ') || '—'), // Ensure schemaType is set from initialAnalysis if missing
         missingFields: result.missingFields || [],
         warnings: result.warnings || [],
         info: result.info || [],
         error: null // Explicitly clear error if validation succeeded
       };
       
-      console.log(`[✓] Stored result: schemaFound=${validationResults[urlData.row].schemaFound}, schemaType=${validationResults[urlData.row].schemaType}, error=${validationResults[urlData.row].error}`);
+      console.log(`[✓] Stored result: schemaFound=${validationResults[urlData.row].schemaFound}, schemaType="${validationResults[urlData.row].schemaType}", error=${validationResults[urlData.row].error}`);
       
       // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
       updateTableRow(urlData.row, validationResults[urlData.row]);
