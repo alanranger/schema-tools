@@ -4467,11 +4467,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Split issuesList into missingFields, warnings, and info
     const buckets = splitIssuesIntoBuckets(issuesList, allNodes);
     
-    // Add info from analysis (e.g., downgraded "Missing recommended" messages)
-    if (analysis.info && analysis.info.length > 0) {
-      if (!buckets.info) buckets.info = [];
-      buckets.info.push(...analysis.info);
-    }
+      // Add info from analysis (e.g., downgraded "Missing recommended" messages)
+      if (analysis.info && analysis.info.length > 0) {
+        if (!buckets.info) buckets.info = [];
+        buckets.info.push(...(Array.isArray(analysis.info) ? analysis.info : []));
+      }
     
     return { issuesList, buckets };
   }
@@ -4733,6 +4733,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         setProgress(schemaTypeCell, 100, 'Error');
       }
       result.error = error.message;
+      
+      // CRITICAL: Even if there's an error, try to preserve schemaType from initialAnalysis
+      if (initialAnalysis && initialAnalysis.schemaTypes && initialAnalysis.schemaTypes.length > 0) {
+        result.schemaType = initialAnalysis.schemaTypes.join(', ');
+        result.schemaFound = initialAnalysis.schemaFound || false;
+        console.log(`[✓] Preserved schemaType from initialAnalysis despite error: ${result.schemaType}`);
+      }
+      
+      // Ensure arrays are initialized
+      result.missingFields = result.missingFields || [];
+      result.warnings = result.warnings || [];
+      result.info = result.info || [];
+      
+      // Store result even on error
+      validationResults[urlData.row] = {
+        ...result,
+        schemaType: result.schemaType || (initialAnalysis?.schemaTypes?.join(', ') || '—'),
+        schemaFound: result.schemaFound || initialAnalysis?.schemaFound || false,
+        missingFields: result.missingFields || [],
+        warnings: result.warnings || [],
+        info: result.info || []
+      };
+      
+      updateTableRow(urlData.row, validationResults[urlData.row]);
     }
     
     return result;
