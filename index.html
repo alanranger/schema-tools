@@ -3956,9 +3956,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             systemInjected: false
           });
           
-          analysis.missingFields.push(...fieldValidation.missingFields);
-          analysis.warnings.push(...fieldValidation.warnings);
-          if (fieldValidation.info && fieldValidation.info.length > 0) {
+          // CRITICAL: Ensure arrays exist before pushing
+          if (!analysis.missingFields || !Array.isArray(analysis.missingFields)) {
+            analysis.missingFields = [];
+          }
+          if (!analysis.warnings || !Array.isArray(analysis.warnings)) {
+            analysis.warnings = [];
+          }
+          if (!analysis.info || !Array.isArray(analysis.info)) {
+            analysis.info = [];
+          }
+          
+          if (fieldValidation.missingFields && Array.isArray(fieldValidation.missingFields)) {
+            analysis.missingFields.push(...fieldValidation.missingFields);
+          }
+          if (fieldValidation.warnings && Array.isArray(fieldValidation.warnings)) {
+            analysis.warnings.push(...fieldValidation.warnings);
+          }
+          if (fieldValidation.info && Array.isArray(fieldValidation.info) && fieldValidation.info.length > 0) {
             analysis.info.push(...fieldValidation.info);
           }
         }
