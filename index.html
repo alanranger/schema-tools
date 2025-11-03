@@ -669,13 +669,27 @@
     }
     
     /* --- Row Progress Bars --- */
+    .progress {
+      position: relative;
+      width: 100%;
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+      display: block;
+    }
+    
     .progress-inner {
       position: absolute;
+      top: 0;
+      left: 0;
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, #00b67a, #e57200);
       border-radius: 3px;
       transition: width 0.3s ease;
+      max-height: 6px;
     }
     
     /* === Status Badge Styling === */
@@ -1089,7 +1103,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.9.3</span>
+    <span class="version">v1.9.4</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
