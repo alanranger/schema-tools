@@ -1126,7 +1126,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.9.7</span>
+    <span class="version">v1.9.8</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -5537,6 +5537,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (!result.notes) {
       result.notes = '';
     }
+    
+    // CRITICAL: Ensure error is explicitly null if validation succeeded
+    if (!result.error || result.error === 'null' || String(result.error).trim() === '') {
+      result.error = null;
+    }
+    
+    // CRITICAL: Store result in validationResults array with correct schemaFound
+    // Ensure schemaFound is preserved from determineStatusHtml restoration
+    validationResults[index] = {
+      ...result,
+      schemaFound: result.schemaFound, // Use the restored value from determineStatusHtml
+      schemaType: result.schemaType || '—', // Ensure schemaType is never null
+      error: null // Explicitly clear error
+    };
+    
+    console.log(`[✓] Stored result in validationResults[${index}]: schemaFound=${validationResults[index].schemaFound}, schemaType=${validationResults[index].schemaType}, error=${validationResults[index].error}`);
     
     // Add click handler to status cell if it has issues or error (statusCell already declared above)
     if (statusCell && (statusClass === 'issues' || statusClass === 'error')) {
