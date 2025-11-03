@@ -1002,14 +1002,33 @@
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+    
+    /* Modal styling */
+    #detail-modal { position: fixed; inset: 0; z-index: 9999; }
+    #detail-modal .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
+    #detail-modal .modal { position: absolute; top: 8%; left: 50%; transform: translateX(-50%); width: min(1100px, 92vw); background:#fff; border-radius:12px; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+    #detail-modal .modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #eee; }
+    #detail-modal .modal-body { padding:18px; max-height:70vh; overflow:auto; }
+    #detail-modal #modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; padding:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center; }
+    #detail-modal #modal-close:hover { color:#f00; }
+    .code-card { border:1px solid #eee; border-radius:10px; margin-bottom:12px; }
+    .code-card-head { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fafafa; border-bottom:1px solid #eee; }
+    .code-card pre { margin:0; padding:12px; overflow:auto; background:#000; color:#fff; }
+    .code-card pre code { color:#fff; }
+    .code-card .copy-btn { background:#2563eb; color:#fff; border:none; padding:0.375rem 0.75rem; border-radius:4px; cursor:pointer; font-size:0.875rem; }
+    .code-card .copy-btn:hover { background:#1d4ed8; }
+    .grid.grid-two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    @media (max-width: 768px) {
+      .grid.grid-two { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.5</span>
-    <span class="date">2025-11-03</span>
+    <span class="version">v1.8.6</span>
+    <span class="date">2025-01-27</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1587,6 +1606,181 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const bar = cell.querySelector('.progress > span');
     if (bar) { bar.style.background = 'linear-gradient(90deg,#ff5252,#ff8a80)'; }
   }
+  
+  // ---- NEW: Modal helpers --------------------------------------
+  function openModal(title, html) {
+    let modal = document.querySelector('#detail-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'detail-modal';
+      modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal">
+          <div class="modal-head">
+            <h3 id="modal-title"></h3>
+            <button id="modal-close" aria-label="Close">✖</button>
+          </div>
+          <div class="modal-body"></div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#modal-close').onclick = () => modal.remove();
+      modal.querySelector('.modal-backdrop').onclick = () => modal.remove();
+    }
+    modal.querySelector('#modal-title').textContent = title;
+    modal.querySelector('.modal-body').innerHTML = html;
+  }
+
+  function codeBlock(label, code) {
+    return `
+      <div class="code-card">
+        <div class="code-card-head">
+          <strong>${label}</strong>
+          <button class="copy-btn" data-code="${encodeURIComponent(code)}">Copy</button>
+        </div>
+        <pre><code>${escapeHtml(code)}</code></pre>
+      </div>`;
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  // Copy button handler
+  document.addEventListener('click', (e) => {
+    const copy = e.target.closest('.copy-btn');
+    if (!copy) return;
+    const code = decodeURIComponent(copy.dataset.code || '');
+    navigator.clipboard.writeText(code).then(() => { 
+      copy.textContent = 'Copied'; 
+      setTimeout(() => copy.textContent = 'Copy', 1200); 
+    });
+  });
+
+  // Minimal extractor: same logic you use in the scanner, but HTML-in
+  function extractJsonLdBlocksFromHtml(html) {
+    const blocks = [];
+    const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = re.exec(html))) {
+      try {
+        const json = JSON.parse(m[1].trim());
+        if (Array.isArray(json)) json.forEach(j => blocks.push(j));
+        else if (json['@graph']) json['@graph'].forEach(j => blocks.push(j));
+        else blocks.push(json);
+      } catch {}
+    }
+    return blocks;
+  }
+
+  // Build a single, cleaned-up, recommended schema graph
+  function buildEnhancedSchema(blocks) {
+    const graph = [];
+    const types = t => Array.isArray(t) ? t : [t].filter(Boolean);
+    const seen = new Set();
+    const add = (node) => {
+      const key = JSON.stringify([types(node['@type']).sort(), node['@id'] || node.url || node.name]);
+      if (seen.has(key)) return;
+      seen.add(key);
+      graph.push(node);
+    };
+
+    // Merge Organization/LocalBusiness
+    const org = {
+      '@type': ['Organization','LocalBusiness'],
+      '@id': 'https://www.alanranger.com/#org',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com/',
+      telephone: '+44 7817 017994',
+      image: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
+    };
+
+    // Keep existing ItemList/Event/etc., but ensure @id where missing
+    blocks.forEach(b => {
+      const ts = types(b['@type']);
+      if (ts.includes('Organization') || ts.includes('LocalBusiness')) {
+        // prefer our canonical org baseline merged
+        return;
+      }
+      if (!b['@id'] && (b.url || b.name)) b['@id'] = (b.url || `#${(b.name||'node').toLowerCase().replace(/\s+/g,'-')}`);
+      add(b);
+    });
+
+    add(org);
+
+    return { '@context': 'https://schema.org', '@graph': graph };
+  }
+
+  // Event delegation for View Details and Generate Enhanced buttons
+  document.addEventListener('click', async (e) => {
+    // View Details
+    const view = e.target.closest('.btn-view-details, [data-action="view-details"], .view-details-btn');
+    if (view) {
+      const row = view.closest('tr');
+      const url = row?.dataset?.url || row?.querySelector('a.url-link')?.href;
+      const cached = ResultCache.get(url);
+      if (!cached) {
+        openModal('Details', '<p>No cached analysis for this URL (scan first).</p>');
+        return;
+      }
+
+      // Build a clean details view
+      const issues = (cached.issues || []).map(i => `<li>${escapeHtml(i.message || i)}</li>`).join('') || '<li>None</li>';
+      const blocksHtml = (cached.blocks || []).map((b, idx) =>
+        codeBlock(`JSON-LD Block #${idx+1}`, JSON.stringify(b, null, 2))
+      ).join('');
+
+      openModal('Schema Details', `
+        <div class="grid grid-two">
+          <div>
+            <h4>Issues</h4>
+            <ul>${issues}</ul>
+          </div>
+          <div>
+            <h4>JSON-LD Blocks</h4>
+            ${blocksHtml || '<p>No JSON-LD blocks captured.</p>'}
+          </div>
+        </div>
+      `);
+      return;
+    }
+
+    // Generate Enhanced
+    const gen = e.target.closest('.btn-generate-enhanced, [data-action="generate-enhanced"], .enhance-btn');
+    if (gen && (gen.textContent.includes('Generate Enhanced') || gen.id?.includes('genBtn'))) {
+      const row = gen.closest('tr');
+      const url = row?.dataset?.url || row?.querySelector('a.url-link')?.href;
+      if (!url) {
+        openModal('Enhanced Schema Error', '<p>Could not determine URL for this row.</p>');
+        return;
+      }
+      
+      try {
+        // Update button state
+        const originalText = gen.textContent;
+        gen.disabled = true;
+        gen.textContent = 'Fetching...';
+        
+        // Server-side fetch (avoids CORS)
+        const res = await fetch(`/api/fetch-html?url=${encodeURIComponent(url)}`, { method: 'GET' });
+        if (!res.ok) throw new Error(`Server fetch failed: ${res.status}`);
+        const html = await res.text();
+
+        // Extract JSON-LD blocks from HTML
+        const blocks = extractJsonLdBlocksFromHtml(html);
+        // Build an enhanced consolidated schema suggestion
+        const enhanced = buildEnhancedSchema(blocks);
+
+        gen.textContent = originalText;
+        gen.disabled = false;
+        
+        openModal('Enhanced Schema (suggestion)', codeBlock('Paste this in a single <script type="application/ld+json">', JSON.stringify(enhanced, null, 2)));
+      } catch (err) {
+        gen.textContent = originalText;
+        gen.disabled = false;
+        openModal('Enhanced Schema Error', `<p>${escapeHtml(err.message)}</p><p>Tip: server route must exist at /api/fetch-html.</p>`);
+      }
+    }
+  });
   
   // Helper: Determine required schema types based on missing fields
   function determineRequiredSchemaTypes(missingFields, missingRecommended) {
@@ -2962,6 +3156,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     URL.revokeObjectURL(url);
   }
 
+  // ---- NEW: Central cache the scanner already fills ------------
+  const ResultCache = new Map(); // key: url, value: { blocks, issues, warnings, info, rawHtml? }
+  
+  // Call this right after you complete analysis for a URL
+  function cacheResult(url, payload) {
+    ResultCache.set(url, payload);
+  }
+
   // Schema Validator Tab Logic
   const SCHEMA_REQUIREMENTS = {
     WebSite: {
@@ -2978,7 +3180,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     },
     Organization: {
       required: ['name'],
-      recommended: ['url', 'logo', 'address', 'contactPoint', 'telephone']
+      recommended: ['url', 'logo', 'address', 'contactPoint', 'telephone', 'description', 'image']
     },
     BreadcrumbList: {
       required: ['itemListElement'],
@@ -2990,7 +3192,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     },
     LocalBusiness: {
       required: ['name'],
-      recommended: ['address', 'telephone', 'url', 'openingHours']
+      recommended: ['address', 'telephone', 'url', 'openingHours', 'description', 'image']
     }
   };
 
@@ -3415,13 +3617,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     jsonLdBlocks.forEach(block => {
       if (Array.isArray(block)) {
         block.forEach(item => {
-          if (item['@type']) types.add(item['@type']);
+          if (item['@type']) {
+            const itemTypes = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+            itemTypes.forEach(t => types.add(t));
+          }
         });
       } else if (block['@type']) {
-        types.add(block['@type']);
+        const blockTypes = Array.isArray(block['@type']) ? block['@type'] : [block['@type']];
+        blockTypes.forEach(t => types.add(t));
       } else if (block['@graph']) {
         block['@graph'].forEach(item => {
-          if (item['@type']) types.add(item['@type']);
+          if (item['@type']) {
+            const itemTypes = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+            itemTypes.forEach(t => types.add(t));
+          }
         });
       }
     });
@@ -3429,30 +3638,116 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return Array.from(types);
   }
 
+  // Helper: Split combined schema type string into individual types
+  function splitSchemaType(schemaType) {
+    if (typeof schemaType === 'string') {
+      // Handle comma-separated types like "Organization,LocalBusiness"
+      return schemaType.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    if (Array.isArray(schemaType)) {
+      return schemaType;
+    }
+    return [schemaType];
+  }
+
+  // Helper: Check if a field exists in any of the combined schema types
+  function fieldExistsInCombinedTypes(schema, field, combinedTypes) {
+    // Check if field exists directly in schema
+    if (schema[field]) {
+      return true;
+    }
+    
+    // For combined types, check if field exists in schema (already checked above)
+    // This function is used to determine if a recommended field should be downgraded to info
+    // If the field is in the schema, it exists, so return true
+    // If not, check if any of the combined types typically have this field
+    // and if so, it might be inherited, so we'll downgrade to info instead of warning
+    
+    // Check if any of the combined types have this field in their recommended list
+    // If so, and the field doesn't exist, it means it's truly missing but expected
+    // However, for combined types like Organization,LocalBusiness, if url exists
+    // for Organization, it satisfies LocalBusiness requirement too
+    return false; // Field doesn't exist, will be handled by caller
+  }
+
+  // Helper: Check if any combined type is known
+  function hasAnyKnownType(combinedTypes) {
+    for (const type of combinedTypes) {
+      if (SCHEMA_REQUIREMENTS[type]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Helper: Collect all required and recommended fields from combined types
+  function collectFieldsFromTypes(combinedTypes) {
+    const allRequiredFields = new Set();
+    const allRecommendedFields = new Set();
+    
+    for (const type of combinedTypes) {
+      const requirements = SCHEMA_REQUIREMENTS[type];
+      if (requirements) {
+        requirements.required.forEach(f => allRequiredFields.add(f));
+        requirements.recommended.forEach(f => allRecommendedFields.add(f));
+      }
+    }
+    
+    return { allRequiredFields, allRecommendedFields };
+  }
+
+  // Helper: Check required fields and add to missingFields
+  function checkRequiredFields(schema, allRequiredFields, missingFields) {
+    for (const field of allRequiredFields) {
+      if (!schema[field]) {
+        missingFields.push(field);
+      }
+    }
+  }
+
+  // Helper: Check recommended fields and categorize as warnings or info
+  function checkRecommendedFields(schema, allRecommendedFields, combinedTypes, warnings, info) {
+    for (const field of allRecommendedFields) {
+      if (!schema[field]) {
+        const typesRequiringField = combinedTypes.filter(type => {
+          const req = SCHEMA_REQUIREMENTS[type];
+          return req && req.recommended.includes(field);
+        });
+        
+        if (typesRequiringField.length > 1) {
+          info.push(`ℹ️ Recommended field "${field}" not present, but acceptable for combined schema types`);
+        } else {
+          warnings.push(`Missing recommended: ${field}`);
+        }
+      }
+    }
+  }
+
   // Validate schema fields
   function validateSchemaFields(schema, schemaType) {
     const missingFields = [];
     const warnings = [];
-    const requirements = SCHEMA_REQUIREMENTS[schemaType];
+    const info = [];
     
-    if (!requirements) {
+    // Handle combined types like "Organization,LocalBusiness" or arrays
+    const combinedTypes = splitSchemaType(schemaType);
+    
+    // Skip "Unknown" warning if any of the types are known
+    if (!hasAnyKnownType(combinedTypes)) {
       warnings.push(`Unknown schema type: ${schemaType}`);
-      return { missingFields, warnings };
+      return { missingFields, warnings, info };
     }
     
-    requirements.required.forEach(field => {
-      if (!schema[field]) {
-        missingFields.push(field);
-      }
-    });
+    // Collect fields from all types
+    const { allRequiredFields, allRecommendedFields } = collectFieldsFromTypes(combinedTypes);
     
-    requirements.recommended.forEach(field => {
-      if (!schema[field]) {
-        warnings.push(`Missing recommended: ${field}`);
-      }
-    });
+    // Check required fields
+    checkRequiredFields(schema, allRequiredFields, missingFields);
     
-    return { missingFields, warnings };
+    // Check recommended fields
+    checkRecommendedFields(schema, allRecommendedFields, combinedTypes, warnings, info);
+    
+    return { missingFields, warnings, info };
   }
 
   // Analyze schemas
@@ -3509,17 +3804,23 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             return; // Skip field validation and missing field counting
           }
           
-          const fieldValidation = validateSchemaFields(schema, schemaType);
+          // Normalize schemaType to handle arrays - convert to comma-separated string
+          const normalizedType = Array.isArray(schemaType) ? schemaType.join(',') : schemaType;
+          const fieldValidation = validateSchemaFields(schema, normalizedType);
           analysis.schemas.push({
             type: schemaType,
             schema: schema,
             missingFields: fieldValidation.missingFields,
             warnings: fieldValidation.warnings,
+            info: fieldValidation.info || [],
             systemInjected: false
           });
           
           analysis.missingFields.push(...fieldValidation.missingFields);
           analysis.warnings.push(...fieldValidation.warnings);
+          if (fieldValidation.info && fieldValidation.info.length > 0) {
+            analysis.info.push(...fieldValidation.info);
+          }
         }
       });
     });
@@ -3698,6 +3999,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     });
   }
 
+  // Helper: Check if duplicate should be skipped
+  function shouldSkipDuplicate(key, t, keyDetails, globalPatterns) {
+    const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
+    const isBreadcrumb = t === 'BreadcrumbList';
+    const nodeData = keyDetails[key];
+    const isFooterInjected = nodeData?.node ? detectFooterInjectedSchema(nodeData.node) : false;
+    return isGlobal || isFooterInjected || isBreadcrumb;
+  }
+
   // Helper: Process duplicate warnings
   function processDuplicateWarnings(duplicateGroups, globalPatterns) {
     const duplicateWarnings = [];
@@ -3709,13 +4019,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       for (const key of Object.keys(keyCounts)) {
         if (keyCounts[key] > 1) {
-          const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
-          const isBreadcrumb = t === 'BreadcrumbList';
-          const nodeData = keyDetails[key];
-          const isFooterInjected = nodeData?.node ? detectFooterInjectedSchema(nodeData.node) : false;
-          
-          // Skip if it's a global pattern, footer-injected, or BreadcrumbList (expected duplicates)
-          if (!isGlobal && !isFooterInjected && !isBreadcrumb) {
+          if (!shouldSkipDuplicate(key, t, keyDetails, globalPatterns)) {
             const { warning, object } = buildDuplicateWarningForKey(t, key, keyCounts, keyDetails);
             duplicateWarnings.push(warning);
             duplicateWarningsObjects.push(object);
@@ -3831,6 +4135,101 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // Helper: Process schema nodes and build issues list
+  function processSchemaNodes(pageData) {
+    let allNodes = [];
+    for (const block of pageData.jsonLd) {
+      try {
+        allNodes = flattenJsonLd(block, allNodes);
+      } catch(_) {}
+    }
+    
+    const missingDetails = computeMissingFields(allNodes);
+    debugLog(`Computed missing fields: ${missingDetails.length} issue(s) found`, missingDetails.length > 0 ? 'warn' : 'success');
+    if (missingDetails.length > 0) {
+      debugLog(`Missing fields details: ${JSON.stringify(missingDetails)}`, 'warn');
+    }
+    
+    return { allNodes, missingDetails };
+  }
+
+  // Helper: Process duplicate detection
+  function processDuplicateDetection(allNodes) {
+    const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
+    const duplicateGroups = buildDuplicateGroups(allNodes);
+    const { duplicateWarnings, duplicateWarningsObjects } = processDuplicateWarnings(duplicateGroups, globalPatterns);
+    
+    if (duplicateWarnings.length > 0) {
+      debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
+    }
+    
+    return { duplicateGroups, duplicateWarningsObjects, globalPatterns };
+  }
+
+  // Helper: Build and categorize issues
+  function buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis) {
+    const issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarningsObjects, allNodes);
+    debugLog(`✅ Built issuesList: ${issuesList.length} issue(s)`, 'success');
+    if (issuesList.length > 0) {
+      debugLog(`issuesList contents: ${JSON.stringify(issuesList, null, 2)}`);
+    }
+    
+    // Split issuesList into missingFields, warnings, and info
+    const buckets = splitIssuesIntoBuckets(issuesList, allNodes);
+    
+    // Add info from analysis (e.g., downgraded "Missing recommended" messages)
+    if (analysis.info && analysis.info.length > 0) {
+      if (!buckets.info) buckets.info = [];
+      buckets.info.push(...analysis.info);
+    }
+    
+    return { issuesList, buckets };
+  }
+
+  // Helper: Add informational detections
+  function addInformationalDetections(allNodes, result) {
+    const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
+    if (breadcrumbNodes.length > 0) {
+      debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
+      if (!result.info) result.info = [];
+      result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
+    }
+  }
+
+  // Helper: Set result metadata
+  function setResultMetadata(result, pageData, analysis, duplicateGroups) {
+    result.parsePath = pageData.parsePath || 'local';
+    result.localParseFailed = pageData.localParseFailed || false;
+    result.serverFallback = pageData.serverFallback || false;
+    result.blockCount = pageData.blockCount || pageData.jsonLd.length;
+    
+    debugLog(`Total schema nodes: ${result.blockCount}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
+    debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
+  }
+
+  // Helper: Update schema type display
+  function updateSchemaTypeDisplay(result, pageData, analysis, urlData) {
+    updateSchemaTypeCellUI(urlData, pageData, analysis);
+    
+    result.schemaFound = analysis.schemaFound;
+    const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+    const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+    const serverBadge = pageData.serverFallback ? ' (server)' : '';
+    result.schemaType = schemaTypeText + serverBadge;
+  }
+
+  // Helper: Merge analysis results into result object
+  function mergeAnalysisResults(result, analysis) {
+    result.missingFields = [...new Set([...result.missingFields, ...analysis.missingFields])];
+    result.warnings = [...new Set([...result.warnings, ...analysis.warnings])];
+    if (analysis.info && analysis.info.length > 0) {
+      if (!result.info) result.info = [];
+      result.info = [...new Set([...result.info, ...analysis.info])];
+    }
+    result.valid = analysis.valid;
+    result.schemas = analysis.schemas;
+  }
+
   // Process a single URL
   async function processUrl(urlData) {
     const result = {
@@ -3852,76 +4251,45 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
       
-      // Enhanced missing fields analysis
-      let allNodes = [];
-      for (const block of pageData.jsonLd) {
-        try {
-          allNodes = flattenJsonLd(block, allNodes);
-        } catch(_) {}
-      }
+      // Process schema nodes
+      const { allNodes, missingDetails } = processSchemaNodes(pageData);
       
-      const missingDetails = computeMissingFields(allNodes);
-      debugLog(`Computed missing fields: ${missingDetails.length} issue(s) found`, missingDetails.length > 0 ? 'warn' : 'success');
-      if (missingDetails.length > 0) {
-        debugLog(`Missing fields details: ${JSON.stringify(missingDetails)}`, 'warn');
-      }
+      // Process duplicate detection
+      const { duplicateGroups, duplicateWarningsObjects, globalPatterns } = processDuplicateDetection(allNodes);
       
-      const missingMessages = buildMissingFieldMessages(missingDetails, allNodes);
+      // Build and categorize issues
+      const { issuesList, buckets } = buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis);
       
-      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
-      const duplicateGroups = buildDuplicateGroups(allNodes);
-      const { duplicateWarnings, duplicateWarningsObjects } = processDuplicateWarnings(duplicateGroups, globalPatterns);
-      
-      if (duplicateWarnings.length > 0) {
-        debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
-      }
-      
-      result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarningsObjects, allNodes);
-      debugLog(`✅ Built issuesList: ${result.issuesList.length} issue(s)`, 'success');
-      if (result.issuesList.length > 0) {
-        debugLog(`issuesList contents: ${JSON.stringify(result.issuesList, null, 2)}`);
-      }
-      
-      // Split issuesList into missingFields, warnings, and info
-      const buckets = splitIssuesIntoBuckets(result.issuesList, allNodes);
+      result.issuesList = issuesList;
       result.missingFields = buckets.missingFields;
       result.warnings = buckets.warnings;
       result.info = buckets.info;
       
-      // Detect BreadcrumbList nodes globally (informational)
-      const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
-      if (breadcrumbNodes.length > 0) {
-        debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
-        if (!result.info) result.info = [];
-        result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
-      }
+      // Add informational detections
+      addInformationalDetections(allNodes, result);
       
+      // Log diagnostics
       logGlobalDuplicates(duplicateGroups, globalPatterns);
       logOrgNodesMissingName(allNodes);
       
-      result.parsePath = pageData.parsePath || 'local';
-      result.localParseFailed = pageData.localParseFailed || false;
-      result.serverFallback = pageData.serverFallback || false;
-      result.blockCount = pageData.blockCount || pageData.jsonLd.length;
+      // Set result metadata
+      setResultMetadata(result, pageData, analysis, duplicateGroups);
       
-      debugLog(`Total schema nodes: ${allNodes.length}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
-      debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
+      // Update schema type display
+      updateSchemaTypeDisplay(result, pageData, analysis, urlData);
       
-      updateSchemaTypeCellUI(urlData, pageData, analysis);
-      
-      result.schemaFound = analysis.schemaFound;
-      const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
-      const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
-      const serverBadge = pageData.serverFallback ? ' (server)' : '';
-      result.schemaType = schemaTypeText + serverBadge;
-      
-      // Keep old missingFields for backward compatibility, but also use new split
-      result.missingFields = [...new Set([...result.missingFields, ...analysis.missingFields])];
-      result.warnings = [...new Set([...result.warnings, ...analysis.warnings])];
-      result.valid = analysis.valid;
-      result.schemas = analysis.schemas;
+      // Merge analysis results
+      mergeAnalysisResults(result, analysis);
       
       buildResultNotes(result, pageData);
+      
+      // Cache result for View Details button
+      cacheResult(result.url, {
+        blocks: pageData.jsonLd || [],
+        issues: result.issuesList || [],
+        warnings: result.warnings || [],
+        info: result.info || []
+      });
       
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
@@ -4520,15 +4888,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate actions column HTML
   function generateActionsColumnHtml(index, result) {
     const enhanceBtn = result.schemas && result.schemas.length > 0 
-      ? `<button class="enhance-btn" id="genBtn_${index}">Generate Enhanced</button><br>` 
+      ? `<button class="enhance-btn btn-generate-enhanced" data-action="generate-enhanced" id="genBtn_${index}">Generate Enhanced</button><br>` 
       : '';
     
     const supabaseBtn = supabaseAvailable 
       ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>`
       : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>';
     
-    // Add "View Details" button with data attribute for event handler
-    const viewDetailsBtn = `<button class="enhance-btn view-details-btn" data-row-index="${index}" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;">View Details</button><br>`;
+    // Add "View Details" button with data attributes for event handler
+    const viewDetailsBtn = `<button class="enhance-btn view-details-btn btn-view-details" data-action="view-details" data-row-index="${index}" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;">View Details</button><br>`;
     
     return `${viewDetailsBtn}${enhanceBtn}
         <div style="margin-top: 0.5rem;">
@@ -4692,6 +5060,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     debugLog(`Generated statusHtml for ${result.url}: ${statusHtml.substring(0, 200)}...`);
     debugLog(`Full statusHtml: ${statusHtml}`);
     debugLog(`Status class: ${statusClass}`);
+    
+    // Ensure row exists and has data-url attribute
+    if (!row) {
+      row = document.createElement('tr');
+      row.id = `row_${index}`;
+      tableBody.appendChild(row);
+    }
+    row.dataset.url = result.url;
+    
     storeRowDataAttributes(row, result);
     
     const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
