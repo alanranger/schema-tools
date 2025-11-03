@@ -1150,19 +1150,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       li.textContent = 'No issues detected.';
       list.appendChild(li);
     } else {
-      // Add header
-      const header = document.createElement('li');
-      header.style.fontWeight = 'bold';
-      header.style.marginBottom = '0.5rem';
-      header.textContent = 'Schema Issues:';
-      list.appendChild(header);
-      
-      // Display each issue with emoji prefix
+      // Display all issues in a clean list (exact format from requirements)
       for (const issue of issuesList) {
         const li = document.createElement('li');
-        const emoji = issue.count ? '⚠️' : '⚠️';
-        li.textContent = `${emoji} ${issue.message}`;
-        li.style.marginLeft = '1rem';
+        li.textContent = issue.message;
         list.appendChild(li);
       }
     }
@@ -2072,20 +2063,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
     const issuesList = [];
     
-    // Add missing field issues with simple messages
-    for (const m of missingDetails) {
-      const idInfo = allNodes.find(n => {
-        const types = asArray(n['@type']);
-        return types.includes(m.type);
+    // Add missing field issues with exact format specified
+    for (const f of missingDetails) {
+      issuesList.push({
+        type: f.type,
+        message: `${f.type}: "${f.field}" missing`
       });
-      const idLabel = idInfo && idInfo['@id'] ? `@id: ${idInfo['@id'].split('#')[1]}` : 'no @id';
-      const message = `${m.type}: '${m.field}' missing (${idLabel})`;
-      issuesList.push({ type: m.type, field: m.field, message });
     }
     
-    // Add duplicate issues
-    for (const dup of duplicateWarnings) {
-      issuesList.push({ type: dup.type, id: dup.id, count: dup.count, message: dup.message });
+    // Add duplicate issues with exact format specified
+    for (const d of duplicateWarnings) {
+      issuesList.push({
+        type: d.type,
+        message: `⚠️ DUPLICATE: ${d.type} (${d.id || 'NO_ID'}) × ${d.count}`
+      });
     }
     
     return issuesList;
@@ -2502,7 +2493,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Keep backward compatibility - store as arrays for easy access
       const missingMessages = [];
       for (const issue of result.issuesList) {
-        if (issue.field) {
+        if (issue.message.includes('missing')) {
           missingMessages.push(issue.message);
         }
       }
@@ -2512,6 +2503,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Store counts for notes summary
       result.missingCount = missingDetails.length;
       result.duplicateCount = duplicateWarnings.length;
+      
+      // Append summary to notes (Step 5)
+      if (result.issuesList.length > 0) {
+        const missingCount = missingDetails.length;
+        const duplicateCount = duplicateWarnings.length;
+        const summaryText = ` Issues detected: ${missingCount} missing, ${duplicateCount} duplicates.`;
+        result.notes = (result.notes || '') + summaryText;
+      }
       
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
@@ -2585,19 +2584,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate missing fields HTML
   function generateMissingFieldsHtml(result) {
     if (result.issuesList && result.issuesList.length > 0) {
-      // Show all issues joined by commas (short format for table)
-      const shortMessages = result.issuesList.map(issue => {
-        // Extract short message (remove emoji prefix for table display)
-        if (issue.message.startsWith('⚠️ ')) {
-          return issue.message.replace('⚠️ ', '');
-        }
-        // For missing fields, show just "field missing"
-        if (issue.field) {
-          return `${issue.field} missing`;
-        }
-        return issue.message;
-      });
-      return shortMessages.join(', ');
+      // Show all issues joined by commas (exact format from requirements)
+      return result.issuesList.map(i => i.message).join(', ');
     }
     // Fallback to old logic for backward compatibility
     if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
