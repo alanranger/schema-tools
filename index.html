@@ -4501,19 +4501,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function updateSchemaTypeDisplay(result, pageData, analysis, urlData) {
     updateSchemaTypeCellUI(urlData, pageData, analysis);
     
-    // Preserve schemaFound from buildAnalysisResult - don't overwrite if blocks exist
+    // CRITICAL: NEVER overwrite schemaFound if it's already true or if blocks exist
     const hasBlocks = pageData.jsonLd && pageData.jsonLd.length > 0;
-    if (hasBlocks && !result.schemaFound) {
-      // Ensure schemaFound is true if blocks exist (fallback detection)
+    if (hasBlocks && result.schemaFound === false) {
+      // Only set to true if blocks exist and it was false
       result.schemaFound = true;
-      console.log(`[✓] Schema detected via fallback: ${pageData.jsonLd.map(b => b['@type'] || 'unknown').join(', ')}`);
-    } else if (hasBlocks) {
-      // Keep schemaFound from analysis if it's true
-      result.schemaFound = analysis.schemaFound || true;
-    } else {
+      console.log(`[✓] Restored schemaFound=true (blocks exist: ${pageData.jsonLd.length})`);
+    } else if (hasBlocks && result.schemaFound === true) {
+      // Keep it true - don't change
+      result.schemaFound = true;
+    } else if (!hasBlocks) {
       // Only set to false if no blocks exist
-      result.schemaFound = analysis.schemaFound || false;
+      result.schemaFound = false;
     }
+    // Otherwise, leave schemaFound as-is (don't overwrite if already set correctly)
     
     const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
     const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
@@ -4531,6 +4532,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     result.valid = analysis.valid;
     result.schemas = analysis.schemas;
+    
+    // CRITICAL: Preserve schemaFound - never overwrite if it's already true
+    if (result.schemaFound === true) {
+      result.schemaFound = true; // Keep it true
+    } else if (analysis.schemaFound === true) {
+      result.schemaFound = true; // Set from analysis if result was false
+    }
+    // Don't set to false here - only if no blocks exist at all
   }
 
   // Process a single URL
@@ -4560,10 +4569,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       debugLog(`[✓] Schema Types: ${initialAnalysis.schemaTypes.join(', ') || 'none'}`, 'info');
       debugLog(`[✓] schemaFound: ${initialAnalysis.schemaFound}`, 'info');
       
+      // CRITICAL: Set schemaFound from initialAnalysis immediately - don't let it be overwritten
+      result.schemaFound = initialAnalysis.schemaFound;
+      result.schemaTypes = initialAnalysis.schemaTypes;
+      console.log(`[✓] Set result.schemaFound=${result.schemaFound} from initialAnalysis`);
+      
       // Stage 3: Analyze schemas (~50%)
       updateRowProgress(urlData.url, 50);
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
+      
+      // Ensure schemaFound stays true if blocks exist
+      if (pageData.jsonLd && pageData.jsonLd.length > 0) {
+        result.schemaFound = true;
+        console.log(`[✓] Confirmed result.schemaFound=true (${pageData.jsonLd.length} blocks exist)`);
+      }
       
       // Stage 4: Process schema nodes (~60%)
       updateRowProgress(urlData.url, 60);
@@ -4620,7 +4640,26 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schemaFound: result.schemaFound || false
       });
       
-      // Update result row with final complete data (including schemaTypes, missingFields, warnings, info)
+      // Stage 9: Complete (~100%)
+      updateRowProgress(urlData.url, 100);
+      
+      // Log final result confirmation
+      console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
+      
+      // CRITICAL: Store result in validationResults BEFORE calling updateTableRow
+      validationResults[urlData.row] = {
+        ...result,
+        schemaFound: result.schemaFound, // Ensure schemaFound is preserved
+        schemaType: result.schemaType,
+        missingFields: result.missingFields || [],
+        warnings: result.warnings || [],
+        info: result.info || []
+      };
+      
+      // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
+      updateTableRow(urlData.row, validationResults[urlData.row]);
+      
+      // Also update result row columns with data
       updateResultRow(urlData.url, {
         url: result.url,
         schemaTypes: result.schemaType ? result.schemaType.split(',').map(t => t.trim()) : (initialAnalysis.schemaTypes || []),
@@ -4629,12 +4668,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         warnings: result.warnings || [],
         info: result.info || []
       });
-      
-      // Stage 9: Complete (~100%)
-      updateRowProgress(urlData.url, 100);
-      
-      // Log final result confirmation
-      console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
       
     } catch (error) {
       // Update progress to show error state
@@ -5130,15 +5163,33 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function determineStatusHtml(result) {
     debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}`);
     
-    // Restore schemaFound if schemas exist but flag is false
-    if (!result.schemaFound && result.schemas && result.schemas.length > 0) {
-      result.schemaFound = true;
-      console.log("[✓] Restored schemaFound=true (schema blocks exist)");
+    // CRITICAL: Restore schemaFound if ANY evidence of schema exists
+    if (!result.schemaFound) {
+      // Check if schemas exist
+      if (result.schemas && result.schemas.length > 0) {
+        result.schemaFound = true;
+        console.log("[✓] Restored schemaFound=true (schema blocks exist)");
+      }
+      // Check if schemaType is set
+      else if (result.schemaType && result.schemaType !== 'null' && result.schemaType !== 'Processing...' && result.schemaType !== '—') {
+        result.schemaFound = true;
+        console.log(`[✓] Restored schemaFound=true (schemaType exists: ${result.schemaType})`);
+      }
+      // Check validationResults array
+      else {
+        const resultIndex = validationResults.findIndex(r => r.url === result.url);
+        if (resultIndex >= 0 && validationResults[resultIndex].schemaFound === true) {
+          result.schemaFound = true;
+          console.log("[✓] Restored schemaFound=true (from validationResults array)");
+        }
+      }
       
-      // Update in validationResults array
-      const resultIndex = validationResults.findIndex(r => r.url === result.url);
-      if (resultIndex >= 0) {
-        validationResults[resultIndex].schemaFound = true;
+      // Update in validationResults array if found
+      if (result.schemaFound) {
+        const resultIndex = validationResults.findIndex(r => r.url === result.url);
+        if (resultIndex >= 0) {
+          validationResults[resultIndex].schemaFound = true;
+        }
       }
     }
     
