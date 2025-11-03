@@ -770,6 +770,29 @@
       margin: 0.2rem 0 0.8rem 0;
       font-size: 1.15rem;
     }
+    .issues-close-x {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: #333;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .issues-close-x:hover {
+      background-color: #f3f4f6;
+      color: #000;
+    }
+    .issues-close-x:active {
+      background-color: #e5e7eb;
+    }
     .issues-meta {
       font-size: 0.9rem;
       color: #555;
@@ -1103,7 +1126,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.9.4</span>
+    <span class="version">v1.9.5</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2167,41 +2190,77 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const btnSchema = document.getElementById('issuesSchemaOrgBtn');
     const btnGoogle = document.getElementById('issuesGoogleBtn');
     const closeBtn = document.getElementById('issuesCloseBtn');
+    const closeXBtn = document.getElementById('issuesCloseXBtn');
+    
+    // Get cached result data
+    const cachedData = ResultCache.get(rowData.url) || {};
+    const rowIndex = rowData.tr ? Array.from(rowData.tr.parentNode.children).indexOf(rowData.tr) : -1;
+    const result = rowIndex >= 0 ? validationResults[rowIndex] : null;
+    
+    // Merge cached data with validation result
+    const blocks = cachedData.blocks || result?.schemas?.map(s => s.schema).filter(Boolean) || [];
+    const issuesList = parseIssuesList(rowData);
+    const missingFields = result?.missingFields || cachedData.warnings?.filter(w => w.includes('missing')) || [];
+    const warnings = result?.warnings || cachedData.warnings || [];
+    const info = result?.info || cachedData.info || [];
     
     meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
     content.innerHTML = '';
     list.innerHTML = '';
     
-    const issuesList = parseIssuesList(rowData);
-    const rowIndex = rowData.tr ? Array.from(rowData.tr.parentNode.children).indexOf(rowData.tr) : -1;
-    const result = rowIndex >= 0 ? validationResults[rowIndex] : null;
-    
     const missingFieldsBadges = result?.missingFieldsBadges || [];
     const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).map(i => i.type);
-    const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : [];
+    const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : (cachedData.schemaTypes || []);
     const issueCount = issuesList.filter(i => i.message && i.message.includes('missing')).length;
-    const blockCount = result?.schemas?.length || schemaTypes.length || 0;
+    const blockCount = blocks.length || result?.schemas?.length || schemaTypes.length || 0;
     
     const severityBadge = determineSeverityBadge(issueCount, duplicates);
     const humanReadableSummary = buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges);
     const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges);
     
     // Extract missing recommended fields from warnings
-    const missingRecommended = result?.warnings?.filter(w => w.includes('Missing recommended:')).map(w => {
+    const missingRecommended = warnings.filter(w => w.includes('Missing recommended:')).map(w => {
       const match = w.match(/Missing recommended: (\w+)/);
       return match ? match[1] : null;
-    }).filter(Boolean) || [];
+    }).filter(Boolean);
     
     // Extract missing required fields
-    const missingRequiredFields = result?.missingFields?.filter(f => typeof f === 'string' && f.includes('missing')).map(f => {
+    const missingRequiredFields = missingFields.filter(f => typeof f === 'string' && f.includes('missing')).map(f => {
       const match = f.match(/(\w+):\s*"(\w+)"\s*missing/);
       return match ? `${match[1]}.${match[2]}` : null;
-    }).filter(Boolean) || [];
+    }).filter(Boolean);
     
     // Build recommended fix using the new function
     const recommendedFix = buildRecommendedFix(rowData.url, missingRequiredFields, missingRecommended);
     const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix || missingRecommended.length > 0, orgFixCheck.hasValidOrgNode, recommendedFix);
     const schemaTableHtml = buildSchemaTableHtml(result);
+    
+    // Build issues list HTML
+    let issuesHtml = '';
+    if (issuesList.length === 0 && missingFields.length === 0 && warnings.length === 0) {
+      issuesHtml = '<li>None</li>';
+    } else {
+      if (missingFields.length > 0) {
+        issuesHtml += missingFields.map(f => `<li class="missing-entry">❌ ${f}</li>`).join('');
+      }
+      if (warnings.length > 0) {
+        issuesHtml += warnings.map(w => `<li class="warning-entry">⚠️ ${w}</li>`).join('');
+      }
+      if (info.length > 0) {
+        issuesHtml += info.map(i => `<li class="info-entry">${i}</li>`).join('');
+      }
+    }
+    
+    // Show JSON-LD blocks if available
+    let jsonLdHtml = '';
+    if (blocks.length > 0) {
+      jsonDetails.style.display = 'block';
+      const firstBlock = blocks[0];
+      json.textContent = JSON.stringify(firstBlock, null, 2);
+    } else {
+      jsonDetails.style.display = 'none';
+      jsonLdHtml = '<p style="color: #6b7280; font-style: italic;">No JSON-LD blocks captured.</p>';
+    }
     
     content.innerHTML = `
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
@@ -2213,7 +2272,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <pre>${humanReadableSummary.trim()}</pre>
       </div>
       
+      <div style="margin-top: 1.5rem;">
+        <h4 style="margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">Issues</h4>
+        <ul class="issues-list" style="list-style: none; padding: 0; margin: 0;">
+          ${issuesHtml || '<li>None</li>'}
+        </ul>
+      </div>
+      
       ${schemaTableHtml}
+      
+      ${jsonLdHtml}
       
       ${recommendedFixHtml}
       
@@ -2239,6 +2307,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       if (e.key === 'Escape') close();
     }
     closeBtn.onclick = close;
+    if (closeXBtn) {
+      closeXBtn.onclick = close;
+    }
     backdrop.onclick = (e) => {
       if (e.target === backdrop) close();
     };
@@ -4549,6 +4620,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schemaFound: result.schemaFound || false
       });
       
+      // Update result row with final complete data (including schemaTypes, missingFields, warnings, info)
+      updateResultRow(urlData.url, {
+        url: result.url,
+        schemaTypes: result.schemaType ? result.schemaType.split(',').map(t => t.trim()) : (initialAnalysis.schemaTypes || []),
+        schemaFound: result.schemaFound || initialAnalysis.schemaFound,
+        missingFields: result.missingFields || [],
+        warnings: result.warnings || [],
+        info: result.info || []
+      });
+      
       // Stage 9: Complete (~100%)
       updateRowProgress(urlData.url, 100);
       
@@ -6355,7 +6436,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   <!-- Issues Modal -->
   <dialog id="issuesBackdrop" class="issues-backdrop" aria-labelledby="issuesTitle">
     <div class="issues-modal">
-      <h3 id="issuesTitle">Schema Issues</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 id="issuesTitle" style="margin: 0;">Schema Details</h3>
+        <button id="issuesCloseXBtn" class="issues-close-x" aria-label="Close">×</button>
+      </div>
       <div id="issuesMeta" class="issues-meta"></div>
       <div id="issuesContent" class="issues-content"></div>
       <ul id="issuesList" class="issues-list" style="display: none;"></ul>
