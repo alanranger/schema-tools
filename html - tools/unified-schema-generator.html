@@ -709,8 +709,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.4.0</span>
-    <span class="date">2025-11-02</span>
+    <span class="version">v1.5.0</span>
+    <span class="date">2025-01-15</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1145,6 +1145,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.warn('Failed to parse issues data:', err);
     }
     
+    // Get schema summary from rowData or dataset
+    let schemaSummary = rowData.schemaSummary;
+    if (!schemaSummary && rowData.tr && rowData.tr.dataset.schemaSummary) {
+      schemaSummary = rowData.tr.dataset.schemaSummary;
+    }
+    
     if (issuesList.length === 0) {
       const li = document.createElement('li');
       li.textContent = 'No issues detected.';
@@ -1159,6 +1165,25 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     json.textContent = (rowData.firstJsonLd || '').trim();
+    
+    // Add schema health summary to modal
+    if (rowData.schemaSummary) {
+      const summaryDiv = document.createElement('div');
+      summaryDiv.className = 'schema-summary';
+      summaryDiv.style.marginTop = '1rem';
+      summaryDiv.style.padding = '0.75rem';
+      summaryDiv.style.background = '#f9f9f9';
+      summaryDiv.style.borderLeft = '4px solid #e0b400';
+      summaryDiv.style.borderRadius = '4px';
+      summaryDiv.innerHTML = `<strong>Summary:</strong><br>${rowData.schemaSummary.replace(/\n/g, '<br>')}`;
+      // Insert before the details tag
+      const details = backdrop.querySelector('details');
+      if (details) {
+        details.parentNode.insertBefore(summaryDiv, details);
+      } else {
+        list.parentNode.appendChild(summaryDiv);
+      }
+    }
     
     btnSchema.onclick = () => globalThis.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
     btnGoogle.onclick = () => globalThis.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(rowData.url), '_blank');
@@ -1213,7 +1238,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       missingFields = [];
     }
     
-    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson, tr: trRef, issuesList };
+    return { 
+      url, 
+      schemaType, 
+      missingFields: missingFields, 
+      firstJsonLd: firstJson, 
+      tr: trRef, 
+      issuesList,
+      schemaSummary: result && result.schemaSummary ? result.schemaSummary : null
+    };
   }
   
   // ---- Schema core fields (minimal, safe set) ----
@@ -2059,6 +2092,41 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return duplicateWarnings;
   }
 
+  // Helper: Generate human-readable schema health summary
+  function generateSchemaSummary(result) {
+    const types = result.schemaType || 'None detected';
+    const missing = result.missingFieldsBadges || [];
+    const duplicates = result.issuesList ? result.issuesList.filter(i => i.message.includes('DUPLICATE')) : [];
+    const passed = result.valid === true && result.issuesList && result.issuesList.length === 0;
+    
+    let summary = `Detected schema types: ${types}. `;
+    
+    if (passed && missing.length === 0 && duplicates.length === 0) {
+      summary += "✅ All required fields are present. No issues found.";
+    } else {
+      if (missing.length > 0) {
+        summary += `⚠️ Missing ${missing.length} field(s): `;
+        summary += missing.map(m => `${m.type}: "${m.field}"`).join(', ') + '. ';
+      }
+      if (duplicates.length > 0) {
+        summary += `⚠️ ${duplicates.length} duplicate schema block(s) found (likely multiple injections by your CMS). `;
+      }
+      // Check if external validation passed (if statuses are set)
+      const hasExternalValidation = result.validatorGoogleStatus || result.validatorSchemaOrgStatus;
+      if (hasExternalValidation) {
+        summary += "External validation passed ✅ (Google & Schema.org).";
+      }
+    }
+    
+    // Add recommended action
+    const orgNameMissing = missing.find(m => m.type === "Organization" && m.field === "name");
+    if (orgNameMissing) {
+      summary += " 👉 Action: Add a 'name' property to your Organization schema (e.g. \"Alan Ranger Photography\").";
+    }
+    
+    return summary;
+  }
+
   // Helper: Build unified issues list from missing fields and duplicates
   function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
     const issuesList = [];
@@ -2536,6 +2604,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.valid = analysis.valid && result.issuesList.length === 0;
       result.schemas = analysis.schemas;
       
+      // Generate schema health summary
+      result.schemaSummary = generateSchemaSummary(result);
+      
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
@@ -2582,6 +2653,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     if (result.issuesList && result.issuesList.length > 0) {
       row.dataset.issuesList = JSON.stringify(result.issuesList);
+    }
+    if (result.schemaSummary) {
+      row.dataset.schemaSummary = result.schemaSummary;
     }
     if (result.missingFieldsDetails) {
       row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
@@ -2663,6 +2737,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       } else if (!notesWithSummary) {
         notesWithSummary = summaryLine;
       }
+    }
+    
+    // Add schema health summary to notes
+    if (result.schemaSummary) {
+      notesWithSummary = (notesWithSummary || '') + '\n\n' + result.schemaSummary;
     }
     
     return `
