@@ -873,7 +873,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.6.0</span>
+    <span class="version">v1.6.2</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1055,6 +1055,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button onclick="setAllExternalStatusTo('Passed')" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Set all Not run → Passed</button>
         <button onclick="resetAllExternalStatus()" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Reset all to Not run</button>
+        <button onclick="document.getElementById('statusDebugPanel').style.display='block'; document.getElementById('statusDebugContent').innerHTML='';" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">🔍 Show Debug Log</button>
       </div>
       
       <div class="status-legend">
@@ -1073,6 +1074,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <div class="status-legend-item" style="margin-left: auto;">
           <span style="color: #6b7280;">💡 Click any badge or "View Details" to see full analysis</span>
         </div>
+      </div>
+      
+      <!-- Debug Panel -->
+      <div id="statusDebugPanel" style="display: block; margin-top: 1rem; padding: 1rem; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <strong style="color: #1f2937;">🔍 Status Explanation Debug Log</strong>
+          <button onclick="document.getElementById('statusDebugPanel').style.display='none';" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Hide</button>
+        </div>
+        <div id="statusDebugContent" style="color: #374151; line-height: 1.6;">Debug log will appear here when validation runs...</div>
       </div>
       
       <div class="scrollable-container">
@@ -2327,6 +2337,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function debugLog(message, level = 'info') {
     const timestamp = new Date().toLocaleTimeString();
     const prefix = `[${timestamp}]`;
+    
+    // Console logging
     if (level === 'error') {
       console.error(`${prefix} ❌ ${message}`);
     } else if (level === 'warn') {
@@ -2335,6 +2347,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.log(`${prefix} ✅ ${message}`);
     } else {
       console.log(`${prefix} ${message}`);
+    }
+    
+    // Visible UI debug panel
+    const debugPanel = document.getElementById('statusDebugPanel');
+    const debugContent = document.getElementById('statusDebugContent');
+    if (debugPanel && debugContent) {
+      debugPanel.style.display = 'block';
+      const color = level === 'error' ? '#dc2626' : level === 'warn' ? '#d97706' : level === 'success' ? '#16a34a' : '#1f2937';
+      const icon = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️';
+      const div = document.createElement('div');
+      div.style.color = color;
+      div.style.marginBottom = '0.25rem';
+      div.textContent = icon + ' ' + prefix + ' ' + message;
+      debugContent.appendChild(div);
+      debugContent.scrollTop = debugContent.scrollHeight;
     }
   }
 
@@ -2839,6 +2866,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Build unified issues list
       result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes);
+      debugLog(`✅ Built issuesList: ${result.issuesList.length} issue(s)`, 'success');
+      if (result.issuesList.length > 0) {
+        debugLog(`issuesList contents: ${JSON.stringify(result.issuesList, null, 2)}`);
+      }
       
       // Keep backward compatibility - store as arrays for easy access
       const missingMessages = [];
@@ -2910,7 +2941,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Ensure issuesList exists (fallback to empty array)
     const issuesList = result.issuesList || [];
     
+    // Debug: Show full issuesList contents
+    debugLog(`issuesList contents: ${JSON.stringify(issuesList, null, 2)}`);
+    
     if (issuesList.length === 0) {
+      debugLog(`No issues found - returning "All required fields present"`);
       return 'All required fields present';
     }
     
@@ -2919,25 +2954,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const duplicateCount = duplicates.length;
     const missingCount = missingFields.length;
     
-    debugLog(`Explanation: missingCount=${missingCount}, duplicateCount=${duplicateCount}`);
+    debugLog(`Filtered: missingCount=${missingCount}, duplicateCount=${duplicateCount}`);
+    debugLog(`Missing fields items: ${JSON.stringify(missingFields.map(m => ({ type: m.type, field: m.field, message: m.message })), null, 2)}`);
     
     const parts = [];
     if (missingCount > 0) {
       const fieldNames = missingFields.slice(0, 2).map(m => {
         // First try to use field property directly (most reliable)
         if (m.field && m.type) {
+          debugLog(`Using direct field property: ${m.type}.${m.field}`);
           return `${m.type}.${m.field}`;
         }
         // Fallback: parse from message
         const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
         if (match) {
+          debugLog(`Parsed from message pattern 1: ${match[1]}.${match[2]}`);
           return `${match[1]}.${match[2]}`;
         }
         // Try alternative pattern
         const altMatch = m.message.match(/(\w+).*?"(\w+)".*?missing/i);
         if (altMatch) {
+          debugLog(`Parsed from message pattern 2: ${altMatch[1]}.${altMatch[2]}`);
           return `${altMatch[1]}.${altMatch[2]}`;
         }
+        debugLog(`WARNING: Could not extract field name from: ${m.message}`);
         return m.field ? `${m.type || 'Unknown'}.${m.field}` : 'Unknown field';
       });
       if (missingCount === 1) {
@@ -2958,7 +2998,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     const explanation = parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
-    debugLog(`Generated explanation: ${explanation}`);
+    debugLog(`FINAL EXPLANATION: "${explanation}"`);
     return explanation;
   }
 
@@ -3235,8 +3275,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       tableBody.appendChild(row);
     }
     
+    // Show debug panel when validation starts
+    const debugPanel = document.getElementById('statusDebugPanel');
+    if (debugPanel && index === 0) {
+      debugPanel.style.display = 'block';
+      debugLog('🔍 Debug panel activated - watching status explanation generation...', 'info');
+    }
+    
     const { class: statusClass, html: statusHtml } = determineStatusHtml(result);
     debugLog(`Generated statusHtml for ${result.url}: ${statusHtml.substring(0, 200)}...`);
+    debugLog(`Full statusHtml: ${statusHtml}`);
+    debugLog(`Status class: ${statusClass}`);
     storeRowDataAttributes(row, result);
     
     const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
@@ -3255,6 +3304,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const statusCell = document.getElementById(`statusCell_${index}`);
     if (statusCell) {
       debugLog(`Status cell innerHTML after update: ${statusCell.innerHTML.substring(0, 200)}...`);
+      debugLog(`Full status cell HTML: ${statusCell.innerHTML}`);
+      
+      // Check if explanation element exists
+      const explanationEl = statusCell.querySelector('.status-explanation');
+      debugLog(`Explanation element found: ${!!explanationEl}`);
+      if (explanationEl) {
+        debugLog(`Explanation element text: "${explanationEl.textContent}"`);
+        debugLog(`Explanation element HTML: ${explanationEl.outerHTML}`);
+      } else {
+        debugLog(`⚠️ WARNING: .status-explanation element NOT FOUND in status cell!`);
+      }
+    } else {
+      debugLog(`⚠️ ERROR: Status cell with id statusCell_${index} not found!`);
     }
     
     setupRowButtonHandlers(index, result, schemaOrgUrl, googleUrl, statusClass, row);
