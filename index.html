@@ -4650,11 +4650,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       validationResults[urlData.row] = {
         ...result,
         schemaFound: result.schemaFound, // Ensure schemaFound is preserved
-        schemaType: result.schemaType,
+        schemaType: result.schemaType || (initialAnalysis.schemaTypes.join(', ') || '—'), // Ensure schemaType is set
         missingFields: result.missingFields || [],
         warnings: result.warnings || [],
-        info: result.info || []
+        info: result.info || [],
+        error: null // Explicitly clear error if validation succeeded
       };
+      
+      console.log(`[✓] Stored result: schemaFound=${validationResults[urlData.row].schemaFound}, schemaType=${validationResults[urlData.row].schemaType}, error=${validationResults[urlData.row].error}`);
       
       // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
       updateTableRow(urlData.row, validationResults[urlData.row]);
@@ -5009,9 +5012,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   function generateStatusExplanation(result) {
-    debugLog(`Generating explanation for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    debugLog(`Generating explanation for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}, error=${result.error}`);
     
-    if (result.error) {
+    // CRITICAL: Only treat as error if error is explicitly set AND it's not null/empty/undefined
+    if (result.error && result.error !== null && result.error !== 'null' && result.error !== undefined && String(result.error).trim() !== '') {
+      console.log(`[⚠] Error explanation requested: ${result.error}`);
       return 'Error occurred during validation';
     }
     
@@ -5161,7 +5166,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
-    debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}`);
+    debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}, error=${result.error}`);
+    
+    // CRITICAL: Only treat as error if error is explicitly set AND it's not null/empty
+    if (result.error && result.error !== null && result.error !== 'null' && result.error.trim() !== '') {
+      console.log(`[⚠] Error detected: ${result.error}`);
+      return buildErrorStatusHtml(result);
+    }
     
     // CRITICAL: Restore schemaFound if ANY evidence of schema exists
     if (!result.schemaFound) {
@@ -5191,10 +5202,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           validationResults[resultIndex].schemaFound = true;
         }
       }
-    }
-    
-    if (result.error) {
-      return buildErrorStatusHtml(result);
     }
     
     const skippedCount = countSkippedSchemas(result);
