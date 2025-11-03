@@ -4596,6 +4596,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       error: null
     };
     
+    let initialAnalysis = null; // Declare outside try-catch so it's accessible in catch
+    
     try {
       // Stage 1: Fetch page data (~20%)
       updateRowProgress(urlData.url, 20);
