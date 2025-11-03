@@ -939,7 +939,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.7.2</span>
+    <span class="version">v1.7.3</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2207,65 +2207,67 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Show results table
     const resultsDiv = document.getElementById('validatorResults');
-    resultsDiv.style.display = 'block';
+    if (resultsDiv) {
+      resultsDiv.style.display = 'block';
+    }
     
-      // Check if URL already exists in results
-      const existingIndex = validationResults.findIndex(r => r.url === url);
-      let index;
+    // Check if URL already exists in results
+    const existingIndex = validationResults.findIndex(r => r.url === url);
+    let index;
+    
+    if (existingIndex >= 0) {
+      // Update existing row
+      index = existingIndex;
       
-      if (existingIndex >= 0) {
-        // Update existing row
-        index = existingIndex;
-        
-        // Show processing status with progress bar
-        updateTableRow(index, {
-          url: url,
-          schemaType: 'Processing...',
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: null,
-          validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
-          validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
-          notes: validationResults[index].notes || ''
-        });
-        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-        if (schemaTypeCell) {
-          renderProgress(schemaTypeCell);
-          setProgress(schemaTypeCell, 5, 'Queued');
-        }
-      } else {
-        // Add new row
-        index = validationResults.length;
-        
-        // Create placeholder result
-        const placeholderResult = {
-          url: url,
-          row: index,
-          schemaType: 'Processing...',
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: null,
-          validatorGoogleStatus: 'Not run',
-          validatorSchemaOrgStatus: 'Not run',
-          notes: ''
-        };
-        
-        validationResults.push(placeholderResult);
-        
-        // Add placeholder row to table
-        updateTableRow(index, placeholderResult);
-        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-        if (schemaTypeCell) {
-          renderProgress(schemaTypeCell);
-          setProgress(schemaTypeCell, 5, 'Queued');
-        }
+      // Show processing status with progress bar
+      updateTableRow(index, {
+        url: url,
+        schemaType: 'Processing...',
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: null,
+        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
+        notes: validationResults[index].notes || ''
+      });
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+      if (schemaTypeCell) {
+        renderProgress(schemaTypeCell);
+        setProgress(schemaTypeCell, 5, 'Queued');
       }
+    } else {
+      // Add new row
+      index = validationResults.length;
+      
+      // Create placeholder result
+      const placeholderResult = {
+        url: url,
+        row: index,
+        schemaType: 'Processing...',
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: null,
+        validatorGoogleStatus: 'Not run',
+        validatorSchemaOrgStatus: 'Not run',
+        notes: ''
+      };
+      
+      validationResults.push(placeholderResult);
+      
+      // Add placeholder row to table
+      updateTableRow(index, placeholderResult);
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+      if (schemaTypeCell) {
+        renderProgress(schemaTypeCell);
+        setProgress(schemaTypeCell, 5, 'Queued');
+      }
+    }
     
     try {
       // Process URL using existing function
