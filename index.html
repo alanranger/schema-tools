@@ -1126,7 +1126,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.9.8</span>
+    <span class="version">v1.9.9</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -4522,10 +4522,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     // Otherwise, leave schemaFound as-is (don't overwrite if already set correctly)
     
-    const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+    // CRITICAL: Use result.schemaTypes (from initialAnalysis) if available, otherwise fall back to analysis or pageData
+    const schemaTypesFromResult = result.schemaTypes || [];
+    const schemaTypesFromAnalysis = analysis.schemaTypes || [];
+    const schemaTypeFromPageData = pageData.schemaType || '';
+    
+    // Combine all sources and deduplicate
+    const allTypes = [
+      ...schemaTypesFromResult,
+      ...schemaTypesFromAnalysis,
+      ...(schemaTypeFromPageData ? schemaTypeFromPageData.split(',').map(t => t.trim()) : [])
+    ];
+    
+    const uniqueTypes = [...new Set(allTypes.filter(Boolean))];
     const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
     const serverBadge = pageData.serverFallback ? ' (server)' : '';
     result.schemaType = schemaTypeText + serverBadge;
+    
+    console.log(`[✓] Updated schemaType: "${result.schemaType}" (from result.schemaTypes: [${schemaTypesFromResult.join(', ')}], analysis.schemaTypes: [${schemaTypesFromAnalysis.join(', ')}], pageData.schemaType: "${schemaTypeFromPageData}")`);
   }
 
   // Helper: Merge analysis results into result object
