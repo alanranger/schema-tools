@@ -680,6 +680,85 @@
     .chip-issues:hover {
       filter: brightness(0.98);
     }
+    .chip-critical {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+    }
+    .chip-critical:hover {
+      filter: brightness(0.98);
+    }
+    .chip-passed {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #22c55e;
+      border-radius: 12px;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+    }
+    .chip-passed:hover {
+      filter: brightness(0.98);
+    }
+    .status-explanation {
+      display: inline-block;
+      margin-left: 0.75rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-style: italic;
+      vertical-align: middle;
+    }
+    #statusCell_0, #statusCell_1, #statusCell_2, [id^="statusCell_"] {
+      white-space: normal;
+      line-height: 1.5;
+    }
+    .status-legend {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+    }
+    .status-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .status-legend-item .chip-sample {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .chip-sample.passed {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #22c55e;
+    }
+    .chip-sample.issues {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    .chip-sample.critical {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
     .chip-ok {
       display: inline-flex;
       align-items: center;
@@ -689,6 +768,9 @@
       border: 1px solid #22c55e;
       border-radius: 12px;
       padding: 0.35rem 0.6rem;
+    }
+    .chip-ok:hover {
+      filter: brightness(0.98);
     }
     .badge {
       display: inline-block;
@@ -764,7 +846,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.6.2</span>
+    <span class="version">v1.6.3</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -946,7 +1028,37 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button onclick="setAllExternalStatusTo('Passed')" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Set all Not run → Passed</button>
         <button onclick="resetAllExternalStatus()" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Reset all to Not run</button>
+        <button onclick="document.getElementById('statusDebugPanel').style.display='block'; document.getElementById('statusDebugContent').innerHTML='';" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">🔍 Show Debug Log</button>
       </div>
+      
+      <!-- Debug Panel -->
+      <div id="statusDebugPanel" style="display: block; margin-top: 1rem; padding: 1rem; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <strong style="color: #1f2937;">🔍 Status Explanation Debug Log</strong>
+          <button onclick="document.getElementById('statusDebugPanel').style.display='none';" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Hide</button>
+        </div>
+        <div id="statusDebugContent" style="color: #374151; line-height: 1.6;">Debug log will appear here when validation runs...</div>
+      </div>
+      
+      <!-- Status Legend -->
+      <div class="status-legend">
+        <div class="status-legend-item">
+          <span class="chip-sample passed">✅ Passed</span>
+          <span>No issues detected</span>
+        </div>
+        <div class="status-legend-item">
+          <span class="chip-sample issues">⚠️ Issues</span>
+          <span>Minor issues (optional fields missing or duplicates)</span>
+        </div>
+        <div class="status-legend-item">
+          <span class="chip-sample critical">❌ Critical</span>
+          <span>Critical issues (multiple duplicates or many missing fields)</span>
+        </div>
+        <div class="status-legend-item" style="margin-left: auto;">
+          <span style="color: #6b7280;">💡 Click any badge or "View Details" to see full analysis</span>
+        </div>
+      </div>
+      
       <div class="scrollable-container">
         <table class="results-table">
           <thead>
@@ -1068,32 +1180,59 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   // Debug Console Logging Functions - MUST be first
-  function debugLog(message, type = 'info') {
+  function debugLog(message, level = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = `[${timestamp}]`;
+    
+    // Console logging
+    if (level === 'error') {
+      console.error(`${prefix} ❌ ${message}`);
+    } else if (level === 'warn') {
+      console.warn(`${prefix} ⚠️ ${message}`);
+    } else if (level === 'success') {
+      console.log(`${prefix} ✅ ${message}`);
+    } else {
+      console.log(`${prefix} ${message}`);
+    }
+    
+    // Also write to visible debug panel (statusDebugPanel)
+    const debugContent = document.getElementById('statusDebugContent');
+    if (debugContent) {
+      const color = level === 'error' ? '#dc2626' : level === 'warn' ? '#d97706' : level === 'success' ? '#16a34a' : '#1f2937';
+      const icon = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️';
+      const div = document.createElement('div');
+      div.style.color = color;
+      div.style.marginBottom = '0.25rem';
+      div.textContent = icon + ' ' + prefix + ' ' + message;
+      debugContent.appendChild(div);
+      debugContent.scrollTop = debugContent.scrollHeight;
+    }
+    
+    // Also write to existing debug console (debugConsoleContent)
     const consoleContent = document.getElementById('debugConsoleContent');
-    if (!consoleContent) return;
-    
-    const time = new Date().toLocaleTimeString();
-    const entry = document.createElement('div');
-    entry.className = `debug-log-entry ${type}`;
-    
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'debug-log-time';
-    timeSpan.textContent = `[${time}]`;
-    
-    const messageSpan = document.createElement('span');
-    messageSpan.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
-    
-    entry.appendChild(timeSpan);
-    entry.appendChild(messageSpan);
-    consoleContent.appendChild(entry);
-    
-    // Auto-scroll to bottom
-    consoleContent.scrollTop = consoleContent.scrollHeight;
-    
-    // Keep max 100 entries to prevent memory issues
-    const entries = consoleContent.querySelectorAll('.debug-log-entry');
-    if (entries.length > 100) {
-      entries[0].remove();
+    if (consoleContent) {
+      const entry = document.createElement('div');
+      entry.className = `debug-log-entry ${level}`;
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'debug-log-time';
+      timeSpan.textContent = prefix;
+      
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+      
+      entry.appendChild(timeSpan);
+      entry.appendChild(messageSpan);
+      consoleContent.appendChild(entry);
+      
+      // Auto-scroll to bottom
+      consoleContent.scrollTop = consoleContent.scrollHeight;
+      
+      // Keep max 100 entries to prevent memory issues
+      const entries = consoleContent.querySelectorAll('.debug-log-entry');
+      if (entries.length > 100) {
+        entries[0].remove();
+      }
     }
   }
   
@@ -2858,6 +2997,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       });
       
       const duplicateWarnings = [];
+      const duplicateWarningsObjects = []; // For buildUnifiedIssuesList
       const globalPatterns = ['website', 'org', 'local', 'breadcrumbs']; // Common @id patterns from global injections
       
       Object.keys(duplicateGroups).forEach(t => {
@@ -2879,6 +3019,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             if (!isGlobal) {
               const label = key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicate)';
               duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${label}`);
+              duplicateWarningsObjects.push({ type: t, id: keyName, count: keyCounts[key] });
             }
           }
         });
@@ -2886,10 +3027,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       if (duplicateWarnings.length > 0) {
         debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
-        // Add duplicate warnings to missingMessages for display (only non-global duplicates)
-        duplicateWarnings.forEach(w => {
-          missingMessages.push(`⚠️ DUPLICATE: ${w}`);
-        });
+      }
+      
+      // Build unified issues list (combines missing fields + duplicates)
+      result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarningsObjects, allNodes);
+      debugLog(`✅ Built issuesList: ${result.issuesList.length} issue(s)`, 'success');
+      if (result.issuesList.length > 0) {
+        debugLog(`issuesList contents: ${JSON.stringify(result.issuesList, null, 2)}`);
       }
       
       // Log info about global duplicates separately (for debugging, not shown as issues)
@@ -3000,6 +3144,36 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     return result;
+  }
+
+  // Helper: Build unified issues list from missing fields and duplicates
+  function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
+    const issuesList = [];
+    
+    // Add missing field issues with exact format: includes (no @id) when applicable
+    for (const f of missingDetails) {
+      // Check if any node of this type has an @id
+      const hasId = allNodes.some(n => {
+        const types = asArray(n['@type']);
+        return types.includes(f.type) && n['@id'];
+      });
+      const message = `${f.type}: "${f.field}" missing${hasId ? '' : ' (no @id)'}`;
+      issuesList.push({
+        type: f.type,
+        field: f.field,
+        message: message
+      });
+    }
+    
+    // Add duplicate issues with exact format specified
+    for (const d of duplicateWarnings) {
+      issuesList.push({
+        type: d.type,
+        message: `⚠️ DUPLICATE: ${d.type} (${d.id || 'NO_ID'}) × ${d.count}`
+      });
+    }
+    
+    return issuesList;
   }
 
   // Helper: Mark as "reviewing" when external validator is opened
@@ -3177,153 +3351,385 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // Helper: Generate human-readable status explanation
+  function generateStatusExplanation(result) {
+    debugLog(`Generating explanation for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    
+    if (result.error) {
+      return 'Error occurred during validation';
+    }
+    
+    if (!result.schemaFound) {
+      return 'No schema found on page';
+    }
+    
+    // Ensure issuesList exists (fallback to empty array)
+    const issuesList = result.issuesList || [];
+    
+    // Debug: Show full issuesList contents
+    debugLog(`issuesList contents: ${JSON.stringify(issuesList, null, 2)}`);
+    
+    if (issuesList.length === 0) {
+      debugLog(`No issues found - returning "All required fields present"`);
+      return 'All required fields present';
+    }
+    
+    const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
+    const missingFields = issuesList.filter(i => i.message && i.message.includes('missing'));
+    const duplicateCount = duplicates.length;
+    const missingCount = missingFields.length;
+    
+    debugLog(`Filtered: missingCount=${missingCount}, duplicateCount=${duplicateCount}`);
+    debugLog(`Missing fields items: ${JSON.stringify(missingFields.map(m => ({ type: m.type, field: m.field, message: m.message })), null, 2)}`);
+    
+    const parts = [];
+    if (missingCount > 0) {
+      const fieldNames = missingFields.slice(0, 2).map(m => {
+        // First try to use field property directly (most reliable)
+        if (m.field && m.type) {
+          debugLog(`Using direct field property: ${m.type}.${m.field}`);
+          return `${m.type}.${m.field}`;
+        }
+        // Fallback: parse from message
+        const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
+        if (match) {
+          debugLog(`Parsed from message pattern 1: ${match[1]}.${match[2]}`);
+          return `${match[1]}.${match[2]}`;
+        }
+        // Try alternative pattern
+        const altMatch = m.message.match(/(\w+).*?"(\w+)".*?missing/i);
+        if (altMatch) {
+          debugLog(`Parsed from message pattern 2: ${altMatch[1]}.${altMatch[2]}`);
+          return `${altMatch[1]}.${altMatch[2]}`;
+        }
+        debugLog(`WARNING: Could not extract field name from: ${m.message}`);
+        return m.field ? `${m.type || 'Unknown'}.${m.field}` : 'Unknown field';
+      });
+      if (missingCount === 1) {
+        parts.push(`1 optional field missing – ${fieldNames[0]}`);
+      } else if (missingCount === 2) {
+        parts.push(`2 optional fields missing – ${fieldNames.join(', ')}`);
+      } else {
+        parts.push(`${missingCount} optional fields missing – ${fieldNames.join(', ')}${missingCount > 2 ? '...' : ''}`);
+      }
+    }
+    
+    if (duplicateCount > 0) {
+      if (duplicateCount === 1) {
+        parts.push('1 duplicate schema detected');
+      } else {
+        parts.push(`${duplicateCount} duplicate schemas detected`);
+      }
+    }
+    
+    const explanation = parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
+    debugLog(`FINAL EXPLANATION: "${explanation}"`);
+    return explanation;
+  }
+
+  // Helper: Determine status HTML from result with color-coded badges and explanations
+  function determineStatusHtml(result) {
+    // Debug: log what we're working with
+    debugLog(`Status determination for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    
+    if (result.error) {
+      const explanation = generateStatusExplanation(result);
+      return { 
+        class: 'error', 
+        html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+      };
+    }
+    
+    if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
+      const explanation = generateStatusExplanation(result);
+      debugLog(`Status: Passed, explanation: ${explanation}`);
+      return { 
+        class: 'valid', 
+        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
+      };
+    }
+    
+    if (result.schemaFound) {
+      // Ensure issuesList exists for explanation generation
+      if (!result.issuesList) {
+        result.issuesList = [];
+      }
+      
+      if (result.issuesList.length > 0) {
+        // Check for critical status (duplicates > 2 or issues > 3)
+        const duplicates = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
+        const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
+        const duplicateCount = duplicates.length;
+        
+        const explanation = generateStatusExplanation(result);
+        debugLog(`Status: Issues (missing=${missingCount}, dupes=${duplicateCount}), explanation: ${explanation}`);
+        
+        if (duplicateCount > 2 || missingCount > 3) {
+          return { 
+            class: 'critical', 
+            html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+          };
+        }
+        
+        return { 
+          class: 'issues', 
+          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
+        };
+      }
+      
+      // Fallback to old logic for backward compatibility
+      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
+      if (hasMissingFields) {
+        const explanation = generateStatusExplanation(result);
+        debugLog(`Status: Issues (fallback), explanation: ${explanation}`);
+        return { 
+          class: 'issues', 
+          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
+        };
+      }
+      
+      const explanation = generateStatusExplanation(result);
+      debugLog(`Status: Passed (no issues), explanation: ${explanation}`);
+      return { 
+        class: 'valid', 
+        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
+      };
+    }
+    
+    return { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
+  }
+  
+  // Helper: Store row data attributes
+  function storeRowDataAttributes(row, result) {
+    if (result.schemas && result.schemas.length > 0 && result.schemas[0].schema) {
+      try {
+        const firstJson = JSON.stringify(result.schemas[0].schema, null, 2);
+        row.dataset.firstJsonld = firstJson.slice(0, 6000);
+      } catch (error) {
+        console.warn('Failed to store JSON-LD data:', error);
+      }
+    }
+    if (result.issuesList && result.issuesList.length > 0) {
+      row.dataset.issuesList = JSON.stringify(result.issuesList);
+    }
+    if (result.schemaSummary) {
+      row.dataset.schemaSummary = result.schemaSummary;
+    }
+    if (result.missingFieldsDetails) {
+      row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
+    }
+  }
+  
+  // Helper: Generate missing fields HTML
+  function generateMissingFieldsHtml(result) {
+    if (result.issuesList && result.issuesList.length > 0) {
+      // Show all issues joined by commas (exact format from requirements)
+      return result.issuesList.map(i => i.message).join(', ');
+    }
+    // Fallback to old logic for backward compatibility
+    if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
+      return result.missingFieldsBadges.map(m => {
+        const detail = result.missingFieldsDetails ? result.missingFieldsDetails.find(x => x.startsWith(m.type+':')) : '';
+        return `<span class="badge" title="${detail}">${m.type}:${m.field}</span>`;
+      }).join(' ');
+    }
+    if (result.missingFields && result.missingFields.length > 0) {
+      return result.missingFields.join(', ');
+    }
+    return '—';
+  }
+  
+  // Helper: Generate schema type HTML
+  function generateSchemaTypeHtml(result) {
+    if (result.schemaType === 'Processing...') {
+      return '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>';
+    }
+    return result.schemaType || 'None';
+  }
+  
+  // Helper: Generate status select HTML
+  function generateStatusSelectHtml(index, existingStatus, statusType) {
+    const options = ['✅ Passed', '⚠️ Warning', '❌ Failed', '👀 Opened (reviewing)', '🔄 Running...', 'Not run'];
+    return options.map(opt => {
+      const selected = existingStatus === opt ? 'selected' : '';
+      return `<option value="${opt}" ${selected}>${opt}</option>`;
+    }).join('');
+  }
+  
+  // Helper: Generate actions column HTML
+  function generateActionsColumnHtml(index, result) {
+    const enhanceBtn = result.schemas && result.schemas.length > 0 
+      ? `<button class="enhance-btn" id="genBtn_${index}">Generate Enhanced</button><br>` 
+      : '';
+    
+    const supabaseBtn = supabaseAvailable 
+      ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>`
+      : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>';
+    
+    // Add "View Details" button that opens the enhanced modal
+    const viewDetailsBtn = `<button class="enhance-btn" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;" onclick="openIssuesModal(getRowDataFromTr(this.closest('tr')))">View Details</button><br>`;
+    
+    return `${viewDetailsBtn}${enhanceBtn}
+        <div style="margin-top: 0.5rem;">
+          <button class="enhance-btn secondary" id="schemaOrgBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
+          <button class="enhance-btn secondary" id="richResultsBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
+        </div>
+        ${supabaseBtn}`;
+  }
+  
+  // Helper: Generate row HTML
+  function generateRowHtml(index, result, statusHtml, rowOptions) {
+    const { existingGoogleStatus, existingSchemaOrgStatus, existingNotes } = rowOptions;
+    const missingFieldsHtml = generateMissingFieldsHtml(result);
+    const schemaTypeHtml = generateSchemaTypeHtml(result);
+    const googleSelectHtml = generateStatusSelectHtml(index, existingGoogleStatus, 'google');
+    const schemaOrgSelectHtml = generateStatusSelectHtml(index, existingSchemaOrgStatus, 'schemaorg');
+    const actionsHtml = generateActionsColumnHtml(index, result);
+    
+    // Add issues summary to notes if there are issues
+    let notesWithSummary = existingNotes || '';
+    if (result.issuesList && result.issuesList.length > 0) {
+      const missingCount = result.issuesList.filter(i => i.field).length;
+      const duplicateCount = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).length;
+      const parseNote = result.localParseFailed ? 'Server parse: success. ' : '';
+      const summaryLine = `${parseNote}Issues: ${missingCount} missing field${missingCount !== 1 ? 's' : ''}, ${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''}.`;
+      if (notesWithSummary && !notesWithSummary.includes('Issues:')) {
+        notesWithSummary = notesWithSummary + '\n' + summaryLine;
+      } else if (!notesWithSummary) {
+        notesWithSummary = summaryLine;
+      }
+    }
+    
+    const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
+    const googleUrl = result.richResultsReportUrl || 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
+    
+    return `
+      <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
+      <td id="schemaTypeCell_${index}">${schemaTypeHtml}</td>
+      <td id="statusCell_${index}" style="white-space: normal; line-height: 1.6;">${statusHtml}</td>
+      <td class="missing-fields" id="missingFieldsCell_${index}">${missingFieldsHtml}</td>
+      <td>
+        <select class="status-select" id="googleStatus_${index}" title="Google Rich Results Status" onchange="updateValidationStatus(${index}, 'google', this.value)">
+          ${googleSelectHtml}
+        </select>
+      </td>
+      <td>
+        <select class="status-select" id="schemaOrgStatus_${index}" title="Schema.org Validator Status" onchange="updateValidationStatus(${index}, 'schemaorg', this.value)">
+          ${schemaOrgSelectHtml}
+        </select>
+      </td>
+      <td>
+        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${notesWithSummary}</textarea>
+      </td>
+      <td style="white-space: normal; min-width: 250px;">
+        ${actionsHtml}
+      </td>
+    `;
+  }
+  
+  // Helper: Setup button handlers
+  function setupRowButtonHandlers(index, result, schemaOrgUrl, googleUrl, statusClass, row) {
+    const schemaOrgBtn = document.getElementById(`schemaOrgBtn_${index}`);
+    const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
+    const genBtn = document.getElementById(`genBtn_${index}`);
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    
+    if (schemaOrgBtn) {
+      schemaOrgBtn.onclick = () => {
+        globalThis.open(schemaOrgUrl, '_blank');
+        const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+        if (statusSelect) {
+          statusSelect.value = '👀 Opened (reviewing)';
+          updateValidationStatus(index, 'schemaorg', '👀 Opened (reviewing)');
+        }
+        markReviewing(index, 'schema');
+      };
+    }
+    
+    if (richResultsBtn) {
+      richResultsBtn.onclick = () => {
+        globalThis.open(googleUrl, '_blank');
+        const statusSelect = document.getElementById(`googleStatus_${index}`);
+        if (statusSelect) {
+          statusSelect.value = '👀 Opened (reviewing)';
+          updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
+        }
+        markReviewing(index, 'google');
+      };
+    }
+    
+    if (genBtn) {
+      genBtn.onclick = () => generateEnhancedSchema(index);
+    }
+    
+    // Make all status badges clickable to open issues modal
+    if (statusCell) {
+      const chip = statusCell.querySelector('.chip-issues, .chip-critical, .chip-passed, .chip-ok');
+      if (chip && (statusClass === 'issues' || statusClass === 'critical' || statusClass === 'error')) {
+        chip.style.cursor = 'pointer';
+        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+      } else if (chip && statusClass === 'valid') {
+        // Even "Passed" can be clicked to see the summary
+        chip.style.cursor = 'pointer';
+        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+      }
+    }
+  }
+
   // Update table row with result
   function updateTableRow(index, result) {
     const tableBody = document.getElementById('resultsTableBody');
     let row = tableBody.children[index];
     
     if (!row) {
-      // Create new row if it doesn't exist
       row = document.createElement('tr');
       tableBody.appendChild(row);
     }
     
-    // Determine status badge class and text
-    let statusClass = 'no-schema';
-    let statusText = '❌ No Schema';
-    let statusHtml = '';
-    if (result.error) {
-      statusClass = 'error';
-      statusText = '❌ Error';
-      statusHtml = '<span class="chip-issues" title="View details">⛔ Error</span>';
-    } else if (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) {
-      // Prioritize missingFieldsDetails - if it has items, show Issues
-      statusClass = 'issues';
-      statusText = '⚠️ Issues';
-      statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
-    } else if (result.valid) {
-      statusClass = 'valid';
-      statusText = '✅ Valid';
-      statusHtml = '<span class="chip-ok">✅ Valid</span>';
-    } else if (result.schemaFound) {
-      // Check if we have missing fields - prioritize detailed analysis over simple array
-      // Only show Issues if we actually have missing fields from the detailed analysis
-      const hasMissingFields = (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) ||
-                               (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
-                               (result.missingFields && result.missingFields.length > 0);
-      if (hasMissingFields) {
-        statusClass = 'issues';
-        statusText = '⚠️ Issues';
-        statusHtml = '<span class="chip-issues" title="View details">⚠️ Issues</span>';
-      } else {
-        // No missing fields = valid
-        statusClass = 'valid';
-        statusText = '✅ Valid';
-        statusHtml = '<span class="chip-ok">✅ Valid</span>';
-      }
-      } else {
-        statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
-      }
-      
-      // Debug log for status determination
-      debugLog(`Status determination for ${result.url}: missingFieldsDetails=${result.missingFieldsDetails?.length || 0}, valid=${result.valid}, schemaFound=${result.schemaFound}, statusClass=${statusClass}`, 'info');
-    
-    // Store first JSON-LD block if available
-    if (result.schemas && result.schemas.length > 0 && result.schemas[0].schema) {
-      try {
-        const firstJson = JSON.stringify(result.schemas[0].schema, null, 2);
-        row.dataset.firstJsonld = firstJson.slice(0, 6000);
-      } catch (_) {}
+    // Show debug panel when validation starts
+    const debugPanel = document.getElementById('statusDebugPanel');
+    if (debugPanel && index === 0) {
+      debugPanel.style.display = 'block';
+      debugLog('🔍 Debug panel activated - watching status explanation generation...', 'info');
     }
     
-      // Store missing fields details
-      if (result.missingFieldsDetails && result.missingFieldsDetails.length > 0) {
-        row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
-      }
-      // Also store badges for fallback
-      if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
-        row.dataset.missingBadges = JSON.stringify(result.missingFieldsBadges);
-      }
+    const { class: statusClass, html: statusHtml } = determineStatusHtml(result);
+    debugLog(`Generated statusHtml for ${result.url}: ${statusHtml.substring(0, 200)}...`);
+    debugLog(`Full statusHtml: ${statusHtml}`);
+    debugLog(`Status class: ${statusClass}`);
+    storeRowDataAttributes(row, result);
     
-    // Get existing values if row already exists
     const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
     const existingSchemaOrgStatus = result.validatorSchemaOrgStatus || 'Not run';
     const existingNotes = result.notes || '';
-    
-    // Update row content
     const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
-    // Use reportUrl from API if available, otherwise fallback to default
     const googleUrl = result.richResultsReportUrl || 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
     
-    row.innerHTML = `
-      <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
-      <td id="schemaTypeCell_${index}">${result.schemaType === 'Processing...' ? '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>' : (result.schemaType || 'None')}</td>
-      <td id="statusCell_${index}">${statusHtml}</td>
-      <td class="missing-fields" id="missingFieldsCell_${index}">${result.missingFieldsBadges && result.missingFieldsBadges.length > 0 ? result.missingFieldsBadges.map(m => `<span class="badge" title="${result.missingFieldsDetails ? result.missingFieldsDetails.find(x=>x.startsWith(m.type+':')) : ''}">${m.type}:${m.field}</span>`).join(' ') : (result.missingFields && result.missingFields.length > 0 ? result.missingFields.join(', ') : '—')}</td>
-      <td>
-        <select class="status-select" id="googleStatus_${index}" onchange="updateValidationStatus(${index}, 'google', this.value)">
-          <option value="✅ Passed" ${existingGoogleStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
-          <option value="⚠️ Warning" ${existingGoogleStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
-          <option value="❌ Failed" ${existingGoogleStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
-          <option value="👀 Opened (reviewing)" ${existingGoogleStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
-          <option value="🔄 Running..." ${existingGoogleStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
-          <option value="Not run" ${existingGoogleStatus === 'Not run' ? 'selected' : ''}>Not run</option>
-        </select>
-      </td>
-      <td>
-        <select class="status-select" id="schemaOrgStatus_${index}" onchange="updateValidationStatus(${index}, 'schemaorg', this.value)">
-          <option value="✅ Passed" ${existingSchemaOrgStatus === '✅ Passed' ? 'selected' : ''}>✅ Passed</option>
-          <option value="⚠️ Warning" ${existingSchemaOrgStatus === '⚠️ Warning' ? 'selected' : ''}>⚠️ Warning</option>
-          <option value="❌ Failed" ${existingSchemaOrgStatus === '❌ Failed' ? 'selected' : ''}>❌ Failed</option>
-          <option value="👀 Opened (reviewing)" ${existingSchemaOrgStatus === '👀 Opened (reviewing)' ? 'selected' : ''}>👀 Opened (reviewing)</option>
-          <option value="🔄 Running..." ${existingSchemaOrgStatus === '🔄 Running...' ? 'selected' : ''}>🔄 Running...</option>
-          <option value="Not run" ${existingSchemaOrgStatus === 'Not run' ? 'selected' : ''}>Not run</option>
-        </select>
-      </td>
-      <td>
-        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${existingNotes}</textarea>
-      </td>
-      <td style="white-space: normal; min-width: 250px;">
-        ${result.schemas && result.schemas.length > 0 ? `<button class="enhance-btn" id="genBtn_${index}">Generate Enhanced</button><br>` : ''}
-        <div style="margin-top: 0.5rem;">
-          <button class="enhance-btn secondary" id="schemaOrgBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
-          <button class="enhance-btn secondary" id="richResultsBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
-        </div>
-        ${supabaseAvailable ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>` : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>'}
-      </td>
-    `;
+    row.innerHTML = generateRowHtml(index, result, statusHtml, {
+      existingGoogleStatus,
+      existingSchemaOrgStatus,
+      existingNotes
+    });
     
-    // Add click handlers for external validator buttons
-    const schemaOrgBtn = document.getElementById(`schemaOrgBtn_${index}`);
-    const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
-    if (schemaOrgBtn) {
-        schemaOrgBtn.onclick = () => {
-        window.open(schemaOrgUrl, '_blank');
-        // Auto-mark as opened
-        const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
-        if (statusSelect) {
-          statusSelect.value = '👀 Opened (reviewing)';
-          updateValidationStatus(index, 'schemaorg', '👀 Opened (reviewing)');
-        }
-        // Mark as reviewing
-        markReviewing(index, 'schema');
-      };
+    // Verify the status cell was updated correctly
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    if (statusCell) {
+      debugLog(`Status cell innerHTML after update: ${statusCell.innerHTML.substring(0, 200)}...`);
+      debugLog(`Full status cell HTML: ${statusCell.innerHTML}`);
+      
+      // Check if explanation element exists
+      const explanationEl = statusCell.querySelector('.status-explanation');
+      debugLog(`Explanation element found: ${!!explanationEl}`);
+      if (explanationEl) {
+        debugLog(`Explanation element text: "${explanationEl.textContent}"`);
+        debugLog(`Explanation element HTML: ${explanationEl.outerHTML}`);
+      } else {
+        debugLog(`⚠️ WARNING: .status-explanation element NOT FOUND in status cell!`);
+      }
     }
-    if (richResultsBtn) {
-      // Use reportUrl from API if available, otherwise use default
-      const reportUrl = result.richResultsReportUrl || googleUrl;
-      richResultsBtn.onclick = () => {
-        window.open(reportUrl, '_blank');
-        // Auto-mark as opened
-        const statusSelect = document.getElementById(`googleStatus_${index}`);
-        if (statusSelect) {
-          statusSelect.value = '👀 Opened (reviewing)';
-          updateValidationStatus(index, 'google', '👀 Opened (reviewing)');
-        }
-        // Mark as reviewing
-        markReviewing(index, 'rich');
-      };
-    }
+    
+    // Setup button handlers
+    setupRowButtonHandlers(index, result, schemaOrgUrl, googleUrl, statusClass, row);
     
     // Store validation status in result object
     if (!result.validatorGoogleStatus) {
@@ -3459,7 +3865,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           dropdownValue = '⚠️ Warning';
           break;
         case 'failed':
-          dropdownValue = '❌ Failed';
+          // If status is "failed" but errors array is empty, treat as warning
+          if (data.errors && data.errors.length === 0) {
+            dropdownValue = '⚠️ Warning';
+            debugLog(`Schema.org returned "failed" but errors array is empty - treating as Warning`, 'warn');
+          } else {
+            dropdownValue = '❌ Failed';
+          }
           break;
         case 'unreachable':
           dropdownValue = 'Not run';

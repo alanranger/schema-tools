@@ -3372,7 +3372,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           dropdownValue = '⚠️ Warning';
           break;
         case 'failed':
-          dropdownValue = '❌ Failed';
+          // If status is "failed" but errors array is empty, treat as warning
+          if (data.errors && data.errors.length === 0) {
+            dropdownValue = '⚠️ Warning';
+            debugLog(`Schema.org returned "failed" but errors array is empty - treating as Warning`, 'warn');
+          } else {
+            dropdownValue = '❌ Failed';
+          }
           break;
         case 'unreachable':
           dropdownValue = 'Not run';
