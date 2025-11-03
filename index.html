@@ -348,10 +348,20 @@
     .results-table th:nth-child(2) { min-width: 200px; } /* Schema Type */
     .results-table th:nth-child(3) { min-width: 120px; } /* Status */
     .results-table th:nth-child(4) { min-width: 180px; } /* Missing Fields */
-    .results-table th:nth-child(5) { min-width: 180px; } /* Rich Results Status (external) */
-    .results-table th:nth-child(6) { min-width: 180px; } /* Schema.org Status (external) */
-    .results-table th:nth-child(7) { min-width: 200px; } /* Notes */
-    .results-table th:nth-child(8) { min-width: 280px; } /* Actions */
+    .results-table th:nth-child(5) { min-width: 180px; } /* Warnings */
+    .results-table th:nth-child(6) { min-width: 180px; } /* Info */
+    .results-table th:nth-child(7) { min-width: 180px; } /* Rich Results Status (external) */
+    .results-table th:nth-child(8) { min-width: 180px; } /* Schema.org Status (external) */
+    .results-table th:nth-child(9) { min-width: 200px; } /* Notes */
+    .results-table th:nth-child(10) { min-width: 280px; } /* Actions */
+    
+    th:nth-child(4), td:nth-child(4) { background: #fff8f8; }    /* Missing */
+    th:nth-child(5), td:nth-child(5) { background: #fffaf2; }    /* Warnings */
+    th:nth-child(6), td:nth-child(6) { background: #f4fff7; }    /* Info */
+    
+    .missing-entry { color: #c00; font-weight: 500; margin: 0.25rem 0; }
+    .warning-entry { color: #b47f00; font-weight: 500; margin: 0.25rem 0; }
+    .info-entry { color: #006b3b; font-weight: 500; margin: 0.25rem 0; }
     .status-badge.no-schema {
       background: #e2e8f0;
       color: #4a5568;
@@ -445,9 +455,24 @@
       max-width: 300px;
     } /* Schema Type */
     .results-table td:nth-child(3) { 
-      white-space: nowrap; 
+      white-space: normal; 
       min-width: 120px;
     } /* Status */
+    .results-table td:nth-child(4) { 
+      white-space: normal; 
+      min-width: 180px;
+      max-width: 250px;
+    } /* Missing Fields */
+    .results-table td:nth-child(5) { 
+      white-space: normal; 
+      min-width: 180px;
+      max-width: 250px;
+    } /* Warnings */
+    .results-table td:nth-child(6) { 
+      white-space: normal; 
+      min-width: 180px;
+      max-width: 250px;
+    } /* Info */
     .results-table td.missing-fields {
       white-space: normal;
       min-width: 180px;
@@ -791,6 +816,10 @@
       content: " (non-critical)";
       font-size: 0.8em;
       opacity: 0.7;
+    }
+    .duplicate-warning {
+      color: #b47f00;
+      font-weight: 500;
     }
     .chip-critical {
       display: inline-flex;
@@ -1149,12 +1178,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           <span>All valid; no missing fields</span>
         </div>
         <div class="status-legend-item">
-          <span class="chip-sample issues">⚠️ Issues</span>
-          <span>Minor or redundant nodes (e.g. Squarespace auto-schema) or missing recommended fields. These are not structural errors and can usually be ignored. Skipped nodes are shown in gray and excluded from validation counts.</span>
+          <span class="chip-sample issues">⚠️ Warning</span>
+          <span>Duplicate or redundant schema nodes (non-critical)</span>
+        </div>
+        <div class="status-legend-item">
+          <span class="info-entry">ℹ️ Info</span>
+          <span>Legitimate multi-instance schemas (normal for Events, Products, FAQs)</span>
         </div>
         <div class="status-legend-item">
           <span class="chip-sample critical">❌ Critical</span>
-          <span>Real structural errors or missing required fields</span>
+          <span>Structural or required field errors</span>
         </div>
         <div class="status-legend-item" style="margin-left: auto;">
           <span style="color: #6b7280;">💡 Click any badge or "View Details" to see full analysis</span>
@@ -1169,6 +1202,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
               <th>Schema Type</th>
               <th>Status</th>
               <th>Missing Fields</th>
+              <th>Warnings</th>
+              <th>Info</th>
               <th>Rich Results Status (external)</th>
               <th>Schema.org Status (external)</th>
               <th>Notes</th>
@@ -3652,6 +3687,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       schemaFound: false,
       missingFields: [],
       warnings: [],
+      info: [],
       schemas: [],
       error: null
     };
@@ -3692,6 +3728,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         debugLog(`issuesList contents: ${JSON.stringify(result.issuesList, null, 2)}`);
       }
       
+      // Split issuesList into missingFields, warnings, and info
+      const buckets = splitIssuesIntoBuckets(result.issuesList, allNodes);
+      result.missingFields = buckets.missingFields;
+      result.warnings = buckets.warnings;
+      result.info = buckets.info;
+      
       logGlobalDuplicates(duplicateGroups, globalPatterns);
       logOrgNodesMissingName(allNodes);
       
@@ -3710,8 +3752,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
       const serverBadge = pageData.serverFallback ? ' (server)' : '';
       result.schemaType = schemaTypeText + serverBadge;
-      result.missingFields = [...new Set(analysis.missingFields)];
-      result.warnings = analysis.warnings;
+      
+      // Keep old missingFields for backward compatibility, but also use new split
+      result.missingFields = [...new Set([...result.missingFields, ...analysis.missingFields])];
+      result.warnings = [...new Set([...result.warnings, ...analysis.warnings])];
       result.valid = analysis.valid;
       result.schemas = analysis.schemas;
       
@@ -3727,6 +3771,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     return result;
+  }
+
+  // Helper: Classify duplicate issues as warnings or info
+  function classifyDuplicateIssue(item, allNodes) {
+    const typeNodes = allNodes.filter(n => {
+      const types = asArray(n['@type']);
+      return types.includes(item.type);
+    });
+    const hasUniqueIds = typeNodes.some(n => n['@id']);
+    const uniqueTypes = new Set(typeNodes.map(n => {
+      const types = asArray(n['@type']);
+      return types.join(',');
+    }));
+    const hasMultipleTypes = uniqueTypes.size > 1;
+    
+    if (hasUniqueIds || hasMultipleTypes) {
+      const cleanMessage = item.message.replace('⚠️ DUPLICATE:', '').replace('⚠️', '').trim();
+      return { type: 'info', message: `ℹ️ Multi-instance ${item.type} schemas detected (${cleanMessage})` };
+    }
+    return { type: 'warning', message: item.message };
+  }
+
+  // Helper: Split issuesList into missingFields, warnings, and info
+  function splitIssuesIntoBuckets(issuesList, allNodes) {
+    const buckets = { missingFields: [], warnings: [], info: [] };
+    
+    for (const item of issuesList) {
+      const isDuplicate = item.message?.includes('DUPLICATE');
+      const isMissing = item.message?.toLowerCase().includes('missing');
+      
+      if (isMissing) {
+        buckets.missingFields.push(item.message);
+      } else if (isDuplicate) {
+        const classified = classifyDuplicateIssue(item, allNodes);
+        if (classified.type === 'info') {
+          buckets.info.push(classified.message);
+        } else {
+          buckets.warnings.push(classified.message);
+        }
+      }
+    }
+    
+    return buckets;
   }
 
   // Helper: Build unified issues list from missing fields and duplicates
@@ -4125,18 +4212,46 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
   }
 
-  // Helper: Check if status should be critical (duplicates are never critical, only missing fields > 3)
+  // Helper: Check if status should be critical (only missing fields > 3)
   function isCriticalStatus(result) {
-    if (!result.issuesList || result.issuesList.length === 0) {
-      return false;
-    }
-    const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
+    const missingCount = result.missingFields ? result.missingFields.length : 0;
     return missingCount > 3;
+  }
+
+  // Helper: Build info-only status HTML
+  function buildInfoOnlyStatusHtml(infoCount) {
+    const plural = infoCount > 1 ? 's' : '';
+    return { 
+      class: 'valid', 
+      html: `<span class="chip-passed" title="Click to view details">✅ Passed</span><span class="status-explanation">${infoCount} multi-instance schema${plural} detected (normal)</span>`
+    };
+  }
+
+  // Helper: Build warnings-only status HTML
+  function buildWarningsOnlyStatusHtml(warningsCount) {
+    const plural = warningsCount > 1 ? 's' : '';
+    return { 
+      class: 'issues', 
+      html: `<span class="chip-issues" title="Click to view details">⚠️ Warning</span><span class="status-explanation">${warningsCount} duplicate schema${plural} detected — review only if unexpected</span>`
+    };
+  }
+
+  // Helper: Check if result has only info (no warnings or missing fields)
+  function hasOnlyInfo(result) {
+    return result.info && result.info.length > 0 && 
+           (!result.warnings || result.warnings.length === 0) && 
+           (!result.missingFields || result.missingFields.length === 0);
+  }
+
+  // Helper: Check if result has only warnings (no missing fields)
+  function hasOnlyWarnings(result) {
+    return result.warnings && result.warnings.length > 0 && 
+           (!result.missingFields || result.missingFields.length === 0);
   }
 
   // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
-    debugLog(`Status determination for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}`);
     
     if (result.error) {
       return buildErrorStatusHtml(result);
@@ -4144,26 +4259,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     const skippedCount = countSkippedSchemas(result);
     
-    if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
+    // If only info exists (no warnings, no missing fields), show as Passed
+    if (hasOnlyInfo(result) && result.schemaFound) {
+      return buildInfoOnlyStatusHtml(result.info.length);
+    }
+    
+    // If warnings exist but no missing fields, show as Warning
+    if (hasOnlyWarnings(result) && result.schemaFound) {
+      return buildWarningsOnlyStatusHtml(result.warnings.length);
+    }
+    
+    // If no issues at all, show as Passed
+    if ((!result.missingFields || result.missingFields.length === 0) && 
+        (!result.warnings || result.warnings.length === 0) && 
+        result.schemaFound) {
       return buildPassedStatusHtml(result, skippedCount);
     }
     
     if (result.schemaFound) {
-      if (!result.issuesList) {
-        result.issuesList = [];
+      // Check for critical status (missing fields > 3)
+      if (isCriticalStatus(result)) {
+        return buildCriticalStatusHtml(result, skippedCount);
       }
       
-      if (result.issuesList.length > 0) {
-        if (isCriticalStatus(result)) {
-          return buildCriticalStatusHtml(result, skippedCount);
-        }
-        return buildIssuesStatusHtml(result, skippedCount);
-      }
-      
-      // Fallback to old logic for backward compatibility
-      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
-                               (result.missingFields && result.missingFields.length > 0);
-      if (hasMissingFields) {
+      // If missing fields exist, show as Issues
+      if (result.missingFields && result.missingFields.length > 0) {
         return buildIssuesStatusHtml(result, skippedCount);
       }
       
@@ -4196,19 +4316,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   
   // Helper: Generate missing fields HTML
   function generateMissingFieldsHtml(result) {
-    if (result.issuesList && result.issuesList.length > 0) {
-      // Show all issues joined by commas (exact format from requirements)
-      return result.issuesList.map(i => i.message).join(', ');
-    }
-    // Fallback to old logic for backward compatibility
-    if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
-      return result.missingFieldsBadges.map(m => {
-        const detail = result.missingFieldsDetails ? result.missingFieldsDetails.find(x => x.startsWith(m.type+':')) : '';
-        return `<span class="badge" title="${detail}">${m.type}:${m.field}</span>`;
-      }).join(' ');
-    }
     if (result.missingFields && result.missingFields.length > 0) {
-      return result.missingFields.join(', ');
+      return result.missingFields.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
+    }
+    return '—';
+  }
+
+  // Helper: Generate warnings HTML
+  function generateWarningsHtml(result) {
+    if (result.warnings && result.warnings.length > 0) {
+      return result.warnings.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
+    }
+    return '—';
+  }
+
+  // Helper: Generate info HTML
+  function generateInfoHtml(result) {
+    if (result.info && result.info.length > 0) {
+      return result.info.map(i => `<div class="info-entry">${i}</div>`).join('');
     }
     return '—';
   }
@@ -4251,28 +4376,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ${supabaseBtn}`;
   }
   
-  // Helper: Generate row HTML
-  function generateRowHtml(index, result, statusHtml, rowOptions) {
-    const { existingGoogleStatus, existingSchemaOrgStatus, existingNotes } = rowOptions;
-    const missingFieldsHtml = generateMissingFieldsHtml(result);
-    const schemaTypeHtml = generateSchemaTypeHtml(result);
-    const googleSelectHtml = generateStatusSelectHtml(index, existingGoogleStatus, 'google');
-    const schemaOrgSelectHtml = generateStatusSelectHtml(index, existingSchemaOrgStatus, 'schemaorg');
-    const actionsHtml = generateActionsColumnHtml(index, result);
-    
-    // Add issues summary to notes if there are issues
+  // Helper: Build notes summary from result buckets
+  function buildNotesSummary(result, existingNotes) {
     let notesWithSummary = existingNotes || '';
-    if (result.issuesList && result.issuesList.length > 0) {
-      const missingCount = result.issuesList.filter(i => i.field).length;
-      const duplicateCount = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).length;
-      const parseNote = result.localParseFailed ? 'Server parse: success. ' : '';
-      const summaryLine = `${parseNote}Issues: ${missingCount} missing field${missingCount !== 1 ? 's' : ''}, ${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''}.`;
-      if (notesWithSummary && !notesWithSummary.includes('Issues:')) {
+    
+    if (result.missingFields && result.missingFields.length > 0) {
+      const summaryLine = `Missing: ${result.missingFields.length} field${result.missingFields.length !== 1 ? 's' : ''}.`;
+      if (notesWithSummary && !notesWithSummary.includes('Missing:')) {
         notesWithSummary = notesWithSummary + '\n' + summaryLine;
       } else if (!notesWithSummary) {
         notesWithSummary = summaryLine;
       }
     }
+    if (result.warnings && result.warnings.length > 0) {
+      const summaryLine = `Warnings: ${result.warnings.length} duplicate${result.warnings.length !== 1 ? 's' : ''}.`;
+      if (notesWithSummary && !notesWithSummary.includes('Warnings:')) {
+        notesWithSummary = notesWithSummary + '\n' + summaryLine;
+      } else if (!notesWithSummary) {
+        notesWithSummary = summaryLine;
+      }
+    }
+    if (result.info && result.info.length > 0) {
+      const summaryLine = `Info: ${result.info.length} multi-instance schema${result.info.length !== 1 ? 's' : ''} detected.`;
+      if (notesWithSummary && !notesWithSummary.includes('Info:')) {
+        notesWithSummary = notesWithSummary + '\n' + summaryLine;
+      } else if (!notesWithSummary) {
+        notesWithSummary = summaryLine;
+      }
+    }
+    
+    return notesWithSummary;
+  }
+
+  // Helper: Generate row HTML
+  function generateRowHtml(index, result, statusHtml, rowOptions) {
+    const { existingGoogleStatus, existingSchemaOrgStatus, existingNotes } = rowOptions;
+    const missingFieldsHtml = generateMissingFieldsHtml(result);
+    const warningsHtml = generateWarningsHtml(result);
+    const infoHtml = generateInfoHtml(result);
+    const schemaTypeHtml = generateSchemaTypeHtml(result);
+    const googleSelectHtml = generateStatusSelectHtml(index, existingGoogleStatus, 'google');
+    const schemaOrgSelectHtml = generateStatusSelectHtml(index, existingSchemaOrgStatus, 'schemaorg');
+    const actionsHtml = generateActionsColumnHtml(index, result);
+    const notesWithSummary = buildNotesSummary(result, existingNotes);
     
     const schemaOrgUrl = 'https://validator.schema.org/#url=' + encodeURIComponent(result.url);
     const googleUrl = result.richResultsReportUrl || 'https://search.google.com/test/rich-results?url=' + encodeURIComponent(result.url);
@@ -4282,6 +4428,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <td id="schemaTypeCell_${index}">${schemaTypeHtml}</td>
       <td id="statusCell_${index}" style="white-space: normal; line-height: 1.6;">${statusHtml}</td>
       <td class="missing-fields" id="missingFieldsCell_${index}">${missingFieldsHtml}</td>
+      <td id="warningsCell_${index}">${warningsHtml}</td>
+      <td id="infoCell_${index}">${infoHtml}</td>
       <td>
         <select class="status-select" id="googleStatus_${index}" title="Google Rich Results Status" onchange="updateValidationStatus(${index}, 'google', this.value)">
           ${googleSelectHtml}
@@ -4383,14 +4531,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       debugLog(`Status cell innerHTML after update: ${statusCell.innerHTML.substring(0, 200)}...`);
       debugLog(`Full status cell HTML: ${statusCell.innerHTML}`);
       
-      // Check if explanation element exists
+      // Check if explanation element exists (null-safe fallback)
       const explanationEl = statusCell.querySelector('.status-explanation');
-      debugLog(`Explanation element found: ${!!explanationEl}`);
-      if (explanationEl) {
+      if (!explanationEl) {
+        console.warn('Status explanation missing for', result.url);
+      } else {
         debugLog(`Explanation element text: "${explanationEl.textContent}"`);
         debugLog(`Explanation element HTML: ${explanationEl.outerHTML}`);
-      } else {
-        debugLog(`⚠️ WARNING: .status-explanation element NOT FOUND in status cell!`);
       }
     }
     
