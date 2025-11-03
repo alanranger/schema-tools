@@ -830,7 +830,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.5.7</span>
+    <span class="version">v1.5.8</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2935,7 +2935,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>`
       : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>';
     
-    return `${enhanceBtn}
+    // Add "View Details" button that opens the enhanced modal
+    const viewDetailsBtn = `<button class="enhance-btn" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;" onclick="openIssuesModal(getRowDataFromTr(this.closest('tr')))">View Details</button><br>`;
+    
+    return `${viewDetailsBtn}${enhanceBtn}
         <div style="margin-top: 0.5rem;">
           <button class="enhance-btn secondary" id="schemaOrgBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">Schema.org</button>
           <button class="enhance-btn secondary" id="richResultsBtn_${index}" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; margin-left: 0.25rem;">Rich Results</button>
