@@ -4638,6 +4638,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Stage 8: Finalize result (~95%)
       updateRowProgress(urlData.url, 95);
+      
+      // Ensure arrays are initialized before adding informational detections
+      if (!result.info) result.info = [];
+      if (!result.warnings) result.warnings = [];
+      if (!result.missingFields) result.missingFields = [];
+      
       addInformationalDetections(allNodes, result);
       
       // Log diagnostics
