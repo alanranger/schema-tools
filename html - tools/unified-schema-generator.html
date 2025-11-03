@@ -1167,7 +1167,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     json.textContent = (rowData.firstJsonLd || '').trim();
     
     // Add schema health summary to modal
-    if (rowData.schemaSummary) {
+    if (schemaSummary) {
       const summaryDiv = document.createElement('div');
       summaryDiv.className = 'schema-summary';
       summaryDiv.style.marginTop = '1rem';
@@ -1175,7 +1175,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       summaryDiv.style.background = '#f9f9f9';
       summaryDiv.style.borderLeft = '4px solid #e0b400';
       summaryDiv.style.borderRadius = '4px';
-      summaryDiv.innerHTML = `<strong>Summary:</strong><br>${rowData.schemaSummary.replace(/\n/g, '<br>')}`;
+      summaryDiv.innerHTML = `<strong>Summary:</strong><br>${schemaSummary.replace(/\n/g, '<br>')}`;
       // Insert before the details tag
       const details = backdrop.querySelector('details');
       if (details) {
