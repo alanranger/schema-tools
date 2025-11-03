@@ -943,8 +943,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.7.9</span>
-    <span class="date">2025-11-03</span>
+    <span class="version">v1.8.0</span>
+    <span class="date">2025-01-27</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1545,23 +1545,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return JSON.stringify(recommendedFix, null, 2);
   }
 
-  // ---- Issues modal helpers ----
-  function openIssuesModal(rowData) {
-    const backdrop = document.getElementById('issuesBackdrop');
-    const meta = document.getElementById('issuesMeta');
-    const content = document.getElementById('issuesContent');
-    const list = document.getElementById('issuesList');
-    const json = document.getElementById('issuesJson');
-    const jsonDetails = document.getElementById('issuesJsonDetails');
-    const btnSchema = document.getElementById('issuesSchemaOrgBtn');
-    const btnGoogle = document.getElementById('issuesGoogleBtn');
-    const closeBtn = document.getElementById('issuesCloseBtn');
-    
-    meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
-    content.innerHTML = '';
-    list.innerHTML = '';
-    
-    // Get unified issues list from rowData or dataset
+  // Helper: Parse issues list from rowData
+  function parseIssuesList(rowData) {
     let issuesList = [];
     try {
       if (rowData.tr && rowData.tr.dataset.issuesList) {
@@ -1569,69 +1554,53 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       } else if (rowData.issuesList) {
         issuesList = rowData.issuesList;
       } else if (rowData.tr && rowData.tr.dataset.missingDetail) {
-        // Fallback to old format
         const missing = JSON.parse(rowData.tr.dataset.missingDetail);
         issuesList = missing.map(m => ({ message: m, type: 'Unknown' }));
       } else if (rowData.missingFields) {
-        // Fallback to old format
         const missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
         issuesList = missing.map(m => ({ message: m, type: 'Unknown' }));
       }
     } catch (err) {
       console.warn('Failed to parse issues data:', err);
     }
-    
-    // Get result data for analysis
-    const rowIndex = rowData.tr ? Array.from(rowData.tr.parentNode.children).indexOf(rowData.tr) : -1;
-    const result = rowIndex >= 0 ? validationResults[rowIndex] : null;
-    
-    // Extract data for summary
-    const missingFieldsBadges = result?.missingFieldsBadges || [];
-    const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).map(i => i.type);
-    const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : [];
-    const issueCount = issuesList.filter(i => i.message && i.message.includes('missing')).length;
-    const blockCount = result?.schemas?.length || schemaTypes.length || 0;
-    
-    // Determine severity level
-    let severity = 'passed';
-    let badgeColor = 'severity-badge passed';
-    let badgeLabel = '✅ Passed';
-    
-    if (issueCount > 0 || duplicates.length > 0) {
-      severity = 'warning';
-      badgeColor = 'severity-badge warning';
-      badgeLabel = '⚠️ Issues';
-    }
-    
+    return issuesList;
+  }
+
+  // Helper: Determine severity badge from issues
+  function determineSeverityBadge(issueCount, duplicates) {
     if (duplicates.length > 2 || issueCount > 3) {
-      severity = 'critical';
-      badgeColor = 'severity-badge critical';
-      badgeLabel = '❌ Critical';
+      return { severity: 'critical', badgeColor: 'severity-badge critical', badgeLabel: '❌ Critical' };
     }
-    
-    // Build human-readable summary
-    let humanReadableSummary = `Found ${blockCount || 'multiple'} JSON-LD block${blockCount !== 1 ? 's' : ''}\n`;
-    humanReadableSummary += `Unique schema types: ${schemaTypes.length ? schemaTypes.join(', ') : 'Unknown'}\n`;
+    if (issueCount > 0 || duplicates.length > 0) {
+      return { severity: 'warning', badgeColor: 'severity-badge warning', badgeLabel: '⚠️ Issues' };
+    }
+    return { severity: 'passed', badgeColor: 'severity-badge passed', badgeLabel: '✅ Passed' };
+  }
+
+  // Helper: Build human-readable summary
+  function buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges) {
+    let summary = `Found ${blockCount || 'multiple'} JSON-LD block${blockCount !== 1 ? 's' : ''}\n`;
+    summary += `Unique schema types: ${schemaTypes.length ? schemaTypes.join(', ') : 'Unknown'}\n`;
     if (duplicates.length > 0) {
-      humanReadableSummary += `⚠️ Duplicates detected: ${duplicates.join(', ')}\n`;
+      summary += `⚠️ Duplicates detected: ${duplicates.join(', ')}\n`;
     }
     if (missingFieldsBadges.length > 0) {
       const missingFieldsText = missingFieldsBadges.map(m => `${m.type}.${m.field}`).join(', ');
-      humanReadableSummary += `❌ Missing fields: ${missingFieldsText}\n`;
+      summary += `❌ Missing fields: ${missingFieldsText}\n`;
     } else {
-      humanReadableSummary += '✅ All fields complete\n';
+      summary += '✅ All fields complete\n';
     }
-    
-    // Check if all Organization nodes are missing required fields (name, url, or @id)
-    // If at least one Organization node has a name, show green summary instead
+    return summary;
+  }
+
+  // Helper: Check if Organization nodes need recommended fix
+  function checkOrganizationNodesForFix(result, missingFieldsBadges) {
     let shouldShowRecommendedFix = false;
     let hasValidOrgNode = false;
     
-    // Check Organization nodes from result schemas or reconstruct from result data
     if (result && result.schemas) {
       const orgSchemas = result.schemas.filter(s => s.type === 'Organization' || (Array.isArray(s.type) && s.type.includes('Organization')));
       if (orgSchemas.length > 0) {
-        // Check if ALL Organization nodes are missing required fields
         const allMissingRequired = orgSchemas.every(s => {
           const schema = s.schema || {};
           const hasName = schema.name && schema.name.trim();
@@ -1639,33 +1608,27 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           const hasId = schema['@id'] && schema['@id'].trim();
           return !hasName && !hasUrl && !hasId;
         });
-        
-        // Check if at least one has a name
         hasValidOrgNode = orgSchemas.some(s => {
           const schema = s.schema || {};
           return schema.name && schema.name.trim();
         });
-        
-        // Only show recommended fix if ALL Organization nodes are missing required fields
         shouldShowRecommendedFix = allMissingRequired && !hasValidOrgNode;
       } else {
-        // No Organization nodes found - show recommended fix
         shouldShowRecommendedFix = true;
       }
     } else {
-      // Fallback: check missingFieldsBadges for Organization issues
       const orgMissingFields = missingFieldsBadges.filter(m => m.type === 'Organization');
       const orgMissingRequired = orgMissingFields.some(m => ['name', 'url'].includes(m.field));
       shouldShowRecommendedFix = orgMissingRequired && orgMissingFields.length > 0;
     }
     
-    // Get recommended schema
-    const recommendedFix = getRecommendedSchema(rowData.url);
-    
-    // Build enhanced modal content
-    let recommendedFixHtml = '';
+    return { shouldShowRecommendedFix, hasValidOrgNode };
+  }
+
+  // Helper: Build recommended fix HTML
+  function buildRecommendedFixHtml(shouldShowRecommendedFix, hasValidOrgNode, recommendedFix) {
     if (shouldShowRecommendedFix) {
-      recommendedFixHtml = `
+      return `
         <div class="recommended-fix-card">
           <h4>Recommended Fix (for Squarespace footer injection)</h4>
           <p>Copy and paste the following schema block into your Squarespace <strong>Settings → Advanced → Code Injection → Footer</strong> section.</p>
@@ -1673,37 +1636,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           <button class="copy-schema-btn" id="copySchemaBtn">📋 Copy Recommended Schema</button>
         </div>
       `;
-    } else if (hasValidOrgNode) {
-      recommendedFixHtml = `
+    }
+    if (hasValidOrgNode) {
+      return `
         <div class="recommended-fix-card" style="background: #f0fdf4; border-color: #10b981;">
           <h4 style="color: #065f46;">✅ Your Organization schema looks good</h4>
           <p style="color: #047857;">At least one valid Organization node with a name field was found. Your schema structure is correct.</p>
         </div>
       `;
     }
-    
-    content.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Schema Analysis Summary</h3>
-        <span class="${badgeColor}">${badgeLabel}</span>
-      </div>
-      
-      <div class="summary-card">
-        <pre>${humanReadableSummary.trim()}</pre>
-      </div>
-      
-      ${recommendedFixHtml}
-      
-      <div class="help-link">
-        ${shouldShowRecommendedFix ? '<p>Need help implementing this? ' : ''}
-        ${shouldShowRecommendedFix ? '<a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a></p>' : ''}
-        <p style="margin-top: 0.5rem; font-style: italic; color: #6b7280;">
-          Diagnostic: ${issueCount} missing field(s), ${duplicates.length} duplicate type(s) detected.
-        </p>
-      </div>
-    `;
-    
-    // Setup copy button
+    return '';
+  }
+
+  // Helper: Setup modal button handlers
+  function setupModalButtonHandlers(recommendedFix, json, jsonDetails, rowData) {
     const copyBtn = document.getElementById('copySchemaBtn');
     if (copyBtn) {
       copyBtn.onclick = () => {
@@ -1724,15 +1670,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       };
     }
     
-    // Still show raw JSON in collapsible section for debugging
     json.textContent = (rowData.firstJsonLd || '').trim();
-    if (rowData.firstJsonLd) {
-      jsonDetails.style.display = 'block';
-    } else {
-      jsonDetails.style.display = 'none';
-    }
+    jsonDetails.style.display = rowData.firstJsonLd ? 'block' : 'none';
     
-    // Add copy button handler for JSON-LD
     const copyJsonBtn = document.getElementById('issuesCopyJsonBtn');
     if (copyJsonBtn) {
       copyJsonBtn.onclick = async () => {
@@ -1748,7 +1688,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             copyJsonBtn.textContent = 'Copy JSON-LD';
           }, 2000);
         } catch (err) {
-          // Fallback for older browsers
           const textarea = document.createElement('textarea');
           textarea.value = jsonText;
           textarea.style.position = 'fixed';
@@ -1768,6 +1707,62 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         }
       };
     }
+  }
+
+  // ---- Issues modal helpers ----
+  function openIssuesModal(rowData) {
+    const backdrop = document.getElementById('issuesBackdrop');
+    const meta = document.getElementById('issuesMeta');
+    const content = document.getElementById('issuesContent');
+    const list = document.getElementById('issuesList');
+    const json = document.getElementById('issuesJson');
+    const jsonDetails = document.getElementById('issuesJsonDetails');
+    const btnSchema = document.getElementById('issuesSchemaOrgBtn');
+    const btnGoogle = document.getElementById('issuesGoogleBtn');
+    const closeBtn = document.getElementById('issuesCloseBtn');
+    
+    meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
+    content.innerHTML = '';
+    list.innerHTML = '';
+    
+    const issuesList = parseIssuesList(rowData);
+    const rowIndex = rowData.tr ? Array.from(rowData.tr.parentNode.children).indexOf(rowData.tr) : -1;
+    const result = rowIndex >= 0 ? validationResults[rowIndex] : null;
+    
+    const missingFieldsBadges = result?.missingFieldsBadges || [];
+    const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).map(i => i.type);
+    const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : [];
+    const issueCount = issuesList.filter(i => i.message && i.message.includes('missing')).length;
+    const blockCount = result?.schemas?.length || schemaTypes.length || 0;
+    
+    const severityBadge = determineSeverityBadge(issueCount, duplicates);
+    const humanReadableSummary = buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges);
+    const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges);
+    const recommendedFix = getRecommendedSchema(rowData.url);
+    const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix, orgFixCheck.hasValidOrgNode, recommendedFix);
+    
+    content.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Schema Analysis Summary</h3>
+        <span class="${severityBadge.badgeColor}">${severityBadge.badgeLabel}</span>
+      </div>
+      
+      <div class="summary-card">
+        <pre>${humanReadableSummary.trim()}</pre>
+      </div>
+      
+      ${recommendedFixHtml}
+      
+      <div class="help-link">
+        ${orgFixCheck.shouldShowRecommendedFix ? '<p>Need help implementing this? ' : ''}
+        ${orgFixCheck.shouldShowRecommendedFix ? '<a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a></p>' : ''}
+        <p style="margin-top: 0.5rem; font-style: italic; color: #6b7280;">
+          Diagnostic: ${issueCount} missing field(s), ${duplicates.length} duplicate type(s) detected.
+        </p>
+      </div>
+    `;
+    
+    setupModalButtonHandlers(recommendedFix, json, jsonDetails, rowData);
     
     btnSchema.onclick = () => globalThis.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
     btnGoogle.onclick = () => globalThis.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(rowData.url), '_blank');
@@ -1861,58 +1856,70 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return idx;
   }
   
+  // Helper: Check if field is missing for a node
+  function isFieldMissing(node, field) {
+    return !node.hasOwnProperty(field) || !node[field];
+  }
+
+  // Helper: Check if message already exists for this type+field+key combination
+  function isAlreadyFlagged(messages, type, field, key) {
+    return messages.some(m => m.type === type && m.field === field && m.key === key);
+  }
+
+  // Helper: Check if node is system-injected (Squarespace auto-generated)
+  function isSystemInjectedNode(type, node) {
+    return type === 'Organization' && 
+      !node['@id'] && 
+      (!node.name || !node.name.trim()) && 
+      (!node.url || !node.url.trim());
+  }
+
+  // Helper: Process required fields for a node group
+  function processRequiredFieldsForNode(messages, type, field, key, firstNode, instances) {
+    if (isFieldMissing(firstNode, field) && !isAlreadyFlagged(messages, type, field, key)) {
+      messages.push({ 
+        type: type, 
+        field: field, 
+        nodeIndex: instances[0].index,
+        key: key,
+        instances: instances.length,
+        hasId: !!firstNode['@id'],
+        systemInjected: isSystemInjectedNode(type, firstNode)
+      });
+    }
+  }
+
   // Inspect which types are present and which required fields are missing per type
   function computeMissingFields(allNodes) {
     const idx = indexByType(allNodes);
     const messages = [];
+    
     Object.keys(idx).forEach(t => {
-      if (!CORE_REQUIRED[t]) return; // only check types we know
+      if (!CORE_REQUIRED[t]) return;
+      
       const required = CORE_REQUIRED[t];
-      // Group nodes by @id to detect duplicates
       const nodesByKey = {};
+      
       idx[t].forEach((n, nodeIndex) => {
-        // Use @id as key, or fallback to a hash of key properties
         const key = n['@id'] || JSON.stringify([n['@type'], n.url, n.name]).slice(0, 100);
         if (!nodesByKey[key]) nodesByKey[key] = [];
         nodesByKey[key].push({ node: n, index: nodeIndex });
       });
       
-      // Check each unique node (by @id/key) - only flag if ALL instances of that unique node are missing the field
       Object.keys(nodesByKey).forEach(key => {
         const instances = nodesByKey[key];
         const firstNode = instances[0].node;
         
-        // Detect Squarespace auto-generated Organization nodes (no @id, no name, no url)
-        const isSystemInjected = t === 'Organization' && 
-          !firstNode['@id'] && 
-          (!firstNode.name || !firstNode.name.trim()) && 
-          (!firstNode.url || !firstNode.url.trim());
-        
-        // Skip system-injected nodes from missing-field counts
-        if (isSystemInjected) {
+        if (isSystemInjectedNode(t, firstNode)) {
           return;
         }
         
         required.forEach(req => {
-          // Check if this specific node (by key) has the field
-          if (!firstNode.hasOwnProperty(req) || !firstNode[req]) {
-            // Only add message if we haven't already flagged this type+field combination
-            const alreadyFlagged = messages.some(m => m.type === t && m.field === req && m.key === key);
-            if (!alreadyFlagged) {
-              messages.push({ 
-                type: t, 
-                field: req, 
-                nodeIndex: instances[0].index,
-                key: key,
-                instances: instances.length,
-                hasId: !!firstNode['@id'],
-                systemInjected: isSystemInjected
-              });
-            }
-          }
+          processRequiredFieldsForNode(messages, t, req, key, firstNode, instances);
         });
       });
     });
+    
     return messages;
   }
   
@@ -1993,6 +2000,116 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
   }
   
+  // Helper: Detect global schema patterns
+  function detectGlobalPatterns(nodes, baseUrl) {
+    const existingIds = new Set();
+    for (const n of nodes) {
+      if (n['@id']) existingIds.add(n['@id']);
+    }
+    
+    const hasGlobalWebsite = existingIds.has(baseUrl + '#website') || 
+                             nodes.some(n => n['@type'] === 'WebSite' && n['@id'] && n['@id'].includes('#website'));
+    const hasGlobalOrg = existingIds.has(baseUrl + '#org') ||
+                        nodes.some(n => {
+                          const types = asArray(n['@type']);
+                          return (types.includes('Organization') || types.includes('LocalBusiness')) && 
+                                 n['@id'] && n['@id'].includes('#org');
+                        });
+    const hasGlobalLocal = existingIds.has(baseUrl + '#local') ||
+                          nodes.some(n => n['@type'] === 'LocalBusiness' && n['@id'] && n['@id'].includes('#local'));
+    
+    return { hasGlobalWebsite, hasGlobalOrg, hasGlobalLocal };
+  }
+
+  // Helper: Build website node
+  function buildWebsiteNode(idx, siteName, meta) {
+    const website = (idx.WebSite && idx.WebSite[0]) ? structuredClone(idx.WebSite[0]) : {"@type":"WebSite"};
+    website.name = website.name || siteName || "Alan Ranger Photography";
+    website.url = website.url || meta.url;
+    return website;
+  }
+
+  // Helper: Build organization node
+  function buildOrgNode(idx, siteName, meta) {
+    const org = (idx.Organization && idx.Organization[0]) ? structuredClone(idx.Organization[0]) : {"@type":"Organization"};
+    org.name = org.name || siteName || "Alan Ranger Photography";
+    org.url = org.url || meta.url;
+    if (!org.logo && meta.logo) org.logo = meta.logo;
+    if (!org.image && meta.ogImage) org.image = meta.ogImage;
+    return org;
+  }
+
+  // Helper: Build local business node
+  function buildLocalNode(idx, org, siteName, meta) {
+    let local = (idx.LocalBusiness && idx.LocalBusiness[0]) ? structuredClone(idx.LocalBusiness[0]) : 
+                (idx.Organization && idx.Organization[0] ? structuredClone(idx.Organization[0]) : null);
+    
+    if (local) {
+      local.name = local.name || org.name || siteName;
+      local.url = local.url || meta.url;
+      if (!local.image && meta.ogImage) local.image = meta.ogImage;
+      if (!local['@type']) local['@type'] = 'LocalBusiness';
+    }
+    
+    return local;
+  }
+
+  // Helper: Build core schema nodes
+  function buildCoreSchemaNodes(idx, meta, url) {
+    const siteName = firstNonEmpty(null, meta.siteName, meta.title, "Alan Ranger Photography");
+    const website = buildWebsiteNode(idx, siteName, meta);
+    const org = buildOrgNode(idx, siteName, meta);
+    const local = buildLocalNode(idx, org, siteName, meta);
+    return { website, org, local };
+  }
+
+  // Helper: Build final schema graph
+  function buildSchemaGraph(hasGlobalWebsite, hasGlobalOrg, hasGlobalLocal, website, org, local, breadcrumbs, extras) {
+    const graph = [];
+    
+    if (!hasGlobalWebsite) {
+      graph.push(website);
+    }
+    
+    if (!hasGlobalOrg) {
+      graph.push(org);
+    }
+    
+    if (local && !hasGlobalLocal) {
+      graph.push(local);
+    }
+    
+    if (breadcrumbs.itemListElement && breadcrumbs.itemListElement.length > 0) {
+      graph.push(breadcrumbs);
+    }
+    
+    graph.push(...extras);
+    
+    return dedupeById(graph);
+  }
+
+  // Helper: Process schema with fallback
+  async function processSchemaWithFallback(url, doc, nodes) {
+    const meta = pageMeta(doc, url);
+    const idx = indexByType(nodes);
+    const { website, org, local } = buildCoreSchemaNodes(idx, meta, url);
+    
+    const baseUrl = url.replace(/#.*$/,'');
+    const { hasGlobalWebsite, hasGlobalOrg, hasGlobalLocal } = detectGlobalPatterns(nodes, baseUrl);
+    
+    if (!hasGlobalWebsite) website = ensureId(website, url, 'website');
+    if (!hasGlobalOrg) org = ensureId(org, url, 'org');
+    if (local && !hasGlobalLocal) local = ensureId(local, url, 'local');
+    
+    const breadcrumbs = buildBreadcrumbs(doc, url);
+    const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
+    const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+    
+    const finalGraph = buildSchemaGraph(hasGlobalWebsite, hasGlobalOrg, hasGlobalLocal, website, org, local, breadcrumbs, extras);
+    
+    return { "@context":"https://schema.org", "@graph": finalGraph };
+  }
+
   async function generateEnhancedFor(url){
     try {
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
@@ -2002,153 +2119,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // Collect existing JSON-LD
       const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
       let nodes = [];
-      scripts.forEach(s => {
-        try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
-      });
-      const typesPresent = uniq(nodes.flatMap(n => asArray(n['@type'])));
-      
-      // Detect which global schema types already exist (by @id pattern matching global injections)
-      const baseUrl = url.replace(/#.*$/,'');
-      const existingIds = new Set();
-      nodes.forEach(n => {
-        if (n['@id']) existingIds.add(n['@id']);
-      });
-      
-      // Check for global injection patterns (common @id patterns from header/footer injections)
-      const hasGlobalWebsite = existingIds.has(baseUrl + '#website') || 
-                               nodes.some(n => n['@type'] === 'WebSite' && n['@id'] && n['@id'].includes('#website'));
-      const hasGlobalOrg = existingIds.has(baseUrl + '#org') ||
-                          nodes.some(n => {
-                            const types = asArray(n['@type']);
-                            return (types.includes('Organization') || types.includes('LocalBusiness')) && 
-                                   n['@id'] && n['@id'].includes('#org');
-                          });
-      const hasGlobalLocal = existingIds.has(baseUrl + '#local') ||
-                            nodes.some(n => n['@type'] === 'LocalBusiness' && n['@id'] && n['@id'].includes('#local'));
-      
-      const meta = pageMeta(doc, url);
-      
-      // Seed core nodes (use existing if there, else minimal scaffold)
-      const idx = indexByType(nodes);
-      let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
-      let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
-      let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : (idx.Organization && idx.Organization[0] ? JSON.parse(JSON.stringify(idx.Organization[0])) : null);
-      
-      // Fill obvious gaps
-      const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
-      website.name = siteName || website.name;
-      website.url  = website.url || meta.url;
-      
-      org.name = org.name || siteName || "Alan Ranger Photography";
-      org.url  = org.url  || meta.url;
-      if (!org.logo && meta.logo) org.logo = meta.logo;
-      if (!org.image && meta.ogImage) org.image = meta.ogImage;
-      
-      if (local){
-        local.name = local.name || org.name || siteName;
-        local.url  = local.url || meta.url;
-        if (!local.image && meta.ogImage) local.image = meta.ogImage;
-        if (!local['@type']) local['@type'] = 'LocalBusiness';
+      for (const s of scripts) {
+        try { 
+          nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); 
+        } catch(_) {}
       }
       
-      // Ensure stable @id (only if we're going to include them)
-      if (!hasGlobalWebsite) website = ensureId(website, url, 'website');
-      if (!hasGlobalOrg) org = ensureId(org, url, 'org');
-      if (local && !hasGlobalLocal) local = ensureId(local, url, 'local');
-      
-      // Always add BreadcrumbList (built from DOM or path) - page-specific
-      const breadcrumbs = buildBreadcrumbs(doc, url);
-      
-      // Keep any Product / Event if present (page-specific types)
-      const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
-      const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
-      
-      // Build graph - only include global types if they don't already exist globally
-      const graph = [];
-      
-      // Add WebSite only if not already in global injections
-      if (!hasGlobalWebsite) {
-        graph.push(website);
-      }
-      
-      // Add Organization only if not already in global injections
-      if (!hasGlobalOrg) {
-        graph.push(org);
-      }
-      
-      // Add LocalBusiness only if not already in global injections AND if it exists
-      if (local && !hasGlobalLocal) {
-        graph.push(local);
-      }
-      
-      // Always add breadcrumbs (page-specific)
-      if (breadcrumbs.itemListElement && breadcrumbs.itemListElement.length > 0) {
-        graph.push(breadcrumbs);
-      }
-      
-      // Always add page-specific types
-      graph.push(...extras);
-      
-      // Deduplicate by @id
-      const finalGraph = dedupeById(graph);
-      
-      // Final JSON-LD
-      return { "@context":"https://schema.org", "@graph": finalGraph };
+      return await processSchemaWithFallback(url, doc, nodes);
     } catch (error) {
-      // Fallback: try direct fetch
       try {
         const res = await fetch(url, {mode:'cors'});
         const html = await res.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // Collect existing JSON-LD
         const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
         let nodes = [];
-        scripts.forEach(s => {
-          try { nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); } catch(_) {}
-        });
-        
-        const meta = pageMeta(doc, url);
-        
-        // Seed core nodes
-        const idx = indexByType(nodes);
-        let website = (idx.WebSite && idx.WebSite[0]) ? JSON.parse(JSON.stringify(idx.WebSite[0])) : {"@type":"WebSite"};
-        let org     = (idx.Organization && idx.Organization[0]) ? JSON.parse(JSON.stringify(idx.Organization[0])) : {"@type":"Organization"};
-        let local   = (idx.LocalBusiness && idx.LocalBusiness[0]) ? JSON.parse(JSON.stringify(idx.LocalBusiness[0])) : null;
-        
-        const siteName = firstNonEmpty(website.name, meta.siteName, meta.title, "Alan Ranger Photography");
-        website.name = siteName || website.name;
-        website.url  = website.url || meta.url;
-        
-        org.name = org.name || siteName || "Alan Ranger Photography";
-        org.url  = org.url  || meta.url;
-        
-        if (local){
-          local.name = local.name || org.name || siteName;
-          local.url  = local.url || meta.url;
+        for (const s of scripts) {
+          try { 
+            nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); 
+          } catch(_) {}
         }
         
-        website = ensureId(website, url, 'website');
-        org     = ensureId(org,     url, 'org');
-        if (local) local = ensureId(local, url, 'local');
-        
-        const breadcrumbs = buildBreadcrumbs(doc, url);
-        const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
-        const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
-        
-        const graph = dedupeById([
-          website,
-          org,
-          ...(local ? [local] : []),
-          breadcrumbs,
-          ...extras
-        ]);
-        
-        return { "@context":"https://schema.org", "@graph": graph };
+        return await processSchemaWithFallback(url, doc, nodes);
       } catch (err) {
         throw new Error(`Failed to fetch page: ${err.message}`);
       }
@@ -2277,129 +2272,218 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
   }
 
-  // Single URL validation
-  async function runSingleUrlValidation() {
-    console.log('runSingleUrlValidation called');
+  // Helper: Validate URL input
+  function validateUrlInput() {
+    const urlInput = document.getElementById('singleUrlInput');
+    if (!urlInput) {
+      console.error('singleUrlInput element not found');
+      alert('Error: Input field not found. Please refresh the page.');
+      return null;
+    }
     
-    try {
-      const urlInput = document.getElementById('singleUrlInput');
-      if (!urlInput) {
-        console.error('singleUrlInput element not found');
-        alert('Error: Input field not found. Please refresh the page.');
-        return;
-      }
-      
-      const url = urlInput.value.trim();
-      console.log('URL input:', url);
-      
-      if (!url) {
-        alert('Please enter a URL to validate');
-        return;
-      }
-      
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        alert('Please enter a valid URL starting with http:// or https://');
-        return;
-      }
-      
-      console.log('Showing results table...');
-      // Show results table
-      const resultsDiv = document.getElementById('validatorResults');
-      if (resultsDiv) {
-        resultsDiv.style.display = 'block';
+    const url = urlInput.value.trim();
+    console.log('URL input:', url);
+    
+    if (!url) {
+      alert('Please enter a URL to validate');
+      return null;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      alert('Please enter a valid URL starting with http:// or https://');
+      return null;
+    }
+    
+    return { urlInput, url };
+  }
+
+  // Helper: Show results table
+  function showResultsTable() {
+    const resultsDiv = document.getElementById('validatorResults');
+    if (resultsDiv) {
+      resultsDiv.style.display = 'block';
+      return resultsDiv;
+    }
+    console.error('validatorResults element not found');
+    alert('Error: Results table not found. Please refresh the page.');
+    return null;
+  }
+
+  // Helper: Find or create result index
+  function findOrCreateResultIndex(url) {
+    if (typeof validationResults === 'undefined') {
+      console.error('validationResults array not defined');
+      alert('Error: Validation system not initialized. Please refresh the page.');
+      return null;
+    }
+    
+    const existingIndex = validationResults.findIndex(r => r.url === url);
+    if (existingIndex >= 0) {
+      console.log('Updating existing row at index:', existingIndex);
+      return existingIndex;
+    }
+    
+    console.log('Creating new row, current length:', validationResults.length);
+    const index = validationResults.length;
+    
+    const placeholderResult = {
+      url: url,
+      row: index,
+      schemaType: 'Processing...',
+      valid: false,
+      schemaFound: false,
+      missingFields: [],
+      warnings: [],
+      schemas: [],
+      error: null,
+      validatorGoogleStatus: 'Not run',
+      validatorSchemaOrgStatus: 'Not run',
+      notes: '',
+      issuesList: []
+    };
+    
+    validationResults.push(placeholderResult);
+    console.log('Added placeholder result, new length:', validationResults.length);
+    return index;
+  }
+
+  // Helper: Initialize validation row UI
+  function initializeValidationRow(index, url) {
+    if (typeof updateTableRow === 'undefined') {
+      console.error('updateTableRow function not defined');
+      alert('Error: updateTableRow function not found. Please refresh the page.');
+      return false;
+    }
+    
+    updateTableRow(index, {
+      url: url,
+      schemaType: 'Processing...',
+      valid: false,
+      schemaFound: false,
+      missingFields: [],
+      warnings: [],
+      schemas: [],
+      error: null,
+      validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
+      validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
+      notes: validationResults[index]?.notes || '',
+      issuesList: []
+    });
+    
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+    if (schemaTypeCell) {
+      if (typeof renderProgress === 'undefined' || typeof setProgress === 'undefined') {
+        console.error('renderProgress or setProgress not defined');
       } else {
-        console.error('validatorResults element not found');
-        alert('Error: Results table not found. Please refresh the page.');
-        return;
+        renderProgress(schemaTypeCell);
+        setProgress(schemaTypeCell, 5, 'Queued');
       }
-      
-      // Check if validationResults array exists
-      if (typeof validationResults === 'undefined') {
-        console.error('validationResults array not defined');
-        alert('Error: Validation system not initialized. Please refresh the page.');
-        return;
+    }
+    
+    return true;
+  }
+
+  // Helper: Run external validators if enabled
+  async function runExternalValidatorsIfEnabled(index, url) {
+    const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+    const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+    
+    if (!shouldAutoRun) {
+      return;
+    }
+    
+    const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+      if (typeof runSchemaOrgValidator === 'function') {
+        await runSchemaOrgValidator(index, url);
       }
-      
-      // Check if URL already exists in results
-      const existingIndex = validationResults.findIndex(r => r.url === url);
-      let index;
-      
-      if (existingIndex >= 0) {
-        console.log('Updating existing row at index:', existingIndex);
-        // Update existing row
-        index = existingIndex;
-      } else {
-        console.log('Creating new row, current length:', validationResults.length);
-        // Add new row
-        index = validationResults.length;
-        
-        // Create placeholder result
-        const placeholderResult = {
-          url: url,
-          row: index,
-          schemaType: 'Processing...',
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: null,
-          validatorGoogleStatus: 'Not run',
-          validatorSchemaOrgStatus: 'Not run',
-          notes: '',
-          issuesList: []
-        };
-        
-        validationResults.push(placeholderResult);
-        console.log('Added placeholder result, new length:', validationResults.length);
+    }
+    
+    const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+    if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+      if (typeof runRichResultsValidator === 'function') {
+        runRichResultsValidator(index, url);
       }
-      
-      // Show processing status with progress bar
-      console.log('Calling updateTableRow with index:', index);
-      if (typeof updateTableRow === 'undefined') {
-        console.error('updateTableRow function not defined');
-        alert('Error: updateTableRow function not found. Please refresh the page.');
-        return;
-      }
-      
-      updateTableRow(index, {
-        url: url,
-        schemaType: 'Processing...',
+    }
+  }
+
+  // Helper: Auto-save to Supabase if enabled
+  function autoSaveToSupabaseIfEnabled(index, url) {
+    const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
+    const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
+    
+    if (shouldAutoSave && supabaseAvailable && supabase && typeof saveToSupabase === 'function') {
+      setTimeout(async () => {
+        try {
+          await saveToSupabase(index, true);
+          debugLog(`Auto-saved to Supabase: ${url}`, 'success');
+        } catch (error) {
+          debugLog(`Auto-save failed for ${url}: ${error.message}`, 'error');
+        }
+      }, 2000);
+    }
+  }
+
+  // Helper: Handle validation error
+  function handleValidationError(error, index, url) {
+    console.error('Error validating URL:', error);
+    console.error('Error stack:', error.stack);
+    alert('Error validating URL: ' + error.message + '\n\nCheck console for details.');
+    
+    if (typeof index !== 'undefined' && validationResults && validationResults[index]) {
+      validationResults[index] = {
+        url: url || 'Unknown',
+        row: index || 0,
+        schemaType: null,
         valid: false,
         schemaFound: false,
         missingFields: [],
         warnings: [],
         schemas: [],
-        error: null,
+        error: error.message,
         validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
         validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
         notes: validationResults[index]?.notes || '',
         issuesList: []
-      });
+      };
       
-      const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-      if (schemaTypeCell) {
-        if (typeof renderProgress === 'undefined' || typeof setProgress === 'undefined') {
-          console.error('renderProgress or setProgress not defined');
-        } else {
-          renderProgress(schemaTypeCell);
-          setProgress(schemaTypeCell, 5, 'Queued');
-        }
+      if (typeof updateTableRow === 'function') {
+        updateTableRow(index, validationResults[index]);
       }
+    }
+    
+    if (typeof updateBulkButtons === 'function') {
+      updateBulkButtons();
+    }
+  }
+
+  // Single URL validation
+  async function runSingleUrlValidation() {
+    console.log('runSingleUrlValidation called');
+    
+    try {
+      const urlInputData = validateUrlInput();
+      if (!urlInputData) return;
+      
+      const resultsDiv = showResultsTable();
+      if (!resultsDiv) return;
+      
+      const index = findOrCreateResultIndex(urlInputData.url);
+      if (index === null) return;
+      
+      if (!initializeValidationRow(index, urlInputData.url)) return;
       
       console.log('Starting processUrl...');
-      // Process URL using existing function
       if (typeof processUrl === 'undefined') {
         console.error('processUrl function not defined');
         alert('Error: processUrl function not found. Please refresh the page.');
         return;
       }
       
-      const urlData = { url: url, row: index };
+      const urlData = { url: urlInputData.url, row: index };
       const result = await processUrl(urlData);
       console.log('processUrl completed:', result);
       
-      // Update validation results array
       validationResults[index] = {
         ...result,
         validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
@@ -2407,93 +2491,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         notes: validationResults[index]?.notes || ''
       };
       
-      // Update table row with results
       console.log('Updating table row with results...');
       updateTableRow(index, validationResults[index]);
       
-      // Enable bulk action buttons
       if (typeof updateBulkButtons === 'function') {
         updateBulkButtons();
       }
       
-      // Auto-run Schema.org validator if enabled and status is "Not run"
-      const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
-      const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+      await runExternalValidatorsIfEnabled(index, urlInputData.url);
+      autoSaveToSupabaseIfEnabled(index, urlInputData.url);
       
-      if (shouldAutoRun) {
-        const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
-        if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-          if (typeof runSchemaOrgValidator === 'function') {
-            await runSchemaOrgValidator(index, url);
-          }
-        }
-        
-        // Auto-run Rich Results validator if enabled and status is "Not run"
-        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-        if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-          if (typeof runRichResultsValidator === 'function') {
-            // Don't await - let it run in background
-            runRichResultsValidator(index, url);
-          }
-        }
-      }
+      urlInputData.urlInput.value = '';
       
-      // Auto-save to Supabase if enabled
-      const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
-      const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
-      if (shouldAutoSave && supabaseAvailable && supabase && typeof saveToSupabase === 'function') {
-        // Wait a moment for external validators to complete, then save
-        setTimeout(async () => {
-          try {
-            await saveToSupabase(index, true); // silent mode for auto-save
-            debugLog(`Auto-saved to Supabase: ${url}`, 'success');
-          } catch (error) {
-            debugLog(`Auto-save failed for ${url}: ${error.message}`, 'error');
-            // Don't show alert for auto-save failures, just log
-          }
-        }, 2000); // 2 second delay to allow external validators to complete
-      }
-      
-      // Clear input field
-      urlInput.value = '';
-      
-      // Scroll to results table
       if (resultsDiv) {
         resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
       
     } catch (error) {
-      console.error('Error validating URL:', error);
-      console.error('Error stack:', error.stack);
-      alert('Error validating URL: ' + error.message + '\n\nCheck console for details.');
-      
-      // Try to update row with error if index is defined
-      if (typeof index !== 'undefined' && validationResults && validationResults[index]) {
-        validationResults[index] = {
-          url: url || 'Unknown',
-          row: index || 0,
-          schemaType: null,
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: error.message,
-          validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
-          validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
-          notes: validationResults[index]?.notes || '',
-          issuesList: []
-        };
-        
-        if (typeof updateTableRow === 'function') {
-          updateTableRow(index, validationResults[index]);
-        }
+      let errorUrl = '';
+      try {
+        const urlInputData = validateUrlInput();
+        errorUrl = urlInputData?.url || '';
+      } catch {
+        errorUrl = '';
       }
-      
-      // Enable bulk action buttons (even if error)
-      if (typeof updateBulkButtons === 'function') {
-        updateBulkButtons();
-      }
+      handleValidationError(error, typeof index !== 'undefined' ? index : undefined, errorUrl);
     }
   }
   
@@ -2926,12 +2948,234 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // Helper: Extract types from JSON-LD block
+  function extractTypesFromBlock(json, blockInfo, scriptIndex) {
+    const blockTypes = [];
+    
+    if (json['@type']) {
+      const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
+      blockTypes.push(...types);
+    }
+    
+    if (json['@graph']) {
+      for (const item of json['@graph']) {
+        if (item['@type']) {
+          const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+          blockTypes.push(...types);
+        }
+      }
+    }
+    
+    if (blockTypes.length > 0) {
+      blockInfo.push({
+        index: scriptIndex,
+        types: blockTypes,
+        hasId: !!json['@id'] || !!(json['@graph'] && json['@graph'].some(n => n['@id'])),
+        isGraph: !!json['@graph']
+      });
+    }
+    
+    return blockTypes;
+  }
+
+  // Helper: Parse JSON-LD blocks from scripts
+  function parseJsonLdBlocks(scripts, schemaTypeCell) {
+    const jsonLdBlocks = [];
+    let detectedTypes = [];
+    const blockInfo = [];
+    
+    for (let scriptIndex = 0; scriptIndex < scripts.length; scriptIndex++) {
+      const script = scripts[scriptIndex];
+      try {
+        const json = JSON.parse(script.textContent);
+        jsonLdBlocks.push(json);
+        const blockTypes = extractTypesFromBlock(json, blockInfo, scriptIndex);
+        detectedTypes.push(...blockTypes);
+      } catch (e) {
+        console.warn('Failed to parse JSON-LD:', e);
+        debugLog(`Failed to parse JSON-LD block ${scriptIndex}: ${e.message}`, 'error');
+      }
+    }
+    
+    return { jsonLdBlocks, detectedTypes, blockInfo };
+  }
+
+  // Helper: Detect and log duplicate types
+  function detectDuplicateTypes(detectedTypes, blockInfo) {
+    const typeCounts = {};
+    for (const t of detectedTypes) {
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+    }
+    
+    const duplicates = Object.keys(typeCounts).filter(t => typeCounts[t] > 1);
+    
+    if (duplicates.length > 0) {
+      debugLog(`⚠️ Duplicate schema types detected: ${duplicates.map(t => `${t} (${typeCounts[t]}x)`).join(', ')}`, 'warn');
+      debugLog(`Block details: ${blockInfo.map(b => `Block ${b.index}: ${b.types.join(',')}${b.hasId ? ' (has @id)' : ''}${b.isGraph ? ' (@graph)' : ''}`).join('; ')}`, 'info');
+    }
+    
+    return { duplicates, typeCounts };
+  }
+
+  // Helper: Extract types from JSON-LD data
+  function extractTypesFromJsonLd(data, detectedTypes) {
+    if (data['@type']) {
+      if (Array.isArray(data['@type'])) {
+        detectedTypes.push(...data['@type']);
+      } else {
+        detectedTypes.push(data['@type']);
+      }
+    }
+    if (data['@graph']) {
+      for (const item of data['@graph']) {
+        if (item['@type']) {
+          if (Array.isArray(item['@type'])) {
+            detectedTypes.push(...item['@type']);
+          } else {
+            detectedTypes.push(item['@type']);
+          }
+        }
+      }
+    }
+  }
+
+  // Helper: Parse JSON-LD blocks from scripts
+  function parseJsonLdBlocksFromScripts(scripts) {
+    const jsonLdBlocks = [];
+    for (const script of scripts) {
+      try {
+        const json = JSON.parse(script.textContent);
+        jsonLdBlocks.push(json);
+      } catch (e) {
+        console.warn('Failed to parse JSON-LD:', e);
+      }
+    }
+    return jsonLdBlocks;
+  }
+
+  // Helper: Extract detected types from scripts
+  function extractDetectedTypes(scripts) {
+    const detectedTypes = [];
+    for (const s of scripts) {
+      try {
+        const data = JSON.parse(s.textContent.trim());
+        extractTypesFromJsonLd(data, detectedTypes);
+      } catch (err) {
+        console.warn('Invalid JSON-LD block', err);
+      }
+    }
+    return detectedTypes;
+  }
+
+  // Helper: Handle direct fetch fallback
+  async function handleDirectFetchFallback(url, schemaTypeCell) {
+    if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
+    const response = await fetch(url, { mode: 'cors' });
+    const htmlText = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    
+    if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
+    
+    const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+    const detectedTypes = extractDetectedTypes(scripts);
+    
+    if (schemaTypeCell) {
+      const uniqueTypes = [...new Set(detectedTypes)];
+      const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
+      setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
+    }
+    
+    const uniqueTypes = [...new Set(detectedTypes)];
+    const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
+    const jsonLdBlocks = parseJsonLdBlocksFromScripts(scripts);
+    
+    return {
+      url,
+      jsonLd: jsonLdBlocks,
+      schemaFound: jsonLdBlocks.length > 0,
+      schemaType: schemaType
+    };
+  }
+
+  // Helper: Handle server fallback
+  async function handleServerFallback(url, schemaTypeCell) {
+    debugLog(`Local parse failed for ${url}, trying server fallback...`, 'warn');
+    if (schemaTypeCell) {
+      setProgress(schemaTypeCell, 10, 'Server fallback...');
+    }
+    
+    try {
+      const serverData = await fetchPageSchemaServer(url);
+      
+      if (schemaTypeCell) {
+        setProgress(schemaTypeCell, 100, 'Done');
+        setTimeout(() => {
+          const schemaTypeText = serverData.schemaType || '—';
+          schemaTypeCell.textContent = serverData.schemaFound ? `${schemaTypeText} (server)` : '—';
+        }, 500);
+      }
+      
+      serverData.parsePath = 'server';
+      serverData.localParseFailed = true;
+      
+      return serverData;
+    } catch (serverError) {
+      if (schemaTypeCell) {
+        markProgressError(schemaTypeCell);
+        setProgress(schemaTypeCell, 100, 'Error');
+      }
+      throw serverError;
+    }
+  }
+
+  // Helper: Process fetched HTML and extract schema
+  function processFetchedHtml(html, schemaTypeCell, url) {
+    if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+    
+    if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
+    
+    const { jsonLdBlocks, detectedTypes, blockInfo } = parseJsonLdBlocks(scripts, schemaTypeCell);
+    detectDuplicateTypes(detectedTypes, blockInfo);
+    
+    debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? [...new Set(detectedTypes)].join(', ') : 'None'} (${detectedTypes.length} total, ${[...new Set(detectedTypes)].length} unique)`, detectedTypes.length > 0 ? 'success' : 'warn');
+    
+    if (schemaTypeCell) {
+      const uniqueTypes = [...new Set(detectedTypes)];
+      const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
+      setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
+    }
+    
+    return {
+      url,
+      jsonLd: jsonLdBlocks,
+      schemaFound: jsonLdBlocks.length > 0,
+      schemaType: detectedTypes.length ? [...new Set(detectedTypes)].join(', ') : 'None'
+    };
+  }
+
+  // Helper: Handle fetch errors with fallbacks
+  async function handleFetchErrors(error, url, schemaTypeCell) {
+    try {
+      return await handleDirectFetchFallback(url, schemaTypeCell);
+    } catch (err) {
+      if (schemaTypeCell) {
+        markProgressError(schemaTypeCell);
+        setProgress(schemaTypeCell, 100, 'Error');
+      }
+      return await handleServerFallback(url, schemaTypeCell);
+    }
+  }
+
   // Fetch page and extract JSON-LD
   async function fetchPageSchema(url, progressIndex) {
     const schemaTypeCell = progressIndex !== undefined ? document.getElementById(`schemaTypeCell_${progressIndex}`) : null;
     
     try {
-      // Use CORS proxy if needed (for cross-origin requests)
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
       
       if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
@@ -2939,177 +3183,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const data = await response.json();
       const html = data.contents;
       
-      if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
-      
-      // Parse HTML to extract JSON-LD
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
-      
-      if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
-      
-      const jsonLdBlocks = [];
-      let detectedTypes = [];
-      const blockInfo = []; // Track which blocks have which types
-      scripts.forEach((script, scriptIndex) => {
-        try {
-          const json = JSON.parse(script.textContent);
-          jsonLdBlocks.push(json);
-          const blockTypes = [];
-          
-          // Extract types from this block
-          if (json['@type']) {
-            const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
-            detectedTypes.push(...types);
-            blockTypes.push(...types);
-          }
-          if (json['@graph']) {
-            json['@graph'].forEach(item => {
-              if (item['@type']) {
-                const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
-                detectedTypes.push(...types);
-                blockTypes.push(...types);
-              }
-            });
-          }
-          
-          // Track block info for duplicate detection
-          if (blockTypes.length > 0) {
-            blockInfo.push({
-              index: scriptIndex,
-              types: blockTypes,
-              hasId: !!json['@id'] || !!(json['@graph'] && json['@graph'].some(n => n['@id'])),
-              isGraph: !!json['@graph']
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to parse JSON-LD:', e);
-          debugLog(`Failed to parse JSON-LD block ${scriptIndex}: ${e.message}`, 'error');
-        }
-      });
-      
-      // Detect duplicate types across blocks
-      const typeCounts = {};
-      detectedTypes.forEach(t => {
-        typeCounts[t] = (typeCounts[t] || 0) + 1;
-      });
-      const duplicates = Object.keys(typeCounts).filter(t => typeCounts[t] > 1);
-      
-      if (duplicates.length > 0) {
-        debugLog(`⚠️ Duplicate schema types detected: ${duplicates.map(t => `${t} (${typeCounts[t]}x)`).join(', ')}`, 'warn');
-        debugLog(`Block details: ${blockInfo.map(b => `Block ${b.index}: ${b.types.join(',')}${b.hasId ? ' (has @id)' : ''}${b.isGraph ? ' (@graph)' : ''}`).join('; ')}`, 'info');
-      }
-      
-      debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? [...new Set(detectedTypes)].join(', ') : 'None'} (${detectedTypes.length} total, ${[...new Set(detectedTypes)].length} unique)`, detectedTypes.length > 0 ? 'success' : 'warn');
-      
-      if (schemaTypeCell) {
-        const uniqueTypes = [...new Set(detectedTypes)];
-        const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
-        setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
-      }
-      
-      return {
-        url,
-        jsonLd: jsonLdBlocks,
-        schemaFound: jsonLdBlocks.length > 0,
-        schemaType: detectedTypes.length ? [...new Set(detectedTypes)].join(', ') : 'None'
-      };
+      return processFetchedHtml(html, schemaTypeCell, url);
     } catch (error) {
-      // Fallback: try direct fetch (may fail due to CORS)
-      try {
-        if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
-        const response = await fetch(url, { mode: 'cors' });
-        const htmlText = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
-        
-        if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
-        
-        // Extract all JSON-LD blocks
-        const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
-        let detectedTypes = [];
-        scripts.forEach(s => {
-          try {
-            const data = JSON.parse(s.textContent.trim());
-            if (data['@type']) {
-              if (Array.isArray(data['@type'])) detectedTypes.push(...data['@type']);
-              else detectedTypes.push(data['@type']);
-            }
-            // Also check @graph structure
-            if (data['@graph']) {
-              data['@graph'].forEach(item => {
-                if (item['@type']) {
-                  if (Array.isArray(item['@type'])) detectedTypes.push(...item['@type']);
-                  else detectedTypes.push(item['@type']);
-                }
-              });
-            }
-          } catch (err) {
-            console.warn('Invalid JSON-LD block', err);
-          }
-        });
-        
-        if (schemaTypeCell) {
-          const uniqueTypes = [...new Set(detectedTypes)];
-          const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
-          setProgress(schemaTypeCell, uniqueTypes.length ? 85 : 70, uniqueTypes.length ? 'Detected' : 'Scanning');
-        }
-        
-        const uniqueTypes = [...new Set(detectedTypes)];
-        const schemaType = uniqueTypes.length ? uniqueTypes.join(', ') : 'None';
-        
-        const jsonLdBlocks = [];
-        scripts.forEach(script => {
-          try {
-            const json = JSON.parse(script.textContent);
-            jsonLdBlocks.push(json);
-          } catch (e) {
-            console.warn('Failed to parse JSON-LD:', e);
-          }
-        });
-        
-        return {
-          url,
-          jsonLd: jsonLdBlocks,
-          schemaFound: jsonLdBlocks.length > 0,
-          schemaType: schemaType
-        };
-      } catch (err) {
-        if (schemaTypeCell) {
-          markProgressError(schemaTypeCell);
-          setProgress(schemaTypeCell, 100, 'Error');
-        }
-        
-        // Server fallback when local parsing fails
-        debugLog(`Local parse failed for ${url}, trying server fallback...`, 'warn');
-        if (schemaTypeCell) {
-          setProgress(schemaTypeCell, 10, 'Server fallback...');
-        }
-        
-        try {
-          const serverData = await fetchPageSchemaServer(url);
-          
-          if (schemaTypeCell) {
-            setProgress(schemaTypeCell, 100, 'Done');
-            setTimeout(() => {
-              const schemaTypeText = serverData.schemaType || '—';
-              schemaTypeCell.textContent = serverData.schemaFound ? `${schemaTypeText} (server)` : '—';
-            }, 500);
-          }
-          
-          // Store server fallback flag for later use
-          serverData.parsePath = 'server';
-          serverData.localParseFailed = true;
-          
-          return serverData;
-        } catch (serverError) {
-          if (schemaTypeCell) {
-            markProgressError(schemaTypeCell);
-            setProgress(schemaTypeCell, 100, 'Error');
-          }
-          throw new Error(`Both local and server parsing failed: ${err.message}`);
-        }
-      }
+      return await handleFetchErrors(error, url, schemaTypeCell);
     }
   }
 
@@ -3303,6 +3379,195 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return enhanced;
   }
 
+  // Helper: Build missing field messages
+  function buildMissingFieldMessages(missingDetails, allNodes) {
+    const missingMessages = [];
+    for (const m of missingDetails) {
+      const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
+      let nodeLocation = '';
+      if (m.hasId && m.key && m.key.includes('#')) {
+        const idPart = m.key.split('#')[1];
+        nodeLocation = ` (in node with @id: ${idPart})`;
+      } else if (!m.hasId) {
+        nodeLocation = ` (in node WITHOUT @id - likely needs fixing)`;
+      }
+      
+      const duplicateInfo = m.instances > 1 ? ` [${m.instances} duplicate instances]` : '';
+      if (elsewhere) {
+        missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo}. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
+      } else {
+        missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo} (add this property to the ${m.type} node).`);
+      }
+    }
+    return missingMessages;
+  }
+
+  // Helper: Build duplicate groups from nodes
+  function buildDuplicateGroups(allNodes) {
+    const duplicateGroups = {};
+    for (let idx = 0; idx < allNodes.length; idx++) {
+      const n = allNodes[idx];
+      const types = asArray(n['@type']);
+      for (const t of types) {
+        if (!duplicateGroups[t]) duplicateGroups[t] = [];
+        const key = n['@id'] || JSON.stringify([n['@type'], n.url, n.name]).slice(0, 100);
+        duplicateGroups[t].push({ index: idx, key, hasId: !!n['@id'], node: n });
+      }
+    }
+    return duplicateGroups;
+  }
+
+  // Helper: Count keys for duplicate detection
+  function countKeysForType(nodes) {
+    const keyCounts = {};
+    const keyDetails = {};
+    for (const n of nodes) {
+      keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
+      if (!keyDetails[n.key]) {
+        keyDetails[n.key] = { hasId: n.hasId, node: n.node };
+      }
+    }
+    return { keyCounts, keyDetails };
+  }
+
+  // Helper: Build duplicate warning for a key
+  function buildDuplicateWarningForKey(t, key, keyCounts, keyDetails) {
+    const keyName = key.includes('#') ? key.split('#')[1] : 'root';
+    const label = key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicate)';
+    return {
+      warning: `${t}: ${keyCounts[key]} instances found${label}`,
+      object: { type: t, id: keyName, count: keyCounts[key] }
+    };
+  }
+
+  // Helper: Process duplicate warnings
+  function processDuplicateWarnings(duplicateGroups, globalPatterns) {
+    const duplicateWarnings = [];
+    const duplicateWarningsObjects = [];
+    
+    for (const t of Object.keys(duplicateGroups)) {
+      const nodes = duplicateGroups[t];
+      const { keyCounts, keyDetails } = countKeysForType(nodes);
+      
+      for (const key of Object.keys(keyCounts)) {
+        if (keyCounts[key] > 1) {
+          const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
+          if (!isGlobal) {
+            const { warning, object } = buildDuplicateWarningForKey(t, key, keyCounts, keyDetails);
+            duplicateWarnings.push(warning);
+            duplicateWarningsObjects.push(object);
+          }
+        }
+      }
+    }
+    
+    return { duplicateWarnings, duplicateWarningsObjects };
+  }
+
+  // Helper: Count keys for a type
+  function countKeysForTypeSimple(nodes) {
+    const keyCounts = {};
+    for (const n of nodes) {
+      keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
+    }
+    return keyCounts;
+  }
+
+  // Helper: Build global duplicate entry
+  function buildGlobalDuplicateEntry(t, key, keyCounts) {
+    const keyName = key.includes('#') ? key.split('#')[1] : 'root';
+    return `${t}: ${keyCounts[key]}x (@id: ${keyName})`;
+  }
+
+  // Helper: Log global duplicates
+  function logGlobalDuplicates(duplicateGroups, globalPatterns) {
+    const globalDuplicates = [];
+    for (const t of Object.keys(duplicateGroups)) {
+      const nodes = duplicateGroups[t];
+      const keyCounts = countKeysForTypeSimple(nodes);
+      
+      for (const key of Object.keys(keyCounts)) {
+        if (keyCounts[key] > 1) {
+          const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
+          if (isGlobal) {
+            globalDuplicates.push(buildGlobalDuplicateEntry(t, key, keyCounts));
+          }
+        }
+      }
+    }
+    
+    if (globalDuplicates.length > 0) {
+      debugLog(`Global injections detected (expected): ${globalDuplicates.join(', ')}`, 'info');
+    }
+  }
+
+  // Helper: Log Organization nodes missing name
+  function logOrgNodesMissingName(allNodes) {
+    const orgNodes = allNodes.filter(n => {
+      const types = asArray(n['@type']);
+      return types.includes('Organization');
+    });
+    
+    const orgNodesMissingName = orgNodes.filter(n => !n.name || !n.name.trim());
+    if (orgNodesMissingName.length > 0) {
+      debugLog(`⚠️ Found ${orgNodesMissingName.length} Organization node(s) missing 'name':`, 'warn');
+      for (let idx = 0; idx < orgNodesMissingName.length; idx++) {
+        const n = orgNodesMissingName[idx];
+        const idInfo = n['@id'] ? `@id: ${n['@id']}` : 'no @id';
+        const urlInfo = n.url ? `url: ${n.url}` : 'no url';
+        debugLog(`  Organization ${idx + 1}: ${idInfo}, ${urlInfo}`, 'warn');
+      }
+    }
+  }
+
+  // Helper: Update schema type cell UI
+  function updateSchemaTypeCellUI(urlData, pageData, analysis) {
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+    if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
+      setProgress(schemaTypeCell, 100, 'Done');
+      setTimeout(() => {
+        const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+        const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+        const serverBadge = pageData.serverFallback ? ' (server)' : '';
+        schemaTypeCell.textContent = schemaTypeText + serverBadge;
+      }, 500);
+    }
+  }
+
+  // Helper: Add parse note to result
+  function addParseNote(result, noteText, checkText) {
+    if (!result.notes) {
+      result.notes = noteText;
+    } else if (!result.notes.includes(checkText)) {
+      result.notes = noteText + '\n' + result.notes;
+    }
+  }
+
+  // Helper: Append parse note to result
+  function appendParseNote(result, noteText, checkText) {
+    if (!result.notes || !result.notes.includes(checkText)) {
+      result.notes = (result.notes || '') + (result.notes ? '\n' : '') + noteText;
+    }
+  }
+
+  // Helper: Build result notes
+  function buildResultNotes(result, pageData) {
+    if (result.localParseFailed && result.serverFallback) {
+      const parseNote = `Local parse: blocked. Server parse: success (${result.blockCount} blocks).`;
+      addParseNote(result, parseNote, 'Server parse');
+    } else if (!result.localParseFailed && result.schemaFound) {
+      const parseNote = 'Local parse: success.';
+      appendParseNote(result, parseNote, 'Local parse');
+    } else if (result.serverFallback && !result.schemaFound) {
+      const parseNote = 'Server fallback: no JSON-LD found.';
+      appendParseNote(result, parseNote, 'Server fallback');
+    }
+    
+    if (pageData.duplicateWarnings && pageData.duplicateWarnings.length > 0) {
+      debugLog(`Server fallback detected duplicates: ${pageData.duplicateWarnings.join('; ')}`, 'warn');
+    }
+  }
+
   // Process a single URL
   async function processUrl(urlData) {
     const result = {
@@ -3325,11 +3590,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Enhanced missing fields analysis
       let allNodes = [];
-      pageData.jsonLd.forEach(block => {
+      for (const block of pageData.jsonLd) {
         try {
           allNodes = flattenJsonLd(block, allNodes);
         } catch(_) {}
-      });
+      }
       
       const missingDetails = computeMissingFields(allNodes);
       debugLog(`Computed missing fields: ${missingDetails.length} issue(s) found`, missingDetails.length > 0 ? 'warn' : 'success');
@@ -3337,148 +3602,36 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         debugLog(`Missing fields details: ${JSON.stringify(missingDetails)}`, 'warn');
       }
       
-      const missingMessages = [];
-      missingDetails.forEach(m => {
-        const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
-        // Identify which node is missing the field - check if it has @id
-        let nodeLocation = '';
-        if (m.hasId && m.key && m.key.includes('#')) {
-          const idPart = m.key.split('#')[1];
-          nodeLocation = ` (in node with @id: ${idPart})`;
-        } else if (!m.hasId) {
-          // No @id means it's likely a standalone block (could be global footer or Squarespace-generated)
-          nodeLocation = ` (in node WITHOUT @id - likely needs fixing)`;
-        }
-        
-        const duplicateInfo = m.instances > 1 ? ` [${m.instances} duplicate instances]` : '';
-        if (elsewhere) {
-          missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo}. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
-        } else {
-          missingMessages.push(`${m.type}: "${m.field}" missing${nodeLocation}${duplicateInfo} (add this property to the ${m.type} node).`);
-        }
-      });
+      const missingMessages = buildMissingFieldMessages(missingDetails, allNodes);
       
-      // Detect and log duplicates - identify which blocks are global vs page-specific
-      const duplicateGroups = {};
-      const blockIndexMap = {}; // Map nodes back to their source block index
-      allNodes.forEach((n, idx) => {
-        const types = asArray(n['@type']);
-        types.forEach(t => {
-          if (!duplicateGroups[t]) duplicateGroups[t] = [];
-          const key = n['@id'] || JSON.stringify([n['@type'], n.url, n.name]).slice(0, 100);
-          duplicateGroups[t].push({ index: idx, key, hasId: !!n['@id'], node: n });
-        });
-      });
-      
-      const duplicateWarnings = [];
-      const duplicateWarningsObjects = []; // For buildUnifiedIssuesList
-      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs']; // Common @id patterns from global injections
-      
-      Object.keys(duplicateGroups).forEach(t => {
-        const nodes = duplicateGroups[t];
-        const keyCounts = {};
-        const keyDetails = {};
-        nodes.forEach(n => {
-          keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
-          if (!keyDetails[n.key]) {
-            keyDetails[n.key] = { hasId: n.hasId, node: n.node };
-          }
-        });
-        
-        Object.keys(keyCounts).forEach(key => {
-          if (keyCounts[key] > 1) {
-            const keyName = key.includes('#') ? key.split('#')[1] : 'root';
-            const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
-            // Only warn about duplicates if they're NOT global injections (which are expected)
-            if (!isGlobal) {
-              const label = key.includes('#') ? ` (@id: ${keyName})` : ' (no @id - likely duplicate)';
-              duplicateWarnings.push(`${t}: ${keyCounts[key]} instances found${label}`);
-              duplicateWarningsObjects.push({ type: t, id: keyName, count: keyCounts[key] });
-            }
-          }
-        });
-      });
+      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
+      const duplicateGroups = buildDuplicateGroups(allNodes);
+      const { duplicateWarnings, duplicateWarningsObjects } = processDuplicateWarnings(duplicateGroups, globalPatterns);
       
       if (duplicateWarnings.length > 0) {
         debugLog(`Duplicate schema detected: ${duplicateWarnings.join('; ')}`, 'warn');
       }
       
-      // Build unified issues list (combines missing fields + duplicates)
       result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarningsObjects, allNodes);
       debugLog(`✅ Built issuesList: ${result.issuesList.length} issue(s)`, 'success');
       if (result.issuesList.length > 0) {
         debugLog(`issuesList contents: ${JSON.stringify(result.issuesList, null, 2)}`);
       }
       
-      // Log info about global duplicates separately (for debugging, not shown as issues)
-      const globalDuplicates = [];
-      Object.keys(duplicateGroups).forEach(t => {
-        const nodes = duplicateGroups[t];
-        const keyCounts = {};
-        nodes.forEach(n => {
-          keyCounts[n.key] = (keyCounts[n.key] || 0) + 1;
-        });
-        Object.keys(keyCounts).forEach(key => {
-          if (keyCounts[key] > 1) {
-            const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
-            if (isGlobal) {
-              const keyName = key.includes('#') ? key.split('#')[1] : 'root';
-              globalDuplicates.push(`${t}: ${keyCounts[key]}x (@id: ${keyName})`);
-            }
-          }
-        });
-      });
-      if (globalDuplicates.length > 0) {
-        debugLog(`Global injections detected (expected): ${globalDuplicates.join(', ')}`, 'info');
-      }
+      logGlobalDuplicates(duplicateGroups, globalPatterns);
+      logOrgNodesMissingName(allNodes);
       
-      // Identify which Organization nodes are missing name
-      const orgNodes = allNodes.filter(n => {
-        const types = asArray(n['@type']);
-        return types.includes('Organization');
-      });
-      
-      const orgNodesMissingName = orgNodes.filter(n => !n.name || !n.name.trim());
-      if (orgNodesMissingName.length > 0) {
-        debugLog(`⚠️ Found ${orgNodesMissingName.length} Organization node(s) missing 'name':`, 'warn');
-        orgNodesMissingName.forEach((n, idx) => {
-          const idInfo = n['@id'] ? `@id: ${n['@id']}` : 'no @id';
-          const urlInfo = n.url ? `url: ${n.url}` : 'no url';
-          debugLog(`  Organization ${idx + 1}: ${idInfo}, ${urlInfo}`, 'warn');
-        });
-      }
-      
-      // Handle server fallback duplicates if present
-      if (pageData.duplicateWarnings && pageData.duplicateWarnings.length > 0) {
-        debugLog(`Server fallback detected duplicates: ${pageData.duplicateWarnings.join('; ')}`, 'warn');
-        missingMessages.push(...pageData.duplicateWarnings);
-      }
-      
-      // Store parse path info
       result.parsePath = pageData.parsePath || 'local';
       result.localParseFailed = pageData.localParseFailed || false;
       result.serverFallback = pageData.serverFallback || false;
       result.blockCount = pageData.blockCount || pageData.jsonLd.length;
       
       debugLog(`Total schema nodes: ${allNodes.length}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
-      
       debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
       
-      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
-      if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
-        setProgress(schemaTypeCell, 100, 'Done');
-        // Replace progress bar with actual schema type after a brief delay
-        setTimeout(() => {
-          const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
-          const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
-          const serverBadge = pageData.serverFallback ? ' (server)' : '';
-          schemaTypeCell.textContent = schemaTypeText + serverBadge;
-        }, 500);
-      }
+      updateSchemaTypeCellUI(urlData, pageData, analysis);
       
       result.schemaFound = analysis.schemaFound;
-      // Use schemaType from fetchPageSchema if available, otherwise use analysis
-      // Show unique types only to avoid confusion from duplicates
       const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
       const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
       const serverBadge = pageData.serverFallback ? ' (server)' : '';
@@ -3488,25 +3641,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.valid = analysis.valid;
       result.schemas = analysis.schemas;
       
-      // Add parse path note
-      if (result.localParseFailed && result.serverFallback) {
-        const parseNote = `Local parse: blocked. Server parse: success (${result.blockCount} blocks).`;
-        if (!result.notes) {
-          result.notes = parseNote;
-        } else if (!result.notes.includes('Server parse')) {
-          result.notes = parseNote + '\n' + result.notes;
-        }
-      } else if (!result.localParseFailed && result.schemaFound) {
-        const parseNote = 'Local parse: success.';
-        if (!result.notes || !result.notes.includes('Local parse')) {
-          result.notes = (result.notes || '') + (result.notes ? '\n' : '') + parseNote;
-        }
-      } else if (result.serverFallback && !result.schemaFound) {
-        const parseNote = 'Server fallback: no JSON-LD found.';
-        if (!result.notes || !result.notes.includes('Server fallback')) {
-          result.notes = (result.notes || '') + (result.notes ? '\n' : '') + parseNote;
-        }
-      }
+      buildResultNotes(result, pageData);
       
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
@@ -3593,14 +3728,132 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Finalize row status prioritizing external validators
+  // Helper: Determine Schema.org status from API response
+  function determineSchemaOrgStatus(schemaOrg) {
+    if (schemaOrg?.status === 'passed') {
+      return 'passed';
+    }
+    if (schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
+        schemaOrg?.warnings && schemaOrg.warnings.length === 0) {
+      return 'passed';
+    }
+    if (schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
+        schemaOrg?.warnings && schemaOrg.warnings.length > 0) {
+      return 'warning';
+    }
+    return schemaOrg ? 'failed' : 'not-run';
+  }
+
+  // Helper: Format schema type with server badge
+  function formatSchemaTypeWithBadge(localParse) {
+    let types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
+    types = types.replace(/\s*\(server\)\s*$/, '');
+    if (localParse?.serverFallback) {
+      types = types + ' (server)';
+    }
+    return types;
+  }
+
+  // Helper: Attach click handler to status chip
+  function attachStatusChipHandler(chip, row) {
+    if (chip && row) {
+      chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+    }
+  }
+
+  // Helper: Update external status selects
+  function updateExternalStatusSelects(index, richPassed, schemaOrgStatus, rich) {
+    const richSelect = document.getElementById(`googleStatus_${index}`);
+    const schemaSelect = document.getElementById(`schemaOrgStatus_${index}`);
+    
+    if (richSelect) {
+      setSelect(richSelect, richPassed ? '✅ Passed' : (rich ? '❌ Failed' : 'Not run'));
+    }
+    
+    if (schemaSelect) {
+      let statusValue = 'Not run';
+      if (schemaOrgStatus === 'passed') {
+        statusValue = '✅ Passed';
+      } else if (schemaOrgStatus === 'warning') {
+        statusValue = '⚠️ Warning';
+      } else if (schemaOrgStatus === 'failed') {
+        statusValue = '❌ Failed';
+      }
+      setSelect(schemaSelect, statusValue);
+    }
+  }
+
+  // Helper: Handle external validators passed case
+  function handleExternalPassedCase(index, localParse, richPassed, schemaOrgStatus, missing, statusCell, schemaTypeCell, notesEl, row) {
+    const realIssues = missing.filter(m => {
+      if (typeof m === 'string') {
+        return !m.includes('DUPLICATE') && !m.includes('⚠️ DUPLICATE');
+      }
+      return true;
+    });
+    const hasRealIssues = realIssues.length > 0;
+    
+    const statusHtml = hasRealIssues ? '<span class="chip-issues" title="View details">⚠️ Issues</span>' : '<span class="chip-ok">✅ Valid</span>';
+    if (statusCell) {
+      statusCell.innerHTML = statusHtml;
+      if (hasRealIssues) {
+        const chip = statusCell.querySelector('.chip-issues');
+        attachStatusChipHandler(chip, row);
+      }
+    }
+    
+    if (schemaTypeCell) {
+      schemaTypeCell.textContent = formatSchemaTypeWithBadge(localParse);
+    }
+    
+    if (notesEl) {
+      let noteText = '';
+      if (localParse?.localParseFailed && localParse?.serverFallback) {
+        noteText = `Local parse: blocked. Server parse: success (${localParse.blockCount || 0} blocks). External validation passed ✅`;
+      } else {
+        noteText = 'Local parse skipped (cached or blocked). External validation passed ✅';
+      }
+      notesEl.value = noteText;
+      updateValidationNotes(index, noteText);
+    }
+    
+    if (validationResults[index]) {
+      validationResults[index].validatorGoogleStatus = '✅ Passed';
+      validationResults[index].validatorSchemaOrgStatus = '✅ Passed';
+      validationResults[index].statusOverride = 'external-passed';
+    }
+  }
+
+  // Helper: Handle local result case
+  function handleLocalResultCase(index, localParse, missingCount, statusCell, schemaTypeCell, row) {
+    const hasMissing = missingCount > 0;
+    const statusHtml = hasMissing 
+      ? '<span class="chip-issues" title="View details">⚠️ Issues</span>'
+      : '<span class="chip-ok">✅ Valid</span>';
+    
+    if (statusCell) {
+      statusCell.innerHTML = statusHtml;
+      if (hasMissing) {
+        const chip = statusCell.querySelector('.chip-issues');
+        attachStatusChipHandler(chip, row);
+      }
+    }
+    
+    if (schemaTypeCell) {
+      schemaTypeCell.textContent = formatSchemaTypeWithBadge(localParse);
+    }
+    
+    if (validationResults[index]) {
+      validationResults[index].statusOverride = 'local';
+    }
+  }
+
+  // Helper: Finalize row status prioritizing external validators
   function finalizeRowStatus(index, localParse, rich, schemaOrg) {
     const richPassed = rich?.status === 'eligible' && rich?.verdict === 'PASS';
-    // Check if Schema.org failed but errors.length === 0 AND warnings.length === 0 - treat as passed
-    const schemaOrgPassed = schemaOrg?.status === 'passed' || 
-      (schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
-       schemaOrg?.warnings && schemaOrg.warnings.length === 0);
-    const schemaOrgWarning = schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
-      schemaOrg?.warnings && schemaOrg.warnings.length > 0;
+    const schemaOrgStatus = determineSchemaOrgStatus(schemaOrg);
+    const schemaOrgPassed = schemaOrgStatus === 'passed';
+    
     const missing = localParse?.missingFieldsDetails || localParse?.missingFieldsBadges || localParse?.missingFields || [];
     const missingCount = Array.isArray(missing) ? missing.length : (missing ? 1 : 0);
     
@@ -3609,114 +3862,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const notesEl = document.getElementById(`notes_${index}`);
     const row = document.getElementById('resultsTableBody')?.children[index];
     
-    // Update external status columns
-    const richSelect = document.getElementById(`googleStatus_${index}`);
-    const schemaSelect = document.getElementById(`schemaOrgStatus_${index}`);
-    if (richSelect) {
-      setSelect(richSelect, richPassed ? '✅ Passed' : (rich ? '❌ Failed' : 'Not run'));
-    }
-    if (schemaSelect) {
-      // If Schema.org failed but errors.length === 0 AND warnings.length === 0, show Passed
-      if (schemaOrgPassed) {
-        setSelect(schemaSelect, '✅ Passed');
-      } else if (schemaOrgWarning) {
-        setSelect(schemaSelect, '⚠️ Warning');
-      } else {
-        setSelect(schemaSelect, schemaOrg?.status === 'passed' ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
-      }
-    }
+    updateExternalStatusSelects(index, richPassed, schemaOrgStatus, rich);
     
-    // Prefer externals if both passed
     if (richPassed && schemaOrgPassed) {
-      // Only show Issues if there are actual missing fields (not just duplicates)
-      const realIssues = missing.filter(m => {
-        if (typeof m === 'string') {
-          return !m.includes('DUPLICATE') && !m.includes('⚠️ DUPLICATE');
-        }
-        return true;
-      });
-      const hasRealIssues = realIssues.length > 0;
-      
-      const statusHtml = hasRealIssues ? '<span class="chip-issues" title="View details">⚠️ Issues</span>' : '<span class="chip-ok">✅ Valid</span>';
-      if (statusCell) {
-        statusCell.innerHTML = statusHtml;
-        // Re-attach click handler if Issues
-        if (hasRealIssues && row) {
-          const chip = statusCell.querySelector('.chip-issues');
-          if (chip) {
-            chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
-          }
-        }
-      }
-      
-      if (schemaTypeCell) {
-        let types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
-        // Remove server badge if already present (it's added during processing)
-        types = types.replace(/\s*\(server\)\s*$/, '');
-        // Add server badge back if this was a server fallback
-        if (localParse?.serverFallback) {
-          types = types + ' (server)';
-        }
-        schemaTypeCell.textContent = types;
-      }
-      
-      if (notesEl) {
-        let noteText = '';
-        if (localParse?.localParseFailed && localParse?.serverFallback) {
-          noteText = `Local parse: blocked. Server parse: success (${localParse.blockCount || 0} blocks). External validation passed ✅`;
-        } else {
-          noteText = 'Local parse skipped (cached or blocked). External validation passed ✅';
-        }
-        notesEl.value = noteText;
-        updateValidationNotes(index, noteText);
-      }
-      
-      // Store in result object
-      if (validationResults[index]) {
-        validationResults[index].validatorGoogleStatus = '✅ Passed';
-        validationResults[index].validatorSchemaOrgStatus = '✅ Passed';
-        validationResults[index].statusOverride = 'external-passed';
-      }
-      
+      handleExternalPassedCase(index, localParse, richPassed, schemaOrgStatus, missing, statusCell, schemaTypeCell, notesEl, row);
       return;
     }
     
-    // Use local result if externals didn't both pass
     if (localParse?.schemaFound || localParse?.schemaType) {
-      const hasMissing = missingCount > 0;
-      const statusHtml = hasMissing 
-        ? '<span class="chip-issues" title="View details">⚠️ Issues</span>'
-        : '<span class="chip-ok">✅ Valid</span>';
-      
-      if (statusCell) {
-        statusCell.innerHTML = statusHtml;
-        // Re-attach click handler if Issues
-        if (hasMissing && row) {
-          const chip = statusCell.querySelector('.chip-issues');
-          if (chip) {
-            chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
-          }
-        }
-      }
-      
-      if (schemaTypeCell) {
-        let types = localParse?.schemaType || localParse?.types?.join(', ') || '—';
-        // Remove server badge if already present (it's added during processing)
-        types = types.replace(/\s*\(server\)\s*$/, '');
-        // Add server badge back if this was a server fallback
-        if (localParse?.serverFallback) {
-          types = types + ' (server)';
-        }
-        schemaTypeCell.textContent = types;
-      }
+      handleLocalResultCase(index, localParse, missingCount, statusCell, schemaTypeCell, row);
     } else {
       if (statusCell) statusCell.innerHTML = '<span class="status-badge no-schema">❌ No Schema</span>';
       if (schemaTypeCell) schemaTypeCell.textContent = 'None';
-    }
-    
-    // Store status in result object
-    if (validationResults[index]) {
-      validationResults[index].statusOverride = 'local';
+      if (validationResults[index]) {
+        validationResults[index].statusOverride = 'local';
+      }
     }
   }
 
@@ -3738,6 +3898,44 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Generate human-readable status explanation
+  // Helper: Extract field name from issue object
+  function extractFieldName(issue) {
+    if (issue.field && issue.type) {
+      debugLog(`Using direct field property: ${issue.type}.${issue.field}`);
+      return `${issue.type}.${issue.field}`;
+    }
+    // Fallback: parse from message
+    const match = issue.message?.match(/(\w+):\s*"(\w+)"\s*missing/);
+    if (match) {
+      debugLog(`Parsed from message pattern 1: ${match[1]}.${match[2]}`);
+      return `${match[1]}.${match[2]}`;
+    }
+    // Try alternative pattern
+    const altMatch = issue.message?.match(/(\w+).*?"(\w+)".*?missing/i);
+    if (altMatch) {
+      debugLog(`Parsed from message pattern 2: ${altMatch[1]}.${altMatch[2]}`);
+      return `${altMatch[1]}.${altMatch[2]}`;
+    }
+    debugLog(`WARNING: Could not extract field name from: ${issue.message}`);
+    return issue.field ? `${issue.type || 'Unknown'}.${issue.field}` : 'Unknown field';
+  }
+
+  // Helper: Build missing fields explanation text
+  function buildMissingFieldsExplanation(missingCount, fieldNames) {
+    if (missingCount === 1) {
+      return `1 optional field missing – ${fieldNames[0]}`;
+    }
+    if (missingCount === 2) {
+      return `2 optional fields missing – ${fieldNames.join(', ')}`;
+    }
+    return `${missingCount} optional fields missing – ${fieldNames.join(', ')}${missingCount > 2 ? '...' : ''}`;
+  }
+
+  // Helper: Build duplicate explanation text
+  function buildDuplicateExplanation(duplicateCount) {
+    return duplicateCount === 1 ? '1 duplicate schema detected' : `${duplicateCount} duplicate schemas detected`;
+  }
+
   function generateStatusExplanation(result) {
     debugLog(`Generating explanation for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
     
@@ -3770,42 +3968,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     const parts = [];
     if (missingCount > 0) {
-      const fieldNames = missingFields.slice(0, 2).map(m => {
-        // First try to use field property directly (most reliable)
-        if (m.field && m.type) {
-          debugLog(`Using direct field property: ${m.type}.${m.field}`);
-          return `${m.type}.${m.field}`;
-        }
-        // Fallback: parse from message
-        const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
-        if (match) {
-          debugLog(`Parsed from message pattern 1: ${match[1]}.${match[2]}`);
-          return `${match[1]}.${match[2]}`;
-        }
-        // Try alternative pattern
-        const altMatch = m.message.match(/(\w+).*?"(\w+)".*?missing/i);
-        if (altMatch) {
-          debugLog(`Parsed from message pattern 2: ${altMatch[1]}.${altMatch[2]}`);
-          return `${altMatch[1]}.${altMatch[2]}`;
-        }
-        debugLog(`WARNING: Could not extract field name from: ${m.message}`);
-        return m.field ? `${m.type || 'Unknown'}.${m.field}` : 'Unknown field';
-      });
-      if (missingCount === 1) {
-        parts.push(`1 optional field missing – ${fieldNames[0]}`);
-      } else if (missingCount === 2) {
-        parts.push(`2 optional fields missing – ${fieldNames.join(', ')}`);
-      } else {
-        parts.push(`${missingCount} optional fields missing – ${fieldNames.join(', ')}${missingCount > 2 ? '...' : ''}`);
-      }
+      const fieldNames = missingFields.slice(0, 2).map(extractFieldName);
+      parts.push(buildMissingFieldsExplanation(missingCount, fieldNames));
     }
     
     if (duplicateCount > 0) {
-      if (duplicateCount === 1) {
-        parts.push('1 duplicate schema detected');
-      } else {
-        parts.push(`${duplicateCount} duplicate schemas detected`);
-      }
+      parts.push(buildDuplicateExplanation(duplicateCount));
     }
     
     const explanation = parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
@@ -4196,6 +4364,64 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
   
+  // Helper: Get API base URL based on current hostname
+  function getApiBaseUrl() {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:3000';
+    }
+    if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
+      return 'https://schema-tools-six.vercel.app';
+    }
+    return window.location.origin;
+  }
+
+  // Helper: Map Schema.org API status to dropdown value
+  function mapSchemaOrgStatus(data, statusSelect) {
+    switch (data.status) {
+      case 'passed':
+        return '✅ Passed';
+      case 'warnings':
+        return '⚠️ Warning';
+      case 'failed':
+        // If status is "failed" but errors.length === 0 AND warnings.length === 0, treat as passed
+        if (data.errors && data.errors.length === 0 && data.warnings && data.warnings.length === 0) {
+          debugLog(`Schema.org returned "failed" but no errors and no warnings - treating as Passed`, 'info');
+          return '✅ Passed';
+        }
+        if (data.errors && data.errors.length === 0) {
+          debugLog(`Schema.org returned "failed" but errors array is empty - treating as Warning`, 'warn');
+          return '⚠️ Warning';
+        }
+        return '❌ Failed';
+      case 'unreachable':
+        if (statusSelect.title) {
+          statusSelect.title = 'API unreachable';
+        }
+        return 'Not run';
+      default:
+        return 'Not run';
+    }
+  }
+
+  // Helper: Handle Schema.org validator error
+  function handleSchemaOrgError(error, index, statusSelect) {
+    console.error('Schema.org validator API error:', error);
+    console.error('Error stack:', error.stack);
+    statusSelect.value = 'Not run';
+    statusSelect.title = 'API unreachable: ' + error.message;
+    updateValidationStatus(index, 'schemaorg', 'Not run');
+    
+    // Add error note to Notes cell
+    const notesEl = document.getElementById(`notes_${index}`);
+    if (notesEl) {
+      const currentNotes = notesEl.value || '';
+      const notePrefix = currentNotes.includes('Schema.org:') ? '' : 'Schema.org: ';
+      const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
+      notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+      updateValidationNotes(index, notesEl.value);
+    }
+  }
+
   // Call Schema.org validator API and update dropdown
   async function runSchemaOrgValidator(index, url) {
     const statusSelect = document.getElementById(`schemaOrgStatus_${index}`);
@@ -4206,24 +4432,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     updateValidationStatus(index, 'schemaorg', '🔄 Running...');
     
     try {
-      // Determine API base URL (use deployed Vercel URL or local dev)
-      // Use stable production URL if available, otherwise detect from current hostname
-      let apiBaseUrl;
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        apiBaseUrl = 'http://localhost:3000';
-      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
-        apiBaseUrl = 'https://schema-tools-six.vercel.app';
-      } else {
-        // Fallback: use current origin
-        apiBaseUrl = window.location.origin;
-      }
-      
+      const apiBaseUrl = getApiBaseUrl();
       const apiUrl = `${apiBaseUrl}/api/validator/schemaorg?url=${encodeURIComponent(url)}`;
       
       console.log('Calling Schema.org API:', apiUrl);
       
       const response = await fetch(apiUrl);
-      
       console.log('Schema.org API response status:', response.status, response.statusText);
       
       if (!response.ok) {
@@ -4233,40 +4447,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       const data = await response.json();
-      
       console.log('Schema.org API response:', data);
       
       // Map API status to dropdown value
-      let dropdownValue = 'Not run';
-      switch (data.status) {
-        case 'passed':
-          dropdownValue = '✅ Passed';
-          break;
-        case 'warnings':
-          dropdownValue = '⚠️ Warning';
-          break;
-        case 'failed':
-          // If status is "failed" but errors.length === 0 AND warnings.length === 0, treat as passed
-          if (data.errors && data.errors.length === 0 && data.warnings && data.warnings.length === 0) {
-            dropdownValue = '✅ Passed';
-            debugLog(`Schema.org returned "failed" but no errors and no warnings - treating as Passed`, 'info');
-          } else if (data.errors && data.errors.length === 0) {
-            dropdownValue = '⚠️ Warning';
-            debugLog(`Schema.org returned "failed" but errors array is empty - treating as Warning`, 'warn');
-          } else {
-            dropdownValue = '❌ Failed';
-          }
-          break;
-        case 'unreachable':
-          dropdownValue = 'Not run';
-          // Add tooltip if needed
-          if (statusSelect.title) {
-            statusSelect.title = 'API unreachable';
-          }
-          break;
-        default:
-          dropdownValue = 'Not run';
-      }
+      const dropdownValue = mapSchemaOrgStatus(data, statusSelect);
       
       // Update dropdown
       statusSelect.value = dropdownValue;
@@ -4287,25 +4471,62 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       applyExternalResult(index, richResult, data);
       
     } catch (error) {
-      console.error('Schema.org validator API error:', error);
-      console.error('Error stack:', error.stack);
-      // On error, leave as "Not run" and add tooltip
-      statusSelect.value = 'Not run';
-      statusSelect.title = 'API unreachable: ' + error.message;
-      updateValidationStatus(index, 'schemaorg', 'Not run');
-      
-      // Add error note to Notes cell
-      const notesEl = document.getElementById(`notes_${index}`);
-      if (notesEl) {
-        const currentNotes = notesEl.value || '';
-        const notePrefix = currentNotes.includes('Schema.org:') ? '' : 'Schema.org: ';
-        const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
-        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
-        updateValidationNotes(index, notesEl.value);
-      }
+      handleSchemaOrgError(error, index, statusSelect);
     }
   }
   
+  // Helper: Map Rich Results API status to dropdown value
+  function mapRichResultsStatus(data, statusSelect) {
+    switch (data.status) {
+      case 'eligible':
+        return '✅ Passed';
+      case 'warnings':
+        return '⚠️ Warning';
+      case 'ineligible':
+        return '❌ Failed';
+      case 'unknown':
+      default:
+        statusSelect.title = 'Status unknown';
+        return 'Not run';
+    }
+  }
+
+  // Helper: Handle Rich Results error response
+  function handleRichResultsErrorResponse(data, index, statusSelect) {
+    const errorMsg = data.error || 'Unknown error';
+    statusSelect.value = 'Not run';
+    statusSelect.title = errorMsg;
+    updateValidationStatus(index, 'google', 'Not run');
+    
+    // Add error note to Notes cell
+    const notesEl = document.getElementById(`notes_${index}`);
+    if (notesEl) {
+      const currentNotes = notesEl.value || '';
+      const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
+      notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+      updateValidationNotes(index, notesEl.value);
+    }
+  }
+
+  // Helper: Handle Rich Results validator error
+  function handleRichResultsError(error, index, statusSelect) {
+    console.error('Rich Results validator API error:', error);
+    console.error('Error stack:', error.stack);
+    statusSelect.value = 'Not run';
+    statusSelect.title = 'API error: ' + error.message;
+    updateValidationStatus(index, 'google', 'Not run');
+    
+    // Add error note to Notes cell
+    const notesEl = document.getElementById(`notes_${index}`);
+    if (notesEl) {
+      const currentNotes = notesEl.value || '';
+      const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
+      const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
+      notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
+      updateValidationNotes(index, notesEl.value);
+    }
+  }
+
   // Call Google Rich Results validator API and update dropdown
   async function runRichResultsValidator(index, url) {
     const statusSelect = document.getElementById(`googleStatus_${index}`);
@@ -4316,18 +4537,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     updateValidationStatus(index, 'google', '🔄 Running...');
     
     try {
-      // Determine API base URL (use deployed Vercel URL or local dev)
-      // Use stable production URL if available, otherwise detect from current hostname
-      let apiBaseUrl;
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        apiBaseUrl = 'http://localhost:3000';
-      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
-        apiBaseUrl = 'https://schema-tools-six.vercel.app';
-      } else {
-        // Fallback: use current origin
-        apiBaseUrl = window.location.origin;
-      }
-      
+      const apiBaseUrl = getApiBaseUrl();
       const apiUrl = `${apiBaseUrl}/api/validator/richresults`;
       
       console.log('Calling Rich Results API:', apiUrl, 'for URL:', url);
@@ -4349,45 +4559,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       const data = await response.json();
-      
       console.log('Rich Results API response:', data);
       
       if (!data.ok) {
-        // Handle error response
-        const errorMsg = data.error || 'Unknown error';
-        statusSelect.value = 'Not run';
-        statusSelect.title = errorMsg;
-        updateValidationStatus(index, 'google', 'Not run');
-        
-        // Add error note to Notes cell
-        const notesEl = document.getElementById(`notes_${index}`);
-        if (notesEl) {
-          const currentNotes = notesEl.value || '';
-          const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
-          notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
-          updateValidationNotes(index, notesEl.value);
-        }
-        
+        handleRichResultsErrorResponse(data, index, statusSelect);
         return;
       }
       
       // Map API status to dropdown value
-      let dropdownValue = 'Not run';
-      switch (data.status) {
-        case 'eligible':
-          dropdownValue = '✅ Passed';
-          break;
-        case 'warnings':
-          dropdownValue = '⚠️ Warning';
-          break;
-        case 'ineligible':
-          dropdownValue = '❌ Failed';
-          break;
-        case 'unknown':
-        default:
-          dropdownValue = 'Not run';
-          statusSelect.title = 'Status unknown';
-      }
+      const dropdownValue = mapRichResultsStatus(data, statusSelect);
       
       // Update dropdown
       statusSelect.value = dropdownValue;
@@ -4409,22 +4589,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
     } catch (error) {
-      console.error('Rich Results validator API error:', error);
-      console.error('Error stack:', error.stack);
-      // On error, leave as "Not run" and add tooltip
-      statusSelect.value = 'Not run';
-      statusSelect.title = 'API error: ' + error.message;
-      updateValidationStatus(index, 'google', 'Not run');
-      
-      // Add error note to Notes cell
-      const notesEl = document.getElementById(`notes_${index}`);
-      if (notesEl) {
-        const currentNotes = notesEl.value || '';
-        const notePrefix = currentNotes.includes('Rich Results:') ? '' : 'Rich Results: ';
-        const errorMsg = error.message.length > 100 ? error.message.substring(0, 100) + '...' : error.message;
-        notesEl.value = currentNotes + (currentNotes ? '\n' : '') + notePrefix + errorMsg;
-        updateValidationNotes(index, notesEl.value);
-      }
+      handleRichResultsError(error, index, statusSelect);
     }
   }
   
@@ -4537,13 +4702,51 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     showToast(`✅ Reset ${updatedCount} external status${updatedCount !== 1 ? 'es' : ''} to "Not run"`);
   }
   
-  // Save to Supabase
-  async function saveToSupabase(index, silent = false) {
+  // Helper: Prepare schema JSON for Supabase insertion
+  function prepareSchemaJsonForSupabase(result) {
+    if (!result.schemas || result.schemas.length === 0) {
+      return null;
+    }
+    if (result.schemas.length === 1) {
+      return result.schemas[0].schema;
+    }
+    return {
+      '@context': 'https://schema.org',
+      '@graph': result.schemas.map(s => s.schema)
+    };
+  }
+
+  // Helper: Get validation statuses from DOM
+  function getValidationStatusesFromDOM(index, result) {
+    const googleStatusEl = document.getElementById(`googleStatus_${index}`);
+    const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${index}`);
+    const notesEl = document.getElementById(`notes_${index}`);
+    
+    return {
+      googleStatus: googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || 'Not run',
+      schemaOrgStatus: schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || 'Not run',
+      notes: notesEl ? notesEl.value : result.notes || ''
+    };
+  }
+
+  // Helper: Update save button UI after save
+  function updateSaveButtonAfterSave(saveBtn, silent) {
+    if (saveBtn && !silent) {
+      saveBtn.textContent = '✅ Saved';
+      setTimeout(() => {
+        saveBtn.textContent = 'Save to Supabase';
+        saveBtn.disabled = false;
+      }, 2000);
+    }
+  }
+
+  // Helper: Validate Supabase save prerequisites
+  function validateSupabaseSave(index, silent) {
     if (!supabaseAvailable || !supabase) {
       const msg = 'Supabase client not initialized. Please refresh the page.';
       if (!silent) showToast(msg, true);
       debugLog(msg, 'error');
-      return;
+      return { valid: false };
     }
     
     const result = validationResults[index];
@@ -4551,96 +4754,104 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const msg = 'Error: No result found for this row';
       if (!silent) showToast(msg, true);
       debugLog(msg, 'error');
-      return;
+      return { valid: false };
     }
     
+    return { valid: true, result };
+  }
+
+  // Helper: Prepare save button UI
+  function prepareSaveButtonUI(index, silent) {
     const saveBtn = document.getElementById(`saveBtn_${index}`);
     if (saveBtn && !silent) {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
     }
+    return saveBtn;
+  }
+
+  // Helper: Log save operation details
+  function logSaveOperation(result, statuses) {
+    debugLog(`Saving to Supabase: ${result.url}`, 'info');
+    debugLog(`  Google Status: ${statuses.googleStatus}`, 'info');
+    debugLog(`  Schema.org Status: ${statuses.schemaOrgStatus}`, 'info');
+    debugLog(`  Schema Type: ${result.schemaType || 'null'}`, 'info');
+  }
+
+  // Helper: Handle save success
+  function handleSaveSuccess(result, data, silent) {
+    if (!silent) {
+      showToast(`✅ Saved to Supabase: ${result.url}`);
+      debugLog('Successfully saved to Supabase:', data);
+    } else {
+      debugLog(`✅ Auto-saved to Supabase: ${result.url}`, 'success');
+    }
+  }
+
+  // Helper: Handle save error
+  function handleSaveError(error, result, saveBtn, silent) {
+    const errorMsg = error.message || error.code || JSON.stringify(error);
+    debugLog(`Error saving to Supabase: ${errorMsg}`, 'error');
+    debugLog(`Full error object: ${JSON.stringify(error)}`, 'error');
+    console.error('Error saving to Supabase:', error);
+    
+    if (!silent) {
+      showToast(`❌ Error saving to Supabase: ${errorMsg}`, true);
+    } else {
+      debugLog(`Auto-save error for ${result.url}: ${errorMsg}`, 'error');
+    }
+    
+    if (saveBtn && !silent) {
+      saveBtn.textContent = 'Save to Supabase';
+      saveBtn.disabled = false;
+    }
+  }
+
+  // Helper: Insert data into Supabase
+  async function insertIntoSupabase(result, statuses, schemaJsonRaw) {
+    const { data, error } = await supabase
+      .from('schema_audit_logs')
+      .insert({
+        url: result.url,
+        timestamp: new Date().toISOString(),
+        validator_google_status: statuses.googleStatus,
+        validator_schemaorg_status: statuses.schemaOrgStatus,
+        schema_type_detected: result.schemaType || null,
+        schema_json_raw: schemaJsonRaw,
+        schema_notes: statuses.notes || null
+      });
+    
+    if (error) {
+      debugLog(`Supabase error: ${JSON.stringify(error)}`, 'error');
+      debugLog(`  Code: ${error.code}, Message: ${error.message}, Details: ${JSON.stringify(error.details)}`, 'error');
+      throw error;
+    }
+    
+    return data;
+  }
+
+  // Save to Supabase
+  async function saveToSupabase(index, silent = false) {
+    const validation = validateSupabaseSave(index, silent);
+    if (!validation.valid) return;
+    
+    const result = validation.result;
+    const saveBtn = prepareSaveButtonUI(index, silent);
     
     try {
-      // Get current status values
-      const googleStatusEl = document.getElementById(`googleStatus_${index}`);
-      const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${index}`);
-      const notesEl = document.getElementById(`notes_${index}`);
+      const statuses = getValidationStatusesFromDOM(index, result);
+      const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
       
-      const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || 'Not run';
-      const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || 'Not run';
-      const notes = notesEl ? notesEl.value : result.notes || '';
+      logSaveOperation(result, statuses);
+      const data = await insertIntoSupabase(result, statuses, schemaJsonRaw);
       
-      // Prepare schema JSON
-      let schemaJsonRaw = null;
-      if (result.schemas && result.schemas.length > 0) {
-        if (result.schemas.length === 1) {
-          schemaJsonRaw = result.schemas[0].schema;
-        } else {
-          schemaJsonRaw = {
-            '@context': 'https://schema.org',
-            '@graph': result.schemas.map(s => s.schema)
-          };
-        }
-      }
-      
-      debugLog(`Saving to Supabase: ${result.url}`, 'info');
-      debugLog(`  Google Status: ${googleStatus}`, 'info');
-      debugLog(`  Schema.org Status: ${schemaOrgStatus}`, 'info');
-      debugLog(`  Schema Type: ${result.schemaType || 'null'}`, 'info');
-      
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('schema_audit_logs')
-        .insert({
-          url: result.url,
-          timestamp: new Date().toISOString(),
-          validator_google_status: googleStatus,
-          validator_schemaorg_status: schemaOrgStatus,
-          schema_type_detected: result.schemaType || null,
-          schema_json_raw: schemaJsonRaw,
-          schema_notes: notes || null
-        });
-      
-      if (error) {
-        debugLog(`Supabase error: ${JSON.stringify(error)}`, 'error');
-        debugLog(`  Code: ${error.code}, Message: ${error.message}, Details: ${JSON.stringify(error.details)}`, 'error');
-        throw error;
-      }
-      
-      if (!silent) {
-        showToast(`✅ Saved to Supabase: ${result.url}`);
-        debugLog('Successfully saved to Supabase:', data);
-      } else {
-        debugLog(`✅ Auto-saved to Supabase: ${result.url}`, 'success');
-      }
-      
-      if (saveBtn && !silent) {
-        saveBtn.textContent = '✅ Saved';
-        setTimeout(() => {
-          saveBtn.textContent = 'Save to Supabase';
-          saveBtn.disabled = false;
-        }, 2000);
-      }
-      
+      handleSaveSuccess(result, data, silent);
+      updateSaveButtonAfterSave(saveBtn, silent);
       return data;
       
     } catch (error) {
-      const errorMsg = error.message || error.code || JSON.stringify(error);
-      debugLog(`Error saving to Supabase: ${errorMsg}`, 'error');
-      debugLog(`Full error object: ${JSON.stringify(error)}`, 'error');
-      console.error('Error saving to Supabase:', error);
-      
-      if (!silent) {
-        showToast(`❌ Error saving to Supabase: ${errorMsg}`, true);
-      } else {
-        debugLog(`Auto-save error for ${result.url}: ${errorMsg}`, 'error');
-      }
-      
-      if (saveBtn && !silent) {
-        saveBtn.textContent = 'Save to Supabase';
-        saveBtn.disabled = false;
-      }
-      throw error; // Re-throw for caller to handle
+      handleSaveError(error, result, saveBtn, silent);
+      throw error;
     }
   }
   
@@ -4658,6 +4869,107 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         document.body.removeChild(toast);
       }, 300);
     }, 3000);
+  }
+
+  // Helper: Initialize validation UI
+  function initializeValidationUI(urls, progressDiv, progressBar, progressText, resultsDiv, tableBody) {
+    progressDiv.style.display = 'block';
+    resultsDiv.style.display = 'block';
+    tableBody.innerHTML = '';
+    validationResults = [];
+    
+    // Initialize rows with processing status
+    urls.forEach((urlData, index) => {
+      const placeholderResult = {
+        url: urlData.url,
+        row: urlData.row,
+        schemaType: null,
+        valid: false,
+        schemaFound: false,
+        missingFields: [],
+        warnings: [],
+        schemas: [],
+        error: null,
+        validatorGoogleStatus: 'Not run',
+        validatorSchemaOrgStatus: 'Not run',
+        notes: '',
+        processing: true
+      };
+      validationResults.push(placeholderResult);
+      updateTableRow(index, {
+        ...placeholderResult,
+        schemaType: 'Processing...',
+        error: null
+      });
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+      if (schemaTypeCell) {
+        renderProgress(schemaTypeCell);
+        setProgress(schemaTypeCell, 10, 'Queued');
+      }
+    });
+  }
+
+  // Helper: Process URL in batch with progress updates
+  async function processUrlInBatch(urlData, index, urls, progressBar, progressText) {
+    progressText.textContent = `Processing ${index + 1} of ${urls.length}: ${urlData.url}`;
+    progressBar.style.width = `${((index + 1) / urls.length) * 100}%`;
+    
+    // Update row to show processing status
+    updateTableRow(index, {
+      url: urlData.url,
+      schemaType: 'Processing...',
+      valid: false,
+      schemaFound: false,
+      missingFields: [],
+      warnings: [],
+      schemas: [],
+      error: null
+    });
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+    if (schemaTypeCell) {
+      renderProgress(schemaTypeCell);
+      setProgress(schemaTypeCell, 10, 'Queued');
+    }
+    
+    // Process URL
+    const result = await processUrl(urlData);
+    validationResults[index] = result;
+    
+    // Update table row immediately
+    updateTableRow(index, result);
+    
+    // Auto-run external validators if enabled
+    const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
+    const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
+    
+    if (shouldAutoRun) {
+      const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+      if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+        await runSchemaOrgValidator(index, urlData.url);
+      }
+      
+      const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+      if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+        runRichResultsValidator(index, urlData.url);
+      }
+    }
+    
+    // Auto-save to Supabase if enabled
+    const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
+    const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
+    if (shouldAutoSave && supabaseAvailable && supabase) {
+      setTimeout(async () => {
+        try {
+          await saveToSupabase(index, true);
+          debugLog(`Auto-saved to Supabase: ${urlData.url}`, 'success');
+        } catch (error) {
+          debugLog(`Auto-save failed for ${urlData.url}: ${error.message}`, 'error');
+        }
+      }, 2000);
+    }
+    
+    // Small delay to allow UI to update
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   // Start validation process
@@ -4683,108 +4995,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         return;
       }
       
-      // Show progress
-      progressDiv.style.display = 'block';
-      resultsDiv.style.display = 'block';
-      tableBody.innerHTML = '';
-      validationResults = [];
-      
-      // Initialize rows with processing status
-      urls.forEach((urlData, index) => {
-        const placeholderResult = {
-          url: urlData.url,
-          row: urlData.row,
-          schemaType: null,
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: null,
-          validatorGoogleStatus: 'Not run',
-          validatorSchemaOrgStatus: 'Not run',
-          notes: '',
-          processing: true
-        };
-        validationResults.push(placeholderResult);
-        updateTableRow(index, {
-          ...placeholderResult,
-          schemaType: 'Processing...',
-          error: null
-        });
-        const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-        if (schemaTypeCell) {
-          renderProgress(schemaTypeCell);
-          setProgress(schemaTypeCell, 10, 'Queued');
-        }
-      });
+      // Initialize UI
+      initializeValidationUI(urls, progressDiv, progressBar, progressText, resultsDiv, tableBody);
       
       // Process each URL
       for (let i = 0; i < urls.length; i++) {
-        const urlData = urls[i];
-        progressText.textContent = `Processing ${i + 1} of ${urls.length}: ${urlData.url}`;
-        progressBar.style.width = `${((i + 1) / urls.length) * 100}%`;
-        
-        // Update row to show processing status
-        updateTableRow(i, {
-          url: urlData.url,
-          schemaType: 'Processing...',
-          valid: false,
-          schemaFound: false,
-          missingFields: [],
-          warnings: [],
-          schemas: [],
-          error: null
-        });
-        const schemaTypeCell = document.getElementById(`schemaTypeCell_${i}`);
-        if (schemaTypeCell) {
-          renderProgress(schemaTypeCell);
-          setProgress(schemaTypeCell, 10, 'Queued');
-        }
-        
-        // Process URL
-        const result = await processUrl(urlData);
-        validationResults[i] = result;
-        
-        // Update table row immediately
-        updateTableRow(i, result);
-        
-        // Auto-run Schema.org validator if enabled and status is "Not run"
-        const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
-        const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
-        
-        if (shouldAutoRun) {
-          const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${i}`);
-          if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-            await runSchemaOrgValidator(i, urlData.url);
-          }
-          
-          // Auto-run Rich Results validator if enabled and status is "Not run"
-          const googleStatusSelect = document.getElementById(`googleStatus_${i}`);
-          if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-            // Don't await - let it run in background
-            runRichResultsValidator(i, urlData.url);
-          }
-        }
-        
-        // Auto-save to Supabase if enabled (for CSV batch)
-        const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
-        const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
-        if (shouldAutoSave && supabaseAvailable && supabase) {
-          // Wait a moment for external validators to complete, then save
-          setTimeout(async () => {
-            try {
-              await saveToSupabase(i, true); // silent mode for auto-save
-              debugLog(`Auto-saved to Supabase: ${urlData.url}`, 'success');
-            } catch (error) {
-              debugLog(`Auto-save failed for ${urlData.url}: ${error.message}`, 'error');
-              // Don't show alert for auto-save failures, just log
-            }
-          }, 2000); // 2 second delay to allow external validators to complete
-        }
-        
-        // Small delay to allow UI to update
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await processUrlInBatch(urls[i], i, urls, progressBar, progressText);
       }
       
       progressText.textContent = `Completed: ${validationResults.length} URLs processed`;
@@ -4878,6 +5094,40 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
   
+  // Helper: Save single result to Supabase (for batch save)
+  async function saveSingleResultToSupabase(result, index) {
+    const statuses = getValidationStatusesFromDOM(index, result);
+    const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
+    
+    // Insert into Supabase
+    const { data, error } = await supabase
+      .from('schema_audit_logs')
+      .insert({
+        url: result.url,
+        timestamp: new Date().toISOString(),
+        validator_google_status: statuses.googleStatus || '🚫 Skipped',
+        validator_schemaorg_status: statuses.schemaOrgStatus || '🚫 Skipped',
+        schema_type_detected: result.schemaType || null,
+        schema_json_raw: schemaJsonRaw,
+        schema_notes: statuses.notes || null
+      });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data;
+  }
+
+  // Helper: Show save result summary
+  function showSaveResultToast(successCount, errorCount) {
+    if (successCount > 0) {
+      showToast(`✅ Saved ${successCount} result${successCount !== 1 ? 's' : ''} to Supabase${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+    } else {
+      showToast(`❌ Failed to save results: ${errorCount} error${errorCount !== 1 ? 's' : ''}`, true);
+    }
+  }
+
   // Save all results to Supabase
   async function saveAllToSupabase() {
     const saveAllBtn = document.getElementById('saveAllBtn');
@@ -4905,59 +5155,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         if (!result || !result.url) continue;
         
         try {
-          // Get current status values from DOM
-          const googleStatusEl = document.getElementById(`googleStatus_${i}`);
-          const schemaOrgStatusEl = document.getElementById(`schemaOrgStatus_${i}`);
-          const notesEl = document.getElementById(`notes_${i}`);
-          
-          const googleStatus = googleStatusEl ? googleStatusEl.value : result.validatorGoogleStatus || '🚫 Skipped';
-          const schemaOrgStatus = schemaOrgStatusEl ? schemaOrgStatusEl.value : result.validatorSchemaOrgStatus || '🚫 Skipped';
-          const notes = notesEl ? notesEl.value : result.notes || '';
-          
-          // Prepare schema JSON
-          let schemaJsonRaw = null;
-          if (result.schemas && result.schemas.length > 0) {
-            if (result.schemas.length === 1) {
-              schemaJsonRaw = result.schemas[0].schema;
-            } else {
-              schemaJsonRaw = {
-                '@context': 'https://schema.org',
-                '@graph': result.schemas.map(s => s.schema)
-              };
-            }
-          }
-          
-          // Insert into Supabase
-          const { data, error } = await supabase
-            .from('schema_audit_logs')
-            .insert({
-              url: result.url,
-              timestamp: new Date().toISOString(),
-              validator_google_status: googleStatus,
-              validator_schemaorg_status: schemaOrgStatus,
-              schema_type_detected: result.schemaType || null,
-              schema_json_raw: schemaJsonRaw,
-              schema_notes: notes || null
-            });
-          
-          if (error) {
-            throw error;
-          }
-          
+          await saveSingleResultToSupabase(result, i);
           successCount++;
-          
         } catch (error) {
           console.error(`Failed to save ${result.url}:`, error);
           errorCount++;
-          // Continue with other rows
         }
       }
       
-      if (successCount > 0) {
-        showToast(`✅ Saved ${successCount} result${successCount !== 1 ? 's' : ''} to Supabase${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
-      } else {
-        showToast(`❌ Failed to save results: ${errorCount} error${errorCount !== 1 ? 's' : ''}`, true);
-      }
+      showSaveResultToast(successCount, errorCount);
       
     } catch (error) {
       console.error('Save all error:', error);
