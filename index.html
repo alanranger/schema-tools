@@ -622,10 +622,14 @@
       position: fixed;
       inset: 0;
       background: rgba(20, 20, 33, 0.45);
-      display: none;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      border: none;
+      padding: 0;
+    }
+    .issues-backdrop::backdrop {
+      background: rgba(20, 20, 33, 0.45);
     }
     .issues-modal {
       width: min(760px, 94vw);
@@ -1654,6 +1658,43 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       jsonDetails.style.display = 'block';
     } else {
       jsonDetails.style.display = 'none';
+    }
+    
+    // Add copy button handler for JSON-LD
+    const copyJsonBtn = document.getElementById('issuesCopyJsonBtn');
+    if (copyJsonBtn) {
+      copyJsonBtn.onclick = async () => {
+        const jsonText = json.textContent.trim();
+        if (!jsonText) {
+          alert('No JSON-LD content to copy');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(jsonText);
+          copyJsonBtn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            copyJsonBtn.textContent = 'Copy JSON-LD';
+          }, 2000);
+        } catch (err) {
+          // Fallback for older browsers
+          const textarea = document.createElement('textarea');
+          textarea.value = jsonText;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            copyJsonBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+              copyJsonBtn.textContent = 'Copy JSON-LD';
+            }, 2000);
+          } catch (e) {
+            alert('Failed to copy. Please select and copy manually.');
+          }
+          textarea.remove();
+        }
+      };
     }
     
     btnSchema.onclick = () => globalThis.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
