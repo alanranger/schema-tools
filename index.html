@@ -4248,11 +4248,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
     cacheResult(url, analysisResult);
     
-    // Store persistently in validationResults array
+    // Store persistently in validationResults array by URL
     const resultIndex = validationResults.findIndex(r => r.url === url);
     if (resultIndex >= 0) {
+      // Update existing result with schemaFound and schemaTypes
       validationResults[resultIndex].schemaFound = analysisResult.schemaFound;
       validationResults[resultIndex].schemaTypes = analysisResult.schemaTypes;
+    } else {
+      // If not found, push to array (though this should rarely happen)
+      validationResults.push(analysisResult);
     }
     
     updateResultRow(url, analysisResult);
@@ -5050,9 +5054,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return buildPassedStatusHtml(result, skippedCount);
     }
     
-    return result.schemaFound
-      ? { class: 'valid', html: '<span class="chip-passed">✅ Passed</span>' }
-      : { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
+    // Final default return: check schemaFound first
+    if (result.schemaFound) {
+      return { class: 'valid', html: '<span class="chip-valid">✅ Valid</span>' };
+    } else if (result.missingFields && result.missingFields.length > 0) {
+      return { class: 'critical', html: '<span class="chip-critical">❌ Critical</span>' };
+    } else {
+      return { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
+    }
   }
   
   // Helper: Store row data attributes
