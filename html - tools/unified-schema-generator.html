@@ -669,6 +669,95 @@
       justify-content: flex-end;
       margin-top: 1rem;
     }
+    .severity-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+    }
+    .severity-badge.passed {
+      background-color: #10b981;
+    }
+    .severity-badge.warning {
+      background-color: #f59e0b;
+    }
+    .severity-badge.critical {
+      background-color: #ef4444;
+    }
+    .summary-card {
+      padding: 1rem;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .summary-card pre {
+      white-space: pre-wrap;
+      font-size: 0.875rem;
+      color: #374151;
+      margin: 0;
+      font-family: inherit;
+    }
+    .recommended-fix-card {
+      padding: 1rem;
+      background: #fffbeb;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .recommended-fix-card h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #92400e;
+      margin: 0 0 0.5rem 0;
+    }
+    .recommended-fix-card p {
+      font-size: 0.875rem;
+      color: #374151;
+      margin: 0 0 0.75rem 0;
+    }
+    .recommended-fix-textarea {
+      width: 100%;
+      height: 18rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      background: #1f2937;
+      color: #86efac;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: none;
+      resize: vertical;
+      overflow: auto;
+    }
+    .copy-schema-btn {
+      margin-top: 0.75rem;
+      background: #d97706;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .copy-schema-btn:hover {
+      background: #b45309;
+    }
+    .help-link {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.75rem;
+    }
+    .help-link a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+    .help-link a:hover {
+      color: #1d4ed8;
+    }
     .chip-issues {
       display: inline-flex;
       align-items: center;
@@ -1112,17 +1201,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (bar) { bar.style.background = 'linear-gradient(90deg,#ff5252,#ff8a80)'; }
   }
   
+  // Recommended canonical Organization + LocalBusiness schema
+  function getRecommendedSchema(url) {
+    const recommendedFix = {
+      "@context": "https://schema.org",
+      "@type": ["Organization","LocalBusiness"],
+      "@id": `${url.replace(/#.*$/, '')}#org`,
+      "name": "Alan Ranger Photography",
+      "url": url.split('#')[0],
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "description": "UK Landscape Photography Workshops, Private Tuition, and Online Classes by Alan Ranger, Qualified Tutor and Professional Photographer.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road, Tile Hill Village",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      },
+      "telephone": "+44 7817 017994",
+      "sameAs": [
+        "https://www.facebook.com/alanrangerphotography",
+        "https://www.instagram.com/alanrangerphoto",
+        "https://www.youtube.com/@alanrangerphotography"
+      ]
+    };
+    return JSON.stringify(recommendedFix, null, 2);
+  }
+
   // ---- Issues modal helpers ----
   function openIssuesModal(rowData) {
     const backdrop = document.getElementById('issuesBackdrop');
     const meta = document.getElementById('issuesMeta');
+    const content = document.getElementById('issuesContent');
     const list = document.getElementById('issuesList');
     const json = document.getElementById('issuesJson');
+    const jsonDetails = document.getElementById('issuesJsonDetails');
     const btnSchema = document.getElementById('issuesSchemaOrgBtn');
     const btnGoogle = document.getElementById('issuesGoogleBtn');
     const closeBtn = document.getElementById('issuesCloseBtn');
     
     meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
+    content.innerHTML = '';
     list.innerHTML = '';
     
     // Get unified issues list from rowData or dataset
@@ -1145,44 +1266,104 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.warn('Failed to parse issues data:', err);
     }
     
-    // Get schema summary from rowData or dataset
-    let schemaSummary = rowData.schemaSummary;
-    if (!schemaSummary && rowData.tr && rowData.tr.dataset.schemaSummary) {
-      schemaSummary = rowData.tr.dataset.schemaSummary;
+    // Get result data for analysis
+    const rowIndex = rowData.tr ? Array.from(rowData.tr.parentNode.children).indexOf(rowData.tr) : -1;
+    const result = rowIndex >= 0 ? validationResults[rowIndex] : null;
+    
+    // Extract data for summary
+    const missingFieldsBadges = result?.missingFieldsBadges || [];
+    const duplicates = issuesList.filter(i => i.message.includes('DUPLICATE')).map(i => i.type);
+    const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : [];
+    const issueCount = issuesList.filter(i => i.message.includes('missing')).length;
+    const blockCount = result?.schemas?.length || schemaTypes.length || 0;
+    
+    // Determine severity level
+    let severity = 'passed';
+    let badgeColor = 'severity-badge passed';
+    let badgeLabel = '✅ Passed';
+    
+    if (issueCount > 0 || duplicates.length > 0) {
+      severity = 'warning';
+      badgeColor = 'severity-badge warning';
+      badgeLabel = '⚠️ Issues';
     }
     
-    if (issuesList.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = 'No issues detected.';
-      list.appendChild(li);
+    if (duplicates.length > 2 || issueCount > 3) {
+      severity = 'critical';
+      badgeColor = 'severity-badge critical';
+      badgeLabel = '❌ Critical';
+    }
+    
+    // Build human-readable summary
+    let humanReadableSummary = `Found ${blockCount || 'multiple'} JSON-LD block${blockCount !== 1 ? 's' : ''}\n`;
+    humanReadableSummary += `Unique schema types: ${schemaTypes.length ? schemaTypes.join(', ') : 'Unknown'}\n`;
+    if (duplicates.length > 0) {
+      humanReadableSummary += `⚠️ Duplicates detected: ${duplicates.join(', ')}\n`;
+    }
+    if (missingFieldsBadges.length > 0) {
+      const missingFieldsText = missingFieldsBadges.map(m => `${m.type}.${m.field}`).join(', ');
+      humanReadableSummary += `❌ Missing fields: ${missingFieldsText}\n`;
     } else {
-      // Display all issues in a clean list (exact format from requirements)
-      for (const issue of issuesList) {
-        const li = document.createElement('li');
-        li.textContent = issue.message;
-        list.appendChild(li);
-      }
+      humanReadableSummary += '✅ All fields complete\n';
     }
     
-    json.textContent = (rowData.firstJsonLd || '').trim();
+    // Get recommended schema
+    const recommendedFix = getRecommendedSchema(rowData.url);
     
-    // Add schema health summary to modal
-    if (schemaSummary) {
-      const summaryDiv = document.createElement('div');
-      summaryDiv.className = 'schema-summary';
-      summaryDiv.style.marginTop = '1rem';
-      summaryDiv.style.padding = '0.75rem';
-      summaryDiv.style.background = '#f9f9f9';
-      summaryDiv.style.borderLeft = '4px solid #e0b400';
-      summaryDiv.style.borderRadius = '4px';
-      summaryDiv.innerHTML = `<strong>Summary:</strong><br>${schemaSummary.replace(/\n/g, '<br>')}`;
-      // Insert before the details tag
-      const details = backdrop.querySelector('details');
-      if (details) {
-        details.parentNode.insertBefore(summaryDiv, details);
-      } else {
-        list.parentNode.appendChild(summaryDiv);
-      }
+    // Build enhanced modal content
+    content.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Schema Analysis Summary</h3>
+        <span class="${badgeColor}">${badgeLabel}</span>
+      </div>
+      
+      <div class="summary-card">
+        <pre>${humanReadableSummary.trim()}</pre>
+      </div>
+      
+      <div class="recommended-fix-card">
+        <h4>Recommended Fix (for Squarespace footer injection)</h4>
+        <p>Copy and paste the following schema block into your Squarespace <strong>Settings → Advanced → Code Injection → Footer</strong> section.</p>
+        <textarea class="recommended-fix-textarea" readonly id="recommendedSchemaText">${recommendedFix}</textarea>
+        <button class="copy-schema-btn" id="copySchemaBtn">📋 Copy Recommended Schema</button>
+      </div>
+      
+      <div class="help-link">
+        Need help implementing this? 
+        <a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a>
+        <p style="margin-top: 0.5rem; font-style: italic; color: #6b7280;">
+          Diagnostic: ${issueCount} missing field(s), ${duplicates.length} duplicate type(s) detected.
+        </p>
+      </div>
+    `;
+    
+    // Setup copy button
+    const copyBtn = document.getElementById('copySchemaBtn');
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const textarea = document.getElementById('recommendedSchemaText');
+        textarea.select();
+        navigator.clipboard.writeText(recommendedFix).then(() => {
+          copyBtn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = '📋 Copy Recommended Schema';
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          copyBtn.textContent = '❌ Copy Failed';
+          setTimeout(() => {
+            copyBtn.textContent = '📋 Copy Recommended Schema';
+          }, 2000);
+        });
+      };
+    }
+    
+    // Still show raw JSON in collapsible section for debugging
+    json.textContent = (rowData.firstJsonLd || '').trim();
+    if (rowData.firstJsonLd) {
+      jsonDetails.style.display = 'block';
+    } else {
+      jsonDetails.style.display = 'none';
     }
     
     btnSchema.onclick = () => globalThis.open('https://validator.schema.org/?url=' + encodeURIComponent(rowData.url), '_blank');
@@ -3554,8 +3735,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     <div class="issues-modal">
       <h3 id="issuesTitle">Schema Issues</h3>
       <div id="issuesMeta" class="issues-meta"></div>
-      <ul id="issuesList" class="issues-list"></ul>
-      <details>
+      <div id="issuesContent" class="issues-content"></div>
+      <ul id="issuesList" class="issues-list" style="display: none;"></ul>
+      <details id="issuesJsonDetails" style="display: none;">
         <summary>Preview first JSON-LD block on page</summary>
         <pre id="issuesJson" class="issues-json"></pre>
       </details>
