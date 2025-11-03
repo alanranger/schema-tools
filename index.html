@@ -4286,28 +4286,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const rowMatch = row.id?.match(/row_(\d+)/);
     const rowIndex = rowMatch ? rowMatch[1] : (row.dataset?.rowIndex || '');
     
-    // Find schema type cell
+    if (!rowIndex) return; // Can't update without index
+    
+    // Find cells by ID
     const schemaCell = document.getElementById(`schemaTypeCell_${rowIndex}`);
-    
-    // Find status cell
     const statusCell = document.getElementById(`statusCell_${rowIndex}`);
+    const missingFieldsCell = document.getElementById(`missingFieldsCell_${rowIndex}`);
+    const warningsCell = document.getElementById(`warningsCell_${rowIndex}`);
+    const infoCell = document.getElementById(`infoCell_${rowIndex}`);
     
-    if (schemaCell)
-      schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
+    // Update schema type cell
+    if (schemaCell && result.schemaTypes) {
+      schemaCell.textContent = result.schemaTypes.join(', ') || '—';
+    }
     
+    // Update status cell with progress-aware badge
     if (statusCell) {
-      // Get progress from row progress bar if available
       const progressBar = row.querySelector('.progress-inner');
       const progress = progressBar ? Number.parseInt(progressBar.style.width) || 0 : 100;
       
-      // Determine status badge based on state
       let statusHtml;
       if (!result.schemaFound && progress < 10) {
         statusHtml = '<span class="chip-queued">⏳ Queued</span>';
       } else if (!result.schemaFound && progress < 50) {
         statusHtml = '<span class="chip-fetching">🔄 Fetching</span>';
       } else if (result.schemaFound) {
-        // Check if there are critical issues
         const hasCritical = result.missingFields && result.missingFields.length > 0;
         if (hasCritical && result.missingFields.length > 3) {
           statusHtml = '<span class="chip-critical">❌ Critical</span>';
@@ -4321,6 +4324,33 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       statusCell.innerHTML = statusHtml;
+    }
+    
+    // Update Missing Fields column
+    if (missingFieldsCell && result.missingFields) {
+      if (result.missingFields.length > 0) {
+        missingFieldsCell.innerHTML = result.missingFields.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
+      } else {
+        missingFieldsCell.textContent = '—';
+      }
+    }
+    
+    // Update Warnings column
+    if (warningsCell && result.warnings) {
+      if (result.warnings.length > 0) {
+        warningsCell.innerHTML = result.warnings.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
+      } else {
+        warningsCell.textContent = '—';
+      }
+    }
+    
+    // Update Info column
+    if (infoCell && result.info) {
+      if (result.info.length > 0) {
+        infoCell.innerHTML = result.info.map(i => `<div class="info-entry">${i}</div>`).join('');
+      } else {
+        infoCell.textContent = '—';
+      }
     }
   }
 
@@ -4523,7 +4553,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       updateRowProgress(urlData.url, 100);
       
       // Log final result confirmation
-      console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'}`);
+      console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
       
     } catch (error) {
       // Update progress to show error state
