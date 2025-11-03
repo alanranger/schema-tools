@@ -1027,7 +1027,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.6</span>
+    <span class="version">v1.8.7</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -4135,6 +4135,59 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // ---- Schema Extraction and Result Construction Fix ----
+  
+  // Helper: normalize @type into array form
+  function extractSchemaTypesNormalized(typeValue) {
+    if (!typeValue) return [];
+    if (Array.isArray(typeValue)) return typeValue.map(t => t.trim()).filter(Boolean);
+    if (typeof typeValue === 'string') return typeValue.split(',').map(t => t.trim()).filter(Boolean);
+    return [];
+  }
+
+  // Main fix: construct schema analysis result safely
+  function buildAnalysisResult(url, blocks, issuesList = []) {
+    const schemaTypes = [
+      ...new Set(
+        blocks
+          .flatMap(b => extractSchemaTypesNormalized(b['@type']))
+          .filter(Boolean)
+      )
+    ];
+    const schemaFound = schemaTypes.length > 0;
+
+    const analysisResult = {
+      url,
+      schemaFound,
+      schemaTypes,
+      missingFields: issuesList.filter(i => i.severity === 'missing'),
+      warnings: issuesList.filter(i => i.severity === 'warning'),
+      info: issuesList.filter(i => i.severity === 'info'),
+      blocks,
+      timestamp: new Date().toISOString()
+    };
+
+    cacheResult(url, analysisResult);
+    updateResultRow(url, analysisResult);
+    return analysisResult;
+  }
+
+  // Update UI row with schema info
+  function updateResultRow(url, result) {
+    const row = document.querySelector(`[data-url="${url}"]`);
+    if (!row) return;
+    const schemaCell = row.querySelector('.schema-type-cell');
+    const statusCell = row.querySelector('.status-cell');
+    if (schemaCell) schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
+    if (statusCell) {
+      if (result.schemaFound) {
+        statusCell.innerHTML = `<span class="chip-valid">✅ Valid</span><span class="status-explanation">All required fields present</span>`;
+      } else {
+        statusCell.innerHTML = `<span class="chip-critical">❌ No Schema</span><span class="status-explanation">No structured data detected</span>`;
+      }
+    }
+  }
+
   // Helper: Process schema nodes and build issues list
   function processSchemaNodes(pageData) {
     let allNodes = [];
@@ -4248,6 +4301,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     try {
       const pageData = await fetchPageSchema(urlData.url, urlData.row);
       debugLog(`Fetched page data for ${urlData.url}: found ${pageData.jsonLd.length} JSON-LD blocks, schemaType: ${pageData.schemaType}`, 'info');
+      
+      // Build analysis result with normalized schema types (initial cache)
+      buildAnalysisResult(urlData.url, pageData.jsonLd, []);
+      
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
       
@@ -4264,6 +4321,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.missingFields = buckets.missingFields;
       result.warnings = buckets.warnings;
       result.info = buckets.info;
+      
+      // Update analysis result with full issuesList (cached and displayed)
+      buildAnalysisResult(urlData.url, pageData.jsonLd, issuesList.map(i => ({
+        severity: i.message?.includes('missing') ? 'missing' : 
+                 i.message?.includes('DUPLICATE') || i.message?.includes('⚠️') ? 'warning' : 'info',
+        ...i
+      })));
       
       // Add informational detections
       addInformationalDetections(allNodes, result);
@@ -4283,13 +4347,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       buildResultNotes(result, pageData);
       
-      // Cache result for View Details button
-      cacheResult(result.url, {
+      // Cache result for View Details button (update with final result data)
+      const finalCacheData = {
         blocks: pageData.jsonLd || [],
         issues: result.issuesList || [],
         warnings: result.warnings || [],
-        info: result.info || []
-      });
+        info: result.info || [],
+        schemaTypes: result.schemaType ? result.schemaType.split(',').map(t => t.trim()) : [],
+        schemaFound: result.schemaFound || false
+      };
+      cacheResult(result.url, finalCacheData);
       
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
