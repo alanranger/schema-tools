@@ -1008,7 +1008,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.4</span>
+    <span class="version">v1.8.5</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1588,32 +1588,109 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (bar) { bar.style.background = 'linear-gradient(90deg,#ff5252,#ff8a80)'; }
   }
   
-  function getRecommendedSchema(url) {
-    const recommendedFix = {
-      "@context": "https://schema.org",
-      "@type": ["Organization","LocalBusiness"],
-      "@id": `${url.replace(/#.*$/, '')}#org`,
-      "name": "Alan Ranger Photography",
-      "url": url.split('#')[0],
-      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
-      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
-      "description": "UK Landscape Photography Workshops, Private Tuition, and Online Classes by Alan Ranger, Qualified Tutor and Professional Photographer.",
-      "address": {
+  // Helper: Determine required schema types based on missing fields
+  function determineRequiredSchemaTypes(missingFields, missingRecommended) {
+    const needsOrg = missingFields.some(f => f.includes('Organization')) || 
+                    missingRecommended.some(f => f.includes('Organization') || f.includes('url') || f.includes('logo'));
+    const needsLocal = missingFields.some(f => f.includes('LocalBusiness')) || 
+                       missingRecommended.some(f => f.includes('LocalBusiness') || f.includes('address') || f.includes('telephone'));
+    const needsWebSite = missingFields.some(f => f.includes('WebSite')) || 
+                         missingRecommended.some(f => f.includes('WebSite'));
+    
+    const types = [];
+    if (needsOrg || needsLocal) {
+      if (needsLocal) types.push('LocalBusiness');
+      if (needsOrg || needsLocal) types.push('Organization');
+    }
+    if (needsWebSite) {
+      types.push('WebSite');
+    }
+    
+    if (types.length === 0) {
+      types.push('Organization', 'LocalBusiness');
+    }
+    
+    return types;
+  }
+
+  // Helper: Add recommended fields to fix object
+  function addRecommendedFieldsToFix(fix, missingRecommended, baseUrl) {
+    if (missingRecommended.includes('url')) {
+      fix["url"] = baseUrl;
+    }
+    if (missingRecommended.includes('logo')) {
+      fix["logo"] = "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w";
+    }
+    if (missingRecommended.includes('image')) {
+      fix["image"] = fix["logo"] || "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w";
+    }
+    if (missingRecommended.includes('description')) {
+      fix["description"] = "UK Landscape Photography Workshops, Private Tuition, and Online Classes by Alan Ranger, Qualified Tutor and Professional Photographer.";
+    }
+    if (missingRecommended.includes('address')) {
+      fix["address"] = {
         "@type": "PostalAddress",
         "streetAddress": "45 Hathaway Road, Tile Hill Village",
         "addressLocality": "Coventry",
         "addressRegion": "West Midlands",
         "postalCode": "CV4 9HW",
         "addressCountry": "GB"
-      },
-      "telephone": "+44 7817 017994",
-      "sameAs": [
+      };
+    }
+    if (missingRecommended.includes('telephone')) {
+      fix["telephone"] = "+44 7817 017994";
+    }
+    if (missingRecommended.includes('sameAs')) {
+      fix["sameAs"] = [
         "https://www.facebook.com/alanrangerphotography",
         "https://www.instagram.com/alanrangerphoto",
         "https://www.youtube.com/@alanrangerphotography"
-      ]
+      ];
+    }
+  }
+
+  // Helper: Build recommended fix based on missing fields
+  function buildRecommendedFix(url, missingFields = [], missingRecommended = []) {
+    const baseUrl = url.split('#')[0];
+    
+    const fix = {
+      "@context": "https://schema.org"
     };
-    return JSON.stringify(recommendedFix, null, 2);
+    
+    const types = determineRequiredSchemaTypes(missingFields, missingRecommended);
+    fix["@type"] = types.length === 1 ? types[0] : types;
+    fix["@id"] = `${baseUrl}#org`;
+    fix["name"] = "Alan Ranger Photography";
+    
+    // Add url if missing
+    if (missingRecommended.includes('url') || missingFields.some(f => f.includes('url'))) {
+      fix["url"] = baseUrl;
+    }
+    
+    // Add recommended fields
+    addRecommendedFieldsToFix(fix, missingRecommended, baseUrl);
+    
+    // Add address if missing (for LocalBusiness)
+    const needsLocal = types.includes('LocalBusiness');
+    if (needsLocal && (missingRecommended.includes('address') || missingFields.some(f => f.includes('address')))) {
+      if (!fix["address"]) {
+        fix["address"] = {
+          "@type": "PostalAddress",
+          "streetAddress": "45 Hathaway Road, Tile Hill Village",
+          "addressLocality": "Coventry",
+          "addressRegion": "West Midlands",
+          "postalCode": "CV4 9HW",
+          "addressCountry": "GB"
+        };
+      }
+    }
+    
+    return JSON.stringify(fix, null, 2);
+  }
+
+  function getRecommendedSchema(url) {
+    // Use the new buildRecommendedFix function for consistency
+    return buildRecommendedFix(url);
   }
 
   // Helper: Parse issues list from rowData
@@ -1838,8 +1915,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const severityBadge = determineSeverityBadge(issueCount, duplicates);
     const humanReadableSummary = buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges);
     const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges);
-    const recommendedFix = getRecommendedSchema(rowData.url);
-    const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix, orgFixCheck.hasValidOrgNode, recommendedFix);
+    
+    // Extract missing recommended fields from warnings
+    const missingRecommended = result?.warnings?.filter(w => w.includes('Missing recommended:')).map(w => {
+      const match = w.match(/Missing recommended: (\w+)/);
+      return match ? match[1] : null;
+    }).filter(Boolean) || [];
+    
+    // Extract missing required fields
+    const missingRequiredFields = result?.missingFields?.filter(f => typeof f === 'string' && f.includes('missing')).map(f => {
+      const match = f.match(/(\w+):\s*"(\w+)"\s*missing/);
+      return match ? `${match[1]}.${match[2]}` : null;
+    }).filter(Boolean) || [];
+    
+    // Build recommended fix using the new function
+    const recommendedFix = buildRecommendedFix(rowData.url, missingRequiredFields, missingRecommended);
+    const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix || missingRecommended.length > 0, orgFixCheck.hasValidOrgNode, recommendedFix);
     const schemaTableHtml = buildSchemaTableHtml(result);
     
     content.innerHTML = `
@@ -2311,9 +2402,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const backdrop = document.getElementById('genBackdrop');
       const closeBtn = document.getElementById('genCloseBtn');
       if (backdrop && closeBtn) {
-        closeBtn.onclick = () => backdrop.style.display = 'none';
+        closeBtn.onclick = () => {
+          if (backdrop.close) {
+            backdrop.close();
+          } else {
+            backdrop.style.display = 'none';
+          }
+        };
         backdrop.onclick = (e) => {
-          if (e.target === backdrop) backdrop.style.display = 'none';
+          if (e.target === backdrop) {
+            if (backdrop.close) {
+              backdrop.close();
+            } else {
+              backdrop.style.display = 'none';
+            }
+          }
         };
       }
     }
@@ -2344,7 +2447,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Re-attach copy button handler in case it wasn't set up earlier
       setupCopyButton();
       
-      backdropEl.style.display='flex';
+      // Use dialog API if available
+      if (backdropEl.showModal) {
+        backdropEl.showModal();
+      } else {
+        backdropEl.style.display='flex';
+      }
     };
   })();
   
@@ -2856,6 +2964,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Schema Validator Tab Logic
   const SCHEMA_REQUIREMENTS = {
+    WebSite: {
+      required: ['name', 'url'],
+      recommended: ['description', 'image', 'publisher']
+    },
     Product: {
       required: ['name', 'url'],
       recommended: ['description', 'image', 'brand', 'offers', 'aggregateRating', 'review']
@@ -2866,7 +2978,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     },
     Organization: {
       required: ['name'],
-      recommended: ['url', 'logo', 'address', 'contactPoint']
+      recommended: ['url', 'logo', 'address', 'contactPoint', 'telephone']
     },
     BreadcrumbList: {
       required: ['itemListElement'],
@@ -3570,6 +3682,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
   }
 
+  // Helper: Detect footer-injected schema patterns
+  function detectFooterInjectedSchema(node) {
+    const id = node['@id'] || '';
+    const idLower = id.toLowerCase();
+    const footerPatterns = ['footer', 'site-footer', 'footer-injection', 'footer-schema'];
+    return footerPatterns.some(pattern => idLower.includes(pattern));
+  }
+
+  // Helper: Detect BreadcrumbList nodes globally
+  function detectBreadcrumbListNodes(allNodes) {
+    return allNodes.filter(n => {
+      const types = asArray(n['@type']);
+      return types.includes('BreadcrumbList');
+    });
+  }
+
   // Helper: Process duplicate warnings
   function processDuplicateWarnings(duplicateGroups, globalPatterns) {
     const duplicateWarnings = [];
@@ -3582,7 +3710,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       for (const key of Object.keys(keyCounts)) {
         if (keyCounts[key] > 1) {
           const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
-          if (!isGlobal) {
+          const isBreadcrumb = t === 'BreadcrumbList';
+          const nodeData = keyDetails[key];
+          const isFooterInjected = nodeData?.node ? detectFooterInjectedSchema(nodeData.node) : false;
+          
+          // Skip if it's a global pattern, footer-injected, or BreadcrumbList (expected duplicates)
+          if (!isGlobal && !isFooterInjected && !isBreadcrumb) {
             const { warning, object } = buildDuplicateWarningForKey(t, key, keyCounts, keyDetails);
             duplicateWarnings.push(warning);
             duplicateWarningsObjects.push(object);
@@ -3754,6 +3887,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.missingFields = buckets.missingFields;
       result.warnings = buckets.warnings;
       result.info = buckets.info;
+      
+      // Detect BreadcrumbList nodes globally (informational)
+      const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
+      if (breadcrumbNodes.length > 0) {
+        debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
+        if (!result.info) result.info = [];
+        result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
+      }
       
       logGlobalDuplicates(duplicateGroups, globalPatterns);
       logOrgNodesMissingName(allNodes);
