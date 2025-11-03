@@ -4348,24 +4348,32 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
     
     try {
+      // Stage 1: Fetch page data (~20%)
+      updateRowProgress(urlData.url, 20);
       const pageData = await fetchPageSchema(urlData.url, urlData.row);
       debugLog(`Fetched page data for ${urlData.url}: found ${pageData.jsonLd.length} JSON-LD blocks, schemaType: ${pageData.schemaType}`, 'info');
       
-      // Build analysis result with normalized schema types (initial cache)
-      buildAnalysisResult(urlData.url, pageData.jsonLd, []);
+      // Stage 2: Build initial analysis result (~40%)
+      updateRowProgress(urlData.url, 40);
+      const initialAnalysis = buildAnalysisResult(urlData.url, pageData.jsonLd, []);
+      debugLog(`[✓] Schema Types: ${initialAnalysis.schemaTypes.join(', ') || 'none'}`, 'info');
+      debugLog(`[✓] schemaFound: ${initialAnalysis.schemaFound}`, 'info');
       
+      // Stage 3: Analyze schemas (~50%)
+      updateRowProgress(urlData.url, 50);
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
-      debugLog(`[✓] Schema Types: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
-      debugLog(`[✓] schemaFound: ${analysis.schemaFound}`, 'info');
       
-      // Process schema nodes
+      // Stage 4: Process schema nodes (~60%)
+      updateRowProgress(urlData.url, 60);
       const { allNodes, missingDetails } = processSchemaNodes(pageData);
       
-      // Process duplicate detection
+      // Stage 5: Process duplicate detection (~70%)
+      updateRowProgress(urlData.url, 70);
       const { duplicateGroups, duplicateWarningsObjects, globalPatterns } = processDuplicateDetection(allNodes);
       
-      // Build and categorize issues
+      // Stage 6: Build and categorize issues (~80%)
+      updateRowProgress(urlData.url, 80);
       const { issuesList, buckets } = buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis);
       
       result.issuesList = issuesList;
@@ -4373,7 +4381,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.warnings = buckets.warnings;
       result.info = buckets.info;
       
-      // Update analysis result with full issuesList (cached and displayed)
+      // Stage 7: Update analysis result with full issuesList (~90%)
+      updateRowProgress(urlData.url, 90);
       const mappedIssues = issuesList.map(i => ({
         severity: i.message?.includes('missing') ? 'missing' : 
                  i.message?.includes('DUPLICATE') || i.message?.includes('⚠️') ? 'warning' : 'info',
@@ -4381,7 +4390,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }));
       buildAnalysisResult(urlData.url, pageData.jsonLd, mappedIssues);
       
-      // Add informational detections
+      // Stage 8: Finalize result (~95%)
+      updateRowProgress(urlData.url, 95);
       addInformationalDetections(allNodes, result);
       
       // Log diagnostics
@@ -4409,7 +4419,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schemaFound: result.schemaFound || false
       });
       
+      // Stage 9: Complete (~100%)
+      updateRowProgress(urlData.url, 100);
+      
     } catch (error) {
+      // Update progress to show error state
+      updateRowProgress(urlData.url, 100);
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
         markProgressError(schemaTypeCell);
@@ -5851,13 +5866,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Process URL in batch with progress updates
   async function processUrlInBatch(urlData, index, urls, progressBar, progressText) {
+    // Update global progress
     progressText.textContent = `Processing ${index + 1} of ${urls.length}: ${urlData.url}`;
     progressBar.style.width = `${((index + 1) / urls.length) * 100}%`;
     
-    // Update row-level progress
-    updateRowProgress(urlData.url, (index / urls.length) * 100);
-    
-    // Update row to show processing status
+    // Initialize row with processing status
     updateTableRow(index, {
       url: urlData.url,
       schemaType: 'Processing...',
@@ -5874,14 +5887,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       setProgress(schemaTypeCell, 10, 'Queued');
     }
     
-    // Process URL
+    // Start row-level progress (progress updates now happen INSIDE processUrl)
+    updateRowProgress(urlData.url, 5);
+    
+    // Process URL (this will update row progress internally at each stage)
     const result = await processUrl(urlData);
     validationResults[index] = result;
     
-    // Update row-level progress to 100%
-    updateRowProgress(urlData.url, 100);
-    
-    // Update table row immediately
+    // Update table row immediately with final result
     updateTableRow(index, result);
     
     // Auto-run external validators if enabled
