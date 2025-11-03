@@ -678,22 +678,54 @@
       transition: width 0.3s ease;
     }
     
-    /* --- Status Chips --- */
+    /* === Status Badge Styling === */
+    .chip-queued {
+      background: linear-gradient(90deg, #cfd9df 0%, #e2ebf0 100%);
+      color: #555;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    
+    .chip-fetching {
+      background: linear-gradient(90deg, #ffe259 0%, #ffa751 100%);
+      color: #333;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    
     .chip-valid {
-      background: #00b67a !important;
-      color: #fff !important;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 0.85rem;
+      background: linear-gradient(90deg, #a8e063 0%, #56ab2f 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
       display: inline-block;
     }
     
     .chip-critical {
-      background: #e57200 !important;
-      color: #fff !important;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 0.85rem;
+      background: linear-gradient(90deg, #ff512f 0%, #dd2476 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    
+    .status-badge.no-schema {
+      background: linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%);
+      color: #333;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
       display: inline-block;
     }
     
@@ -4199,9 +4231,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     ];
     const schemaFound = schemaTypes.length > 0;
 
+    // Ensure schemaFound stays true if any valid blocks exist
+    if (!schemaFound && blocks && blocks.length > 0) {
+      console.log(`[✓] Schema detected via fallback: ${blocks.map(b => b['@type'] || 'unknown').join(', ')}`);
+    }
+
     const analysisResult = {
       url,
-      schemaFound,
+      schemaFound: schemaFound || (blocks && blocks.length > 0),
       schemaTypes,
       missingFields: issuesList.filter(i => i.severity === 'missing'),
       warnings: issuesList.filter(i => i.severity === 'warning'),
@@ -4214,7 +4251,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return analysisResult;
   }
 
-  // 4️⃣ Update table cells safely
+  // 4️⃣ Update table cells safely with enhanced status badges
   function updateResultRow(url, result) {
     const row = document.querySelector(`[data-url="${url}"]`);
     if (!row) return;
@@ -4231,10 +4268,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (schemaCell)
       schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
-    if (statusCell)
-      statusCell.innerHTML = result.schemaFound
-        ? '<span class="chip-valid">✅ Valid</span>'
-        : '<span class="chip-critical">❌ No Schema</span>';
+    
+    if (statusCell) {
+      // Get progress from row progress bar if available
+      const progressBar = row.querySelector('.progress-inner');
+      const progress = progressBar ? Number.parseInt(progressBar.style.width) || 0 : 100;
+      
+      // Determine status badge based on state
+      let statusHtml;
+      if (!result.schemaFound && progress < 10) {
+        statusHtml = '<span class="chip-queued">⏳ Queued</span>';
+      } else if (!result.schemaFound && progress < 50) {
+        statusHtml = '<span class="chip-fetching">🔄 Fetching</span>';
+      } else if (result.schemaFound) {
+        // Check if there are critical issues
+        const hasCritical = result.missingFields && result.missingFields.length > 0;
+        if (hasCritical && result.missingFields.length > 3) {
+          statusHtml = '<span class="chip-critical">❌ Critical</span>';
+        } else if (hasCritical) {
+          statusHtml = '<span class="chip-issues">⚠️ Issues</span>';
+        } else {
+          statusHtml = '<span class="chip-valid">✅ Valid</span>';
+        }
+      } else {
+        statusHtml = '<span class="status-badge no-schema">❌ No Schema</span>';
+      }
+      
+      statusCell.innerHTML = statusHtml;
+    }
   }
 
   // Helper: Process schema nodes and build issues list
@@ -4313,7 +4374,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function updateSchemaTypeDisplay(result, pageData, analysis, urlData) {
     updateSchemaTypeCellUI(urlData, pageData, analysis);
     
-    result.schemaFound = analysis.schemaFound;
+    // Preserve schemaFound from buildAnalysisResult - don't overwrite if blocks exist
+    const hasBlocks = pageData.jsonLd && pageData.jsonLd.length > 0;
+    if (hasBlocks && !result.schemaFound) {
+      // Ensure schemaFound is true if blocks exist (fallback detection)
+      result.schemaFound = true;
+      console.log(`[✓] Schema detected via fallback: ${pageData.jsonLd.map(b => b['@type'] || 'unknown').join(', ')}`);
+    } else if (hasBlocks) {
+      // Keep schemaFound from analysis if it's true
+      result.schemaFound = analysis.schemaFound || true;
+    } else {
+      // Only set to false if no blocks exist
+      result.schemaFound = analysis.schemaFound || false;
+    }
+    
     const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
     const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
     const serverBadge = pageData.serverFallback ? ' (server)' : '';
@@ -4421,6 +4495,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Stage 9: Complete (~100%)
       updateRowProgress(urlData.url, 100);
+      
+      // Log final result confirmation
+      console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'}`);
       
     } catch (error) {
       // Update progress to show error state
