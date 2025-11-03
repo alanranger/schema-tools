@@ -42,117 +42,92 @@ export default async function handler(req, res) {
     const html = await response.text();
     
     // Parse HTML to determine status
-    // Schema.org validator shows a summary like: "0 ERRORS 0 WARNINGS 5 ITEMS"
-    // We need to extract the actual numbers, not just look for the word "error"
+    // Schema.org validator shows:
+    // - Success: contains "No errors found" or similar success messages
+    // - Warnings: contains warning messages
+    // - Errors: contains error messages or validation failures
     
     let status = 'passed';
     const errors = [];
     const warnings = [];
 
-    // Look for the validation summary pattern: "X ERRORS Y WARNINGS Z ITEMS"
-    // Schema.org validator shows this in various formats, try multiple patterns
-    const patterns = [
-      // Pattern 1: "0 ERRORS 0 WARNINGS 5 ITEMS" (most common)
-      /(\d+)\s+ERRORS?\s+(\d+)\s+WARNINGS?\s+(\d+)\s+ITEMS?/i,
-      // Pattern 2: "0 ERRORS, 0 WARNINGS, 5 ITEMS" (with commas)
-      /(\d+)\s+ERRORS?,\s*(\d+)\s+WARNINGS?,\s*(\d+)\s+ITEMS?/i,
-      // Pattern 3: Separate elements (e.g., in different tags)
-      /(\d+)\s*ERRORS?/i,
-      /(\d+)\s*WARNINGS?/i,
-      /(\d+)\s*ITEMS?/i
+    // Check for errors (common patterns in Schema.org validator HTML)
+    const errorPatterns = [
+      /error/i,
+      /validation failed/i,
+      /no structured data found/i,
+      /invalid/i,
+      /failed to parse/i
     ];
-    
+
+    // Check for warnings
+    const warningPatterns = [
+      /warning/i,
+      /recommendation/i,
+      /suggestion/i
+    ];
+
+    // Check for success indicators
+    const successPatterns = [
+      /no errors found/i,
+      /valid/i,
+      /success/i
+    ];
+
+    // Simple heuristic: count error vs warning vs success indicators
     let errorCount = 0;
     let warningCount = 0;
-    let itemCount = 0;
-    
-    // Try the combined pattern first (most common: "0 ERRORS 0 WARNINGS 5 ITEMS")
-    const summaryMatch = html.match(/(\d+)\s+ERRORS?\s+(\d+)\s+WARNINGS?\s+(\d+)\s+ITEMS?/i);
-    
-    if (summaryMatch) {
-      errorCount = parseInt(summaryMatch[1], 10);
-      warningCount = parseInt(summaryMatch[2], 10);
-      itemCount = parseInt(summaryMatch[3], 10);
-    } else {
-      // Fallback: try to find individual counts (they might be in separate HTML elements)
-      // Look for patterns like "0 ERRORS" anywhere in the HTML, not just together
-      const errorMatches = html.match(/(\d+)\s+ERRORS?/gi);
-      const warningMatches = html.match(/(\d+)\s+WARNINGS?/gi);
-      const itemMatches = html.match(/(\d+)\s+ITEMS?/gi);
-      
-      // Extract the first number from each match (they should all be the same number)
-      if (errorMatches && errorMatches.length > 0) {
-        const firstErrorMatch = errorMatches[0].match(/(\d+)/);
-        if (firstErrorMatch) errorCount = parseInt(firstErrorMatch[1], 10);
-      }
-      
-      if (warningMatches && warningMatches.length > 0) {
-        const firstWarningMatch = warningMatches[0].match(/(\d+)/);
-        if (firstWarningMatch) warningCount = parseInt(firstWarningMatch[1], 10);
-      }
-      
-      if (itemMatches && itemMatches.length > 0) {
-        const firstItemMatch = itemMatches[0].match(/(\d+)/);
-        if (firstItemMatch) itemCount = parseInt(firstItemMatch[1], 10);
-      }
-    }
-    
-    // Determine status based on actual counts
+    let successCount = 0;
+
+    errorPatterns.forEach(pattern => {
+      const matches = html.match(new RegExp(pattern, 'gi'));
+      if (matches) errorCount += matches.length;
+    });
+
+    warningPatterns.forEach(pattern => {
+      const matches = html.match(new RegExp(pattern, 'gi'));
+      if (matches) warningCount += matches.length;
+    });
+
+    successPatterns.forEach(pattern => {
+      const matches = html.match(new RegExp(pattern, 'gi'));
+      if (matches) successCount += matches.length;
+    });
+
+    // Determine status based on counts
     if (errorCount > 0) {
       status = 'failed';
-      // Try to extract error messages
-      const errorSectionMatch = html.match(/<[^>]*class[^>]*error[^>]*>([\s\S]*?)<\/[^>]*>/gi);
-      if (errorSectionMatch) {
-        errorSectionMatch.slice(0, Math.min(errorCount, 10)).forEach(match => {
-          const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-          if (text && text.length < 200 && !text.match(/^\d+\s*ERRORS?$/i)) {
-            errors.push(text);
-          }
+      // Try to extract error messages (simple extraction)
+      const errorMatches = html.match(/<[^>]*error[^>]*>([^<]+)<\/[^>]*>/gi);
+      if (errorMatches) {
+        errorMatches.slice(0, 5).forEach(match => {
+          const text = match.replace(/<[^>]*>/g, '').trim();
+          if (text && text.length < 200) errors.push(text);
         });
-      }
-      
-      // If we couldn't extract errors, at least note the count
-      if (errors.length === 0 && errorCount > 0) {
-        errors.push(`${errorCount} validation error${errorCount > 1 ? 's' : ''} found`);
       }
     } else if (warningCount > 0) {
       status = 'warnings';
       // Try to extract warning messages
-      const warningSectionMatch = html.match(/<[^>]*class[^>]*warning[^>]*>([\s\S]*?)<\/[^>]*>/gi);
-      if (warningSectionMatch) {
-        warningSectionMatch.slice(0, Math.min(warningCount, 10)).forEach(match => {
-          const text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-          if (text && text.length < 200 && !text.match(/^\d+\s*WARNINGS?$/i)) {
-            warnings.push(text);
-          }
+      const warningMatches = html.match(/<[^>]*warning[^>]*>([^<]+)<\/[^>]*>/gi);
+      if (warningMatches) {
+        warningMatches.slice(0, 5).forEach(match => {
+          const text = match.replace(/<[^>]*>/g, '').trim();
+          if (text && text.length < 200) warnings.push(text);
         });
       }
-      
-      // If we couldn't extract warnings, at least note the count
-      if (warnings.length === 0 && warningCount > 0) {
-        warnings.push(`${warningCount} warning${warningCount > 1 ? 's' : ''} found`);
-      }
-    } else {
-      // 0 errors and 0 warnings = passed
+    } else if (successCount > 0) {
       status = 'passed';
-    }
-    
-    // Debug logging (remove in production if needed)
-    console.log(`Schema.org parsing: errors=${errorCount}, warnings=${warningCount}, items=${itemCount}, status=${status}`);
-    
-    // If we found item count but couldn't determine status, and there are items, it's likely passed
-    if (status === 'passed' && itemCount === 0 && html.match(/no\s+structured\s+data/i)) {
-      status = 'failed';
-      errors.push('No structured data found on page');
+    } else {
+      // If we can't determine, default to warnings (conservative)
+      status = 'warnings';
     }
 
-    // Return response with debug info
+    // Return response
     return res.status(200).json({
       status,
       errors: errors.slice(0, 10), // Limit to 10 errors
       warnings: warnings.slice(0, 10), // Limit to 10 warnings
       cached: false
-      // Debug info removed for cleaner response - check Vercel logs if needed
     });
 
   } catch (error) {

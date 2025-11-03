@@ -67,3 +67,5 @@ All notable changes to the Schema Tools project will be documented in this file.
 - Product schema generation from CSV
 - Basic validation functionality
 
+
+
