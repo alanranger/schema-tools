@@ -751,6 +751,16 @@
     .copy-schema-btn:hover {
       background: #b45309;
     }
+    .system-node {
+      opacity: 0.5;
+      filter: grayscale(0.6);
+    }
+    .system-node td:first-child::after {
+      content: " (Squarespace auto-schema)";
+      font-style: italic;
+      color: #888;
+      margin-left: 0.5rem;
+    }
     .help-link {
       font-size: 0.75rem;
       color: #6b7280;
@@ -943,7 +953,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.0</span>
+    <span class="version">v1.8.1</span>
     <span class="date">2025-01-27</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1135,7 +1145,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         </div>
         <div class="status-legend-item">
           <span class="chip-sample issues">⚠️ Issues</span>
-          <span>Minor or redundant nodes (e.g. Squarespace auto-schema)</span>
+          <span>Minor or redundant nodes (e.g. Squarespace auto-schema) or missing recommended fields. These are not structural errors and can usually be ignored. Skipped nodes are shown in gray and excluded from validation counts.</span>
         </div>
         <div class="status-legend-item">
           <span class="chip-sample critical">❌ Critical</span>
@@ -1577,20 +1587,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return { severity: 'passed', badgeColor: 'severity-badge passed', badgeLabel: '✅ Passed' };
   }
 
-  // Helper: Build human-readable summary
-  function buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges) {
-    let summary = `Found ${blockCount || 'multiple'} JSON-LD block${blockCount !== 1 ? 's' : ''}\n`;
-    summary += `Unique schema types: ${schemaTypes.length ? schemaTypes.join(', ') : 'Unknown'}\n`;
-    if (duplicates.length > 0) {
-      summary += `⚠️ Duplicates detected: ${duplicates.join(', ')}\n`;
+  // Helper: Build schema table HTML for modal
+  function buildSchemaTableHtml(result) {
+    if (!result || !result.schemas || result.schemas.length === 0) {
+      return '';
     }
-    if (missingFieldsBadges.length > 0) {
-      const missingFieldsText = missingFieldsBadges.map(m => `${m.type}.${m.field}`).join(', ');
-      summary += `❌ Missing fields: ${missingFieldsText}\n`;
-    } else {
-      summary += '✅ All fields complete\n';
+    
+    let tableHtml = `
+      <div style="margin-top: 1.5rem;">
+        <h4 style="margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">Detected Schema Nodes</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+          <thead>
+            <tr style="background: #f3f4f6; border-bottom: 2px solid #d1d5db;">
+              <th style="padding: 0.5rem; text-align: left; font-weight: 600;">Type</th>
+              <th style="padding: 0.5rem; text-align: left; font-weight: 600;">@id</th>
+              <th style="padding: 0.5rem; text-align: left; font-weight: 600;">Name</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    for (const s of result.schemas) {
+      const schema = s.schema || {};
+      const isSystem = s.systemInjected ? 'system-node' : '';
+      const typeDisplay = Array.isArray(s.type) ? s.type.join(', ') : s.type;
+      const idDisplay = schema['@id'] || '—';
+      const nameDisplay = schema.name || '—';
+      
+      tableHtml += `
+        <tr class="${isSystem}" style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 0.5rem;">${typeDisplay}</td>
+          <td style="padding: 0.5rem;">${idDisplay}</td>
+          <td style="padding: 0.5rem;">${nameDisplay}</td>
+        </tr>
+      `;
     }
-    return summary;
+    
+    tableHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    return tableHtml;
   }
 
   // Helper: Check if Organization nodes need recommended fix
@@ -1740,6 +1779,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges);
     const recommendedFix = getRecommendedSchema(rowData.url);
     const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix, orgFixCheck.hasValidOrgNode, recommendedFix);
+    const schemaTableHtml = buildSchemaTableHtml(result);
     
     content.innerHTML = `
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
@@ -1750,6 +1790,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <div class="summary-card">
         <pre>${humanReadableSummary.trim()}</pre>
       </div>
+      
+      ${schemaTableHtml}
       
       ${recommendedFixHtml}
       
@@ -3268,12 +3310,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       schemas.forEach(schema => {
         const schemaType = schema['@type'];
         if (schemaType) {
+          // Skip Squarespace system-injected Organization nodes
+          const types = Array.isArray(schemaType) ? schemaType : [schemaType];
+          const isSystemInjected = types.includes('Organization') &&
+            !schema['@id'] &&
+            !schema.url &&
+            !schema.name &&
+            (schema.email || schema.telephone);
+          
+          if (isSystemInjected) {
+            console.log('Skipping Squarespace auto Organization node — no @id, name, or url');
+            schema.systemInjected = true;
+            // Add to schemas array for display (grayed out), but don't count in missing fields
+            analysis.schemas.push({
+              type: schemaType,
+              schema: schema,
+              missingFields: [],
+              warnings: [],
+              systemInjected: true
+            });
+            return; // Skip field validation and missing field counting
+          }
+          
           const fieldValidation = validateSchemaFields(schema, schemaType);
           analysis.schemas.push({
             type: schemaType,
             schema: schema,
             missingFields: fieldValidation.missingFields,
-            warnings: fieldValidation.warnings
+            warnings: fieldValidation.warnings,
+            systemInjected: false
           });
           
           analysis.missingFields.push(...fieldValidation.missingFields);
@@ -3981,73 +4046,105 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return explanation;
   }
 
+  // Helper: Count skipped (system-injected) schemas
+  function countSkippedSchemas(result) {
+    return result.schemas ? result.schemas.filter(s => s.systemInjected).length : 0;
+  }
+
+  // Helper: Check if all schemas are skipped
+  function isAllSchemasSkipped(result, skippedCount) {
+    return skippedCount > 0 && result.schemas && result.schemas.every(s => s.systemInjected);
+  }
+
+  // Helper: Build skipped note text
+  function buildSkippedNote(skippedCount) {
+    return skippedCount > 0 ? ` (${skippedCount} auto-skipped)` : '';
+  }
+
+  // Helper: Build passed status HTML
+  function buildPassedStatusHtml(result, skippedCount) {
+    const explanation = generateStatusExplanation(result);
+    const allSkipped = isAllSchemasSkipped(result, skippedCount);
+    const explanationText = allSkipped ? 'All required fields present (Squarespace auto-schema ignored)' : explanation;
+    return { 
+      class: 'valid', 
+      html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanationText}</span>`
+    };
+  }
+
+  // Helper: Build issues status HTML
+  function buildIssuesStatusHtml(result, skippedCount) {
+    const explanation = generateStatusExplanation(result);
+    const skippedNote = buildSkippedNote(skippedCount);
+    return { 
+      class: 'issues', 
+      html: `<span class="chip-issues" title="Click to view details">⚠️ Issues${skippedNote}</span><span class="status-explanation">${explanation}</span>`
+    };
+  }
+
+  // Helper: Build critical status HTML
+  function buildCriticalStatusHtml(result, skippedCount) {
+    const explanation = generateStatusExplanation(result);
+    const skippedNote = buildSkippedNote(skippedCount);
+    return { 
+      class: 'critical', 
+      html: `<span class="chip-critical" title="Click to view details">❌ Critical${skippedNote}</span><span class="status-explanation">${explanation}</span>`
+    };
+  }
+
+  // Helper: Build error status HTML
+  function buildErrorStatusHtml(result) {
+    const explanation = generateStatusExplanation(result);
+    return { 
+      class: 'error', 
+      html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+    };
+  }
+
+  // Helper: Check if status should be critical
+  function isCriticalStatus(result) {
+    if (!result.issuesList || result.issuesList.length === 0) {
+      return false;
+    }
+    const duplicates = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
+    const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
+    return duplicates.length > 2 || missingCount > 3;
+  }
+
   // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
-    // Debug: log what we're working with
     debugLog(`Status determination for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
     
     if (result.error) {
-      const explanation = generateStatusExplanation(result);
-      return { 
-        class: 'error', 
-        html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
-      };
+      return buildErrorStatusHtml(result);
     }
     
+    const skippedCount = countSkippedSchemas(result);
+    
     if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
-      const explanation = generateStatusExplanation(result);
-      debugLog(`Status: Passed, explanation: ${explanation}`);
-      return { 
-        class: 'valid', 
-        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
-      };
+      return buildPassedStatusHtml(result, skippedCount);
     }
     
     if (result.schemaFound) {
-      // Ensure issuesList exists for explanation generation
       if (!result.issuesList) {
         result.issuesList = [];
       }
       
       if (result.issuesList.length > 0) {
-        // Check for critical status (duplicates > 2 or issues > 3)
-        const duplicates = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
-        const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
-        const duplicateCount = duplicates.length;
-        
-        const explanation = generateStatusExplanation(result);
-        debugLog(`Status: Issues (missing=${missingCount}, dupes=${duplicateCount}), explanation: ${explanation}`);
-        
-        if (duplicateCount > 2 || missingCount > 3) {
-          return { 
-            class: 'critical', 
-            html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
-          };
+        if (isCriticalStatus(result)) {
+          return buildCriticalStatusHtml(result, skippedCount);
         }
-        
-        return { 
-          class: 'issues', 
-          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
-        };
+        return buildIssuesStatusHtml(result, skippedCount);
       }
       
       // Fallback to old logic for backward compatibility
-      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
+      const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || 
+                               (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
-        const explanation = generateStatusExplanation(result);
-        debugLog(`Status: Issues (fallback), explanation: ${explanation}`);
-        return { 
-          class: 'issues', 
-          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
-        };
+        return buildIssuesStatusHtml(result, skippedCount);
       }
       
-      const explanation = generateStatusExplanation(result);
-      debugLog(`Status: Passed (no issues), explanation: ${explanation}`);
-      return { 
-        class: 'valid', 
-        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
-      };
+      return buildPassedStatusHtml(result, skippedCount);
     }
     
     return { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
