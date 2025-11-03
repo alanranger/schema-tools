@@ -1048,6 +1048,25 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <button onclick="setAllExternalStatusTo('Passed')" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Set all Not run → Passed</button>
         <button onclick="resetAllExternalStatus()" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Reset all to Not run</button>
       </div>
+      
+      <div class="status-legend">
+        <div class="status-legend-item">
+          <span class="chip-sample passed">✅ Passed</span>
+          <span>No issues detected</span>
+        </div>
+        <div class="status-legend-item">
+          <span class="chip-sample issues">⚠️ Issues</span>
+          <span>Minor issues (optional fields missing or duplicates)</span>
+        </div>
+        <div class="status-legend-item">
+          <span class="chip-sample critical">❌ Critical</span>
+          <span>Critical issues (multiple duplicates or many missing fields)</span>
+        </div>
+        <div class="status-legend-item" style="margin-left: auto;">
+          <span style="color: #6b7280;">💡 Click any badge or "View Details" to see full analysis</span>
+        </div>
+      </div>
+      
       <div class="scrollable-container">
         <table class="results-table">
           <thead>
