@@ -2904,12 +2904,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return 'No schema found on page';
     }
     
-    if (result.issuesList && result.issuesList.length === 0) {
+    // Ensure issuesList exists (fallback to empty array)
+    const issuesList = result.issuesList || [];
+    
+    if (issuesList.length === 0) {
       return 'All required fields present';
     }
     
-    const duplicates = result.issuesList.filter(i => i.message.includes('DUPLICATE'));
-    const missingFields = result.issuesList.filter(i => i.message.includes('missing'));
+    const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
+    const missingFields = issuesList.filter(i => i.message && i.message.includes('missing'));
     const duplicateCount = duplicates.length;
     const missingCount = missingFields.length;
     
@@ -2917,7 +2920,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (missingCount > 0) {
       const fieldNames = missingFields.slice(0, 2).map(m => {
         const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
-        return match ? `${match[1]}.${match[2]}` : m.message;
+        return match ? `${match[1]}.${match[2]}` : (m.message.replace(/.*?:\s*"(\w+)"\s*missing.*/, '$1'));
       });
       if (missingCount === 1) {
         parts.push(`1 optional field missing – ${fieldNames[0]}`);
@@ -2958,10 +2961,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     if (result.schemaFound) {
-      if (result.issuesList && result.issuesList.length > 0) {
+      // Ensure issuesList exists for explanation generation
+      if (!result.issuesList) {
+        result.issuesList = [];
+      }
+      
+      if (result.issuesList.length > 0) {
         // Check for critical status (duplicates > 2 or issues > 3)
-        const duplicates = result.issuesList.filter(i => i.message.includes('DUPLICATE'));
-        const missingCount = result.issuesList.filter(i => i.message.includes('missing')).length;
+        const duplicates = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
+        const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
         const duplicateCount = duplicates.length;
         
         const explanation = generateStatusExplanation(result);
