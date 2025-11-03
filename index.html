@@ -2930,11 +2930,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         });
       }
       
-      debugLog(`Total schema nodes: ${allNodes.length}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
+      // Handle server fallback duplicates if present
+      if (pageData.duplicateWarnings && pageData.duplicateWarnings.length > 0) {
+        debugLog(`Server fallback detected duplicates: ${pageData.duplicateWarnings.join('; ')}`, 'warn');
+        missingMessages.push(...pageData.duplicateWarnings);
+      }
       
-      // Store detailed messages in result
-      result.missingFieldsDetails = missingMessages;
-      result.missingFieldsBadges = missingDetails;
+      // Store parse path info
+      result.parsePath = pageData.parsePath || 'local';
+      result.localParseFailed = pageData.localParseFailed || false;
+      result.serverFallback = pageData.serverFallback || false;
+      result.blockCount = pageData.blockCount || pageData.jsonLd.length;
+      
+      debugLog(`Total schema nodes: ${allNodes.length}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
       
       debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
       
