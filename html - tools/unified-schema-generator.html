@@ -2896,6 +2896,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Generate human-readable status explanation
   function generateStatusExplanation(result) {
+    debugLog(`Generating explanation for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    
     if (result.error) {
       return 'Error occurred during validation';
     }
@@ -2916,11 +2918,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const duplicateCount = duplicates.length;
     const missingCount = missingFields.length;
     
+    debugLog(`Explanation: missingCount=${missingCount}, duplicateCount=${duplicateCount}`);
+    
     const parts = [];
     if (missingCount > 0) {
       const fieldNames = missingFields.slice(0, 2).map(m => {
         const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
-        return match ? `${match[1]}.${match[2]}` : (m.message.replace(/.*?:\s*"(\w+)"\s*missing.*/, '$1'));
+        if (match) {
+          return `${match[1]}.${match[2]}`;
+        }
+        // Try alternative pattern
+        const altMatch = m.message.match(/Organization.*?(\w+).*?missing/i);
+        if (altMatch) {
+          return `Organization.${altMatch[1]}`;
+        }
+        return m.field ? `${m.type || 'Unknown'}.${m.field}` : 'Unknown field';
       });
       if (missingCount === 1) {
         parts.push(`1 optional field missing – ${fieldNames[0]}`);
@@ -2939,11 +2951,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
     }
     
-    return parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
+    const explanation = parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
+    debugLog(`Generated explanation: ${explanation}`);
+    return explanation;
   }
 
   // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
+    // Debug: log what we're working with
+    debugLog(`Status determination for ${result.url}: issuesList.length=${result.issuesList?.length || 0}, schemaFound=${result.schemaFound}`);
+    
     if (result.error) {
       const explanation = generateStatusExplanation(result);
       return { 
@@ -2954,6 +2971,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
       const explanation = generateStatusExplanation(result);
+      debugLog(`Status: Passed, explanation: ${explanation}`);
       return { 
         class: 'valid', 
         html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
@@ -2973,6 +2991,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const duplicateCount = duplicates.length;
         
         const explanation = generateStatusExplanation(result);
+        debugLog(`Status: Issues (missing=${missingCount}, dupes=${duplicateCount}), explanation: ${explanation}`);
         
         if (duplicateCount > 2 || missingCount > 3) {
           return { 
@@ -2991,6 +3010,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
         const explanation = generateStatusExplanation(result);
+        debugLog(`Status: Issues (fallback), explanation: ${explanation}`);
         return { 
           class: 'issues', 
           html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
@@ -2998,6 +3018,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       const explanation = generateStatusExplanation(result);
+      debugLog(`Status: Passed (no issues), explanation: ${explanation}`);
       return { 
         class: 'valid', 
         html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
