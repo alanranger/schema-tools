@@ -1150,31 +1150,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       li.textContent = 'No issues detected.';
       list.appendChild(li);
     } else {
-      // Group issues by type
-      const groupedByType = new Map();
-      for (const issue of issuesList) {
-        const type = issue.type || 'Other';
-        if (!groupedByType.has(type)) {
-          groupedByType.set(type, []);
-        }
-        groupedByType.get(type).push(issue);
-      }
+      // Add header
+      const header = document.createElement('li');
+      header.style.fontWeight = 'bold';
+      header.style.marginBottom = '0.5rem';
+      header.textContent = 'Schema Issues:';
+      list.appendChild(header);
       
-      // Render grouped issues
-      for (const [type, issues] of groupedByType) {
-        const typeHeader = document.createElement('li');
-        typeHeader.className = 'issue-type-header';
-        typeHeader.style.fontWeight = 'bold';
-        typeHeader.style.marginTop = issuesList.indexOf(issues[0]) > 0 ? '0.75rem' : '0';
-        typeHeader.textContent = `${type}:`;
-        list.appendChild(typeHeader);
-        
-        for (const issue of issues) {
-          const li = document.createElement('li');
-          li.textContent = issue.message;
-          li.style.marginLeft = '1rem';
-          list.appendChild(li);
-        }
+      // Display each issue with emoji prefix
+      for (const issue of issuesList) {
+        const li = document.createElement('li');
+        const emoji = issue.count ? '⚠️' : '⚠️';
+        li.textContent = `${emoji} ${issue.message}`;
+        li.style.marginLeft = '1rem';
+        list.appendChild(li);
       }
     }
     
@@ -2083,20 +2072,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
     const issuesList = [];
     
-    // Add missing field issues
+    // Add missing field issues with simple messages
     for (const m of missingDetails) {
-      const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
-      let message;
-      if (elsewhere) {
-        message = `${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`;
-      } else {
-        const idInfo = allNodes.find(n => {
-          const types = asArray(n['@type']);
-          return types.includes(m.type);
-        });
-        const idLabel = idInfo && idInfo['@id'] ? `@id: ${idInfo['@id'].split('#')[1]}` : 'no @id';
-        message = `${m.type}: "${m.field}" missing (${idLabel})`;
-      }
+      const idInfo = allNodes.find(n => {
+        const types = asArray(n['@type']);
+        return types.includes(m.type);
+      });
+      const idLabel = idInfo && idInfo['@id'] ? `@id: ${idInfo['@id'].split('#')[1]}` : 'no @id';
+      const message = `${m.type}: '${m.field}' missing (${idLabel})`;
       issuesList.push({ type: m.type, field: m.field, message });
     }
     
@@ -2516,7 +2499,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Build unified issues list
       result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes);
       
-      // Keep backward compatibility
+      // Keep backward compatibility - store as arrays for easy access
       const missingMessages = [];
       for (const issue of result.issuesList) {
         if (issue.field) {
@@ -2525,6 +2508,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       result.missingFieldsDetails = missingMessages;
       result.missingFieldsBadges = missingDetails;
+      
+      // Store counts for notes summary
+      result.missingCount = missingDetails.length;
+      result.duplicateCount = duplicateWarnings.length;
       
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
@@ -2598,9 +2585,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate missing fields HTML
   function generateMissingFieldsHtml(result) {
     if (result.issuesList && result.issuesList.length > 0) {
-      // Show all issues (missing fields + duplicates) joined with commas
-      const issueMessages = result.issuesList.map(issue => issue.message);
-      return `<span class="badge" title="${issueMessages.join('; ')}">${issueMessages.join(', ')}</span>`;
+      // Show all issues joined by commas (short format for table)
+      const shortMessages = result.issuesList.map(issue => {
+        // Extract short message (remove emoji prefix for table display)
+        if (issue.message.startsWith('⚠️ ')) {
+          return issue.message.replace('⚠️ ', '');
+        }
+        // For missing fields, show just "field missing"
+        if (issue.field) {
+          return `${issue.field} missing`;
+        }
+        return issue.message;
+      });
+      return shortMessages.join(', ');
     }
     // Fallback to old logic for backward compatibility
     if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
@@ -2662,9 +2659,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Add issues summary to notes if there are issues
     let notesWithSummary = existingNotes || '';
     if (result.issuesList && result.issuesList.length > 0) {
-      const missingCount = result.issuesList.filter(i => i.field).length;
-      const duplicateCount = result.issuesList.filter(i => i.count).length;
-      const summaryLine = `Issues: ${missingCount} missing field${missingCount !== 1 ? 's' : ''}, ${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} (details in modal)`;
+      const missingCount = result.missingCount || result.issuesList.filter(i => i.field).length;
+      const duplicateCount = result.duplicateCount || result.issuesList.filter(i => i.count).length;
+      const parseNote = result.localParseFailed ? 'Server parse: success. ' : '';
+      const summaryLine = `${parseNote}Issues: ${missingCount} missing field${missingCount !== 1 ? 's' : ''}, ${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''}.`;
       if (notesWithSummary && !notesWithSummary.includes('Issues:')) {
         notesWithSummary = notesWithSummary + '\n' + summaryLine;
       } else if (!notesWithSummary) {
