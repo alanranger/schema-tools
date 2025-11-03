@@ -1131,15 +1131,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <div class="status-legend">
         <div class="status-legend-item">
           <span class="chip-sample passed">✅ Passed</span>
-          <span>No issues detected</span>
+          <span>All valid; no missing fields</span>
         </div>
         <div class="status-legend-item">
           <span class="chip-sample issues">⚠️ Issues</span>
-          <span>Minor issues (optional fields missing or duplicates)</span>
+          <span>Minor or redundant nodes (e.g. Squarespace auto-schema)</span>
         </div>
         <div class="status-legend-item">
           <span class="chip-sample critical">❌ Critical</span>
-          <span>Critical issues (multiple duplicates or many missing fields)</span>
+          <span>Real structural errors or missing required fields</span>
         </div>
         <div class="status-legend-item" style="margin-left: auto;">
           <span style="color: #6b7280;">💡 Click any badge or "View Details" to see full analysis</span>
@@ -1622,10 +1622,66 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       humanReadableSummary += '✅ All fields complete\n';
     }
     
+    // Check if all Organization nodes are missing required fields (name, url, or @id)
+    // If at least one Organization node has a name, show green summary instead
+    let shouldShowRecommendedFix = false;
+    let hasValidOrgNode = false;
+    
+    // Check Organization nodes from result schemas or reconstruct from result data
+    if (result && result.schemas) {
+      const orgSchemas = result.schemas.filter(s => s.type === 'Organization' || (Array.isArray(s.type) && s.type.includes('Organization')));
+      if (orgSchemas.length > 0) {
+        // Check if ALL Organization nodes are missing required fields
+        const allMissingRequired = orgSchemas.every(s => {
+          const schema = s.schema || {};
+          const hasName = schema.name && schema.name.trim();
+          const hasUrl = schema.url && schema.url.trim();
+          const hasId = schema['@id'] && schema['@id'].trim();
+          return !hasName && !hasUrl && !hasId;
+        });
+        
+        // Check if at least one has a name
+        hasValidOrgNode = orgSchemas.some(s => {
+          const schema = s.schema || {};
+          return schema.name && schema.name.trim();
+        });
+        
+        // Only show recommended fix if ALL Organization nodes are missing required fields
+        shouldShowRecommendedFix = allMissingRequired && !hasValidOrgNode;
+      } else {
+        // No Organization nodes found - show recommended fix
+        shouldShowRecommendedFix = true;
+      }
+    } else {
+      // Fallback: check missingFieldsBadges for Organization issues
+      const orgMissingFields = missingFieldsBadges.filter(m => m.type === 'Organization');
+      const orgMissingRequired = orgMissingFields.some(m => ['name', 'url'].includes(m.field));
+      shouldShowRecommendedFix = orgMissingRequired && orgMissingFields.length > 0;
+    }
+    
     // Get recommended schema
     const recommendedFix = getRecommendedSchema(rowData.url);
     
     // Build enhanced modal content
+    let recommendedFixHtml = '';
+    if (shouldShowRecommendedFix) {
+      recommendedFixHtml = `
+        <div class="recommended-fix-card">
+          <h4>Recommended Fix (for Squarespace footer injection)</h4>
+          <p>Copy and paste the following schema block into your Squarespace <strong>Settings → Advanced → Code Injection → Footer</strong> section.</p>
+          <textarea class="recommended-fix-textarea" readonly id="recommendedSchemaText">${recommendedFix}</textarea>
+          <button class="copy-schema-btn" id="copySchemaBtn">📋 Copy Recommended Schema</button>
+        </div>
+      `;
+    } else if (hasValidOrgNode) {
+      recommendedFixHtml = `
+        <div class="recommended-fix-card" style="background: #f0fdf4; border-color: #10b981;">
+          <h4 style="color: #065f46;">✅ Your Organization schema looks good</h4>
+          <p style="color: #047857;">At least one valid Organization node with a name field was found. Your schema structure is correct.</p>
+        </div>
+      `;
+    }
+    
     content.innerHTML = `
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
         <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Schema Analysis Summary</h3>
@@ -1636,16 +1692,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <pre>${humanReadableSummary.trim()}</pre>
       </div>
       
-      <div class="recommended-fix-card">
-        <h4>Recommended Fix (for Squarespace footer injection)</h4>
-        <p>Copy and paste the following schema block into your Squarespace <strong>Settings → Advanced → Code Injection → Footer</strong> section.</p>
-        <textarea class="recommended-fix-textarea" readonly id="recommendedSchemaText">${recommendedFix}</textarea>
-        <button class="copy-schema-btn" id="copySchemaBtn">📋 Copy Recommended Schema</button>
-      </div>
+      ${recommendedFixHtml}
       
       <div class="help-link">
-        Need help implementing this? 
-        <a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a>
+        ${shouldShowRecommendedFix ? '<p>Need help implementing this? ' : ''}
+        ${shouldShowRecommendedFix ? '<a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a></p>' : ''}
         <p style="margin-top: 0.5rem; font-style: italic; color: #6b7280;">
           Diagnostic: ${issueCount} missing field(s), ${duplicates.length} duplicate type(s) detected.
         </p>
@@ -1831,6 +1882,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const instances = nodesByKey[key];
         const firstNode = instances[0].node;
         
+        // Detect Squarespace auto-generated Organization nodes (no @id, no name, no url)
+        const isSystemInjected = t === 'Organization' && 
+          !firstNode['@id'] && 
+          (!firstNode.name || !firstNode.name.trim()) && 
+          (!firstNode.url || !firstNode.url.trim());
+        
+        // Skip system-injected nodes from missing-field counts
+        if (isSystemInjected) {
+          return;
+        }
+        
         required.forEach(req => {
           // Check if this specific node (by key) has the field
           if (!firstNode.hasOwnProperty(req) || !firstNode[req]) {
@@ -1843,7 +1905,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
                 nodeIndex: instances[0].index,
                 key: key,
                 instances: instances.length,
-                hasId: !!firstNode['@id']
+                hasId: !!firstNode['@id'],
+                systemInjected: isSystemInjected
               });
             }
           }
@@ -3532,9 +3595,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Finalize row status prioritizing external validators
   function finalizeRowStatus(index, localParse, rich, schemaOrg) {
     const richPassed = rich?.status === 'eligible' && rich?.verdict === 'PASS';
-    const schemaPassed = schemaOrg?.status === 'passed';
-    // Check if Schema.org failed but errors array is empty - treat as warning
-    const schemaOrgWarning = schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0;
+    // Check if Schema.org failed but errors.length === 0 AND warnings.length === 0 - treat as passed
+    const schemaOrgPassed = schemaOrg?.status === 'passed' || 
+      (schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
+       schemaOrg?.warnings && schemaOrg.warnings.length === 0);
+    const schemaOrgWarning = schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0 && 
+      schemaOrg?.warnings && schemaOrg.warnings.length > 0;
     const missing = localParse?.missingFieldsDetails || localParse?.missingFieldsBadges || localParse?.missingFields || [];
     const missingCount = Array.isArray(missing) ? missing.length : (missing ? 1 : 0);
     
@@ -3550,16 +3616,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       setSelect(richSelect, richPassed ? '✅ Passed' : (rich ? '❌ Failed' : 'Not run'));
     }
     if (schemaSelect) {
-      // If Schema.org failed but errors array is empty, show Warning instead of Failed
-      if (schemaOrgWarning) {
+      // If Schema.org failed but errors.length === 0 AND warnings.length === 0, show Passed
+      if (schemaOrgPassed) {
+        setSelect(schemaSelect, '✅ Passed');
+      } else if (schemaOrgWarning) {
         setSelect(schemaSelect, '⚠️ Warning');
       } else {
-        setSelect(schemaSelect, schemaPassed ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
+        setSelect(schemaSelect, schemaOrg?.status === 'passed' ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
       }
     }
     
     // Prefer externals if both passed
-    if (richPassed && schemaPassed) {
+    if (richPassed && schemaOrgPassed) {
       // Only show Issues if there are actual missing fields (not just duplicates)
       const realIssues = missing.filter(m => {
         if (typeof m === 'string') {
@@ -4178,8 +4246,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           dropdownValue = '⚠️ Warning';
           break;
         case 'failed':
-          // If status is "failed" but errors array is empty, treat as warning
-          if (data.errors && data.errors.length === 0) {
+          // If status is "failed" but errors.length === 0 AND warnings.length === 0, treat as passed
+          if (data.errors && data.errors.length === 0 && data.warnings && data.warnings.length === 0) {
+            dropdownValue = '✅ Passed';
+            debugLog(`Schema.org returned "failed" but no errors and no warnings - treating as Passed`, 'info');
+          } else if (data.errors && data.errors.length === 0) {
             dropdownValue = '⚠️ Warning';
             debugLog(`Schema.org returned "failed" but errors array is empty - treating as Warning`, 'warn');
           } else {
