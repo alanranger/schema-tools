@@ -4619,6 +4619,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         console.log(`[✓] Restored analysis.schemaTypes from initialAnalysis: [${analysis.schemaTypes.join(', ')}]`);
       }
       
+      // CRITICAL: Ensure analysis arrays are initialized
+      if (!analysis.info || !Array.isArray(analysis.info)) {
+        analysis.info = [];
+      }
+      if (!analysis.warnings || !Array.isArray(analysis.warnings)) {
+        analysis.warnings = [];
+      }
+      if (!analysis.missingFields || !Array.isArray(analysis.missingFields)) {
+        analysis.missingFields = [];
+      }
+      
       // Ensure schemaFound stays true if blocks exist
       if (pageData.jsonLd && pageData.jsonLd.length > 0) {
         result.schemaFound = true;
