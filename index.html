@@ -1405,15 +1405,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         tabs[config.tabIndex].classList.add('active');
       }
       const content = document.getElementById(config.contentId);
-        if (content) {
-          content.classList.add('active');
-          content.style.display = 'block';
-          debugLog(`Tab activated: ${config.contentId}`, 'success');
-        } else {
-          debugLog(`Tab content not found: ${config.contentId}`, 'error');
-        }
+      if (content) {
+        content.classList.add('active');
+        content.style.display = 'block';
+        debugLog(`Tab activated: ${config.contentId}`, 'success');
       } else {
-        debugLog(`Unknown tab mode: ${mode}`, 'error');
+        debugLog(`Tab content not found: ${config.contentId}`, 'error');
+      }
+    } else {
+      debugLog(`Unknown tab mode: ${mode}`, 'error');
     }
   };
   
