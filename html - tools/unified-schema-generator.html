@@ -1124,25 +1124,57 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     meta.textContent = `${rowData.url} · Types: ${rowData.schemaType || 'None'}`;
     list.innerHTML = '';
-    let missing = [];
+    
+    // Get unified issues list from rowData or dataset
+    let issuesList = [];
     try {
-      if (rowData.tr && rowData.tr.dataset.missingDetail) {
-        missing = JSON.parse(rowData.tr.dataset.missingDetail);
+      if (rowData.tr && rowData.tr.dataset.issuesList) {
+        issuesList = JSON.parse(rowData.tr.dataset.issuesList);
+      } else if (rowData.issuesList) {
+        issuesList = rowData.issuesList;
+      } else if (rowData.tr && rowData.tr.dataset.missingDetail) {
+        // Fallback to old format
+        const missing = JSON.parse(rowData.tr.dataset.missingDetail);
+        issuesList = missing.map(m => ({ message: m, type: 'Unknown' }));
       } else if (rowData.missingFields) {
-        missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
+        // Fallback to old format
+        const missing = Array.isArray(rowData.missingFields) ? rowData.missingFields : String(rowData.missingFields).split(',').map(s => s.trim()).filter(Boolean);
+        issuesList = missing.map(m => ({ message: m, type: 'Unknown' }));
       }
     } catch (err) {
-      console.warn('Failed to parse missing fields data:', err);
+      console.warn('Failed to parse issues data:', err);
     }
-    if (missing.length === 0) {
+    
+    if (issuesList.length === 0) {
       const li = document.createElement('li');
-      li.textContent = 'No missing required fields detected.';
+      li.textContent = 'No issues detected.';
       list.appendChild(li);
     } else {
-      for (const f of missing) {
-        const li = document.createElement('li');
-        li.textContent = f;
-        list.appendChild(li);
+      // Group issues by type
+      const groupedByType = new Map();
+      for (const issue of issuesList) {
+        const type = issue.type || 'Other';
+        if (!groupedByType.has(type)) {
+          groupedByType.set(type, []);
+        }
+        groupedByType.get(type).push(issue);
+      }
+      
+      // Render grouped issues
+      for (const [type, issues] of groupedByType) {
+        const typeHeader = document.createElement('li');
+        typeHeader.className = 'issue-type-header';
+        typeHeader.style.fontWeight = 'bold';
+        typeHeader.style.marginTop = issuesList.indexOf(issues[0]) > 0 ? '0.75rem' : '0';
+        typeHeader.textContent = `${type}:`;
+        list.appendChild(typeHeader);
+        
+        for (const issue of issues) {
+          const li = document.createElement('li');
+          li.textContent = issue.message;
+          li.style.marginLeft = '1rem';
+          list.appendChild(li);
+        }
       }
     }
     
@@ -1180,6 +1212,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Get index from row to find validation result
     const rowIndex = Array.from(tr.parentNode.children).indexOf(tr);
     const result = validationResults[rowIndex];
+    
+    let issuesList = [];
+    if (result && result.issuesList) {
+      issuesList = result.issuesList;
+    } else if (tr.dataset.issuesList) {
+      try {
+        issuesList = JSON.parse(tr.dataset.issuesList);
+      } catch (e) {
+        console.warn('Failed to parse issuesList:', e);
+      }
+    }
+    
     let missingFields;
     if (result && result.missingFields) {
       missingFields = result.missingFields;
@@ -1188,7 +1232,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     } else {
       missingFields = [];
     }
-    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson, tr: trRef };
+    
+    return { url, schemaType, missingFields: missingFields, firstJsonLd: firstJson, tr: trRef, issuesList };
   }
   
   // ---- Schema core fields (minimal, safe set) ----
@@ -2005,6 +2050,64 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // Helper: Detect duplicates in allNodes
+  function detectDuplicates(allNodes) {
+    const typeMap = new Map(); // type -> @id -> count
+    const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
+    const duplicateWarnings = [];
+    
+    for (const node of allNodes) {
+      const types = asArray(node['@type']);
+      for (const type of types) {
+        const idKey = node['@id'] || 'NO_ID';
+        const mapKey = `${type}|${idKey}`;
+        typeMap.set(mapKey, (typeMap.get(mapKey) || 0) + 1);
+      }
+    }
+    
+    typeMap.forEach((count, mapKey) => {
+      if (count > 1) {
+        const [type, idKey] = mapKey.split('|');
+        const isGlobal = idKey !== 'NO_ID' && globalPatterns.some(p => idKey.includes(p));
+        if (!isGlobal) {
+          const idLabel = idKey === 'NO_ID' ? 'NO_ID' : `@id: ${idKey.split('#')[1]}`;
+          duplicateWarnings.push({ type, id: idKey, count, message: `⚠️ DUPLICATE: ${type} (${idLabel}) × ${count}` });
+        }
+      }
+    });
+    
+    return duplicateWarnings;
+  }
+
+  // Helper: Build unified issues list from missing fields and duplicates
+  function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
+    const issuesList = [];
+    
+    // Add missing field issues
+    for (const m of missingDetails) {
+      const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
+      let message;
+      if (elsewhere) {
+        message = `${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`;
+      } else {
+        const idInfo = allNodes.find(n => {
+          const types = asArray(n['@type']);
+          return types.includes(m.type);
+        });
+        const idLabel = idInfo && idInfo['@id'] ? `@id: ${idInfo['@id'].split('#')[1]}` : 'no @id';
+        message = `${m.type}: "${m.field}" missing (${idLabel})`;
+      }
+      issuesList.push({ type: m.type, field: m.field, message });
+    }
+    
+    // Add duplicate issues
+    for (const dup of duplicateWarnings) {
+      issuesList.push({ type: dup.type, id: dup.id, count: dup.count, message: dup.message });
+    }
+    
+    return issuesList;
+  }
+
   // Helper: Fetch and parse HTML
   async function fetchAndParseHtml(url, schemaTypeCell, useProxy = true) {
     if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
@@ -2057,9 +2160,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       debugLog(`Server fallback: found ${data.count} JSON-LD blocks`, data.count > 0 ? 'success' : 'warn');
       
-      // Process scripts to extract types
+      // Process scripts to extract types and detect duplicates
       const allNodes = [];
       const uniqueTypes = new Set();
+      const typeMap = new Map(); // type -> @id -> count
       
       for (const block of data.scripts) {
         try {
@@ -2069,11 +2173,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             const types = asArray(node['@type']);
             for (const type of types) {
               uniqueTypes.add(type);
+              // Track duplicates
+              const idKey = node['@id'] || 'NO_ID';
+              const mapKey = `${type}|${idKey}`;
+              typeMap.set(mapKey, (typeMap.get(mapKey) || 0) + 1);
             }
           }
         } catch (e) {
           debugLog(`Error processing server block: ${e.message}`, 'warn');
         }
+      }
+      
+      // Detect duplicates (excluding global injections)
+      const globalPatterns = ['website', 'org', 'local', 'breadcrumbs'];
+      const duplicateWarnings = [];
+      
+      typeMap.forEach((count, mapKey) => {
+        if (count > 1) {
+          const [type, idKey] = mapKey.split('|');
+          const isGlobal = idKey !== 'NO_ID' && globalPatterns.some(p => idKey.includes(p));
+          if (!isGlobal) {
+            const idLabel = idKey === 'NO_ID' ? 'NO_ID' : `@id: ${idKey.split('#')[1]}`;
+            duplicateWarnings.push({ type, id: idKey, count, message: `⚠️ DUPLICATE: ${type} (${idLabel}) × ${count}` });
+          }
+        }
+      });
+      
+      if (duplicateWarnings.length > 0) {
+        debugLog(`Server fallback detected duplicates: ${duplicateWarnings.map(d => d.message).join(', ')}`, 'warn');
       }
       
       return {
@@ -2082,7 +2209,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schemaFound: data.count > 0,
         schemaType: Array.from(uniqueTypes).join(', '),
         serverFallback: true,
-        blockCount: data.count
+        blockCount: data.count,
+        allNodes,
+        duplicateWarnings
       };
       
     } catch (error) {
@@ -2351,7 +2480,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       missingFields: [],
       warnings: [],
       schemas: [],
-      error: null
+      error: null,
+      issuesList: []
     };
     
     try {
@@ -2368,18 +2498,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         }
       }
       
-      const missingDetails = computeMissingFields(allNodes);
-      const missingMessages = [];
-      for (const m of missingDetails) {
-        const elsewhere = findFieldElsewhere(allNodes, m.field, m.type);
-        if (elsewhere) {
-          missingMessages.push(`${m.type}: "${m.field}" missing. Found in ${elsewhere.fromType}: "${elsewhere.value}". Copy it into ${m.type}.`);
-        } else {
-          missingMessages.push(`${m.type}: "${m.field}" missing (add this property to the ${m.type} node).`);
-        }
+      // If server fallback provided allNodes, use them
+      if (pageData.allNodes && pageData.allNodes.length > 0) {
+        allNodes = pageData.allNodes;
       }
       
-      // Store detailed messages in result
+      const missingDetails = computeMissingFields(allNodes);
+      
+      // Detect duplicates (use server duplicates if available, otherwise detect locally)
+      let duplicateWarnings = [];
+      if (pageData.duplicateWarnings && pageData.duplicateWarnings.length > 0) {
+        duplicateWarnings = pageData.duplicateWarnings;
+      } else {
+        duplicateWarnings = detectDuplicates(allNodes);
+      }
+      
+      // Build unified issues list
+      result.issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes);
+      
+      // Keep backward compatibility
+      const missingMessages = [];
+      for (const issue of result.issuesList) {
+        if (issue.field) {
+          missingMessages.push(issue.message);
+        }
+      }
       result.missingFieldsDetails = missingMessages;
       result.missingFieldsBadges = missingDetails;
       
@@ -2397,7 +2540,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.schemaType = pageData.schemaType || analysis.schemaTypes.join(', ') || 'None';
       result.missingFields = [...new Set(analysis.missingFields)];
       result.warnings = analysis.warnings;
-      result.valid = analysis.valid;
+      result.valid = analysis.valid && result.issuesList.length === 0;
       result.schemas = analysis.schemas;
       
     } catch (error) {
@@ -2417,10 +2560,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (result.error) {
       return { class: 'error', html: '<span class="chip-issues" title="View details">⛔ Error</span>' };
     }
-    if (result.valid) {
+    if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
       return { class: 'valid', html: '<span class="chip-ok">✅ Valid</span>' };
     }
     if (result.schemaFound) {
+      if (result.issuesList && result.issuesList.length > 0) {
+        return { class: 'issues', html: '<span class="chip-issues" title="View details">⚠️ Issues</span>' };
+      }
+      // Fallback to old logic for backward compatibility
       const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
         return { class: 'issues', html: '<span class="chip-issues" title="View details">⚠️ Issues</span>' };
@@ -2440,6 +2587,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         console.warn('Failed to store JSON-LD data:', error);
       }
     }
+    if (result.issuesList && result.issuesList.length > 0) {
+      row.dataset.issuesList = JSON.stringify(result.issuesList);
+    }
     if (result.missingFieldsDetails) {
       row.dataset.missingDetail = JSON.stringify(result.missingFieldsDetails);
     }
@@ -2447,6 +2597,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   
   // Helper: Generate missing fields HTML
   function generateMissingFieldsHtml(result) {
+    if (result.issuesList && result.issuesList.length > 0) {
+      // Show all issues (missing fields + duplicates) joined with commas
+      const issueMessages = result.issuesList.map(issue => issue.message);
+      return `<span class="badge" title="${issueMessages.join('; ')}">${issueMessages.join(', ')}</span>`;
+    }
+    // Fallback to old logic for backward compatibility
     if (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) {
       return result.missingFieldsBadges.map(m => {
         const detail = result.missingFieldsDetails ? result.missingFieldsDetails.find(x => x.startsWith(m.type+':')) : '';
@@ -2503,6 +2659,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const schemaOrgSelectHtml = generateStatusSelectHtml(index, existingSchemaOrgStatus, 'schemaorg');
     const actionsHtml = generateActionsColumnHtml(index, result);
     
+    // Add issues summary to notes if there are issues
+    let notesWithSummary = existingNotes || '';
+    if (result.issuesList && result.issuesList.length > 0) {
+      const missingCount = result.issuesList.filter(i => i.field).length;
+      const duplicateCount = result.issuesList.filter(i => i.count).length;
+      const summaryLine = `Issues: ${missingCount} missing field${missingCount !== 1 ? 's' : ''}, ${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} (details in modal)`;
+      if (notesWithSummary && !notesWithSummary.includes('Issues:')) {
+        notesWithSummary = notesWithSummary + '\n' + summaryLine;
+      } else if (!notesWithSummary) {
+        notesWithSummary = summaryLine;
+      }
+    }
+    
     return `
       <td><a href="${result.url}" target="_blank" class="url-link">${result.url}</a></td>
       <td id="schemaTypeCell_${index}">${schemaTypeHtml}</td>
@@ -2519,7 +2688,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         </select>
       </td>
       <td>
-        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${existingNotes}</textarea>
+        <textarea class="notes-textarea" id="notes_${index}" placeholder="Add notes..." onchange="updateValidationNotes(${index}, this.value)">${notesWithSummary}</textarea>
       </td>
       <td style="white-space: normal; min-width: 250px;">
         ${actionsHtml}
@@ -3079,9 +3248,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         
         try {
           const json = await generateEnhancedFor(result.url);
+          const issuesSummary = buildIssuesSummary(result);
           pages.push({
             url: result.url,
-            json: json
+            json: json,
+            issues_summary: issuesSummary || null
           });
         } catch (error) {
           console.warn(`Failed to generate enhanced schema for ${result.url}:`, error);
@@ -3140,11 +3311,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       notes: notesEl ? notesEl.value : result.notes || ''
     };
   }
+
+  // Helper: Build issues summary text
+  function buildIssuesSummary(result) {
+    if (result.issuesList && result.issuesList.length > 0) {
+      const issueMessages = result.issuesList.map(issue => issue.message);
+      return issueMessages.join('; ');
+    }
+    return '';
+  }
   
   // Helper: Save single result to Supabase
   async function saveSingleResultToSupabase(index, result) {
     const { googleStatus, schemaOrgStatus, notes } = getValidationStatusesFromDOM(index, result);
     const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
+    const issuesSummary = buildIssuesSummary(result);
     
     const { data, error } = await supabase
       .from('schema_audit_logs')
@@ -3155,7 +3336,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         validator_schemaorg_status: schemaOrgStatus,
         schema_type_detected: result.schemaType || null,
         schema_json_raw: schemaJsonRaw,
-        schema_notes: notes || null
+        schema_notes: notes || null,
+        issues_summary: issuesSummary || null
       });
     
     if (error) throw error;
