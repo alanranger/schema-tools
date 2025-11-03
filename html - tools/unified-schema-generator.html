@@ -1990,6 +1990,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return { jsonLdBlocks, schemaType };
   }
   
+  // Helper: Debug logging function
+  function debugLog(message, level = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = `[${timestamp}]`;
+    if (level === 'error') {
+      console.error(`${prefix} ❌ ${message}`);
+    } else if (level === 'warn') {
+      console.warn(`${prefix} ⚠️ ${message}`);
+    } else if (level === 'success') {
+      console.log(`${prefix} ✅ ${message}`);
+    } else {
+      console.log(`${prefix} ${message}`);
+    }
+  }
+
   // Helper: Fetch and parse HTML
   async function fetchAndParseHtml(url, schemaTypeCell, useProxy = true) {
     if (schemaTypeCell) setProgress(schemaTypeCell, 15, 'Fetching');
@@ -2011,6 +2026,69 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
     
     return doc;
+  }
+
+  // Server fallback: Fetch JSON-LD via server when client-side fails
+  async function fetchPageSchemaServer(url) {
+    try {
+      // Determine API base URL
+      let apiBaseUrl;
+      if (globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1') {
+        apiBaseUrl = 'http://localhost:3000';
+      } else if (globalThis.location.hostname.includes('schema-tools-six.vercel.app')) {
+        apiBaseUrl = 'https://schema-tools-six.vercel.app';
+      } else {
+        apiBaseUrl = globalThis.location.origin;
+      }
+      
+      const apiUrl = `${apiBaseUrl}/api/fetch-jsonld?url=${encodeURIComponent(url)}`;
+      debugLog(`Calling server fallback API: ${apiUrl}`, 'info');
+      
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Server API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        throw new Error(data.error || 'Server API error');
+      }
+      
+      debugLog(`Server fallback: found ${data.count} JSON-LD blocks`, data.count > 0 ? 'success' : 'warn');
+      
+      // Process scripts to extract types
+      const allNodes = [];
+      const uniqueTypes = new Set();
+      
+      for (const block of data.scripts) {
+        try {
+          const nodes = flattenJsonLd(block, []);
+          for (const node of nodes) {
+            allNodes.push(node);
+            const types = asArray(node['@type']);
+            for (const type of types) {
+              uniqueTypes.add(type);
+            }
+          }
+        } catch (e) {
+          debugLog(`Error processing server block: ${e.message}`, 'warn');
+        }
+      }
+      
+      return {
+        url,
+        jsonLd: data.scripts,
+        schemaFound: data.count > 0,
+        schemaType: Array.from(uniqueTypes).join(', '),
+        serverFallback: true,
+        blockCount: data.count
+      };
+      
+    } catch (error) {
+      debugLog(`Server fallback failed: ${error.message}`, 'error');
+      throw error;
+    }
   }
   
   // Fetch page and extract JSON-LD
@@ -2039,12 +2117,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           schemaType
         };
       } catch (err) {
-        console.warn('Failed to fetch page (fallback):', err);
+        debugLog(`Local parse failed for ${url}, trying server fallback...`, 'warn');
         if (schemaTypeCell) {
-          markProgressError(schemaTypeCell);
-          setProgress(schemaTypeCell, 100, 'Error');
+          setProgress(schemaTypeCell, 10, 'Server fallback...');
         }
-        throw new Error(`Failed to fetch ${url}: ${err.message}`);
+        
+        try {
+          const serverData = await fetchPageSchemaServer(url);
+          
+          if (schemaTypeCell) {
+            setProgress(schemaTypeCell, 100, 'Done');
+            setTimeout(() => {
+              const schemaTypeText = serverData.schemaType || '—';
+              schemaTypeCell.textContent = serverData.schemaFound ? `${schemaTypeText} (server)` : '—';
+            }, 500);
+          }
+          
+          // Store server fallback flag for later use
+          serverData.parsePath = 'server';
+          serverData.localParseFailed = true;
+          
+          return serverData;
+        } catch (serverError) {
+          console.warn('Failed to fetch page (server fallback):', serverError);
+          if (schemaTypeCell) {
+            markProgressError(schemaTypeCell);
+            setProgress(schemaTypeCell, 100, 'Error');
+          }
+          throw new Error(`Failed to fetch ${url}: ${err.message}`);
+        }
       }
     }
   }
