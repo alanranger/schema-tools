@@ -787,6 +787,11 @@
     .chip-issues:hover {
       filter: brightness(0.98);
     }
+    .chip-issues::after {
+      content: " (non-critical)";
+      font-size: 0.8em;
+      opacity: 0.7;
+    }
     .chip-critical {
       display: inline-flex;
       align-items: center;
@@ -953,7 +958,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.1</span>
+    <span class="version">v1.8.2</span>
     <span class="date">2025-01-27</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2154,10 +2159,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   async function generateEnhancedFor(url){
     try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const res = await fetch(proxyUrl);
-      const data = await res.json();
-      const html = data.contents;
+      // Use API proxy for Squarespace pages
+      const apiBaseUrl = getApiBaseUrl();
+      const res = await fetch(`${apiBaseUrl}/api/fetch?url=${encodeURIComponent(url)}`);
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}`);
+      }
+      const html = await res.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
@@ -2171,6 +2179,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       return await processSchemaWithFallback(url, doc, nodes);
     } catch (error) {
+      // Fallback to direct fetch if API fails
       try {
         const res = await fetch(url, {mode:'cors'});
         const html = await res.text();
@@ -3998,7 +4007,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Build duplicate explanation text
   function buildDuplicateExplanation(duplicateCount) {
-    return duplicateCount === 1 ? '1 duplicate schema detected' : `${duplicateCount} duplicate schemas detected`;
+    const plural = duplicateCount === 1 ? '' : 's';
+    return `${duplicateCount} duplicate${plural} detected — likely normal Squarespace Events`;
   }
 
   function generateStatusExplanation(result) {
@@ -4072,10 +4082,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
   }
 
-  // Helper: Build issues status HTML
+  // Helper: Build issues status HTML (for duplicates and minor issues)
   function buildIssuesStatusHtml(result, skippedCount) {
     const explanation = generateStatusExplanation(result);
     const skippedNote = buildSkippedNote(skippedCount);
+    
+    // Check if this is primarily duplicates (should show as Warning)
+    const duplicates = result.issuesList ? result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE')) : [];
+    const isDuplicateOnly = duplicates.length > 0 && 
+                            (!result.issuesList || result.issuesList.filter(i => i.message && i.message.includes('missing')).length === 0);
+    
+    if (isDuplicateOnly) {
+      const plural = duplicates.length === 1 ? '' : 's';
+      return { 
+        class: 'issues', 
+        html: `<span class="chip-issues" title="Click to view details">⚠️ Warning${skippedNote}</span><span class="status-explanation">${duplicates.length} duplicate${plural} detected — likely normal Squarespace Events</span>`
+      };
+    }
+    
     return { 
       class: 'issues', 
       html: `<span class="chip-issues" title="Click to view details">⚠️ Issues${skippedNote}</span><span class="status-explanation">${explanation}</span>`
@@ -4101,14 +4125,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
   }
 
-  // Helper: Check if status should be critical
+  // Helper: Check if status should be critical (duplicates are never critical, only missing fields > 3)
   function isCriticalStatus(result) {
     if (!result.issuesList || result.issuesList.length === 0) {
       return false;
     }
-    const duplicates = result.issuesList.filter(i => i.message && i.message.includes('DUPLICATE'));
     const missingCount = result.issuesList.filter(i => i.message && i.message.includes('missing')).length;
-    return duplicates.length > 2 || missingCount > 3;
+    return missingCount > 3;
   }
 
   // Helper: Determine status HTML from result with color-coded badges and explanations
@@ -4315,12 +4338,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Make all status badges clickable to open issues modal
     if (statusCell) {
-      const chip = statusCell.querySelector('.chip-issues, .chip-critical, .chip-passed, .chip-ok');
-      if (chip && (statusClass === 'issues' || statusClass === 'critical' || statusClass === 'error')) {
-        chip.style.cursor = 'pointer';
-        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
-      } else if (chip && statusClass === 'valid') {
-        // Even "Passed" can be clicked to see the summary
+      const chips = statusCell.querySelectorAll('.chip-issues, .chip-critical, .chip-passed, .chip-ok, .status-badge');
+      for (const chip of chips) {
         chip.style.cursor = 'pointer';
         chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
       }
