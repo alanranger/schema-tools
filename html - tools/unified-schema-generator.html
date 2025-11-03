@@ -803,16 +803,51 @@
       background: #fecaca;
       transform: scale(1.05);
     }
-    .chip-ok {
+    .status-explanation {
+      display: inline-block;
+      margin-left: 0.75rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-style: italic;
+    }
+    .status-legend {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+    }
+    .status-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .status-legend-item .chip-sample {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .chip-sample.passed {
       background: #dcfce7;
       color: #166534;
       border: 1px solid #22c55e;
-      border-radius: 12px;
-      padding: 0.35rem 0.6rem;
-      font-weight: 600;
+    }
+    .chip-sample.issues {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    .chip-sample.critical {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
     }
     .badge {
       display: inline-block;
@@ -2832,14 +2867,67 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return result;
   }
 
-  // Helper: Determine status HTML from result with color-coded badges
+  // Helper: Generate human-readable status explanation
+  function generateStatusExplanation(result) {
+    if (result.error) {
+      return 'Error occurred during validation';
+    }
+    
+    if (!result.schemaFound) {
+      return 'No schema found on page';
+    }
+    
+    if (result.issuesList && result.issuesList.length === 0) {
+      return 'All required fields present';
+    }
+    
+    const duplicates = result.issuesList.filter(i => i.message.includes('DUPLICATE'));
+    const missingFields = result.issuesList.filter(i => i.message.includes('missing'));
+    const duplicateCount = duplicates.length;
+    const missingCount = missingFields.length;
+    
+    const parts = [];
+    if (missingCount > 0) {
+      const fieldNames = missingFields.slice(0, 2).map(m => {
+        const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
+        return match ? `${match[1]}.${match[2]}` : m.message;
+      });
+      if (missingCount === 1) {
+        parts.push(`1 optional field missing – ${fieldNames[0]}`);
+      } else if (missingCount === 2) {
+        parts.push(`2 optional fields missing – ${fieldNames.join(', ')}`);
+      } else {
+        parts.push(`${missingCount} optional fields missing – ${fieldNames.join(', ')}${missingCount > 2 ? '...' : ''}`);
+      }
+    }
+    
+    if (duplicateCount > 0) {
+      if (duplicateCount === 1) {
+        parts.push('1 duplicate schema detected');
+      } else {
+        parts.push(`${duplicateCount} duplicate schemas detected`);
+      }
+    }
+    
+    return parts.length > 0 ? parts.join(' • ') : 'Minor issues detected';
+  }
+
+  // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
     if (result.error) {
-      return { class: 'error', html: '<span class="chip-critical" title="Click to view details">❌ Critical</span>' };
+      const explanation = generateStatusExplanation(result);
+      return { 
+        class: 'error', 
+        html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+      };
     }
     
     if (result.issuesList && result.issuesList.length === 0 && result.schemaFound) {
-      return { class: 'valid', html: '<span class="chip-passed">✅ Passed</span>' };
+      const explanation = generateStatusExplanation(result);
+      return { 
+        class: 'valid', 
+        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
+      };
     }
     
     if (result.schemaFound) {
@@ -2849,20 +2937,36 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const missingCount = result.issuesList.filter(i => i.message.includes('missing')).length;
         const duplicateCount = duplicates.length;
         
+        const explanation = generateStatusExplanation(result);
+        
         if (duplicateCount > 2 || missingCount > 3) {
-          return { class: 'critical', html: '<span class="chip-critical" title="Click to view details">❌ Critical</span>' };
+          return { 
+            class: 'critical', 
+            html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+          };
         }
         
-        return { class: 'issues', html: '<span class="chip-issues" title="Click to view details">⚠️ Issues</span>' };
+        return { 
+          class: 'issues', 
+          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
+        };
       }
       
       // Fallback to old logic for backward compatibility
       const hasMissingFields = (result.missingFieldsBadges && result.missingFieldsBadges.length > 0) || (result.missingFields && result.missingFields.length > 0);
       if (hasMissingFields) {
-        return { class: 'issues', html: '<span class="chip-issues" title="Click to view details">⚠️ Issues</span>' };
+        const explanation = generateStatusExplanation(result);
+        return { 
+          class: 'issues', 
+          html: `<span class="chip-issues" title="Click to view details">⚠️ Issues</span><span class="status-explanation">${explanation}</span>`
+        };
       }
       
-      return { class: 'valid', html: '<span class="chip-passed">✅ Passed</span>' };
+      const explanation = generateStatusExplanation(result);
+      return { 
+        class: 'valid', 
+        html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanation}</span>`
+      };
     }
     
     return { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
@@ -2921,7 +3025,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const options = ['✅ Passed', '⚠️ Warning', '❌ Failed', '👀 Opened (reviewing)', '🔄 Running...', 'Not run'];
     return options.map(opt => {
       const selected = existingStatus === opt ? 'selected' : '';
-      return `<option value="${opt}" ${selected}>${opt}</option>`;
+      // Show "Failed" as "Warning" if it's Schema.org status and no errors
+      let displayOpt = opt;
+      if (statusType === 'schemaorg' && opt === '❌ Failed' && existingStatus === '❌ Failed') {
+        // Check if there are actual errors - if not, treat as warning
+        displayOpt = '⚠️ Warning';
+      }
+      return `<option value="${opt}" ${selected}>${displayOpt}</option>`;
     }).join('');
   }
   
