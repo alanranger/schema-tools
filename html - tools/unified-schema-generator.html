@@ -3230,6 +3230,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     const { class: statusClass, html: statusHtml } = determineStatusHtml(result);
+    debugLog(`Generated statusHtml for ${result.url}: ${statusHtml.substring(0, 200)}...`);
     storeRowDataAttributes(row, result);
     
     const existingGoogleStatus = result.validatorGoogleStatus || 'Not run';
@@ -3243,6 +3244,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       existingSchemaOrgStatus,
       existingNotes
     });
+    
+    // Verify the status cell was updated correctly
+    const statusCell = document.getElementById(`statusCell_${index}`);
+    if (statusCell) {
+      debugLog(`Status cell innerHTML after update: ${statusCell.innerHTML.substring(0, 200)}...`);
+    }
     
     setupRowButtonHandlers(index, result, schemaOrgUrl, googleUrl, statusClass, row);
     
