@@ -939,7 +939,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.7.1</span>
+    <span class="version">v1.7.2</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1269,6 +1269,41 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
 </div>
 
+<script>
+  // Tab switching - MUST be absolutely first, before any other code
+  function switchTab(mode) {
+    // Reset all active tabs and contents
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    for (const tab of tabs) {
+      tab.classList.remove('active');
+    }
+    for (const content of contents) {
+      content.classList.remove('active');
+    }
+    
+    // Activate correct tab based on mode
+    const tabMap = {
+      'event': { tabIndex: 0, contentId: 'eventTab' },
+      'product': { tabIndex: 1, contentId: 'productTab' },
+      'validator': { tabIndex: 2, contentId: 'validatorTab' },
+      'guide': { tabIndex: 3, contentId: 'guideTab' }
+    };
+    
+    const config = tabMap[mode];
+    if (config && tabs[config.tabIndex] && tabs[config.tabIndex] !== null) {
+      tabs[config.tabIndex].classList.add('active');
+      const content = document.getElementById(config.contentId);
+      if (content) {
+        content.classList.add('active');
+      }
+    }
+  }
+  
+  // Make it globally available
+  window.switchTab = switchTab;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -1473,7 +1508,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     loadAutoSavePreference();
   });
   
-  // Remove duplicate switchTab definition - it's already at the top
   
   // Progress bar helpers
   function renderProgress(cell) {
