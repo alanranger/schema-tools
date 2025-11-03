@@ -4247,6 +4247,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
 
     cacheResult(url, analysisResult);
+    
+    // Store persistently in validationResults array
+    const resultIndex = validationResults.findIndex(r => r.url === url);
+    if (resultIndex >= 0) {
+      validationResults[resultIndex].schemaFound = analysisResult.schemaFound;
+      validationResults[resultIndex].schemaTypes = analysisResult.schemaTypes;
+    }
+    
     updateResultRow(url, analysisResult);
     return analysisResult;
   }
@@ -4993,6 +5001,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function determineStatusHtml(result) {
     debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}`);
     
+    // Restore schemaFound if schemas exist but flag is false
+    if (!result.schemaFound && result.schemas && result.schemas.length > 0) {
+      result.schemaFound = true;
+      console.log("[✓] Restored schemaFound=true (schema blocks exist)");
+      
+      // Update in validationResults array
+      const resultIndex = validationResults.findIndex(r => r.url === result.url);
+      if (resultIndex >= 0) {
+        validationResults[resultIndex].schemaFound = true;
+      }
+    }
+    
     if (result.error) {
       return buildErrorStatusHtml(result);
     }
@@ -5030,7 +5050,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return buildPassedStatusHtml(result, skippedCount);
     }
     
-    return { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
+    return result.schemaFound
+      ? { class: 'valid', html: '<span class="chip-passed">✅ Passed</span>' }
+      : { class: 'no-schema', html: '<span class="status-badge no-schema">❌ No Schema</span>' };
   }
   
   // Helper: Store row data attributes
