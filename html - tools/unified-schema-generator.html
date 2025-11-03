@@ -2063,11 +2063,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function buildUnifiedIssuesList(missingDetails, duplicateWarnings, allNodes) {
     const issuesList = [];
     
-    // Add missing field issues with exact format specified
+    // Add missing field issues with exact format: includes (no @id) when applicable
     for (const f of missingDetails) {
+      // Check if any node of this type has an @id
+      const hasId = allNodes.some(n => {
+        const types = asArray(n['@type']);
+        return types.includes(f.type) && n['@id'];
+      });
+      const message = `${f.type}: "${f.field}" missing${hasId ? '' : ' (no @id)'}`;
       issuesList.push({
         type: f.type,
-        message: `${f.type}: "${f.field}" missing`
+        message: message
       });
     }
     
@@ -2504,11 +2510,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.missingCount = missingDetails.length;
       result.duplicateCount = duplicateWarnings.length;
       
-      // Append summary to notes (Step 5)
+      // Append summary to notes (Step 5) - exact format required
       if (result.issuesList.length > 0) {
         const missingCount = missingDetails.length;
         const duplicateCount = duplicateWarnings.length;
-        const summaryText = ` Issues detected: ${missingCount} missing, ${duplicateCount} duplicates.`;
+        const parseNote = pageData.serverFallback ? `Server parse: success (${pageData.blockCount || 0} blocks). ` : '';
+        const summaryText = `${parseNote}Issues detected: ${missingCount} missing, ${duplicateCount} duplicates.`;
         result.notes = (result.notes || '') + summaryText;
       }
       
