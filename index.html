@@ -3431,15 +3431,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Server fallback: Fetch JSON-LD via server when client-side fails
   async function fetchPageSchemaServer(url) {
     try {
-      // Determine API base URL
-      let apiBaseUrl;
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        apiBaseUrl = 'http://localhost:3000';
-      } else if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
-        apiBaseUrl = 'https://schema-tools-six.vercel.app';
-      } else {
-        apiBaseUrl = window.location.origin;
-      }
+      // Determine API base URL (use deployed API when running locally)
+      const apiBaseUrl = getApiBaseUrl();
       
       const apiUrl = `${apiBaseUrl}/api/fetch-jsonld?url=${encodeURIComponent(url)}`;
       debugLog(`Calling server fallback API: ${apiUrl}`, 'info');
@@ -5706,8 +5699,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   
   // Helper: Get API base URL based on current hostname
   function getApiBaseUrl() {
+    // Always use local origin when running locally (try vercel dev first, fallback to production)
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3000';
+      return window.location.origin; // Try local vercel dev first
     }
     if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
       return 'https://schema-tools-six.vercel.app';
