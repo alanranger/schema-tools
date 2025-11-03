@@ -342,7 +342,8 @@
       font-weight: 600;
       color: #2d3748;
       border-bottom: 2px solid #e2e8f0;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.4;
     }
     .results-table th:nth-child(1) { min-width: 250px; } /* Page URL */
     .results-table th:nth-child(2) { min-width: 200px; } /* Schema Type */
@@ -350,8 +351,8 @@
     .results-table th:nth-child(4) { min-width: 180px; } /* Missing Fields */
     .results-table th:nth-child(5) { min-width: 180px; } /* Warnings */
     .results-table th:nth-child(6) { min-width: 180px; } /* Info */
-    .results-table th:nth-child(7) { min-width: 180px; } /* Rich Results Status (external) */
-    .results-table th:nth-child(8) { min-width: 180px; } /* Schema.org Status (external) */
+    .results-table th:nth-child(7) { min-width: 140px; max-width: 160px; } /* Rich Results Status (external) */
+    .results-table th:nth-child(8) { min-width: 140px; max-width: 160px; } /* Schema.org Status (external) */
     .results-table th:nth-child(9) { min-width: 200px; } /* Notes */
     .results-table th:nth-child(10) { min-width: 280px; } /* Actions */
     
@@ -360,7 +361,24 @@
     th:nth-child(6), td:nth-child(6) { background: #f4fff7; }    /* Info */
     
     .missing-entry { color: #c00; font-weight: 500; margin: 0.25rem 0; }
-    .warning-entry { color: #b47f00; font-weight: 500; margin: 0.25rem 0; }
+    .warning-entry { 
+      color: #b47f00; 
+      font-weight: 500; 
+      margin: 0.125rem 0; 
+      font-size: 0.75rem;
+      line-height: 1.3;
+      max-height: 3rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .warning-entry:hover {
+      max-height: none;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
     .info-entry { color: #006b3b; font-weight: 500; margin: 0.25rem 0; }
     .status-badge.no-schema {
       background: #e2e8f0;
@@ -465,8 +483,11 @@
     } /* Missing Fields */
     .results-table td:nth-child(5) { 
       white-space: normal; 
-      min-width: 180px;
-      max-width: 250px;
+      min-width: 150px;
+      max-width: 200px;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+      vertical-align: top;
     } /* Warnings */
     .results-table td:nth-child(6) { 
       white-space: normal; 
@@ -987,7 +1008,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.3</span>
+    <span class="version">v1.8.4</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1204,8 +1225,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
               <th>Missing Fields</th>
               <th>Warnings</th>
               <th>Info</th>
-              <th>Rich Results Status (external)</th>
-              <th>Schema.org Status (external)</th>
+              <th>Rich Results<br>Status (external)</th>
+              <th>Schema.org<br>Status (external)</th>
               <th>Notes</th>
               <th>Actions</th>
             </tr>
@@ -4365,8 +4386,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       ? `<br><button class="save-btn" onclick="saveToSupabase(${index})" id="saveBtn_${index}">Save to Supabase</button>`
       : '<br><span style="color: #a0aec0; font-size: 0.875rem;">Supabase not available</span>';
     
-    // Add "View Details" button that opens the enhanced modal
-    const viewDetailsBtn = `<button class="enhance-btn" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;" onclick="openIssuesModal(getRowDataFromTr(this.closest('tr')))">View Details</button><br>`;
+    // Add "View Details" button with data attribute for event handler
+    const viewDetailsBtn = `<button class="enhance-btn view-details-btn" data-row-index="${index}" style="background: #2563eb; color: white; border-color: #2563eb; margin-bottom: 0.5rem;">View Details</button><br>`;
     
     return `${viewDetailsBtn}${enhanceBtn}
         <div style="margin-top: 0.5rem;">
@@ -4376,33 +4397,41 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ${supabaseBtn}`;
   }
   
+  // Helper: Add summary line to notes if not already present
+  function addSummaryLineIfNeeded(notesWithSummary, summaryLine, checkText) {
+    if (notesWithSummary && !notesWithSummary.includes(checkText)) {
+      return notesWithSummary + '\n' + summaryLine;
+    }
+    return notesWithSummary || summaryLine;
+  }
+
+  // Helper: Build missing fields summary line
+  function buildMissingFieldsSummary(missingCount) {
+    return `Missing: ${missingCount} field${missingCount !== 1 ? 's' : ''}.`;
+  }
+
+  // Helper: Build warnings summary line
+  function buildWarningsSummary(warningsCount) {
+    return `Warnings: ${warningsCount} duplicate${warningsCount !== 1 ? 's' : ''}.`;
+  }
+
+  // Helper: Build info summary line
+  function buildInfoSummary(infoCount) {
+    return `Info: ${infoCount} multi-instance schema${infoCount !== 1 ? 's' : ''} detected.`;
+  }
+
   // Helper: Build notes summary from result buckets
-  function buildNotesSummary(result, existingNotes) {
-    let notesWithSummary = existingNotes || '';
+  function buildNotesSummary(result, existingNotes = '') {
+    let notesWithSummary = existingNotes;
     
     if (result.missingFields && result.missingFields.length > 0) {
-      const summaryLine = `Missing: ${result.missingFields.length} field${result.missingFields.length !== 1 ? 's' : ''}.`;
-      if (notesWithSummary && !notesWithSummary.includes('Missing:')) {
-        notesWithSummary = notesWithSummary + '\n' + summaryLine;
-      } else if (!notesWithSummary) {
-        notesWithSummary = summaryLine;
-      }
+      notesWithSummary = addSummaryLineIfNeeded(notesWithSummary, buildMissingFieldsSummary(result.missingFields.length), 'Missing:');
     }
     if (result.warnings && result.warnings.length > 0) {
-      const summaryLine = `Warnings: ${result.warnings.length} duplicate${result.warnings.length !== 1 ? 's' : ''}.`;
-      if (notesWithSummary && !notesWithSummary.includes('Warnings:')) {
-        notesWithSummary = notesWithSummary + '\n' + summaryLine;
-      } else if (!notesWithSummary) {
-        notesWithSummary = summaryLine;
-      }
+      notesWithSummary = addSummaryLineIfNeeded(notesWithSummary, buildWarningsSummary(result.warnings.length), 'Warnings:');
     }
     if (result.info && result.info.length > 0) {
-      const summaryLine = `Info: ${result.info.length} multi-instance schema${result.info.length !== 1 ? 's' : ''} detected.`;
-      if (notesWithSummary && !notesWithSummary.includes('Info:')) {
-        notesWithSummary = notesWithSummary + '\n' + summaryLine;
-      } else if (!notesWithSummary) {
-        notesWithSummary = summaryLine;
-      }
+      notesWithSummary = addSummaryLineIfNeeded(notesWithSummary, buildInfoSummary(result.info.length), 'Info:');
     }
     
     return notesWithSummary;
@@ -4454,6 +4483,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const schemaOrgBtn = document.getElementById(`schemaOrgBtn_${index}`);
     const richResultsBtn = document.getElementById(`richResultsBtn_${index}`);
     const genBtn = document.getElementById(`genBtn_${index}`);
+    const viewDetailsBtn = document.querySelector(`.view-details-btn[data-row-index="${index}"]`);
     const statusCell = document.getElementById(`statusCell_${index}`);
     
     if (schemaOrgBtn) {
@@ -4484,12 +4514,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       genBtn.onclick = () => generateEnhancedSchema(index);
     }
     
+    if (viewDetailsBtn) {
+      viewDetailsBtn.onclick = () => {
+        const rowData = getRowDataFromTr(row);
+        openIssuesModal(rowData);
+      };
+    }
+    
     // Make all status badges clickable to open issues modal
     if (statusCell) {
       const chips = statusCell.querySelectorAll('.chip-issues, .chip-critical, .chip-passed, .chip-ok, .status-badge');
       for (const chip of chips) {
         chip.style.cursor = 'pointer';
-        chip.onclick = () => openIssuesModal(getRowDataFromTr(row));
+        chip.onclick = () => {
+          const rowData = getRowDataFromTr(row);
+          openIssuesModal(rowData);
+        };
       }
     }
   }
