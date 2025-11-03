@@ -939,7 +939,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.7.3</span>
+    <span class="version">v1.7.4</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -2192,34 +2192,89 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Single URL validation
   async function runSingleUrlValidation() {
-    const urlInput = document.getElementById('singleUrlInput');
-    const url = urlInput.value.trim();
+    console.log('runSingleUrlValidation called');
     
-    if (!url) {
-      alert('Please enter a URL to validate');
-      return;
-    }
-    
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      alert('Please enter a valid URL starting with http:// or https://');
-      return;
-    }
-    
-    // Show results table
-    const resultsDiv = document.getElementById('validatorResults');
-    if (resultsDiv) {
-      resultsDiv.style.display = 'block';
-    }
-    
-    // Check if URL already exists in results
-    const existingIndex = validationResults.findIndex(r => r.url === url);
-    let index;
-    
-    if (existingIndex >= 0) {
-      // Update existing row
-      index = existingIndex;
+    try {
+      const urlInput = document.getElementById('singleUrlInput');
+      if (!urlInput) {
+        console.error('singleUrlInput element not found');
+        alert('Error: Input field not found. Please refresh the page.');
+        return;
+      }
+      
+      const url = urlInput.value.trim();
+      console.log('URL input:', url);
+      
+      if (!url) {
+        alert('Please enter a URL to validate');
+        return;
+      }
+      
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        alert('Please enter a valid URL starting with http:// or https://');
+        return;
+      }
+      
+      console.log('Showing results table...');
+      // Show results table
+      const resultsDiv = document.getElementById('validatorResults');
+      if (resultsDiv) {
+        resultsDiv.style.display = 'block';
+      } else {
+        console.error('validatorResults element not found');
+        alert('Error: Results table not found. Please refresh the page.');
+        return;
+      }
+      
+      // Check if validationResults array exists
+      if (typeof validationResults === 'undefined') {
+        console.error('validationResults array not defined');
+        alert('Error: Validation system not initialized. Please refresh the page.');
+        return;
+      }
+      
+      // Check if URL already exists in results
+      const existingIndex = validationResults.findIndex(r => r.url === url);
+      let index;
+      
+      if (existingIndex >= 0) {
+        console.log('Updating existing row at index:', existingIndex);
+        // Update existing row
+        index = existingIndex;
+      } else {
+        console.log('Creating new row, current length:', validationResults.length);
+        // Add new row
+        index = validationResults.length;
+        
+        // Create placeholder result
+        const placeholderResult = {
+          url: url,
+          row: index,
+          schemaType: 'Processing...',
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: null,
+          validatorGoogleStatus: 'Not run',
+          validatorSchemaOrgStatus: 'Not run',
+          notes: '',
+          issuesList: []
+        };
+        
+        validationResults.push(placeholderResult);
+        console.log('Added placeholder result, new length:', validationResults.length);
+      }
       
       // Show processing status with progress bar
+      console.log('Calling updateTableRow with index:', index);
+      if (typeof updateTableRow === 'undefined') {
+        console.error('updateTableRow function not defined');
+        alert('Error: updateTableRow function not found. Please refresh the page.');
+        return;
+      }
+      
       updateTableRow(index, {
         url: url,
         schemaType: 'Processing...',
@@ -2229,64 +2284,50 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         warnings: [],
         schemas: [],
         error: null,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
-        notes: validationResults[index].notes || ''
+        validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
+        notes: validationResults[index]?.notes || '',
+        issuesList: []
       });
+      
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
       if (schemaTypeCell) {
-        renderProgress(schemaTypeCell);
-        setProgress(schemaTypeCell, 5, 'Queued');
+        if (typeof renderProgress === 'undefined' || typeof setProgress === 'undefined') {
+          console.error('renderProgress or setProgress not defined');
+        } else {
+          renderProgress(schemaTypeCell);
+          setProgress(schemaTypeCell, 5, 'Queued');
+        }
       }
-    } else {
-      // Add new row
-      index = validationResults.length;
       
-      // Create placeholder result
-      const placeholderResult = {
-        url: url,
-        row: index,
-        schemaType: 'Processing...',
-        valid: false,
-        schemaFound: false,
-        missingFields: [],
-        warnings: [],
-        schemas: [],
-        error: null,
-        validatorGoogleStatus: 'Not run',
-        validatorSchemaOrgStatus: 'Not run',
-        notes: ''
-      };
-      
-      validationResults.push(placeholderResult);
-      
-      // Add placeholder row to table
-      updateTableRow(index, placeholderResult);
-      const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-      if (schemaTypeCell) {
-        renderProgress(schemaTypeCell);
-        setProgress(schemaTypeCell, 5, 'Queued');
-      }
-    }
-    
-    try {
+      console.log('Starting processUrl...');
       // Process URL using existing function
+      if (typeof processUrl === 'undefined') {
+        console.error('processUrl function not defined');
+        alert('Error: processUrl function not found. Please refresh the page.');
+        return;
+      }
+      
       const urlData = { url: url, row: index };
       const result = await processUrl(urlData);
+      console.log('processUrl completed:', result);
       
       // Update validation results array
       validationResults[index] = {
         ...result,
-        validatorGoogleStatus: validationResults[index].validatorGoogleStatus || 'Not run',
-        validatorSchemaOrgStatus: validationResults[index].validatorSchemaOrgStatus || 'Not run',
-        notes: validationResults[index].notes || ''
+        validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
+        validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
+        notes: validationResults[index]?.notes || ''
       };
       
       // Update table row with results
+      console.log('Updating table row with results...');
       updateTableRow(index, validationResults[index]);
       
       // Enable bulk action buttons
-      updateBulkButtons();
+      if (typeof updateBulkButtons === 'function') {
+        updateBulkButtons();
+      }
       
       // Auto-run Schema.org validator if enabled and status is "Not run"
       const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
@@ -2295,62 +2336,77 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       if (shouldAutoRun) {
         const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
         if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-          await runSchemaOrgValidator(index, url);
+          if (typeof runSchemaOrgValidator === 'function') {
+            await runSchemaOrgValidator(index, url);
+          }
         }
         
-          // Auto-run Rich Results validator if enabled and status is "Not run"
-          const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-          if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+        // Auto-run Rich Results validator if enabled and status is "Not run"
+        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+        if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+          if (typeof runRichResultsValidator === 'function') {
             // Don't await - let it run in background
             runRichResultsValidator(index, url);
           }
         }
-        
-        // Auto-save to Supabase if enabled
-        const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
-        const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
-        if (shouldAutoSave && supabaseAvailable && supabase) {
-          // Wait a moment for external validators to complete, then save
-          setTimeout(async () => {
-            try {
-              await saveToSupabase(index, true); // silent mode for auto-save
-              debugLog(`Auto-saved to Supabase: ${url}`, 'success');
-            } catch (error) {
-              debugLog(`Auto-save failed for ${url}: ${error.message}`, 'error');
-              // Don't show alert for auto-save failures, just log
-            }
-          }, 2000); // 2 second delay to allow external validators to complete
-        }
-        
-        // Clear input field
+      }
+      
+      // Auto-save to Supabase if enabled
+      const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
+      const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
+      if (shouldAutoSave && supabaseAvailable && supabase && typeof saveToSupabase === 'function') {
+        // Wait a moment for external validators to complete, then save
+        setTimeout(async () => {
+          try {
+            await saveToSupabase(index, true); // silent mode for auto-save
+            debugLog(`Auto-saved to Supabase: ${url}`, 'success');
+          } catch (error) {
+            debugLog(`Auto-save failed for ${url}: ${error.message}`, 'error');
+            // Don't show alert for auto-save failures, just log
+          }
+        }, 2000); // 2 second delay to allow external validators to complete
+      }
+      
+      // Clear input field
       urlInput.value = '';
       
       // Scroll to results table
-      resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (resultsDiv) {
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
       
     } catch (error) {
       console.error('Error validating URL:', error);
+      console.error('Error stack:', error.stack);
+      alert('Error validating URL: ' + error.message + '\n\nCheck console for details.');
       
-      // Update row with error
-      validationResults[index] = {
-        url: url,
-        row: index,
-        schemaType: null,
-        valid: false,
-        schemaFound: false,
-        missingFields: [],
-        warnings: [],
-        schemas: [],
-        error: error.message,
-        validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
-        validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
-        notes: validationResults[index]?.notes || ''
-      };
-      
-      updateTableRow(index, validationResults[index]);
+      // Try to update row with error if index is defined
+      if (typeof index !== 'undefined' && validationResults && validationResults[index]) {
+        validationResults[index] = {
+          url: url || 'Unknown',
+          row: index || 0,
+          schemaType: null,
+          valid: false,
+          schemaFound: false,
+          missingFields: [],
+          warnings: [],
+          schemas: [],
+          error: error.message,
+          validatorGoogleStatus: validationResults[index]?.validatorGoogleStatus || 'Not run',
+          validatorSchemaOrgStatus: validationResults[index]?.validatorSchemaOrgStatus || 'Not run',
+          notes: validationResults[index]?.notes || '',
+          issuesList: []
+        };
+        
+        if (typeof updateTableRow === 'function') {
+          updateTableRow(index, validationResults[index]);
+        }
+      }
       
       // Enable bulk action buttons (even if error)
-      updateBulkButtons();
+      if (typeof updateBulkButtons === 'function') {
+        updateBulkButtons();
+      }
     }
   }
   
