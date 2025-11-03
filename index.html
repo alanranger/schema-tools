@@ -1027,7 +1027,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.7</span>
+    <span class="version">v1.8.8</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -4137,22 +4137,38 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // ---- Schema Extraction and Result Construction Fix ----
   
-  // Helper: normalize @type into array form
-  function extractSchemaTypesNormalized(typeValue) {
+  // 1️⃣ Proper @type extractor (normalize single type value)
+  function extractSchemaTypeValue(typeValue) {
     if (!typeValue) return [];
-    if (Array.isArray(typeValue)) return typeValue.map(t => t.trim()).filter(Boolean);
-    if (typeof typeValue === 'string') return typeValue.split(',').map(t => t.trim()).filter(Boolean);
+    if (Array.isArray(typeValue)) return typeValue.map(t => t.trim());
+    if (typeof typeValue === 'string') return typeValue.split(',').map(t => t.trim());
     return [];
   }
 
-  // Main fix: construct schema analysis result safely
+  // 2️⃣ Re-enable row-level progress
+  function updateRowProgress(url, percent) {
+    const row = document.querySelector(`[data-url="${url}"]`);
+    if (!row) return;
+    let bar = row.querySelector('.progress-inner');
+    if (!bar) {
+      const cell = row.querySelector('.status-cell') || row.querySelector(`#statusCell_${row.dataset.rowIndex || ''}`);
+      if (!cell) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'progress';
+      bar = document.createElement('div');
+      bar.className = 'progress-inner';
+      wrapper.appendChild(bar);
+      cell.appendChild(wrapper);
+    }
+    bar.style.width = percent + '%';
+  }
+
+  // 3️⃣ Build analysis result correctly
   function buildAnalysisResult(url, blocks, issuesList = []) {
     const schemaTypes = [
       ...new Set(
-        blocks
-          .flatMap(b => extractSchemaTypesNormalized(b['@type']))
-          .filter(Boolean)
-      )
+        blocks.flatMap(b => extractSchemaTypeValue(b['@type'])).filter(Boolean)
+      ),
     ];
     const schemaFound = schemaTypes.length > 0;
 
@@ -4164,7 +4180,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       warnings: issuesList.filter(i => i.severity === 'warning'),
       info: issuesList.filter(i => i.severity === 'info'),
       blocks,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     cacheResult(url, analysisResult);
@@ -4172,20 +4188,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return analysisResult;
   }
 
-  // Update UI row with schema info
+  // 4️⃣ Update table cells safely
   function updateResultRow(url, result) {
     const row = document.querySelector(`[data-url="${url}"]`);
     if (!row) return;
-    const schemaCell = row.querySelector('.schema-type-cell');
-    const statusCell = row.querySelector('.status-cell');
-    if (schemaCell) schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
-    if (statusCell) {
-      if (result.schemaFound) {
-        statusCell.innerHTML = `<span class="chip-valid">✅ Valid</span><span class="status-explanation">All required fields present</span>`;
-      } else {
-        statusCell.innerHTML = `<span class="chip-critical">❌ No Schema</span><span class="status-explanation">No structured data detected</span>`;
-      }
-    }
+    const schemaCell = row.querySelector('.schema-type-cell') || row.querySelector(`#schemaTypeCell_${row.dataset.rowIndex || ''}`);
+    const statusCell = row.querySelector('.status-cell') || row.querySelector(`#statusCell_${row.dataset.rowIndex || ''}`);
+    if (schemaCell)
+      schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
+    if (statusCell)
+      statusCell.innerHTML = result.schemaFound
+        ? '<span class="chip-valid">✅ Valid</span>'
+        : '<span class="chip-critical">❌ No Schema</span>';
   }
 
   // Helper: Process schema nodes and build issues list
@@ -5802,6 +5816,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     progressText.textContent = `Processing ${index + 1} of ${urls.length}: ${urlData.url}`;
     progressBar.style.width = `${((index + 1) / urls.length) * 100}%`;
     
+    // Update row-level progress
+    updateRowProgress(urlData.url, (index / urls.length) * 100);
+    
     // Update row to show processing status
     updateTableRow(index, {
       url: urlData.url,
@@ -5822,6 +5839,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Process URL
     const result = await processUrl(urlData);
     validationResults[index] = result;
+    
+    // Update row-level progress to 100%
+    updateRowProgress(urlData.url, 100);
     
     // Update table row immediately
     updateTableRow(index, result);
