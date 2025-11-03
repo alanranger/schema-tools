@@ -667,6 +667,36 @@
       color: #555;
       min-width: 72px;
     }
+    
+    /* --- Row Progress Bars --- */
+    .progress-inner {
+      position: absolute;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00b67a, #e57200);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    /* --- Status Chips --- */
+    .chip-valid {
+      background: #00b67a !important;
+      color: #fff !important;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      display: inline-block;
+    }
+    
+    .chip-critical {
+      background: #e57200 !important;
+      color: #fff !important;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      display: inline-block;
+    }
+    
     /* Issues Modal */
     .issues-backdrop {
       position: fixed;
@@ -1027,7 +1057,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.8.8</span>
+    <span class="version">v1.8.9</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -4137,7 +4167,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // ---- Schema Extraction and Result Construction Fix ----
   
-  // 1️⃣ Proper @type extractor (normalize single type value)
+  // --- Schema Detection Utilities ---
   function extractSchemaTypeValue(typeValue) {
     if (!typeValue) return [];
     if (Array.isArray(typeValue)) return typeValue.map(t => t.trim());
@@ -4163,12 +4193,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     bar.style.width = percent + '%';
   }
 
-  // 3️⃣ Build analysis result correctly
   function buildAnalysisResult(url, blocks, issuesList = []) {
     const schemaTypes = [
-      ...new Set(
-        blocks.flatMap(b => extractSchemaTypeValue(b['@type'])).filter(Boolean)
-      ),
+      ...new Set(blocks.flatMap(b => extractSchemaTypeValue(b['@type'])).filter(Boolean))
     ];
     const schemaFound = schemaTypes.length > 0;
 
@@ -4179,7 +4206,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       missingFields: issuesList.filter(i => i.severity === 'missing'),
       warnings: issuesList.filter(i => i.severity === 'warning'),
       info: issuesList.filter(i => i.severity === 'info'),
-      blocks,
       timestamp: new Date().toISOString(),
     };
 
@@ -4192,8 +4218,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function updateResultRow(url, result) {
     const row = document.querySelector(`[data-url="${url}"]`);
     if (!row) return;
-    const schemaCell = row.querySelector('.schema-type-cell') || row.querySelector(`#schemaTypeCell_${row.dataset.rowIndex || ''}`);
-    const statusCell = row.querySelector('.status-cell') || row.querySelector(`#statusCell_${row.dataset.rowIndex || ''}`);
+    
+    // Extract row index from row ID or dataset
+    const rowMatch = row.id?.match(/row_(\d+)/);
+    const rowIndex = rowMatch ? rowMatch[1] : (row.dataset?.rowIndex || '');
+    
+    // Find schema type cell
+    const schemaCell = document.getElementById(`schemaTypeCell_${rowIndex}`);
+    
+    // Find status cell
+    const statusCell = document.getElementById(`statusCell_${rowIndex}`);
+    
     if (schemaCell)
       schemaCell.textContent = result.schemaTypes?.join(', ') || '—';
     if (statusCell)
@@ -4321,6 +4356,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       const analysis = analyzeSchemas(pageData.jsonLd, urlData.url);
       debugLog(`Analysis complete: schemaFound=${analysis.schemaFound}, schemaTypes=[${analysis.schemaTypes.join(', ')}], valid=${analysis.valid}`, 'info');
+      debugLog(`[✓] Schema Types: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
+      debugLog(`[✓] schemaFound: ${analysis.schemaFound}`, 'info');
       
       // Process schema nodes
       const { allNodes, missingDetails } = processSchemaNodes(pageData);
@@ -4337,11 +4374,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.info = buckets.info;
       
       // Update analysis result with full issuesList (cached and displayed)
-      buildAnalysisResult(urlData.url, pageData.jsonLd, issuesList.map(i => ({
+      const mappedIssues = issuesList.map(i => ({
         severity: i.message?.includes('missing') ? 'missing' : 
                  i.message?.includes('DUPLICATE') || i.message?.includes('⚠️') ? 'warning' : 'info',
         ...i
-      })));
+      }));
+      buildAnalysisResult(urlData.url, pageData.jsonLd, mappedIssues);
       
       // Add informational detections
       addInformationalDetections(allNodes, result);
@@ -4361,16 +4399,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       buildResultNotes(result, pageData);
       
-      // Cache result for View Details button (update with final result data)
-      const finalCacheData = {
+      // Cache result for View Details button (already cached by buildAnalysisResult, but update with final data)
+      cacheResult(result.url, {
         blocks: pageData.jsonLd || [],
         issues: result.issuesList || [],
         warnings: result.warnings || [],
         info: result.info || [],
         schemaTypes: result.schemaType ? result.schemaType.split(',').map(t => t.trim()) : [],
         schemaFound: result.schemaFound || false
-      };
-      cacheResult(result.url, finalCacheData);
+      });
       
     } catch (error) {
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
@@ -5149,6 +5186,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       tableBody.appendChild(row);
     }
     row.dataset.url = result.url;
+    row.dataset.rowIndex = index.toString();
     
     storeRowDataAttributes(row, result);
     
