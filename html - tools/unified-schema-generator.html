@@ -2416,6 +2416,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const message = `${f.type}: "${f.field}" missing${hasId ? '' : ' (no @id)'}`;
       issuesList.push({
         type: f.type,
+        field: f.field,
         message: message
       });
     }
@@ -2923,14 +2924,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const parts = [];
     if (missingCount > 0) {
       const fieldNames = missingFields.slice(0, 2).map(m => {
+        // First try to use field property directly (most reliable)
+        if (m.field && m.type) {
+          return `${m.type}.${m.field}`;
+        }
+        // Fallback: parse from message
         const match = m.message.match(/(\w+):\s*"(\w+)"\s*missing/);
         if (match) {
           return `${match[1]}.${match[2]}`;
         }
         // Try alternative pattern
-        const altMatch = m.message.match(/Organization.*?(\w+).*?missing/i);
+        const altMatch = m.message.match(/(\w+).*?"(\w+)".*?missing/i);
         if (altMatch) {
-          return `Organization.${altMatch[1]}`;
+          return `${altMatch[1]}.${altMatch[2]}`;
         }
         return m.field ? `${m.type || 'Unknown'}.${m.field}` : 'Unknown field';
       });
