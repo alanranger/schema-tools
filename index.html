@@ -656,8 +656,8 @@
       margin: 0.2rem 0;
     }
     .issues-json {
-      background: #0f172a;
-      color: #e2e8f0;
+      background: #000000;
+      color: #ffffff;
       border-radius: 10px;
       padding: 0.75rem;
       overflow: auto;
@@ -725,8 +725,8 @@
       height: 18rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.75rem;
-      background: #1f2937;
-      color: #86efac;
+      background: #000000;
+      color: #ffffff;
       padding: 0.75rem;
       border-radius: 6px;
       border: none;
@@ -939,7 +939,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.7.5</span>
+    <span class="version">v1.7.6</span>
     <span class="date">2025-11-03</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1121,16 +1121,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button onclick="setAllExternalStatusTo('Passed')" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Set all Not run → Passed</button>
         <button onclick="resetAllExternalStatus()" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Reset all to Not run</button>
-        <button onclick="document.getElementById('statusDebugPanel').style.display='block'; document.getElementById('statusDebugContent').innerHTML='';" class="secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">🔍 Show Debug Log</button>
-      </div>
-      
-      <!-- Debug Panel -->
-      <div id="statusDebugPanel" style="display: block; margin-top: 1rem; padding: 1rem; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.875rem; max-height: 400px; overflow-y: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-          <strong style="color: #1f2937;">🔍 Status Explanation Debug Log</strong>
-          <button onclick="document.getElementById('statusDebugPanel').style.display='none';" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Hide</button>
-        </div>
-        <div id="statusDebugContent" style="color: #374151; line-height: 1.6;">Debug log will appear here when validation runs...</div>
       </div>
       
       <!-- Status Legend -->
@@ -1328,18 +1318,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       originalConsoleLog(`${prefix} ${message}`);
     }
     
-    // Also write to visible debug panel (statusDebugPanel)
-    const debugContent = document.getElementById('statusDebugContent');
-    if (debugContent) {
-      const color = level === 'error' ? '#dc2626' : level === 'warn' ? '#d97706' : level === 'success' ? '#16a34a' : '#1f2937';
-      const icon = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️';
-      const div = document.createElement('div');
-      div.style.color = color;
-      div.style.marginBottom = '0.25rem';
-      div.textContent = icon + ' ' + prefix + ' ' + message;
-      debugContent.appendChild(div);
-      debugContent.scrollTop = debugContent.scrollHeight;
-    }
+    // Also write to visible debug panel (statusDebugPanel) - REMOVED, using bottom debug console only
+    // Remove this section - debug panel above table has been removed
     
     // Also write to existing debug console (debugConsoleContent)
     const consoleContent = document.getElementById('debugConsoleContent');
@@ -3549,6 +3529,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function finalizeRowStatus(index, localParse, rich, schemaOrg) {
     const richPassed = rich?.status === 'eligible' && rich?.verdict === 'PASS';
     const schemaPassed = schemaOrg?.status === 'passed';
+    // Check if Schema.org failed but errors array is empty - treat as warning
+    const schemaOrgWarning = schemaOrg?.status === 'failed' && schemaOrg?.errors && schemaOrg.errors.length === 0;
     const missing = localParse?.missingFieldsDetails || localParse?.missingFieldsBadges || localParse?.missingFields || [];
     const missingCount = Array.isArray(missing) ? missing.length : (missing ? 1 : 0);
     
@@ -3564,7 +3546,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       setSelect(richSelect, richPassed ? '✅ Passed' : (rich ? '❌ Failed' : 'Not run'));
     }
     if (schemaSelect) {
-      setSelect(schemaSelect, schemaPassed ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
+      // If Schema.org failed but errors array is empty, show Warning instead of Failed
+      if (schemaOrgWarning) {
+        setSelect(schemaSelect, '⚠️ Warning');
+      } else {
+        setSelect(schemaSelect, schemaPassed ? '✅ Passed' : (schemaOrg ? '❌ Failed' : 'Not run'));
+      }
     }
     
     // Prefer externals if both passed
@@ -4013,12 +4000,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       tableBody.appendChild(row);
     }
     
-    // Show debug panel when validation starts
-    const debugPanel = document.getElementById('statusDebugPanel');
-    if (debugPanel && index === 0) {
-      debugPanel.style.display = 'block';
-      debugLog('🔍 Debug panel activated - watching status explanation generation...', 'info');
-    }
+    // Show debug panel when validation starts - REMOVED, using bottom debug console only
+    // Remove this section - debug panel above table has been removed
     
     const { class: statusClass, html: statusHtml } = determineStatusHtml(result);
     debugLog(`Generated statusHtml for ${result.url}: ${statusHtml.substring(0, 200)}...`);
