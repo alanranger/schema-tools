@@ -3204,20 +3204,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     // Wait a bit for the DOM to update after table row is created
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
     
-    const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
-    if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-      if (typeof runSchemaOrgValidator === 'function') {
-        await runSchemaOrgValidator(index, url);
+    try {
+      const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+      if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
+        if (typeof runSchemaOrgValidator === 'function') {
+          try {
+            await runSchemaOrgValidator(index, url);
+          } catch (err) {
+            console.error(`Schema.org validation failed for ${url}:`, err);
+            debugLog(`Schema.org validation failed for ${url}: ${err.message}`, 'error');
+          }
+        }
       }
-    }
-    
-    const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-    if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-      if (typeof runRichResultsValidator === 'function') {
-        await runRichResultsValidator(index, url);
+      
+      const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+      if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
+        if (typeof runRichResultsValidator === 'function') {
+          try {
+            await runRichResultsValidator(index, url);
+          } catch (err) {
+            console.error(`Rich Results validation failed for ${url}:`, err);
+            debugLog(`Rich Results validation failed for ${url}: ${err.message}`, 'error');
+          }
+        }
       }
+    } catch (error) {
+      console.error(`External validation error for ${url}:`, error);
+      debugLog(`External validation error for ${url}: ${error.message}`, 'error');
     }
   }
 
@@ -6562,7 +6577,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     updateTableRow(index, result);
     
     // Auto-run external validators if enabled
-    await runExternalValidatorsIfEnabled(index, urlData.url);
+    try {
+      await runExternalValidatorsIfEnabled(index, urlData.url);
+    } catch (error) {
+      console.error(`Failed to run external validators for ${urlData.url}:`, error);
+      debugLog(`Failed to run external validators for ${urlData.url}: ${error.message}`, 'error');
+    }
     
     // Auto-save to Supabase if enabled
     const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
