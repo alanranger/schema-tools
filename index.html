@@ -1711,6 +1711,196 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   const originalConsoleError = console.error.bind(console);
   const originalConsoleWarn = console.warn.bind(console);
   
+  // Schema Validator Suppression Configuration
+  const SUPPRESSION_CONFIG = {
+    suppressions: {
+      global: {
+        ignoreSchemaTypes: [
+          "BreadcrumbList",
+          "SearchAction",
+          "Person",
+          "Event",
+          "ItemList",
+          "Article",
+          "Product"
+        ],
+        ignoreRecommendedFields: [
+          "publisher",
+          "telephone",
+          "url",
+          "description",
+          "image",
+          "logo",
+          "contactPoint"
+        ],
+        ignoreWarningsContaining: [
+          "Duplicate Event",
+          "Duplicate BreadcrumbList",
+          "Recommended field",
+          "Unknown schema type",
+          "Missing recommended",
+          "normal navigation schema",
+          "acceptable for combined schema types"
+        ],
+        ignoreInfoContaining: [
+          "BreadcrumbList detected",
+          "Recommended field",
+          "Legitimate multi-instance schemas",
+          "cached or blocked"
+        ],
+        ignoreUrlsMatching: [
+          "/photographic-workshops-near-me",
+          "/photography-classes",
+          "/photography-services",
+          "/photography-workshops",
+          "/shop"
+        ],
+        downgradeDuplicates: true,
+        collapseMultiInstanceEvents: true,
+        hideSquarespaceInjectedBlocks: true,
+        treatWarningsAsPass: true
+      },
+      rules: {
+        Organization: {
+          suppressMissingRecommended: true,
+          ignoreExtraNodes: true
+        },
+        LocalBusiness: {
+          suppressMissingRecommended: true,
+          ignoreExtraNodes: true
+        },
+        WebSite: {
+          suppressMissingRecommended: true,
+          requireOnly: ["url", "name"]
+        },
+        Person: {
+          ignoreUnknownType: true
+        },
+        BreadcrumbList: {
+          collapseDuplicates: true
+        },
+        Event: {
+          allowMultiple: true,
+          collapseDuplicates: true
+        },
+        Product: {
+          allowMultiple: true,
+          ignoreNoReview: true
+        }
+      }
+    }
+  };
+
+  // Suppression Filtering Functions
+  function shouldSuppressWarning(message, url = '') {
+    if (!message) return false;
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    
+    // Check URL patterns
+    if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      return true;
+    }
+    
+    // Check message content
+    if (sup.ignoreWarningsContaining.some(pattern => message.includes(pattern))) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  function shouldSuppressInfo(message, url = '') {
+    if (!message) return false;
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    
+    // Check URL patterns
+    if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      return true;
+    }
+    
+    // Check message content
+    if (sup.ignoreInfoContaining.some(pattern => message.includes(pattern))) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  function shouldSuppressMissingField(field, schemaType, url = '') {
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    const rule = SUPPRESSION_CONFIG.suppressions.rules[schemaType];
+    
+    // Check URL patterns
+    if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      return true;
+    }
+    
+    // Check if schema type should be ignored
+    if (sup.ignoreSchemaTypes.includes(schemaType)) {
+      return true;
+    }
+    
+    // Check if field is in ignoreRecommendedFields
+    if (sup.ignoreRecommendedFields.includes(field)) {
+      return true;
+    }
+    
+    // Check type-specific rules
+    if (rule) {
+      if (rule.suppressMissingRecommended && field.toLowerCase().includes('recommended')) {
+        return true;
+      }
+      if (rule.requireOnly && !rule.requireOnly.includes(field)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  function shouldSuppressSchemaType(schemaType) {
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    return sup.ignoreSchemaTypes.includes(schemaType);
+  }
+
+  function shouldDowngradeDuplicate(schemaType) {
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    const rule = SUPPRESSION_CONFIG.suppressions.rules[schemaType];
+    
+    if (sup.downgradeDuplicates) {
+      return true;
+    }
+    
+    if (rule && rule.collapseDuplicates) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  function filterSuppressedWarnings(warnings, url = '') {
+    if (!warnings || !Array.isArray(warnings)) return [];
+    return warnings.filter(w => !shouldSuppressWarning(w, url));
+  }
+
+  function filterSuppressedInfo(info, url = '') {
+    if (!info || !Array.isArray(info)) return [];
+    return info.filter(i => !shouldSuppressInfo(i, url));
+  }
+
+  function filterSuppressedMissingFields(missingFields, schemaType, url = '') {
+    if (!missingFields || !Array.isArray(missingFields)) return [];
+    
+    return missingFields.filter(field => {
+      // Extract field name from different formats
+      const fieldName = typeof field === 'string' 
+        ? field.split(':')[1]?.trim().replace(/["\s]/g, '') || field.split('.')[1] || field
+        : field.field || field;
+      
+      return !shouldSuppressMissingField(fieldName, schemaType, url);
+    });
+  }
+
   // Debug Console Logging Functions - MUST be first
   function debugLog(message, level = 'info') {
     const timestamp = new Date().toLocaleTimeString();
@@ -4874,28 +5064,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       statusCell.innerHTML = statusHtml;
     }
     
-    // Update Missing Fields column
+    // Update Missing Fields column (with suppression)
     if (missingFieldsCell && result.missingFields) {
-      if (result.missingFields.length > 0) {
-        missingFieldsCell.innerHTML = result.missingFields.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
+      const filteredMissingFields = filterSuppressedMissingFields(result.missingFields, result.schemaType || '', result.url || '');
+      if (filteredMissingFields.length > 0) {
+        missingFieldsCell.innerHTML = filteredMissingFields.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
       } else {
         missingFieldsCell.textContent = '—';
       }
     }
     
-    // Update Warnings column
+    // Update Warnings column (with suppression)
     if (warningsCell && result.warnings) {
-      if (result.warnings.length > 0) {
-        warningsCell.innerHTML = result.warnings.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
+      const filteredWarnings = filterSuppressedWarnings(result.warnings, result.url || '');
+      if (filteredWarnings.length > 0) {
+        warningsCell.innerHTML = filteredWarnings.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
       } else {
         warningsCell.textContent = '—';
       }
     }
     
-    // Update Info column
+    // Update Info column (with suppression)
     if (infoCell && result.info) {
-      if (result.info.length > 0) {
-        infoCell.innerHTML = result.info.map(i => `<div class="info-entry">${i}</div>`).join('');
+      const filteredInfo = filterSuppressedInfo(result.info, result.url || '');
+      if (filteredInfo.length > 0) {
+        infoCell.innerHTML = filteredInfo.map(i => `<div class="info-entry">${i}</div>`).join('');
       } else {
         infoCell.textContent = '—';
       }
@@ -4934,33 +5127,42 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Build and categorize issues
-  function buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis) {
+  function buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis, url = '') {
     const issuesList = buildUnifiedIssuesList(missingDetails, duplicateWarningsObjects, allNodes);
     debugLog(`✅ Built issuesList: ${issuesList.length} issue(s)`, 'success');
     if (issuesList.length > 0) {
       debugLog(`issuesList contents: ${JSON.stringify(issuesList, null, 2)}`);
     }
     
-    // Split issuesList into missingFields, warnings, and info
-    const buckets = splitIssuesIntoBuckets(issuesList, allNodes);
+    // Split issuesList into missingFields, warnings, and info (with suppression)
+    const buckets = splitIssuesIntoBuckets(issuesList, allNodes, url);
     
-      // Add info from analysis (e.g., downgraded "Missing recommended" messages)
-      if (analysis.info && analysis.info.length > 0) {
-        if (!buckets.info) buckets.info = [];
-        buckets.info.push(...(Array.isArray(analysis.info) ? analysis.info : []));
-      }
+    // Add info from analysis (e.g., downgraded "Missing recommended" messages)
+    if (analysis.info && analysis.info.length > 0) {
+      if (!buckets.info) buckets.info = [];
+      const filteredInfo = filterSuppressedInfo(Array.isArray(analysis.info) ? analysis.info : [], url);
+      buckets.info.push(...filteredInfo);
+    }
+    
+    // Apply suppression filters to buckets
+    buckets.warnings = filterSuppressedWarnings(buckets.warnings, url);
+    buckets.info = filterSuppressedInfo(buckets.info, url);
     
     return { issuesList, buckets };
   }
 
   // Helper: Add informational detections
-  function addInformationalDetections(allNodes, result) {
+  function addInformationalDetections(allNodes, result, url = '') {
     try {
       const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
       if (breadcrumbNodes.length > 0) {
         debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
         if (!result.info) result.info = [];
-        result.info.push(`ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`);
+        const infoMessage = `ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`;
+        // Only add if not suppressed
+        if (!shouldSuppressInfo(infoMessage, url)) {
+          result.info.push(infoMessage);
+        }
       }
     } catch (error) {
       console.error('[⚠] Error in addInformationalDetections:', error);
@@ -5132,7 +5334,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Stage 6: Build and categorize issues (~80%)
       updateRowProgress(urlData.url, 80);
-      const { issuesList, buckets } = buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis);
+      const { issuesList, buckets } = buildAndCategorizeIssues(missingDetails, duplicateWarningsObjects, allNodes, analysis, urlData.url);
       
       result.issuesList = issuesList;
       result.missingFields = buckets.missingFields;
@@ -5156,7 +5358,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       if (!result.warnings) result.warnings = [];
       if (!result.missingFields) result.missingFields = [];
       
-      addInformationalDetections(allNodes, result);
+      addInformationalDetections(allNodes, result, urlData.url);
       
       // Log diagnostics
       logGlobalDuplicates(duplicateGroups, globalPatterns);
@@ -5268,7 +5470,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Split issuesList into missingFields, warnings, and info
-  function splitIssuesIntoBuckets(issuesList, allNodes) {
+  function splitIssuesIntoBuckets(issuesList, allNodes, url = '') {
     const buckets = { missingFields: [], warnings: [], info: [] };
     
     for (const item of issuesList) {
@@ -5276,13 +5478,26 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const isMissing = item.message?.toLowerCase().includes('missing');
       
       if (isMissing) {
-        buckets.missingFields.push(item.message);
+        // Check if we should suppress this missing field
+        const schemaType = item.type || 'Unknown';
+        if (!shouldSuppressMissingField(item.field || '', schemaType, url)) {
+          buckets.missingFields.push(item.message);
+        }
       } else if (isDuplicate) {
         const classified = classifyDuplicateIssue(item, allNodes);
-        if (classified.type === 'info') {
+        // Apply suppression for duplicates
+        if (shouldDowngradeDuplicate(item.type || 'Unknown')) {
+          // Downgrade to info if configured
           buckets.info.push(classified.message);
+        } else if (classified.type === 'info') {
+          if (!shouldSuppressInfo(classified.message, url)) {
+            buckets.info.push(classified.message);
+          }
         } else {
-          buckets.warnings.push(classified.message);
+          // Check if warning should be suppressed
+          if (!shouldSuppressWarning(classified.message, url)) {
+            buckets.warnings.push(classified.message);
+          }
         }
       }
     }
@@ -5727,6 +5942,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Determine status HTML from result with color-coded badges and explanations
   function determineStatusHtml(result) {
+    // Apply suppression: if treatWarningsAsPass is enabled and only warnings exist, treat as pass
+    const sup = SUPPRESSION_CONFIG.suppressions.global;
+    if (sup.treatWarningsAsPass && hasOnlyWarnings(result) && result.schemaFound) {
+      return buildPassedStatusHtml(result, countSkippedSchemas(result));
+    }
     debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}, error=${result.error}`);
     
     // CRITICAL: Only treat as error if error is explicitly set AND it's not null/empty
@@ -5832,7 +6052,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate missing fields HTML
   function generateMissingFieldsHtml(result) {
     if (result.missingFields && result.missingFields.length > 0) {
-      return result.missingFields.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
+      const filtered = filterSuppressedMissingFields(result.missingFields, result.schemaType || '', result.url || '');
+      if (filtered.length > 0) {
+        return filtered.map(f => `<div class="missing-entry">❌ ${f}</div>`).join('');
+      }
     }
     return '—';
   }
@@ -5840,7 +6063,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate warnings HTML
   function generateWarningsHtml(result) {
     if (result.warnings && result.warnings.length > 0) {
-      return result.warnings.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
+      const filtered = filterSuppressedWarnings(result.warnings, result.url || '');
+      if (filtered.length > 0) {
+        return filtered.map(w => `<div class="warning-entry">⚠️ ${w}</div>`).join('');
+      }
     }
     return '—';
   }
@@ -5848,7 +6074,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Generate info HTML
   function generateInfoHtml(result) {
     if (result.info && result.info.length > 0) {
-      return result.info.map(i => `<div class="info-entry">${i}</div>`).join('');
+      const filtered = filterSuppressedInfo(result.info, result.url || '');
+      if (filtered.length > 0) {
+        return filtered.map(i => `<div class="info-entry">${i}</div>`).join('');
+      }
     }
     return '—';
   }
