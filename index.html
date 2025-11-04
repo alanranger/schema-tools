@@ -1274,7 +1274,7 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.11.0</span>
+    <span class="version">v1.12.0</span>
     <span class="date">2025-11-04</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -6685,6 +6685,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Start validation process
   async function startValidation() {
+    // Clear all cache and storage BEFORE starting validation
+    try {
+      // Clear ResultCache if it exists
+      if (typeof ResultCache !== 'undefined') {
+        if (ResultCache instanceof Map) {
+          ResultCache.clear();
+        } else if (ResultCache.clear && typeof ResultCache.clear === 'function') {
+          ResultCache.clear();
+        }
+      }
+      // Clear validationResults array
+      if (typeof validationResults !== 'undefined' && Array.isArray(validationResults)) {
+        validationResults.length = 0;
+      }
+      // Clear localStorage and sessionStorage
+      localStorage.removeItem('schemaValidatorResults');
+      localStorage.removeItem('schemaValidatorCache');
+      sessionStorage.removeItem('schemaValidatorResults');
+      sessionStorage.removeItem('schemaValidatorCache');
+    } catch (e) {
+      console.warn('Failed to clear storage:', e);
+    }
+    
+    // Clear the results table
+    const tableBody = document.getElementById('resultsTableBody');
+    if (tableBody) {
+      tableBody.innerHTML = '';
+    }
+    
     const fileInput = document.getElementById('validatorCsvFile');
     if (!fileInput.files.length) {
       alert('Please upload a CSV file first');
