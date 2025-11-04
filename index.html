@@ -5503,7 +5503,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const explanationText = allSkipped ? 'All required fields present (Squarespace auto-schema ignored)' : explanation;
     return { 
       class: 'valid', 
-      html: `<span class="chip-passed">✅ Passed</span><span class="status-explanation">${explanationText}</span>`
+      html: `<span class="chip-passed">✅ Passed</span>`
     };
   }
 
@@ -5561,7 +5561,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const plural = infoCount > 1 ? 's' : '';
     return { 
       class: 'valid', 
-      html: `<span class="chip-passed" title="Click to view details">✅ Passed</span><span class="status-explanation">${infoCount} multi-instance schema${plural} detected (normal)</span>`
+      html: `<span class="chip-passed" title="Click to view details">✅ Passed</span>`
     };
   }
 
@@ -5570,7 +5570,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const plural = warningsCount > 1 ? 's' : '';
     return { 
       class: 'issues', 
-      html: `<span class="chip-issues" title="Click to view details">⚠️ Warning</span><span class="status-explanation">${warningsCount} duplicate schema${plural} detected — review only if unexpected</span>`
+      html: `<span class="chip-issues" title="Click to view details">⚠️ Warning</span>`
     };
   }
 
