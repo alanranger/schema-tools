@@ -2543,6 +2543,75 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
     backdrop.showModal();
     
+    // Setup save button handler
+    function setupSaveButton() {
+      const saveBtn = document.getElementById('genSaveBtn');
+      const backdrop = document.getElementById('genBackdrop');
+      if (saveBtn && backdrop) {
+        saveBtn.onclick = async () => {
+          try {
+            const url = backdrop.dataset.url || '';
+            const json = backdrop.dataset.json || document.getElementById('genJson')?.textContent || '';
+            
+            if (!json || json.trim().length === 0) {
+              alert('No content to save');
+              return;
+            }
+            
+            // Generate filename from URL
+            let filename = 'schema';
+            if (url) {
+              try {
+                const urlObj = new URL(url);
+                // Extract pathname and convert to filename-safe string
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                if (pathParts.length > 0) {
+                  filename = pathParts[pathParts.length - 1].replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+                  // Limit filename length
+                  if (filename.length > 50) {
+                    filename = filename.substring(0, 50);
+                  }
+                } else {
+                  filename = urlObj.hostname.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+                }
+              } catch (e) {
+                console.warn('Failed to parse URL for filename:', e);
+              }
+            }
+            
+            // Add timestamp to ensure uniqueness
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const fullFilename = `${filename}-${timestamp}.json`;
+            
+            // Create blob and download
+            const blob = new Blob([json], { type: 'application/json' });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fullFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            
+            // Update button feedback
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ Saved!';
+            saveBtn.style.background = '#10b981';
+            setTimeout(() => {
+              saveBtn.textContent = originalText;
+              saveBtn.style.background = '#10b981';
+            }, 2000);
+            
+            console.log(`Saved schema to: ${fullFilename}`);
+          } catch (err) {
+            console.error('Failed to save file:', err);
+            alert('Failed to save file: ' + err.message);
+          }
+        };
+      }
+    }
+    
     // Setup copy button handlers after modal is opened and content is rendered
     setTimeout(() => {
       // Copy individual block buttons
@@ -3063,10 +3132,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         setupCopyButton();
+        setupSaveButton();
         setupCloseButton();
       });
     } else {
       setupCopyButton();
+      setupSaveButton();
       setupCloseButton();
     }
     
@@ -3082,8 +3153,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       if (metaEl) metaEl.textContent = url;
       if (jsonEl) jsonEl.textContent = prettyScript(json);
       
-      // Re-attach copy button handler in case it wasn't set up earlier
+      // Store URL and JSON for save function
+      backdropEl.dataset.url = url;
+      backdropEl.dataset.json = json;
+      
+      // Re-attach copy and save button handlers in case they weren't set up earlier
       setupCopyButton();
+      setupSaveButton();
       
       // Use dialog API if available
       if (backdropEl.showModal) {
@@ -7122,9 +7198,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         <h3 id="genTitle">Enhanced Schema (suggestion)</h3>
       </div>
       <div class="issues-meta" id="genMeta"></div>
+      <div id="genSquarespaceInstructions" style="margin: 1rem 0; padding: 1rem; background: #1e293b; border-left: 4px solid #3b82f6; border-radius: 4px; color: #e2e8f0; font-size: 0.9rem;">
+        <strong style="color: #fff;">📋 Where to paste in Squarespace:</strong>
+        <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+          <li><strong>Page Header:</strong> Settings → Advanced → Code Injection → Page Header Code</li>
+          <li><strong>Page Footer:</strong> Settings → Advanced → Code Injection → Footer</li>
+          <li><strong>Code Block:</strong> Add a Code Block → Paste the JSON-LD inside &lt;script type="application/ld+json"&gt; tags</li>
+        </ul>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #94a3b8;">💡 Tip: Use Page Header for page-specific schema, Footer for site-wide schema.</p>
+      </div>
       <pre id="genJson" class="issues-json" style="max-height:48vh"></pre>
       <div class="gen-enhanced-actions">
         <button class="secondary gen-copy-btn" id="genCopyBtn">Copy to Clipboard</button>
+        <button class="secondary gen-save-btn" id="genSaveBtn" style="background: #10b981; color: white; border-color: #10b981;">💾 Save to File</button>
         <button class="primary gen-close-btn" id="genCloseBtn">Close</button>
       </div>
     </div>
