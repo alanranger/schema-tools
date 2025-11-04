@@ -5083,8 +5083,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
       
       // CRITICAL: Store result in validationResults BEFORE calling updateTableRow
-      // Use the correct index passed from processUrlInBatch
-      const resultIndex = urlData.index !== undefined ? urlData.index : (urlData.row !== undefined ? urlData.row : 0);
+      // resultIndex is already declared at the top of the function
       validationResults[resultIndex] = {
         ...result,
         schemaFound: result.schemaFound, // Ensure schemaFound is preserved
