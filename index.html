@@ -1798,11 +1798,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Check URL patterns
     if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      debugLog(`[SUPPRESSION] Suppressing warning by URL pattern: ${message}`, 'info');
       return true;
     }
     
     // Check message content
     if (sup.ignoreWarningsContaining.some(pattern => message.includes(pattern))) {
+      debugLog(`[SUPPRESSION] Suppressing warning by pattern: ${message}`, 'info');
       return true;
     }
     
@@ -1815,11 +1817,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Check URL patterns
     if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      debugLog(`[SUPPRESSION] Suppressing info by URL pattern: ${message}`, 'info');
       return true;
     }
     
     // Check message content
     if (sup.ignoreInfoContaining.some(pattern => message.includes(pattern))) {
+      debugLog(`[SUPPRESSION] Suppressing info by pattern: ${message}`, 'info');
       return true;
     }
     
@@ -1832,25 +1836,30 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Check URL patterns
     if (url && sup.ignoreUrlsMatching.some(pattern => url.includes(pattern))) {
+      debugLog(`[SUPPRESSION] Suppressing missing field by URL pattern: ${schemaType}.${field}`, 'info');
       return true;
     }
     
     // Check if schema type should be ignored
     if (sup.ignoreSchemaTypes.includes(schemaType)) {
+      debugLog(`[SUPPRESSION] Suppressing missing field by schema type: ${schemaType}.${field}`, 'info');
       return true;
     }
     
     // Check if field is in ignoreRecommendedFields
     if (sup.ignoreRecommendedFields.includes(field)) {
+      debugLog(`[SUPPRESSION] Suppressing missing field by recommended field list: ${schemaType}.${field}`, 'info');
       return true;
     }
     
     // Check type-specific rules
     if (rule) {
       if (rule.suppressMissingRecommended && field.toLowerCase().includes('recommended')) {
+        debugLog(`[SUPPRESSION] Suppressing missing field by type rule (suppressMissingRecommended): ${schemaType}.${field}`, 'info');
         return true;
       }
       if (rule.requireOnly && !rule.requireOnly.includes(field)) {
+        debugLog(`[SUPPRESSION] Suppressing missing field by type rule (requireOnly): ${schemaType}.${field}`, 'info');
         return true;
       }
     }
@@ -5472,6 +5481,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Split issuesList into missingFields, warnings, and info
   function splitIssuesIntoBuckets(issuesList, allNodes, url = '') {
     const buckets = { missingFields: [], warnings: [], info: [] };
+    let suppressedCount = { missingFields: 0, warnings: 0, info: 0 };
     
     for (const item of issuesList) {
       const isDuplicate = item.message?.includes('DUPLICATE');
@@ -5482,6 +5492,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const schemaType = item.type || 'Unknown';
         if (!shouldSuppressMissingField(item.field || '', schemaType, url)) {
           buckets.missingFields.push(item.message);
+        } else {
+          suppressedCount.missingFields++;
         }
       } else if (isDuplicate) {
         const classified = classifyDuplicateIssue(item, allNodes);
@@ -5492,14 +5504,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         } else if (classified.type === 'info') {
           if (!shouldSuppressInfo(classified.message, url)) {
             buckets.info.push(classified.message);
+          } else {
+            suppressedCount.info++;
           }
         } else {
           // Check if warning should be suppressed
           if (!shouldSuppressWarning(classified.message, url)) {
             buckets.warnings.push(classified.message);
+          } else {
+            suppressedCount.warnings++;
           }
         }
       }
+    }
+    
+    if (suppressedCount.missingFields > 0 || suppressedCount.warnings > 0 || suppressedCount.info > 0) {
+      debugLog(`[SUPPRESSION] Suppressed: ${suppressedCount.missingFields} missing fields, ${suppressedCount.warnings} warnings, ${suppressedCount.info} info`, 'info');
     }
     
     return buckets;
@@ -5945,6 +5965,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Apply suppression: if treatWarningsAsPass is enabled and only warnings exist, treat as pass
     const sup = SUPPRESSION_CONFIG.suppressions.global;
     if (sup.treatWarningsAsPass && hasOnlyWarnings(result) && result.schemaFound) {
+      debugLog(`[SUPPRESSION] Applying treatWarningsAsPass: converting warnings-only result to Passed for ${result.url}`, 'info');
       return buildPassedStatusHtml(result, countSkippedSchemas(result));
     }
     debugLog(`Status determination for ${result.url}: missingFields=${result.missingFields?.length || 0}, warnings=${result.warnings?.length || 0}, info=${result.info?.length || 0}, schemaFound=${result.schemaFound}, error=${result.error}`);
