@@ -3203,6 +3203,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return;
     }
     
+    // Wait a bit for the DOM to update after table row is created
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
     if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
       if (typeof runSchemaOrgValidator === 'function') {
@@ -3213,7 +3216,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
     if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
       if (typeof runRichResultsValidator === 'function') {
-        runRichResultsValidator(index, url);
+        await runRichResultsValidator(index, url);
       }
     }
   }
@@ -6559,20 +6562,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     updateTableRow(index, result);
     
     // Auto-run external validators if enabled
-    const autoRunCheckbox = document.getElementById('autoRunExternalChecks');
-    const shouldAutoRun = autoRunCheckbox ? autoRunCheckbox.checked : true;
-    
-    if (shouldAutoRun) {
-      const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
-      if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-        await runSchemaOrgValidator(index, urlData.url);
-      }
-      
-      const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-      if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-        runRichResultsValidator(index, urlData.url);
-      }
-    }
+    await runExternalValidatorsIfEnabled(index, urlData.url);
     
     // Auto-save to Supabase if enabled
     const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
