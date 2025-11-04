@@ -2220,6 +2220,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return { severity: 'passed', badgeColor: 'severity-badge passed', badgeLabel: '✅ Passed' };
   }
 
+  // Helper: Build human-readable summary for modal
+  function buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges) {
+    const parts = [];
+    
+    if (blockCount > 0) {
+      parts.push(`Found ${blockCount} JSON-LD block${blockCount !== 1 ? 's' : ''}`);
+    }
+    
+    if (schemaTypes && schemaTypes.length > 0) {
+      const typesList = Array.isArray(schemaTypes) ? schemaTypes.join(', ') : schemaTypes;
+      parts.push(`Schema types: ${typesList}`);
+    }
+    
+    if (duplicates && duplicates.length > 0) {
+      const duplicateCount = duplicates.length;
+      parts.push(`${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} detected`);
+    }
+    
+    if (missingFieldsBadges && missingFieldsBadges.length > 0) {
+      parts.push(`${missingFieldsBadges.length} missing field${missingFieldsBadges.length !== 1 ? 's' : ''}`);
+    }
+    
+    return parts.length > 0 ? parts.join('. ') : 'No schema data available.';
+  }
+
   // Helper: Build schema table HTML for modal
   function buildSchemaTableHtml(result) {
     if (!result || !result.schemas || result.schemas.length === 0) {
