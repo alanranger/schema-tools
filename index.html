@@ -3790,11 +3790,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           results.data.forEach((row, index) => {
             const url = row[urlColumn];
             if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-              urls.push({
-                url: url.trim(),
-                row: index + 2,
-                allFields: row
-              });
+              const trimmedUrl = url.trim();
+              // Deduplicate URLs - only add if not already in array
+              if (!urls.find(u => u.url === trimmedUrl)) {
+                urls.push({
+                  url: trimmedUrl,
+                  row: urls.length, // Use current array index, not CSV row number
+                  allFields: row
+                });
+              }
             }
           });
           
@@ -5113,17 +5117,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.log(`[✓] Stored result: schemaFound=${validationResults[urlData.row].schemaFound}, schemaType="${validationResults[urlData.row].schemaType}", error=${validationResults[urlData.row].error}`);
       
       // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
-      updateTableRow(urlData.row, validationResults[urlData.row]);
+      updateTableRow(index, validationResults[index]);
       
-      // Also update result row columns with data
-      updateResultRow(urlData.url, {
-        url: result.url,
-        schemaTypes: result.schemaType ? result.schemaType.split(',').map(t => t.trim()) : (initialAnalysis.schemaTypes || []),
-        schemaFound: result.schemaFound || initialAnalysis.schemaFound,
-        missingFields: result.missingFields || [],
-        warnings: result.warnings || [],
-        info: result.info || []
-      });
+      // Don't call updateResultRow - it causes duplicate updates
       
     } catch (error) {
       // Update progress to show error state
