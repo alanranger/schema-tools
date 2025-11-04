@@ -7127,19 +7127,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       debugLog(`Failed to run external validators for ${urlData.url}: ${error.message}`, 'error');
     }
     
-    // Auto-save to Supabase if enabled
-    const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
-    const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
-    if (shouldAutoSave && supabaseAvailable && supabase) {
-      setTimeout(async () => {
-        try {
-          await saveToSupabase(index, true);
-          debugLog(`Auto-saved to Supabase: ${urlData.url}`, 'success');
-        } catch (error) {
-          debugLog(`Auto-save failed for ${urlData.url}: ${error.message}`, 'error');
-        }
-      }, 2000);
-    }
+    // Auto-save to Supabase if enabled (same as single URL validation)
+    autoSaveToSupabaseIfEnabled(index, urlData.url);
     
     // Small delay to allow UI to update
     await new Promise(resolve => setTimeout(resolve, 100));
