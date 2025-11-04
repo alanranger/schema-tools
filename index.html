@@ -3057,6 +3057,75 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   
   // Modal plumbing
   (function initGenModal(){
+    // Function to setup save button handler
+    function setupSaveButton() {
+      const saveBtn = document.getElementById('genSaveBtn');
+      const backdrop = document.getElementById('genBackdrop');
+      if (saveBtn && backdrop) {
+        saveBtn.onclick = async () => {
+          try {
+            const url = backdrop.dataset.url || '';
+            const json = backdrop.dataset.json || document.getElementById('genJson')?.textContent || '';
+            
+            if (!json || json.trim().length === 0) {
+              alert('No content to save');
+              return;
+            }
+            
+            // Generate filename from URL
+            let filename = 'schema';
+            if (url) {
+              try {
+                const urlObj = new URL(url);
+                // Extract pathname and convert to filename-safe string
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                if (pathParts.length > 0) {
+                  filename = pathParts[pathParts.length - 1].replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+                  // Limit filename length
+                  if (filename.length > 50) {
+                    filename = filename.substring(0, 50);
+                  }
+                } else {
+                  filename = urlObj.hostname.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+                }
+              } catch (e) {
+                console.warn('Failed to parse URL for filename:', e);
+              }
+            }
+            
+            // Add timestamp to ensure uniqueness
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const fullFilename = `${filename}-${timestamp}.json`;
+            
+            // Create blob and download
+            const blob = new Blob([json], { type: 'application/json' });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fullFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            
+            // Update button feedback
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ Saved!';
+            saveBtn.style.background = '#10b981';
+            setTimeout(() => {
+              saveBtn.textContent = originalText;
+              saveBtn.style.background = '#10b981';
+            }, 2000);
+            
+            console.log(`Saved schema to: ${fullFilename}`);
+          } catch (err) {
+            console.error('Failed to save file:', err);
+            alert('Failed to save file: ' + err.message);
+          }
+        };
+      }
+    }
+    
     // Function to setup copy button handler
     function setupCopyButton() {
       const copyBtn = document.getElementById('genCopyBtn');
