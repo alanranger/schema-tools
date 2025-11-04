@@ -5103,8 +5103,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       console.log(`[✓] Final Result: ${result.url} | SchemaFound=${result.schemaFound} | Types: ${result.schemaType || 'none'} | MissingFields: ${result.missingFields?.length || 0} | Warnings: ${result.warnings?.length || 0} | Info: ${result.info?.length || 0}`);
       
       // CRITICAL: Store result in validationResults BEFORE calling updateTableRow
-      // Ensure all arrays are initialized
-      validationResults[urlData.row] = {
+      // Use the correct index passed from processUrlInBatch
+      const resultIndex = urlData.index !== undefined ? urlData.index : (urlData.row !== undefined ? urlData.row : 0);
+      validationResults[resultIndex] = {
         ...result,
         schemaFound: result.schemaFound, // Ensure schemaFound is preserved
         schemaType: result.schemaType || (initialAnalysis.schemaTypes.join(', ') || '—'), // Ensure schemaType is set from initialAnalysis if missing
@@ -5114,17 +5115,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         error: null // Explicitly clear error if validation succeeded
       };
       
-      console.log(`[✓] Stored result: schemaFound=${validationResults[urlData.row].schemaFound}, schemaType="${validationResults[urlData.row].schemaType}", error=${validationResults[urlData.row].error}`);
+      console.log(`[✓] Stored result at index ${resultIndex}: schemaFound=${validationResults[resultIndex].schemaFound}, schemaType="${validationResults[resultIndex].schemaType}", error=${validationResults[resultIndex].error}`);
       
       // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
-      updateTableRow(index, validationResults[index]);
+      updateTableRow(resultIndex, validationResults[resultIndex]);
       
       // Don't call updateResultRow - it causes duplicate updates
       
     } catch (error) {
       // Update progress to show error state
       updateRowProgress(urlData.url, 100);
-      const schemaTypeCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+      const resultIndex = urlData.index !== undefined ? urlData.index : (urlData.row !== undefined ? urlData.row : 0);
+      const schemaTypeCell = document.getElementById(`schemaTypeCell_${resultIndex}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
         markProgressError(schemaTypeCell);
         setProgress(schemaTypeCell, 100, 'Error');
@@ -5143,8 +5145,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.warnings = result.warnings || [];
       result.info = result.info || [];
       
-      // Store result even on error
-      validationResults[urlData.row] = {
+      // Store result even on error at correct index
+      validationResults[resultIndex] = {
         ...result,
         schemaType: result.schemaType || (initialAnalysis?.schemaTypes?.join(', ') || '—'),
         schemaFound: result.schemaFound || initialAnalysis?.schemaFound || false,
@@ -5153,7 +5155,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         info: result.info || []
       };
       
-      updateTableRow(urlData.row, validationResults[urlData.row]);
+      updateTableRow(resultIndex, validationResults[resultIndex]);
     }
     
     return result;
