@@ -400,7 +400,7 @@
     }
     .results-table th:nth-child(1) { min-width: 250px; } /* Page URL */
     .results-table th:nth-child(2) { min-width: 200px; } /* Schema Type */
-    .results-table th:nth-child(3) { min-width: 80px; max-width: 100px; } /* Status - narrower */
+    .results-table th:nth-child(3) { min-width: 80px; max-width: 100px; width: 100px; } /* Status - narrower */
     .results-table th:nth-child(4) { min-width: 220px; } /* Missing Fields - wider */
     .results-table th:nth-child(5) { min-width: 220px; } /* Warnings - wider */
     .results-table th:nth-child(6) { min-width: 220px; } /* Info - wider */
@@ -527,7 +527,9 @@
     } /* Schema Type */
     .results-table td:nth-child(3) { 
       white-space: normal; 
-      min-width: 120px;
+      min-width: 80px;
+      max-width: 100px;
+      width: 100px;
     } /* Status */
     .results-table td:nth-child(4) { 
       white-space: normal; 
@@ -838,14 +840,14 @@
       margin: 0;
     }
     .issues-close-x {
-      background: rgba(255, 255, 255, 0.2);
-      border: 2px solid #fff;
-      font-size: 2rem;
-      color: #fff;
+      background: #fff;
+      border: 2px solid #2d3748;
+      font-size: 1.5rem;
+      color: #2d3748;
       cursor: pointer;
       padding: 0;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -855,12 +857,12 @@
       font-weight: bold;
     }
     .issues-close-x:hover {
-      background-color: #fff;
-      color: #2d3748;
-      border-color: #fff;
+      background-color: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
     }
     .issues-close-x:active {
-      background-color: #e5e7eb;
+      background-color: #dc2626;
     }
     .issues-meta {
       font-size: 0.9rem;
@@ -2502,7 +2504,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     backdrop.onclick = (e) => {
       if (e.target === backdrop) close();
     };
-    document.addEventListener('keydown', esc);
+    backdrop.showModal();
     
     // Setup copy button handlers after modal is opened
     setTimeout(() => {
