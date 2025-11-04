@@ -526,11 +526,16 @@
       max-width: 300px;
     } /* Schema Type */
     .results-table td:nth-child(3) { 
-      white-space: normal; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       min-width: 80px;
       max-width: 100px;
       width: 100px;
     } /* Status */
+    .results-table td:nth-child(3) .status-explanation {
+      display: none; /* Hide explanation text to prevent column expansion */
+    }
     .results-table td:nth-child(4) { 
       white-space: normal; 
       min-width: 180px;
@@ -2506,10 +2511,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
     backdrop.showModal();
     
-    // Setup copy button handlers after modal is opened
+    // Setup copy button handlers after modal is opened and content is rendered
     setTimeout(() => {
       // Copy individual block buttons
-      backdrop.querySelectorAll('.copy-block-btn').forEach(btn => {
+      const copyBlockBtns = backdrop.querySelectorAll('.copy-block-btn');
+      console.log(`Found ${copyBlockBtns.length} copy block buttons`);
+      copyBlockBtns.forEach(btn => {
         btn.onclick = () => {
           const blockIndex = parseInt(btn.dataset.blockIndex);
           const blocksData = JSON.parse(backdrop.dataset.blocksJson || '[]');
@@ -2529,6 +2536,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Copy all blocks button
       const copyAllBtn = backdrop.querySelector('.copy-all-blocks-btn');
+      console.log(`Copy all blocks button found: ${!!copyAllBtn}`);
       if (copyAllBtn) {
         copyAllBtn.onclick = () => {
           const blocksData = JSON.parse(backdrop.dataset.blocksJson || '[]');
@@ -2542,8 +2550,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             alert('Failed to copy. Please select and copy manually.');
           });
         };
+      } else {
+        console.warn('Copy all blocks button not found in modal');
       }
-    }, 100);
+    }, 300);
   }
   
   // Build a minimal rowData snapshot from a <tr>
@@ -3203,36 +3213,78 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return;
     }
     
-    // Wait a bit for the DOM to update after table row is created
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait longer for DOM to be fully updated and select elements to be created
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    try {
-      const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
-      if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run') {
-        if (typeof runSchemaOrgValidator === 'function') {
-          try {
-            await runSchemaOrgValidator(index, url);
-          } catch (err) {
-            console.error(`Schema.org validation failed for ${url}:`, err);
-            debugLog(`Schema.org validation failed for ${url}: ${err.message}`, 'error');
+    // Retry logic - try multiple times if elements aren't found
+    let retries = 3;
+    let schemaOrgRan = false;
+    let richResultsRan = false;
+    
+    while (retries > 0 && (!schemaOrgRan || !richResultsRan)) {
+      try {
+        const schemaOrgStatusSelect = document.getElementById(`schemaOrgStatus_${index}`);
+        if (schemaOrgStatusSelect && schemaOrgStatusSelect.value === 'Not run' && !schemaOrgRan) {
+          if (typeof runSchemaOrgValidator === 'function') {
+            try {
+              await runSchemaOrgValidator(index, url);
+              schemaOrgRan = true;
+            } catch (err) {
+              console.error(`Schema.org validation failed for ${url}:`, err);
+              debugLog(`Schema.org validation failed for ${url}: ${err.message}`, 'error');
+              schemaOrgRan = true; // Mark as attempted to prevent retry loop
+            }
+          } else {
+            console.warn(`runSchemaOrgValidator function not found for index ${index}`);
+            schemaOrgRan = true;
           }
+        } else if (schemaOrgStatusSelect && schemaOrgStatusSelect.value !== 'Not run') {
+          schemaOrgRan = true; // Already run
         }
+        
+        const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
+        if (googleStatusSelect && googleStatusSelect.value === 'Not run' && !richResultsRan) {
+          if (typeof runRichResultsValidator === 'function') {
+            try {
+              await runRichResultsValidator(index, url);
+              richResultsRan = true;
+            } catch (err) {
+              console.error(`Rich Results validation failed for ${url}:`, err);
+              debugLog(`Rich Results validation failed for ${url}: ${err.message}`, 'error');
+              richResultsRan = true; // Mark as attempted to prevent retry loop
+            }
+          } else {
+            console.warn(`runRichResultsValidator function not found for index ${index}`);
+            richResultsRan = true;
+          }
+        } else if (googleStatusSelect && googleStatusSelect.value !== 'Not run') {
+          richResultsRan = true; // Already run
+        }
+        
+        // If both ran or both select elements don't exist, break
+        if (schemaOrgRan && richResultsRan) {
+          break;
+        }
+        
+        // If elements still don't exist after waiting, wait a bit more
+        if (retries > 1 && (!schemaOrgStatusSelect || !googleStatusSelect)) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+      } catch (error) {
+        console.error(`External validation error for ${url}:`, error);
+        debugLog(`External validation error for ${url}: ${error.message}`, 'error');
       }
       
-      const googleStatusSelect = document.getElementById(`googleStatus_${index}`);
-      if (googleStatusSelect && googleStatusSelect.value === 'Not run') {
-        if (typeof runRichResultsValidator === 'function') {
-          try {
-            await runRichResultsValidator(index, url);
-          } catch (err) {
-            console.error(`Rich Results validation failed for ${url}:`, err);
-            debugLog(`Rich Results validation failed for ${url}: ${err.message}`, 'error');
-          }
-        }
+      retries--;
+      if (retries > 0 && (!schemaOrgRan || !richResultsRan)) {
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
-    } catch (error) {
-      console.error(`External validation error for ${url}:`, error);
-      debugLog(`External validation error for ${url}: ${error.message}`, 'error');
+    }
+    
+    if (!schemaOrgRan || !richResultsRan) {
+      console.warn(`External validations may not have completed for index ${index}, URL: ${url}`);
+      debugLog(`External validations may not have completed for index ${index}, URL: ${url}`, 'warning');
     }
   }
 
@@ -5469,13 +5521,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const plural = duplicates.length === 1 ? '' : 's';
       return { 
         class: 'issues', 
-        html: `<span class="chip-issues" title="Click to view details">⚠️ Warning${skippedNote}</span><span class="status-explanation">${duplicates.length} duplicate${plural} detected — likely normal Squarespace Events</span>`
+        html: `<span class="chip-issues" title="Click to view details">⚠️ Warning${skippedNote}</span>`
       };
     }
     
     return { 
       class: 'issues', 
-      html: `<span class="chip-issues" title="Click to view details">⚠️ Issues${skippedNote}</span><span class="status-explanation">${explanation}</span>`
+      html: `<span class="chip-issues" title="Click to view details">⚠️ Issues${skippedNote}</span>`
     };
   }
 
@@ -5485,7 +5537,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const skippedNote = buildSkippedNote(skippedCount);
     return { 
       class: 'critical', 
-      html: `<span class="chip-critical" title="Click to view details">❌ Critical${skippedNote}</span><span class="status-explanation">${explanation}</span>`
+      html: `<span class="chip-critical" title="Click to view details">❌ Critical${skippedNote}</span>`
     };
   }
 
@@ -5494,7 +5546,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const explanation = generateStatusExplanation(result);
     return { 
       class: 'error', 
-      html: `<span class="chip-critical" title="Click to view details">❌ Critical</span><span class="status-explanation">${explanation}</span>`
+      html: `<span class="chip-critical" title="Click to view details">❌ Critical</span>`
     };
   }
 
