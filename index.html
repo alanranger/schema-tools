@@ -6984,7 +6984,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   async function insertIntoSupabase(result, statuses, schemaJsonRaw) {
     const { data, error } = await supabase
       .from('schema_audit_logs')
-      .insert({
+      .upsert({
         url: result.url,
         timestamp: new Date().toISOString(),
         validator_google_status: statuses.googleStatus,
@@ -6992,6 +6992,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schema_type_detected: result.schemaType || null,
         schema_json_raw: schemaJsonRaw,
         schema_notes: statuses.notes || null
+      }, {
+        onConflict: 'url',
+        ignoreDuplicates: false
       });
     
     if (error) {
@@ -7296,10 +7299,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const statuses = getValidationStatusesFromDOM(index, result);
     const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
     
-    // Insert into Supabase
+    // Upsert into Supabase (update if exists, insert if not)
     const { data, error } = await supabase
       .from('schema_audit_logs')
-      .insert({
+      .upsert({
         url: result.url,
         timestamp: new Date().toISOString(),
         validator_google_status: statuses.googleStatus || '🚫 Skipped',
@@ -7307,6 +7310,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         schema_type_detected: result.schemaType || null,
         schema_json_raw: schemaJsonRaw,
         schema_notes: statuses.notes || null
+      }, {
+        onConflict: 'url',
+        ignoreDuplicates: false
       });
     
     if (error) {
