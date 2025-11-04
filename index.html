@@ -4978,7 +4978,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       // Stage 2: Build initial analysis result (~40%)
       updateRowProgress(urlData.url, 40);
-      const initialAnalysis = buildAnalysisResult(urlData.url, pageData.jsonLd, []);
+      initialAnalysis = buildAnalysisResult(urlData.url, pageData.jsonLd, []);
       debugLog(`[✓] Schema Types: ${initialAnalysis.schemaTypes.join(', ') || 'none'}`, 'info');
       debugLog(`[✓] schemaFound: ${initialAnalysis.schemaFound}`, 'info');
       
@@ -5105,7 +5105,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     } catch (error) {
       // Update progress to show error state
       updateRowProgress(urlData.url, 100);
-      const resultIndex = urlData.index !== undefined ? urlData.index : (urlData.row !== undefined ? urlData.row : 0);
+      // resultIndex is already declared at the top of the function
       const schemaTypeCell = document.getElementById(`schemaTypeCell_${resultIndex}`);
       if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
         markProgressError(schemaTypeCell);
