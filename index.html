@@ -6781,6 +6781,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
   
+  // Make functions globally available for onclick handlers
+  if (typeof window !== 'undefined') {
+    window.startValidation = startValidation;
+    window.onFileUpload = onFileUpload;
+  }
+  
   // Update bulk action buttons state
   function updateBulkButtons() {
     const exportBtn = document.getElementById('exportAllBtn');
