@@ -6749,7 +6749,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const progressBar = document.getElementById('progressBarFill');
     const progressText = document.getElementById('progressText');
     const resultsDiv = document.getElementById('validatorResults');
-    const tableBody = document.getElementById('resultsTableBody');
     
     try {
       // Parse CSV
@@ -6761,6 +6760,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       }
       
       // Initialize UI
+      const tableBody = document.getElementById('resultsTableBody');
       initializeValidationUI(urls, progressDiv, progressBar, progressText, resultsDiv, tableBody);
       
       // Process each URL
