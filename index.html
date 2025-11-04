@@ -775,7 +775,7 @@
     }
     
     .chip-valid {
-      background: linear-gradient(90deg, #a8e063 0%, #56ab2f 100%);
+      background: #27AE60;
       color: white;
       border-radius: 6px;
       padding: 0.2rem 0.5rem;
@@ -783,15 +783,21 @@
       font-weight: 600;
       display: inline-block;
     }
+    .chip-valid:hover {
+      background: #229954;
+    }
     
     .chip-critical {
-      background: linear-gradient(90deg, #ff512f 0%, #dd2476 100%);
+      background: #E74C3C;
       color: white;
       border-radius: 6px;
       padding: 0.2rem 0.5rem;
       font-size: 0.75rem;
       font-weight: 600;
       display: inline-block;
+    }
+    .chip-critical:hover {
+      background: #C0392B;
     }
     
     .status-badge.no-schema {
@@ -1051,17 +1057,17 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: #fde68a;
-      color: #92400e;
+      background: #F5B041;
+      color: black;
       border-radius: 8px;
       padding: 0.2rem 0.5rem;
       cursor: pointer;
-      border: 1px solid #f59e0b;
+      border: 1px solid #E67E22;
       font-size: 0.75rem;
       font-weight: 500;
     }
     .chip-issues:hover {
-      filter: brightness(0.98);
+      background: #E67E22;
     }
     .chip-issues::after {
       content: " (non-critical)";
@@ -1076,9 +1082,9 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #ef4444;
+      background: #E74C3C;
+      color: white;
+      border: 1px solid #C0392B;
       border-radius: 8px;
       padding: 0.2rem 0.5rem;
       cursor: pointer;
@@ -1086,15 +1092,15 @@
       font-weight: 500;
     }
     .chip-critical:hover {
-      filter: brightness(0.98);
+      background: #C0392B;
     }
     .chip-passed {
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #22c55e;
+      background: #27AE60;
+      color: white;
+      border: 1px solid #229954;
       border-radius: 8px;
       padding: 0.2rem 0.5rem;
       cursor: pointer;
@@ -1102,7 +1108,7 @@
       font-weight: 500;
     }
     .chip-passed:hover {
-      filter: brightness(0.98);
+      background: #229954;
     }
     .status-explanation {
       display: inline-block;
@@ -1151,27 +1157,48 @@
       font-weight: 600;
     }
     .chip-sample.passed {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #22c55e;
+      background: #27AE60;
+      color: white;
+      border: 1px solid #229954;
     }
     .chip-sample.issues {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #f59e0b;
+      background: #F5B041;
+      color: black;
+      border: 1px solid #E67E22;
     }
     .chip-sample.critical {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #ef4444;
+      background: #E74C3C;
+      color: white;
+      border: 1px solid #C0392B;
+    }
+    .chip-sample.info {
+      background: #5DADE2;
+      color: white;
+      border: 1px solid #3498DB;
+    }
+    .chip-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #5DADE2;
+      color: white;
+      border: 1px solid #3498DB;
+      border-radius: 8px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .chip-info:hover {
+      background: #3498DB;
     }
     .chip-ok {
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #22c55e;
+      background: #27AE60;
+      color: white;
+      border: 1px solid #229954;
       border-radius: 8px;
       padding: 0.2rem 0.5rem;
       cursor: pointer;
@@ -1179,7 +1206,7 @@
       font-weight: 500;
     }
     .chip-ok:hover {
-      filter: brightness(0.98);
+      background: #229954;
     }
     .badge {
       display: inline-block;
