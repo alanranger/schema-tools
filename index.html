@@ -2025,7 +2025,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         gen.textContent = originalText;
         gen.disabled = false;
         
-        openModal('Enhanced Schema (suggestion)', codeBlock('Paste this in a single <script type="application/ld+json">', JSON.stringify(enhanced, null, 2)));
+        // Use the proper Enhanced Schema modal instead of openModal
+        const backdrop = document.getElementById('genBackdrop');
+        const metaEl = document.getElementById('genMeta');
+        const jsonEl = document.getElementById('genJson');
+        const titleEl = document.getElementById('genTitle');
+        if (backdrop && metaEl && jsonEl && titleEl) {
+          titleEl.textContent = 'Enhanced Schema (suggestion)';
+          metaEl.textContent = `Paste this in a single <script type="application/ld+json"> tag`;
+          jsonEl.textContent = JSON.stringify(enhanced, null, 2);
+          backdrop.style.display = 'flex';
+          setupCopyButton();
+        } else {
+          openModal('Enhanced Schema (suggestion)', codeBlock('Paste this in a single <script type="application/ld+json">', JSON.stringify(enhanced, null, 2)));
+        }
       } catch (err) {
         gen.textContent = originalText;
         gen.disabled = false;
