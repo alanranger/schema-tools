@@ -1615,6 +1615,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 <script>
   // Tab switching - MUST be absolutely first, before any other code
   function switchTab(mode) {
+    // Clear cache and storage when switching tabs
+    try {
+      // Clear ResultCache if it exists
+      if (typeof ResultCache !== 'undefined') {
+        if (ResultCache instanceof Map) {
+          ResultCache.clear();
+        } else if (ResultCache.clear && typeof ResultCache.clear === 'function') {
+          ResultCache.clear();
+        }
+      }
+      // Clear validationResults if it exists
+      if (typeof validationResults !== 'undefined' && Array.isArray(validationResults)) {
+        validationResults.length = 0;
+      }
+      // Clear localStorage and sessionStorage
+      localStorage.removeItem('schemaValidatorResults');
+      localStorage.removeItem('schemaValidatorCache');
+      sessionStorage.removeItem('schemaValidatorResults');
+      sessionStorage.removeItem('schemaValidatorCache');
+    } catch (e) {
+      console.warn('Failed to clear storage:', e);
+    }
+    
+    // Clear the results table
+    const tableBody = document.getElementById('resultsTableBody');
+    if (tableBody) {
+      tableBody.innerHTML = '';
+    }
+    
     // Reset all active tabs and contents
     const tabs = document.querySelectorAll('.tab');
     const contents = document.querySelectorAll('.tab-content');
@@ -2434,7 +2463,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
           <div class="json-block-card" style="margin-bottom: 1rem; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #f7fafc; border-bottom: 1px solid #e2e8f0;">
               <h5 style="margin: 0; font-size: 0.9rem; font-weight: 600;">JSON-LD Block #${idx + 1}</h5>
-              <button class="copy-block-btn secondary" data-block-index="${idx}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">📋 Copy Block ${idx + 1}</button>
+              <button class="copy-block-btn secondary" data-block-index="${idx}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; background: #2563eb; color: white; border-color: #2563eb; cursor: pointer; border-radius: 4px;">📋 Copy Block ${idx + 1}</button>
             </div>
             <pre style="margin: 0; padding: 1rem; background: #000; color: #fff; overflow-x: auto; font-size: 0.85rem; max-height: 400px; overflow-y: auto;">${escapeHtml(blockJson)}</pre>
           </div>
