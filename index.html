@@ -2646,14 +2646,28 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   async function generateEnhancedFor(url){
+    const apiBaseUrl = getApiBaseUrl();
+    const apiUrl = `${apiBaseUrl}/api/fetch?url=${encodeURIComponent(url)}`;
+    
+    debugLog(`[Generate Enhanced] Fetching via API: ${apiUrl}`, 'info');
+    
     try {
       // Use API proxy for Squarespace pages
-      const apiBaseUrl = getApiBaseUrl();
-      const res = await fetch(`${apiBaseUrl}/api/fetch?url=${encodeURIComponent(url)}`);
+      const res = await fetch(apiUrl);
+      
       if (!res.ok) {
-        throw new Error(`API returned ${res.status}`);
+        const errorText = await res.text().catch(() => 'Unknown error');
+        throw new Error(`API returned ${res.status}: ${errorText.substring(0, 100)}`);
       }
+      
       const html = await res.text();
+      
+      if (!html || html.length === 0) {
+        throw new Error('API returned empty response');
+      }
+      
+      debugLog(`[Generate Enhanced] Received ${html.length} bytes of HTML`, 'success');
+      
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
@@ -2662,14 +2676,25 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       for (const s of scripts) {
         try { 
           nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); 
-        } catch(_) {}
+        } catch(e) {
+          debugLog(`[Generate Enhanced] Failed to parse JSON-LD block: ${e.message}`, 'warning');
+        }
       }
+      
+      debugLog(`[Generate Enhanced] Found ${nodes.length} schema nodes`, 'info');
       
       return await processSchemaWithFallback(url, doc, nodes);
     } catch (error) {
-      // Fallback to direct fetch if API fails
+      debugLog(`[Generate Enhanced] API fetch failed: ${error.message}`, 'error');
+      
+      // Fallback to direct fetch if API fails (will likely fail due to CORS)
+      debugLog(`[Generate Enhanced] Attempting direct fetch fallback...`, 'warning');
+      
       try {
         const res = await fetch(url, {mode:'cors'});
+        if (!res.ok) {
+          throw new Error(`Direct fetch returned ${res.status}`);
+        }
         const html = await res.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -2684,7 +2709,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         
         return await processSchemaWithFallback(url, doc, nodes);
       } catch (err) {
-        throw new Error(`Failed to fetch page: ${err.message}`);
+        const errorMsg = err.message || 'Unknown error';
+        debugLog(`[Generate Enhanced] Direct fetch also failed: ${errorMsg}`, 'error');
+        throw new Error(`Failed to fetch page: ${errorMsg}. API endpoint: ${apiUrl}`);
       }
     }
   }
