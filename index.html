@@ -5104,10 +5104,106 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
+  // Helper: Suppress redundant Event blocks injected by Squarespace
+  function suppressRedundantEventBlocks(jsonLdBlocks) {
+    if (!jsonLdBlocks || !Array.isArray(jsonLdBlocks)) return jsonLdBlocks;
+    
+    let suppressedCount = 0;
+    const processedBlocks = [];
+    const eventGroups = new Map(); // key: "name|startDate" -> array of block indices
+    
+    // First pass: Identify all Event nodes and group by name/startDate
+    jsonLdBlocks.forEach((block, blockIndex) => {
+      // Check if this block contains Event nodes (but skip if inside ItemList)
+      const nodes = flattenJsonLd(block, []);
+      const eventNodes = nodes.filter(n => {
+        const types = asArray(n['@type']);
+        return types.includes('Event');
+      });
+      
+      // Skip if Event is inside ItemList
+      const hasItemList = nodes.some(n => {
+        const types = asArray(n['@type']);
+        return types.includes('ItemList');
+      });
+      
+      if (eventNodes.length > 0 && !hasItemList) {
+        // Extract key from first Event node in block
+        const firstEvent = eventNodes[0];
+        const name = firstEvent.name || '';
+        const startDate = firstEvent.startDate || '';
+        const key = `${name}|${startDate}`;
+        
+        if (!eventGroups.has(key)) {
+          eventGroups.set(key, []);
+        }
+        eventGroups.get(key).push({
+          blockIndex,
+          block,
+          eventNodes,
+          name,
+          startDate
+        });
+      }
+    });
+    
+    // Second pass: Process blocks - keep first Event of each group, suppress duplicates
+    const suppressedIndices = new Set();
+    
+    eventGroups.forEach((group, key) => {
+      if (group.length > 1) {
+        // Multiple Events with same name/startDate - keep first, suppress others
+        for (let i = 1; i < group.length; i++) {
+          suppressedIndices.add(group[i].blockIndex);
+          suppressedCount++;
+        }
+        debugLog(`[SUPPRESSION] Found ${group.length} duplicate Event blocks with name="${group[0].name}", startDate="${group[0].startDate}" - keeping first, suppressing ${group.length - 1}`, 'info');
+      } else {
+        // Single Event with this key - check if there are other Event blocks
+        // If there are multiple Event blocks total, suppress all but the first one
+        const allEventBlocks = [];
+        eventGroups.forEach((g) => {
+          g.forEach(item => allEventBlocks.push(item));
+        });
+        allEventBlocks.sort((a, b) => a.blockIndex - b.blockIndex);
+        
+        if (allEventBlocks.length > 1 && group[0].blockIndex !== allEventBlocks[0].blockIndex) {
+          suppressedIndices.add(group[0].blockIndex);
+          suppressedCount++;
+        }
+      }
+    });
+    
+    // Build filtered blocks array - mark suppressed blocks
+    jsonLdBlocks.forEach((block, blockIndex) => {
+      if (suppressedIndices.has(blockIndex)) {
+        // Mark as suppressed by adding a flag
+        const processedBlock = { ...block, _suppressed: true };
+        processedBlocks.push(processedBlock);
+      } else {
+        processedBlocks.push(block);
+      }
+    });
+    
+    if (suppressedCount > 0) {
+      debugLog(`[SUPPRESSION] Collapsed duplicate Event nodes (${suppressedCount} suppressed)`, 'info');
+    }
+    
+    return processedBlocks;
+  }
+
+  // Helper: Filter out suppressed blocks before processing
+  function filterSuppressedBlocks(jsonLdBlocks) {
+    if (!jsonLdBlocks || !Array.isArray(jsonLdBlocks)) return jsonLdBlocks;
+    return jsonLdBlocks.filter(block => !block._suppressed);
+  }
+
   // Helper: Process schema nodes and build issues list
   function processSchemaNodes(pageData) {
+    // Filter out suppressed blocks before processing
+    const filteredBlocks = filterSuppressedBlocks(pageData.jsonLd);
     let allNodes = [];
-    for (const block of pageData.jsonLd) {
+    for (const block of filteredBlocks) {
       try {
         allNodes = flattenJsonLd(block, allNodes);
       } catch(_) {}
@@ -5293,6 +5389,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       updateRowProgress(urlData.url, 20);
       const pageData = await fetchPageSchema(urlData.url, resultIndex);
       debugLog(`Fetched page data for ${urlData.url}: found ${pageData.jsonLd.length} JSON-LD blocks, schemaType: ${pageData.schemaType}`, 'info');
+      
+      // Apply Event suppression before processing
+      pageData.jsonLd = suppressRedundantEventBlocks(pageData.jsonLd);
       
       // Stage 2: Build initial analysis result (~40%)
       updateRowProgress(urlData.url, 40);
