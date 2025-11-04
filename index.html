@@ -2000,37 +2000,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Event delegation for View Details and Generate Enhanced buttons
   document.addEventListener('click', async (e) => {
-    // View Details
-    const view = e.target.closest('.btn-view-details, [data-action="view-details"], .view-details-btn');
-    if (view) {
-      const row = view.closest('tr');
-      const url = row?.dataset?.url || row?.querySelector('a.url-link')?.href;
-      const cached = ResultCache.get(url);
-      if (!cached) {
-        openModal('Details', '<p>No cached analysis for this URL (scan first).</p>');
+      // View Details - use new improved modal
+      const view = e.target.closest('.btn-view-details, [data-action="view-details"], .view-details-btn');
+      if (view) {
+        const row = view.closest('tr');
+        if (!row) return;
+        const rowData = getRowDataFromTr(row);
+        openIssuesModal(rowData);
         return;
       }
-
-      // Build a clean details view
-      const issues = (cached.issues || []).map(i => `<li>${escapeHtml(i.message || i)}</li>`).join('') || '<li>None</li>';
-      const blocksHtml = (cached.blocks || []).map((b, idx) =>
-        codeBlock(`JSON-LD Block #${idx+1}`, JSON.stringify(b, null, 2))
-      ).join('');
-
-      openModal('Schema Details', `
-        <div class="grid grid-two">
-          <div>
-            <h4>Issues</h4>
-            <ul>${issues}</ul>
-          </div>
-          <div>
-            <h4>JSON-LD Blocks</h4>
-            ${blocksHtml || '<p>No JSON-LD blocks captured.</p>'}
-          </div>
-        </div>
-      `);
-      return;
-    }
 
     // Generate Enhanced
     const gen = e.target.closest('.btn-generate-enhanced, [data-action="generate-enhanced"], .enhance-btn');
@@ -4975,9 +4953,11 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Process a single URL
   async function processUrl(urlData) {
+    // Use index if provided, otherwise fall back to row
+    const resultIndex = urlData.index !== undefined ? urlData.index : (urlData.row !== undefined ? urlData.row : 0);
     const result = {
       url: urlData.url,
-      row: urlData.row,
+      row: resultIndex, // Store the correct index
       schemaType: null,
       valid: false,
       schemaFound: false,
@@ -4993,7 +4973,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     try {
       // Stage 1: Fetch page data (~20%)
       updateRowProgress(urlData.url, 20);
-      const pageData = await fetchPageSchema(urlData.url, urlData.row);
+      const pageData = await fetchPageSchema(urlData.url, resultIndex);
       debugLog(`Fetched page data for ${urlData.url}: found ${pageData.jsonLd.length} JSON-LD blocks, schemaType: ${pageData.schemaType}`, 'info');
       
       // Stage 2: Build initial analysis result (~40%)
@@ -6674,11 +6654,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     updateRowProgress(urlData.url, 5);
     
     // Process URL (this will update row progress internally at each stage)
+    // Pass index to processUrl so it uses the correct index
+    urlData.index = index;
     const result = await processUrl(urlData);
-    validationResults[index] = result;
-    
-    // Update table row immediately with final result
-    updateTableRow(index, result);
+    // Result is already stored at correct index inside processUrl
+    // Just ensure table is updated if needed
+    if (!validationResults[index]) {
+      validationResults[index] = result;
+    }
+    updateTableRow(index, validationResults[index]);
     
     // Auto-run external validators if enabled
     try {
