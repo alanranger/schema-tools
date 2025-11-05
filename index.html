@@ -1415,7 +1415,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             Save in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/</code> as <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">01 – products_YYYY-MM-DD.csv</code>.
           </p>
           <input type="file" id="file-step1" accept=".csv" style="margin-top: 0.75rem; display: block; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed;" disabled />
-          <p style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; font-style: italic;">
+          <p id="step1LockMessage" style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; font-style: italic;">
             ⏳ Complete Step 0 first to unlock this step.
           </p>
           <div id="progress-step1" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
@@ -8589,14 +8589,37 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                                 window.location.hostname.includes('localhost') === false;
         
         if (isWebDeployment) {
-          status.textContent = "ℹ️ Web Deployment Mode – Local executor unavailable.";
+          status.textContent = "ℹ️ Web Deployment Mode – Read-only validation available.";
           status.style.background = "#e3f2fd";
           status.style.borderColor = "#2196f3";
           status.style.color = "#1565c0";
           log("🌐 Running on Vercel (web hosting).");
-          log("💡 Local server features require Electron app or local development.");
+          log("💡 Local server automation requires Electron app or local development.");
           log("📦 For full automation: Download Electron desktop app or run locally.");
-          // Don't unlock Step 1 in web mode
+          log("✅ Step 1 unlocked for read-only validation (file uploads work).");
+          log("⚠️ Steps 2-4 require local server (not available on web).");
+          
+          // Add a button to proceed anyway in web mode
+          if (startBtn) {
+            startBtn.style.display = 'inline-block';
+            startBtn.textContent = "✅ Continue in Web Mode (Read-Only)";
+            startBtn.style.background = "#2196f3";
+            startBtn.onmouseover = function() { this.style.background = '#1976d2'; };
+            startBtn.onmouseout = function() { this.style.background = '#2196f3'; };
+            startBtn.onclick = () => {
+              status.textContent = "✅ Web Mode Active – Step 1 unlocked for validation.";
+              status.style.background = "#d4edda";
+              status.style.borderColor = "#c3e6cb";
+              status.style.color = "#155724";
+              unlockStep1();
+              if (startBtn) startBtn.style.display = 'none';
+            };
+          }
+          
+          // Auto-unlock Step 1 after a short delay in web mode
+          setTimeout(() => {
+            unlockStep1();
+          }, 2000);
         } else {
           status.textContent = "🌐 Web mode – manual start required.";
           status.style.background = "#fff3cd";
