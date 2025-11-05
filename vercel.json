@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": null,
   "outputDirectory": ".",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet .",
   "routes": [
     {
       "src": "/api/(.*)",
