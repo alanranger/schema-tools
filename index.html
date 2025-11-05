@@ -1384,12 +1384,50 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
 
+      <!-- ===================== STATUS DASHBOARD ===================== -->
+      <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="color: white; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem;">
+          <div id="step-status-0" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: center; color: white;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏳</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 0</div>
+            <div id="step-status-text-0" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Initializing</div>
+          </div>
+          <div id="step-status-1" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 1</div>
+            <div id="step-status-text-1" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
+          </div>
+          <div id="step-status-2" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 2</div>
+            <div id="step-status-text-2" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
+          </div>
+          <div id="step-status-3a" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 3a</div>
+            <div id="step-status-text-3a" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
+          </div>
+          <div id="step-status-3b" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 3b</div>
+            <div id="step-status-text-3b" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
+          </div>
+          <div id="step-status-4" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
+            <div style="font-size: 0.75rem; font-weight: 600;">Step 4</div>
+            <div id="step-status-text-4" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ===================== PRODUCT SCHEMA WORKFLOW ===================== -->
       <section id="product-schema-workflow" style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
 
         <!-- STEP 0: Initialize Local Executor -->
-        <div id="step0-init" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">⚙️ Step 0 – Initialize Local Executor</h3>
+        <div id="step0-init" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 1rem; background: #f7fafc; position: relative;">
+          <div id="step0-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">⚙️ Step 0 – Initialize Local Executor</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             This step ensures the local automation bridge is running before schema generation starts.
           </p>
@@ -1408,8 +1446,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
 
         <!-- STEP 1 -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🧾 Step 1 – Squarespace Product Export Setup</h3>
+        <div id="step1-container" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 1rem; background: #f7fafc; position: relative;">
+          <div id="step1-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏸️</div>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">🧾 Step 1 – Squarespace Product Export Setup</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             Export your latest products from Squarespace → <strong>Commerce → Products → Export CSV</strong>.<br>
             Save in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/</code> as <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">01 – products_YYYY-MM-DD.csv</code>.
@@ -1425,8 +1464,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
 
         <!-- STEP 2 -->
-        <div id="step2-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🧹 Step 2 – Clean and Normalize CSV</h3>
+        <div id="step2-container" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 1rem; background: #f7fafc; position: relative;">
+          <div id="step2-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏸️</div>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">🧹 Step 2 – Clean and Normalize CSV</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             This step automatically formats your latest Squarespace export for schema generation.
           </p>
@@ -3802,30 +3842,23 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const element = document.getElementById(outputId);
     if (!element) {
       console.error(`Element with id "${outputId}" not found`);
-      alert('Error: Output element not found. Please refresh the page.');
+      showToast('❌ Error: Output element not found', 'error');
       return;
     }
     
     const text = element.tagName === 'TEXTAREA' ? element.value : element.textContent;
     
     if (!text || text.trim() === '') {
-      alert('Nothing to copy. Please generate schema first.');
+      showToast('⚠️ Nothing to copy. Please generate schema first.', 'warning');
       return;
     }
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function() {
-        // Show temporary success message
-        const successMsg = document.createElement('div');
-        successMsg.textContent = '✅ Schema copied to clipboard!';
-        successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27AE60; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; font-size: 0.875rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-        document.body.appendChild(successMsg);
-        setTimeout(() => {
-          successMsg.remove();
-        }, 2000);
+        showToast('✅ Schema copied to clipboard!', 'success');
       }, function(err) {
         console.error('Clipboard write failed:', err);
-        alert('Failed to copy text. Please try selecting and copying manually.');
+        showToast('❌ Failed to copy. Please try selecting and copying manually.', 'error');
       });
     } else {
       // Fallback for older browsers
@@ -3837,13 +3870,25 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       textArea.select();
       try {
         document.execCommand('copy');
-        alert('Schema copied to clipboard!');
+        showToast('✅ Schema copied to clipboard!', 'success');
       } catch (err) {
         console.error('Fallback copy failed:', err);
-        alert('Failed to copy text. Please try selecting and copying manually.');
+        showToast('❌ Failed to copy. Please try selecting and copying manually.', 'error');
       }
       document.body.removeChild(textArea);
     }
+  }
+  
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    const bgColor = type === 'success' ? '#27AE60' : type === 'error' ? '#E74C3C' : '#E57200';
+    toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${bgColor}; color: white; padding: 14px 24px; border-radius: 8px; z-index: 10000; font-size: 0.875rem; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out;`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.3s ease-in';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
 
   // Test URL functions
@@ -8779,7 +8824,81 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
     }
 
+    // Update step status dashboard
+    function updateStepStatus(stepId, status, message) {
+      const card = document.getElementById(`step-status-${stepId}`);
+      const text = document.getElementById(`step-status-text-${stepId}`);
+      const badge = document.getElementById(`step${stepId}-badge`);
+      
+      if (!card) return;
+      
+      // Update card
+      if (status === 'complete') {
+        card.style.background = 'rgba(39, 174, 96, 0.25)'; // Green tint
+        card.style.opacity = '1';
+        card.querySelector('div').textContent = '✅';
+        if (text) text.textContent = message || 'Complete';
+      } else if (status === 'running') {
+        card.style.background = 'rgba(229, 114, 0, 0.25)'; // Orange tint
+        card.style.opacity = '1';
+        card.querySelector('div').textContent = '🔄';
+        if (text) text.textContent = message || 'Running';
+      } else if (status === 'error') {
+        card.style.background = 'rgba(231, 76, 60, 0.25)'; // Red tint
+        card.style.opacity = '1';
+        card.querySelector('div').textContent = '❌';
+        if (text) text.textContent = message || 'Error';
+      } else {
+        card.style.background = 'rgba(255,255,255,0.1)';
+        card.style.opacity = '0.5';
+        card.querySelector('div').textContent = '⏸️';
+        if (text) text.textContent = message || 'Waiting';
+      }
+      
+      // Update badge on step card
+      if (badge) {
+        if (status === 'complete') {
+          badge.textContent = '✅';
+          badge.style.background = '#27AE60';
+          badge.style.color = 'white';
+        } else if (status === 'running') {
+          badge.textContent = '🔄';
+          badge.style.background = '#E57200';
+          badge.style.color = 'white';
+        } else if (status === 'error') {
+          badge.textContent = '❌';
+          badge.style.background = '#E74C3C';
+          badge.style.color = 'white';
+        } else {
+          badge.textContent = '⏸️';
+          badge.style.background = '#e2e8f0';
+        }
+      }
+    }
+
+    function updateStatus(step, msg, percent) {
+      const stepNum = step === '3a' ? '3a' : step === '3b' ? '3b' : String(step);
+      updateStepStatus(stepNum, 'running', msg);
+      
+      const bar = document.querySelector(`#progress-step${step} .progress-bar`);
+      const wrap = document.querySelector(`#progress-step${step}`);
+      const statusEl = document.querySelector(`#status-step${step}`);
+      
+      if (wrap && bar) {
+        wrap.style.display = 'block';
+        bar.style.width = percent + '%';
+      }
+      
+      if (statusEl) {
+        statusEl.textContent = msg;
+        statusEl.style.color = '#4a5568';
+      }
+    }
+
     function markComplete(step, msg) {
+      const stepNum = step === '3a' ? '3a' : step === '3b' ? '3b' : String(step);
+      updateStepStatus(stepNum, 'complete', msg);
+      
       const bar = document.querySelector(`#progress-step${step} .progress-bar`);
       if (bar) {
         bar.style.background = '#27AE60'; // Green for complete
@@ -8906,6 +9025,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           updateStatus(1, 'Uploading raw CSV...', 40);
           setTimeout(() => {
             markComplete(1, 'Step 1 complete – raw file ready');
+            updateStepStatus('1', 'complete', 'Complete');
             // Auto-trigger Step 2 cleaning
             setTimeout(() => {
               autoCleanProducts();
