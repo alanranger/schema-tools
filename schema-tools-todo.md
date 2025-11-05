@@ -41,13 +41,22 @@ Build a **single HTML tool** that can:
 
 ### 🎯 Current Status
 
-**✅ Schema Validator Tab - COMPLETE (v1.5.0)**
+### 🎯 Current Status
+
+**✅ Schema Validator Tab - COMPLETE (v1.5.2)**
 - Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
 - Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
 - MerchantListing badge with green background and white checkmark
 - Improved duplicate detection for multi-instance types
 - Supabase RLS policy fixes
 - Comprehensive schema details modal
+
+**✅ Electron Desktop App - COMPLETE (v1.5.2)**
+- Step 0 - Initialize Local Executor (pre-flight check)
+- Auto-starts local server on Electron launch
+- Fully automated workflow (Steps 1 → 2 → 3a → 3b → 4)
+- No manual terminal commands needed
+- Packageable as `.exe` for Windows
 
 **🚧 Next Phase: Events & Products Tabs**
 - Events tab: Generate Event schemas from CSV
@@ -143,7 +152,49 @@ Build a **single HTML tool** that can:
 
 ---
 
-### ✅ Schema Validator Tab (COMPLETE v1.5.0)
+### ✅ Schema Validator Tab (COMPLETE v1.5.2)
+
+- [x] Add HTML UI for bulk validator (browser-based CSV upload) - **COMPLETED v1.2.0**
+- [x] Add progress bar for bulk validation - **COMPLETED v1.2.1**
+- [x] Template CSV download for easy setup - **COMPLETED v1.2.1**
+- [x] Enhanced schema generation with multiple schema support - **COMPLETED v1.2.1**
+- [x] Dual format downloads (JSON + HTML) - **COMPLETED v1.2.1**
+- [x] Code quality improvements and refactoring - **COMPLETED v1.4.0**
+  - Reduced cognitive complexity to ≤15 for all functions
+  - Modernized JavaScript syntax (globalThis, for...of, structuredClone)
+  - Improved error handling and accessibility
+  - Enhanced code maintainability
+- [x] **Inferred schema type detection** - **COMPLETED v1.5.0**
+  - Carousel detection (from ≥3 Event items or Product/Course schemas)
+  - ReviewSnippet detection (from aggregateRating, review, reviews fields)
+  - MerchantListing (Google) detection (from Product schemas with Merchant Center fields)
+- [x] **MerchantListing badge styling** - **COMPLETED v1.5.0**
+  - Green background badge with white checkmark
+  - Compact design to prevent column width issues
+- [x] **Enhanced JSON-LD detection** - **COMPLETED v1.5.0**
+  - Squarespace pattern support (`script[data-type="application/ld+json"]`)
+  - Nested `<noscript>` tag detection
+  - HTML entity decoding for proper JSON parsing
+- [x] **Improved duplicate detection** - **COMPLETED v1.5.0**
+  - Multi-instance allowed types (Event, Product, Course, Article, Review, FAQPage, ListItem, Offer)
+  - Informational messages for expected multi-instance schemas
+  - Accurate duplicate counting excluding multi-instance types
+- [x] **Supabase RLS policy fixes** - **COMPLETED v1.5.0**
+  - Fixed Row-Level Security policies for `anon` and `authenticated` roles
+  - Improved error handling for auto-save operations
+- [x] **Electron Desktop App** - **COMPLETED v1.5.2**
+  - Step 0 pre-flight check for local executor
+  - Auto-start local server in Electron mode
+  - Fully automated workflow execution
+  - Packageable as `.exe` for Windows
+- [ ] Add CSV pre-cleaning checks: invalid rows, missing `Product ID`, etc.
+- [ ] Show warning if CSV has invalid/missing fields
+- [ ] Allow user to preview JSON-LD block in a collapsible box
+- [ ] Support for Microdata validation
+- [ ] Export validation results to CSV/Excel
+- [ ] Add batch enhancement for all URLs at once
+- [ ] Add filtering/sorting options in results table
+- [ ] Change filter inputs to dropdowns with actual field values
 
 - [x] Add HTML UI for bulk validator (browser-based CSV upload) - **COMPLETED v1.2.0**
 - [x] Add progress bar for bulk validation - **COMPLETED v1.2.1**

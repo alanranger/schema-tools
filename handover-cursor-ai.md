@@ -20,7 +20,7 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Injects fixed location, organizer, image
 - Outputs valid Event + ItemList blocks
 
-### ✅ `index.html` (Unified Schema Generator - v1.5.0)
+### ✅ `index.html` (Unified Schema Generator - v1.5.2)
 - Combines both generators into one file with tabbed interface
 - Three tabs:
   - **Event Schema Generator** (🚧 In Development)
@@ -28,21 +28,30 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
   - **Schema Validator** ✅ Complete - validates URLs from CSV, detects schema types, identifies missing fields, generates enhanced schemas, and detects inferred types
 - Includes built-in validation and enhancement logic
 - Works entirely in browser (no server required)
-- **Schema Validator Tab (v1.5.0 - Complete):**
+- **Schema Validator Tab (v1.5.2 - Complete):**
   - ✅ Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
   - ✅ Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
   - ✅ MerchantListing badge with green background and white checkmark
   - ✅ Improved duplicate detection for multi-instance types
   - ✅ Supabase RLS policy fixes
   - ✅ Comprehensive schema details modal
+- **Electron Desktop App (v1.5.2 - New):**
+  - ✅ Step 0 - Initialize Local Executor (pre-flight check)
+  - ✅ Auto-starts local server in Electron mode
+  - ✅ Fully automated workflow execution
+  - ✅ No manual terminal commands needed
+  - ✅ Packageable as `.exe` for Windows
 - **Previous Versions:**
   - **v1.2.1**: Template CSV download, progress indicators, @graph support, dual format downloads
   - **v1.3.0**: Supabase integration, manual status input, notes capture
   - **v1.4.0**: Code quality improvements (cognitive complexity ≤ 15, modernized syntax, better error handling)
+  - **v1.5.0**: Inferred schema types, enhanced JSON-LD detection, MerchantListing badge
+  - **v1.5.1**: Electron desktop app setup with auto-starting server
+  - **v1.5.2**: Step 0 pre-flight check, improved browser compatibility
 
 ## Current Status
 
-✅ **Schema Validator Tab - COMPLETE (v1.5.0):**
+✅ **Schema Validator Tab - COMPLETE (v1.5.2):**
 - Schema validation (built into unified generator)
 - Bulk URL validation from CSV
 - Schema enhancement with missing fields
@@ -55,6 +64,14 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - **MerchantListing badge** with green background and white checkmark
 - **Improved duplicate detection** for multi-instance types
 - **Supabase RLS policy fixes**
+
+✅ **Electron Desktop App - COMPLETE (v1.5.2):**
+- Step 0 pre-flight check for local executor
+- Auto-starts local server in Electron mode
+- Fully automated workflow execution (Steps 1 → 2 → 3a → 3b → 4)
+- No manual terminal commands needed
+- Packageable as `.exe` for Windows
+- Vercel build compatibility (skips Electron builds for web)
 
 🚧 **Next Phase - Events & Products Tabs:**
 - Complete Events tab functionality

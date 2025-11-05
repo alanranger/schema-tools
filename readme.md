@@ -22,7 +22,12 @@ This repository contains tools to generate JSON-LD schema markup for **products*
   - **Event Schema**: Generate Event and ItemList schema blocks from CSV (🚧 In Development)
   - **Product Schema**: Generate Product schema blocks with review support (🚧 In Development)
   - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
-- **Schema Validator Features (v1.5.0 - Complete)**:
+### 3. `index.html` (Unified Schema Generator)
+- Combines both tools into one UI with three tabs:
+  - **Event Schema**: Generate Event schemas from CSV (🚧 In Development)
+  - **Product Schema**: Generate Product schemas with review support (🚧 In Development)
+  - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
+- **Schema Validator Features (v1.5.2 - Complete)**:
   - Single URL and batch CSV validation
   - Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
   - Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
@@ -30,6 +35,13 @@ This repository contains tools to generate JSON-LD schema markup for **products*
   - Improved duplicate detection for multi-instance types
   - Supabase integration for audit logging
   - Comprehensive schema details modal
+- **Electron Desktop App (v1.5.2 - New)**:
+  - Fully offline desktop application
+  - Auto-starts local server on launch
+  - Step 0 pre-flight check for local executor
+  - Automatic workflow execution (Steps 1 → 2 → 3a → 3b → 4)
+  - No terminal commands needed
+  - Run with `npm start` or double-click packaged `.exe`
 
 ### 4. `schema-validator.js` (Schema Validator Agent)
 - Automated CLI tool to validate schema markup on live URLs.

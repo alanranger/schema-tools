@@ -2,7 +2,111 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## [1.5.2] - 2024-11-05
+
+### Electron Desktop App Enhancement
+
+#### Added
+- **Step 0 - Initialize Local Executor**:
+  - Pre-flight check for local server/Electron bridge status
+  - Automatic detection of Electron vs browser vs web deployment environment
+  - Visual status indicators (green/yellow/red) with clear messaging
+  - Console output area for debugging and status logs
+  - Action buttons for manual server start (browser mode)
+  - Copy CLI command button for easy setup
+  - Step 1 locked until Step 0 completes successfully
+
+#### Improved
+- **Vercel Build Compatibility**:
+  - Build script now skips Electron builds for web deployments
+  - Separate `build:electron` script for local Electron packaging
+  - Web deployments use `build:web` script (no-op)
+- **Browser Compatibility**:
+  - Replaced optional chaining (`?.`) with compatible syntax for older browsers
+  - Better error handling in Step 0 initialization
+  - Graceful fallbacks for environment detection
+
+#### Technical Details
+- `initLocalExecutor()` function handles environment detection and server verification
+- `unlockStep1()` and `lockStep1()` functions control Step 1 access
+- Electron mode: Auto-detects and unlocks Step 1 after server confirmation
+- Browser mode: Shows manual instructions and buttons
+- Web mode: Shows read-only info message
+
+## [1.5.1] - 2024-11-05
+
+### Electron Desktop App Setup
+
+#### Added
+- **Electron Integration**:
+  - `main.js` - Electron main process with auto-starting local server
+  - `preload.js` - Secure Electron API exposure
+  - Window title: "Alan Ranger Schema Tools v1.5.0"
+  - Auto-starts local Node.js server on app launch
+  - Graceful shutdown handling
+- **Local Server Bridge**:
+  - Express server runs automatically in Electron mode
+  - No manual terminal commands needed
+  - Python scripts execute seamlessly via bridge
+- **Package Scripts**:
+  - `npm start` - Launch Electron app
+  - `npm run build` - Package Electron app for Windows
+  - `npm run build:electron` - Explicit Electron build
+  - `npm run build:web` - Web deployment build (no-op)
+
+#### Technical Details
+- Server auto-starts in Electron mode (no user intervention)
+- All Python scripts verified: clean, fetch, merge, schema
+- File outputs written to `/inputs-files/workflow/`
+- Offline-first architecture
+
 ## [1.5.0] - 2024-11-05
+
+### Schema Validator Tab Enhancements
+
+#### Added
+- **Inferred Schema Type Detection**:
+  - Carousel detection from ≥3 Event items or Product/Course schemas
+  - ReviewSnippet detection from aggregateRating, review, or reviews fields
+  - MerchantListing (Google) detection for Product schemas with Merchant Center fields (offers, priceCurrency, availability, hasMerchantReturnPolicy)
+- **Visual Enhancements**:
+  - MerchantListing badge with green background (`#27AE60`) and white checkmark emoji
+  - Compact badge design (0.85em font, reduced padding) to prevent column width issues
+  - Inferred types displayed in italic gray text with special styling for MerchantListing
+- **JSON-LD Detection Improvements**:
+  - Squarespace pattern support: `script[data-type="application/ld+json"]`
+  - Nested `<noscript>` tag detection for both standard and Squarespace patterns
+  - HTML entity decoding (`&quot;`, `&apos;`, `&amp;`, `&#x2F;`, `\/`) before JSON parsing
+  - Deduplication of found script tags
+- **Duplicate Detection Enhancements**:
+  - Multi-instance allowed types: Event, Product, Course, Article, Review, FAQPage, ListItem, Offer
+  - Informational messages for expected multi-instance schemas (e.g., "✅ Multiple Event schemas detected (45) — expected for event listings.")
+  - Accurate duplicate counting excluding multi-instance types
+  - Friendly classification messages for duplicate issues
+
+#### Fixed
+- **Supabase Integration**:
+  - Fixed Row-Level Security (RLS) policy violations (Code 42501)
+  - Added RLS policies for `anon` and `authenticated` roles
+  - Improved error handling for auto-save operations (suppresses RLS errors with warnings)
+  - Better user feedback for save operations
+- **Inferred Types Display**:
+  - Fixed race condition where inferred types disappeared after scan completion
+  - Ensured inferred types persist in table after row updates
+  - Correct display of inferred types in schema type cell and modal
+
+#### Improved
+- **Debug Logging**:
+  - Detailed logging for MerchantListing detection (shows missing fields)
+  - Informational messages downgraded from `warn` to `info` level
+  - Better console output for troubleshooting
+
+#### Technical Details
+- `detectInferredTypes()` function analyzes all schema nodes to identify implicit types
+- `formatSchemaTypesWithInferred()` function formats inferred types with visual differentiation
+- `detectMerchantListing()` function checks for Merchant Center compliance fields
+- `findAllJsonLdScripts()` helper function expands JSON-LD detection coverage
+- `decodeHTML()` helper function handles HTML entity decoding
 
 ### Schema Validator Tab Enhancements
 
