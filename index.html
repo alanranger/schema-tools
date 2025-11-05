@@ -1427,9 +1427,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <!-- STEP 0: Initialize Local Executor -->
         <div id="step0-init" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 1rem; background: #f7fafc; position: relative;">
           <div id="step0-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">⚙️ Step 0 – Initialize Local Executor</h3>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">⚙️ Step 0 – Electron Desktop App</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            This step ensures the local automation bridge is running before schema generation starts.
+            This step ensures the Electron desktop app is running with the local automation bridge active.
           </p>
           <div id="executorStatus" style="margin-top: 0.75rem; padding: 0.75rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404; font-size: 0.875rem; font-weight: 500;">
             🔍 Checking status…
@@ -8593,7 +8593,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       log("🔍 Detecting environment...");
       
       if (isElectron) {
-        status.textContent = "✅ Electron environment detected. Auto-starting local server...";
+        log("✅ Electron desktop app detected!");
+        log("⚙️ Local server auto-started by Electron.");
+        status.textContent = "✅ Electron Mode Active – Local server running automatically";
         status.style.background = "#d4edda";
         status.style.borderColor = "#c3e6cb";
         status.style.color = "#155724";
@@ -8604,24 +8606,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           
           const res = await fetch("http://localhost:8000/health").catch(() => null);
           if (res && res.ok) {
-            status.textContent = "✅ Local server already running.";
+            status.textContent = "✅ Electron Mode Active – Ready for automation";
             log("✅ Local executor active and ready.");
+            log("✅ All steps (1→2→3a→3b→4) will run automatically!");
             serverStatus = 'running';
+            updateStepStatus('0', 'complete', 'Electron Active');
             unlockStep1();
+            updateStepStatus('1', 'waiting', 'Ready');
           } else {
             log("⚙️ Waiting for built-in local server to start...");
             // Retry after another delay
             setTimeout(async () => {
               const retryRes = await fetch("http://localhost:8000/health").catch(() => null);
               if (retryRes && retryRes.ok) {
-                status.textContent = "✅ Local executor active.";
+                status.textContent = "✅ Electron Mode Active – Ready for automation";
                 log("✅ Local executor ready.");
+                log("✅ All steps (1→2→3a→3b→4) will run automatically!");
                 serverStatus = 'running';
-                updateStepStatus('0', 'complete', 'Ready');
+                updateStepStatus('0', 'complete', 'Electron Active');
                 unlockStep1();
                 updateStepStatus('1', 'waiting', 'Ready');
               } else {
-                status.textContent = "⚠️ Local server starting... (check console for details)";
+                status.textContent = "⚠️ Electron Mode – Server starting... (check console)";
                 status.style.background = "#fff3cd";
                 status.style.borderColor = "#ffc107";
                 status.style.color = "#856404";
@@ -8630,7 +8636,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             }, 2000);
           }
         } catch (err) {
-          status.textContent = "❌ Error starting executor.";
+          status.textContent = "❌ Electron Mode – Error starting executor";
           status.style.background = "#f8d7da";
           status.style.borderColor = "#f5c6cb";
           status.style.color = "#721c24";
