@@ -2452,9 +2452,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return JSON.stringify(fix, null, 2);
   }
 
-  function getRecommendedSchema(url) {
+  function getRecommendedSchema(url, existingTypes = []) {
     // Use the new buildRecommendedFix function for consistency
-    return buildRecommendedFix(url);
+    return buildRecommendedFix(url, [], [], existingTypes);
   }
 
   // Helper: Parse issues list from rowData
