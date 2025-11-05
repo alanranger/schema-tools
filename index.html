@@ -3405,7 +3405,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // Find all script tags with JSON-LD (including in noscript tags)
         // Find all script tags with JSON-LD (including Squarespace patterns)
         const scripts = findAllJsonLdScripts(doc);
         
