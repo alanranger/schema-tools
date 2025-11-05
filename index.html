@@ -2839,7 +2839,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ${orgFixCheck.shouldShowRecommendedFix ? '<p>Need help implementing this? ' : ''}
         ${orgFixCheck.shouldShowRecommendedFix ? '<a href="https://support.squarespace.com/hc/en-us/articles/206543167" target="_blank">View Squarespace injection guide</a></p>' : ''}
         <p style="margin-top: 0.5rem; font-style: italic; color: #6b7280;">
-          Diagnostic: ${issueCount} missing field(s), ${duplicates.length} duplicate type(s) detected.
+          Diagnostic: ${issueCount} missing field${issueCount !== 1 ? 's' : ''}${duplicates.length > 0 ? `, ${duplicates.length} duplicate type${duplicates.length !== 1 ? 's' : ''} detected` : ''}${result?.multiInstanceCounts && Object.keys(result.multiInstanceCounts).length > 0 ? `. ${Object.entries(result.multiInstanceCounts).map(([type, count]) => `${count} ${type}${count !== 1 ? 's' : ''}`).join(', ')} detected (expected)` : ''}.
         </p>
       </div>
     `;
