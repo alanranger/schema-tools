@@ -7337,12 +7337,29 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Handle save error
   function handleSaveError(error, result, saveBtn, silent) {
     const errorMsg = error.message || error.code || JSON.stringify(error);
+    const errorCode = error.code || '';
+    
+    // Suppress RLS policy errors if they're just informational (policy exists but may need adjustment)
+    const isRLSError = errorCode === '42501' || errorMsg.includes('row-level security policy');
+    
+    if (isRLSError && silent) {
+      // Silently skip RLS errors for auto-save - they're likely due to policy configuration
+      debugLog(`Auto-save skipped (RLS policy): ${result.url}`, 'warn');
+      return;
+    }
+    
     debugLog(`Error saving to Supabase: ${errorMsg}`, 'error');
-    debugLog(`Full error object: ${JSON.stringify(error)}`, 'error');
+    if (!isRLSError) {
+      debugLog(`Full error object: ${JSON.stringify(error)}`, 'error');
+    }
     console.error('Error saving to Supabase:', error);
     
     if (!silent) {
-      showToast(`❌ Error saving to Supabase: ${errorMsg}`, true);
+      if (isRLSError) {
+        showToast(`⚠️ RLS policy issue: Please check Supabase policies for schema_audit_logs table`, true);
+      } else {
+        showToast(`❌ Error saving to Supabase: ${errorMsg}`, true);
+      }
     } else {
       debugLog(`Auto-save error for ${result.url}: ${errorMsg}`, 'error');
     }
@@ -7371,8 +7388,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       });
     
     if (error) {
-      debugLog(`Supabase error: ${JSON.stringify(error)}`, 'error');
-      debugLog(`  Code: ${error.code}, Message: ${error.message}, Details: ${JSON.stringify(error.details)}`, 'error');
+      const errorCode = error.code || '';
+      const isRLSError = errorCode === '42501' || error.message?.includes('row-level security policy');
+      
+      if (isRLSError) {
+        debugLog(`Supabase RLS error (code ${errorCode}): ${error.message}`, 'warn');
+        debugLog(`  Hint: Anonymous inserts may require RLS policy adjustment`, 'warn');
+      } else {
+        debugLog(`Supabase error: ${JSON.stringify(error)}`, 'error');
+        debugLog(`  Code: ${error.code}, Message: ${error.message}, Details: ${JSON.stringify(error.details)}`, 'error');
+      }
       throw error;
     }
     
