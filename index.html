@@ -6730,6 +6730,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       ...result,
       schemaFound: result.schemaFound, // Use the restored value from determineStatusHtml
       schemaType: result.schemaType || '—', // Ensure schemaType is never null
+      inferredTypes: result.inferredTypes || [], // Preserve inferredTypes
       error: null // Explicitly clear error
     };
     
