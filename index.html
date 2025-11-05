@@ -6790,6 +6790,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     };
     
     console.log(`[✓] Stored result in validationResults[${index}]: schemaFound=${validationResults[index].schemaFound}, schemaType=${validationResults[index].schemaType}, error=${validationResults[index].error}`);
+    if (validationResults[index].inferredTypes && validationResults[index].inferredTypes.length > 0) {
+      console.log(`[DEBUG] updateTableRow: Stored inferredTypes in validationResults[${index}]:`, validationResults[index].inferredTypes);
+    }
     
     // Add click handler to status cell if it has issues or error (statusCell already declared above)
     if (statusCell && (statusClass === 'issues' || statusClass === 'error')) {
