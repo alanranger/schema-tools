@@ -5228,7 +5228,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Update schema type cell
     if (schemaCell && result.schemaTypes) {
-      schemaCell.textContent = result.schemaTypes.join(', ') || '—';
+      // Preserve inferred types when updating cell
+      const inferredTypes = result.inferredTypes || [];
+      const types = result.schemaTypes.join(', ') || '—';
+      
+      if (inferredTypes.length > 0) {
+        const formattedTypes = formatSchemaTypesWithInferred(result.schemaTypes, inferredTypes);
+        schemaCell.innerHTML = formattedTypes;
+      } else {
+        schemaCell.textContent = types;
+      }
     }
     
     // Update status cell with progress-aware badge
@@ -6057,7 +6066,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     if (schemaTypeCell) {
-      schemaTypeCell.textContent = formatSchemaTypeWithBadge(localParse);
+      // Preserve inferred types when updating cell
+      const result = validationResults[index];
+      const inferredTypes = result?.inferredTypes || [];
+      const types = formatSchemaTypeWithBadge(localParse);
+      
+      if (inferredTypes.length > 0) {
+        // Split types and format with inferred types
+        const explicitTypes = types.replace(/\s*\(server\)\s*$/, '').split(',').map(t => t.trim()).filter(Boolean);
+        const formattedTypes = formatSchemaTypesWithInferred(explicitTypes, inferredTypes);
+        schemaTypeCell.innerHTML = formattedTypes + (localParse?.serverFallback ? ' (server)' : '');
+      } else {
+        schemaTypeCell.textContent = types;
+      }
     }
     
     if (notesEl) {
@@ -6094,7 +6115,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     if (schemaTypeCell) {
-      schemaTypeCell.textContent = formatSchemaTypeWithBadge(localParse);
+      // Preserve inferred types when updating cell
+      const result = validationResults[index];
+      const inferredTypes = result?.inferredTypes || [];
+      const types = formatSchemaTypeWithBadge(localParse);
+      
+      if (inferredTypes.length > 0) {
+        // Split types and format with inferred types
+        const explicitTypes = types.replace(/\s*\(server\)\s*$/, '').split(',').map(t => t.trim()).filter(Boolean);
+        const formattedTypes = formatSchemaTypesWithInferred(explicitTypes, inferredTypes);
+        schemaTypeCell.innerHTML = formattedTypes + (localParse?.serverFallback ? ' (server)' : '');
+      } else {
+        schemaTypeCell.textContent = types;
+      }
     }
     
     if (validationResults[index]) {
@@ -6127,7 +6160,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       handleLocalResultCase(index, localParse, missingCount, statusCell, schemaTypeCell, row);
     } else {
       if (statusCell) statusCell.innerHTML = '<span class="status-badge no-schema">❌ No Schema</span>';
-      if (schemaTypeCell) schemaTypeCell.textContent = 'None';
+      // Preserve inferred types even when no schema found
+      if (schemaTypeCell) {
+        const result = validationResults[index];
+        const inferredTypes = result?.inferredTypes || [];
+        if (inferredTypes.length > 0) {
+          const formattedTypes = formatSchemaTypesWithInferred([], inferredTypes);
+          schemaTypeCell.innerHTML = formattedTypes;
+        } else {
+          schemaTypeCell.textContent = 'None';
+        }
+      }
       if (validationResults[index]) {
         validationResults[index].statusOverride = 'local';
       }
