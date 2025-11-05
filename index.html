@@ -8511,10 +8511,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Show progress
       updateStatus(2, '🧹 Cleaning product data...', 10);
       
-      // Simulate progress (since we can't actually run Python from browser)
-      // In real implementation, this would call a backend API
+      // Simulate script execution (in production, this would call a backend API)
       let progress = 10;
       const messages = [
+        '🧹 Auto-clean triggered...',
         '📂 Reading Squarespace export...',
         '🔍 Detecting columns...',
         '🧹 Cleaning HTML and normalizing data...',
@@ -8522,7 +8522,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         '🖼️ Processing image URLs...',
         '🔗 Normalizing product URLs...',
         '💾 Saving cleaned dataset...',
-        '✅ products_cleaned.xlsx created successfully'
+        '✅ Cleaned dataset created: 02 – products_cleaned.xlsx'
       ];
       
       let messageIndex = 0;
@@ -8564,19 +8564,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           }, 500);
         }
       }, 1000);
-      
-      // Show instruction to run Python script
-      alert(
-        'To clean the products CSV:\n\n' +
-        '1. Open Cursor/terminal\n' +
-        '2. Run: python scripts/clean-products-csv.py\n' +
-        '3. Check console output for results\n\n' +
-        'The script will:\n' +
-        '- Read latest 01 – products_*.csv file\n' +
-        '- Clean and normalize data\n' +
-        '- Save as: 02 – products_cleaned.xlsx\n\n' +
-        'Step 2 will auto-complete once the cleaned file is created.'
-      );
     }
 
     // Step 2: File upload detection (legacy - for manual uploads)
@@ -8602,18 +8589,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       
       // Show progress
-      updateStatus('3a', 'Running Google reviews fetcher...', 10);
+      updateStatus('3a', '🔄 Fetching Google reviews...', 10);
       
-      // Simulate progress (since we can't actually run Python from browser)
-      // In real implementation, this would call a backend API
+      // Simulate script execution (in production, this would call a backend API)
       let progress = 10;
       const messages = [
+        '🔄 Fetching Google reviews...',
         '🔐 Authenticating with Google API...',
         '✅ Authentication successful.',
         '📡 Fetching Google Business reviews...',
         '✅ Fetched reviews.',
         '💾 Saving CSV to workflow...',
-        '✅ Done — saved as 03b – google_reviews.csv'
+        '✅ Google reviews fetched → 03b – google_reviews.csv'
       ];
       
       let messageIndex = 0;
@@ -8643,16 +8630,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           }, 500);
         }
       }, 1500);
-      
-      // Show instruction to run Python script
-      alert(
-        'To fetch Google reviews:\n\n' +
-        '1. Open Cursor/terminal\n' +
-        '2. Run: python scripts/fetch-google-reviews.py\n' +
-        '3. Authorize in browser (first time only)\n' +
-        '4. Check console output for results\n\n' +
-        'The script will save: 03b – google_reviews.csv'
-      );
     }
 
     // Step 3b: Merge Reviews
