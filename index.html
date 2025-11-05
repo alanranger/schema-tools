@@ -8344,6 +8344,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       isElectronMode = true;
       console.log("✅ Running in Electron mode - local server auto-started");
       serverStatus = 'running';
+    } else if (window.electronAPI && window.electronAPI.isElectron) {
+      // Check preload script exposed API
+      isElectronMode = true;
+      console.log("✅ Running in Electron mode - local server auto-started");
+      serverStatus = 'running';
     } else {
       // Check for Electron-specific window properties
       try {
