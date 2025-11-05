@@ -2291,8 +2291,54 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   });
   
+  // Helper: Collect existing schema types from the page
+  function collectExistingSchemaTypes(jsonLdBlocks) {
+    const types = new Set();
+    
+    if (!jsonLdBlocks || !Array.isArray(jsonLdBlocks)) {
+      return [];
+    }
+    
+    jsonLdBlocks.forEach(block => {
+      try {
+        // Handle @graph structure
+        if (block['@graph'] && Array.isArray(block['@graph'])) {
+          block['@graph'].forEach(item => {
+            if (item['@type']) {
+              const itemTypes = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+              itemTypes.forEach(t => types.add(t));
+            }
+          });
+        }
+        // Handle array of schemas
+        else if (Array.isArray(block)) {
+          block.forEach(item => {
+            if (item['@type']) {
+              const itemTypes = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+              itemTypes.forEach(t => types.add(t));
+            }
+          });
+        }
+        // Handle single schema object
+        else if (block['@type']) {
+          const blockTypes = Array.isArray(block['@type']) ? block['@type'] : [block['@type']];
+          blockTypes.forEach(t => types.add(t));
+        }
+      } catch (e) {
+        console.warn('Invalid JSON-LD block ignored:', e);
+      }
+    });
+    
+    return Array.from(types);
+  }
+
   // Helper: Determine required schema types based on missing fields
-  function determineRequiredSchemaTypes(missingFields, missingRecommended) {
+  function determineRequiredSchemaTypes(missingFields, missingRecommended, existingTypes = []) {
+    const globalTypes = ['Organization', 'LocalBusiness', 'Person', 'Service', 'WebSite', 'BreadcrumbList'];
+    
+    // Check which global types already exist
+    const existingGlobalTypes = existingTypes.filter(t => globalTypes.includes(t));
+    
     const needsOrg = missingFields.some(f => f.includes('Organization')) || 
                     missingRecommended.some(f => f.includes('Organization') || f.includes('url') || f.includes('logo'));
     const needsLocal = missingFields.some(f => f.includes('LocalBusiness')) || 
@@ -2301,15 +2347,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
                          missingRecommended.some(f => f.includes('WebSite'));
     
     const types = [];
-    if (needsOrg || needsLocal) {
-      if (needsLocal) types.push('LocalBusiness');
-      if (needsOrg || needsLocal) types.push('Organization');
+    
+    // Only add Organization if it doesn't already exist
+    if ((needsOrg || needsLocal) && !existingGlobalTypes.includes('Organization')) {
+      types.push('Organization');
     }
-    if (needsWebSite) {
+    
+    // Only add LocalBusiness if it doesn't already exist
+    if (needsLocal && !existingGlobalTypes.includes('LocalBusiness')) {
+      types.push('LocalBusiness');
+    }
+    
+    // Only add WebSite if it doesn't already exist
+    if (needsWebSite && !existingGlobalTypes.includes('WebSite')) {
       types.push('WebSite');
     }
     
-    if (types.length === 0) {
+    // Don't add default types if global schemas already exist
+    if (types.length === 0 && existingGlobalTypes.length === 0) {
       types.push('Organization', 'LocalBusiness');
     }
     
@@ -2353,14 +2408,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Build recommended fix based on missing fields
-  function buildRecommendedFix(url, missingFields = [], missingRecommended = []) {
+  function buildRecommendedFix(url, missingFields = [], missingRecommended = [], existingTypes = []) {
     const baseUrl = url.split('#')[0];
+    
+    const types = determineRequiredSchemaTypes(missingFields, missingRecommended, existingTypes);
+    
+    // If no types to add (all global types already exist), return null
+    if (types.length === 0) {
+      return null;
+    }
     
     const fix = {
       "@context": "https://schema.org"
     };
     
-    const types = determineRequiredSchemaTypes(missingFields, missingRecommended);
     fix["@type"] = types.length === 1 ? types[0] : types;
     fix["@id"] = `${baseUrl}#org`;
     fix["name"] = "Alan Ranger Photography";
@@ -2499,7 +2560,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Check if Organization nodes need recommended fix
-  function checkOrganizationNodesForFix(result, missingFieldsBadges) {
+  function checkOrganizationNodesForFix(result, missingFieldsBadges, existingTypes = []) {
+    const globalTypes = ['Organization', 'LocalBusiness', 'Person', 'Service', 'WebSite', 'BreadcrumbList'];
+    const existingGlobalTypes = existingTypes.filter(t => globalTypes.includes(t));
+    
+    // If global types already exist, don't show recommended fix
+    if (existingGlobalTypes.length > 0) {
+      return { shouldShowRecommendedFix: false, hasValidOrgNode: true, existingGlobalTypes };
+    }
+    
     let shouldShowRecommendedFix = false;
     let hasValidOrgNode = false;
     
@@ -2527,12 +2596,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       shouldShowRecommendedFix = orgMissingRequired && orgMissingFields.length > 0;
     }
     
-    return { shouldShowRecommendedFix, hasValidOrgNode };
+    return { shouldShowRecommendedFix, hasValidOrgNode, existingGlobalTypes: [] };
   }
 
   // Helper: Build recommended fix HTML
-  function buildRecommendedFixHtml(shouldShowRecommendedFix, hasValidOrgNode, recommendedFix) {
-    if (shouldShowRecommendedFix) {
+  function buildRecommendedFixHtml(shouldShowRecommendedFix, hasValidOrgNode, recommendedFix, existingGlobalTypes = []) {
+    if (shouldShowRecommendedFix && recommendedFix) {
       return `
         <div class="recommended-fix-card">
           <h4>Recommended Fix (for Squarespace footer injection)</h4>
@@ -2542,11 +2611,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         </div>
       `;
     }
-    if (hasValidOrgNode) {
+    if (hasValidOrgNode || existingGlobalTypes.length > 0) {
+      const globalTypesList = existingGlobalTypes.length > 0 
+        ? existingGlobalTypes.join(', ')
+        : 'Organization';
       return `
         <div class="recommended-fix-card" style="background: #f0fdf4; border-color: #10b981;">
-          <h4 style="color: #065f46;">✅ Your Organization schema looks good</h4>
-          <p style="color: #047857;">At least one valid Organization node with a name field was found. Your schema structure is correct.</p>
+          <h4 style="color: #065f46;">✅ Detected global schema types — no extra injection required</h4>
+          <p style="color: #047857;">Found existing ${globalTypesList} schema${existingGlobalTypes.length > 1 ? 's' : ''} on this page. Your global schema structure is correct. Recommendations will only appear for missing page-specific types (Product, Event, Article, Course, etc.).</p>
         </div>
       `;
     }
