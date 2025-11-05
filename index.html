@@ -5760,7 +5760,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const inferred = inferredTypes.map(item => {
       // Special formatting for MerchantListing (Google) with green background and white checkmark
       if (item.type === 'MerchantListing (Google)') {
-        return `<span style="display: inline-block; background-color: #27AE60; color: white; padding: 2px 6px; border-radius: 3px; font-style: normal; font-weight: 500;">✅ ${item.type} (inferred)</span>`;
+        return `<span style="display: inline-block; background-color: #27AE60; color: white; padding: 1px 4px; border-radius: 3px; font-style: normal; font-weight: 500; font-size: 0.85em; white-space: nowrap;">✅ ${item.type} (inferred)</span>`;
       }
       return `<span style="font-style: italic; color: #6b7280;">*${item.type} (inferred)*</span>`;
     }).join(', ');
