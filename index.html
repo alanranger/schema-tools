@@ -1415,27 +1415,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <!-- Step 2: Add Reviews & Generate Schema -->
       <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
         <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
-          📤 Step 2 – Add Reviews & Generate Schema
+          🧩 Step 2 — Add Reviews & Generate Schema
         </summary>
         <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
-          <p style="margin-bottom: 0.75rem;">
-            <strong>Upload the cleaned Excel file from Step 1</strong> (e.g. <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code>).
-          </p>
-          <p style="margin-bottom: 0.75rem; margin-top: 1rem;">
-            <strong>📊 Data Pipeline:</strong>
-          </p>
           <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; line-height: 1.8;">
-            <li>Upload cleaned file → merges with <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">combined product_reviews.csv</code></li>
-            <li>Automatically maps product ↔ review via <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">event_mappings_with_reviewer.csv</code></li>
-            <li>Filters out reviews < 4★ (only 4★ and 5★ reviews are included)</li>
-            <li>Produces <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final.xlsx</code></li>
-            <li>Generates JSON-LD schema blocks with Trustpilot + Google reviews</li>
+            <li>Upload cleaned file from Step 1.</li>
+            <li>System merges with review datasets.</li>
+            <li>Filters low-rated reviews automatically.</li>
+            <li>Outputs <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final.xlsx</code>.</li>
+            <li>Generates per-product JSON-LD schema preview below.</li>
           </ul>
           <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
-            <strong>💾 Note:</strong> Script automatically saves results in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/workflow/</code> directory with version tag (e.g., <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final_v20241105.xlsx</code>).
-          </p>
-          <p style="margin-top: 0.75rem; margin-bottom: 0;">
-            Products without valid reviews (4★+) will NOT include an <code>aggregateRating</code> or <code>review</code> block in the schema.
+            <strong>💾 Note:</strong> Run <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">python scripts/merge-product-reviews.py</code> to merge reviews with cleaned products. Output saved to <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/workflow/</code> directory with version tag.
           </p>
         </div>
       </details>
