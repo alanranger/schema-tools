@@ -1,5 +1,5 @@
 // Preload script to expose Electron context to renderer
-const { contextBridge } = require('electron');
+import { contextBridge } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
