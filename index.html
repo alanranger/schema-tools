@@ -5088,18 +5088,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (schemaTypeCell && schemaTypeCell.querySelector('.progress')) {
       setProgress(schemaTypeCell, 100, 'Done');
       setTimeout(() => {
-        const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
-        
-        // Get inferred types from result if available
-        const resultIndex = validationResults.findIndex(r => r.url === urlData.url);
-        const inferredTypes = resultIndex >= 0 && validationResults[resultIndex]?.inferredTypes || [];
-        
-        // Format with inferred types
-        const schemaTypeText = formatSchemaTypesWithInferred(uniqueTypes, inferredTypes);
-        const serverBadge = pageData.serverFallback ? ' (server)' : '';
-        
-        // Use innerHTML to render HTML (for italic styling)
-        schemaTypeCell.innerHTML = schemaTypeText + serverBadge;
+        // Only update if cell still has progress indicator (hasn't been replaced by updateTableRow yet)
+        const currentCell = document.getElementById(`schemaTypeCell_${urlData.row}`);
+        if (currentCell && currentCell.querySelector('.progress')) {
+          const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
+          
+          // Get inferred types from result if available
+          const resultIndex = validationResults.findIndex(r => r.url === urlData.url);
+          const inferredTypes = resultIndex >= 0 && validationResults[resultIndex]?.inferredTypes || [];
+          
+          // Format with inferred types
+          const schemaTypeText = formatSchemaTypesWithInferred(uniqueTypes, inferredTypes);
+          const serverBadge = pageData.serverFallback ? ' (server)' : '';
+          
+          // Use innerHTML to render HTML (for italic styling)
+          currentCell.innerHTML = schemaTypeText + serverBadge;
+        }
       }, 500);
     }
   }
@@ -6688,6 +6692,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       existingSchemaOrgStatus,
       existingNotes
     });
+    
+    // CRITICAL: Update schema type cell with inferred types if they exist
+    // This ensures inferred types persist even after row.innerHTML replacement
+    const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
+    if (schemaTypeCell && result.inferredTypes && result.inferredTypes.length > 0) {
+      const explicitTypes = result.schemaType ? result.schemaType.split(',').map(t => t.trim()).filter(Boolean) : [];
+      const formattedTypes = formatSchemaTypesWithInferred(explicitTypes, result.inferredTypes);
+      schemaTypeCell.innerHTML = formattedTypes;
+    }
     
     // Verify the status cell was updated correctly
     const statusCell = document.getElementById(`statusCell_${index}`);
