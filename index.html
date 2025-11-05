@@ -8567,9 +8567,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 2: Auto-clean products (triggered automatically after Step 1)
     async function autoCleanProducts() {
-      // Check server status first
+      // Check server status first (skip alert in Electron mode)
       const isRunning = await ensureLocalExecutorRunning();
-      if (!isRunning) {
+      if (!isRunning && !isElectronMode) {
         alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
         return;
       }
