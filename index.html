@@ -3406,18 +3406,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const doc = parser.parseFromString(html, 'text/html');
         
         // Find all script tags with JSON-LD (including in noscript tags)
-        const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
-        const noscriptTags = Array.from(doc.querySelectorAll('noscript'));
-        for (const noscript of noscriptTags) {
-          const noscriptScripts = noscript.querySelectorAll('script[type="application/ld+json"]');
-          scripts.push(...Array.from(noscriptScripts));
-        }
+        // Find all script tags with JSON-LD (including Squarespace patterns)
+        const scripts = findAllJsonLdScripts(doc);
         
         let nodes = [];
         for (const s of scripts) {
           try {
-            // Decode escaped content before parsing
-            const decodedText = decodeJsonContent(s.textContent);
+            // Decode HTML entities before parsing
+            const decodedText = decodeHTML(s.textContent);
             nodes = flattenJsonLd(JSON.parse(decodedText.trim()), nodes);
           } catch(_) {}
         }
@@ -4443,6 +4439,40 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       .replace(/&#x2f;/g, '/')
       .replace(/\\\//g, '/') // Also handle escaped forward slashes
       .trim();
+  }
+
+  // Helper: Find all JSON-LD script tags (including Squarespace patterns)
+  function findAllJsonLdScripts(doc) {
+    const scripts = [];
+    
+    // Standard pattern: script[type="application/ld+json"]
+    const standardScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+    scripts.push(...Array.from(standardScripts));
+    
+    // Squarespace pattern: script[data-type="application/ld+json"]
+    const squarespaceScripts = doc.querySelectorAll('script[data-type="application/ld+json"]');
+    scripts.push(...Array.from(squarespaceScripts));
+    
+    // Also check noscript tags for JSON-LD content
+    const noscriptTags = doc.querySelectorAll('noscript');
+    for (const noscript of noscriptTags) {
+      const noscriptStandard = noscript.querySelectorAll('script[type="application/ld+json"]');
+      const noscriptSquarespace = noscript.querySelectorAll('script[data-type="application/ld+json"]');
+      scripts.push(...Array.from(noscriptStandard));
+      scripts.push(...Array.from(noscriptSquarespace));
+    }
+    
+    // Deduplicate scripts (in case a script appears in multiple queries)
+    const uniqueScripts = [];
+    const seenScripts = new Set();
+    for (const script of scripts) {
+      if (!seenScripts.has(script)) {
+        seenScripts.add(script);
+        uniqueScripts.push(script);
+      }
+    }
+    
+    return uniqueScripts;
   }
 
   // Helper: Parse JSON-LD blocks with improved detection
