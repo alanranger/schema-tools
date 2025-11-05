@@ -1426,13 +1426,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             This step connects to your Google My Business account and retrieves all customer reviews.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Ensure your credentials JSON is located at: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/credentials/</code></li>
-            <li>Run <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">python scripts/fetch-google-reviews.py</code> in Cursor/terminal</li>
+            <li>Requires valid OAuth JSON in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/credentials/</code></li>
             <li>First time: Browser will open for OAuth authorization</li>
             <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03b – google_reviews.csv</code></li>
           </ul>
           <button id="fetchGoogleReviews" onclick="runGoogleReviewsFetcher()" style="margin-top: 0.75rem; background: #667eea; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-            📥 Fetch Google Reviews
+            📥 Fetch Google Reviews (Local)
           </button>
           <div id="progress-step3a" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
