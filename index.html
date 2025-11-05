@@ -1839,6 +1839,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       inferredTypes.push({ type: 'ReviewSnippet', reason: `from ${reviewCount} item${reviewCount !== 1 ? 's' : ''} with reviews` });
     }
     
+    // Rule 4: MerchantListing (Google) inference
+    // If any Product schema contains all Merchant Center fields → infer MerchantListing (Google)
+    const hasMerchantListing = allNodes.some(node => {
+      const types = asArray(node['@type']);
+      return types.includes('Product') && detectMerchantListing(node);
+    });
+    
+    if (hasMerchantListing) {
+      inferredTypes.push({ type: 'MerchantListing (Google)', reason: 'Product schema contains all Merchant Center fields (offers, price, priceCurrency, availability, hasMerchantReturnPolicy)' });
+    }
+    
     // Deduplicate inferred types (e.g., if Carousel appears twice)
     const uniqueInferred = [];
     const seenTypes = new Set();
@@ -4396,13 +4407,49 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
-  // Helper: Extract types from JSON-LD block
+  // Helper: Detect Google Merchant Listing pattern in Product schema
+  function detectMerchantListing(json) {
+    // Check if this is a Product schema
+    const isProduct = json['@type'] === 'Product' || 
+                     (Array.isArray(json['@type']) && json['@type'].includes('Product'));
+    
+    if (!isProduct) {
+      return false;
+    }
+    
+    // Check for required Merchant Center fields
+    // offers can be an object or array
+    const offers = json.offers;
+    if (!offers) {
+      return false;
+    }
+    
+    // Handle offers as object or array
+    const offer = Array.isArray(offers) ? offers[0] : offers;
+    
+    const hasMerchantListingFields = 
+      offer &&
+      offer.priceCurrency &&
+      offer.price &&
+      offer.availability &&
+      json.hasMerchantReturnPolicy;
+    
+    return hasMerchantListingFields;
+  }
+
+  // Helper: Extract types from JSON-LD block (also detects MerchantListing)
   function extractTypesFromBlock(json, blockInfo, scriptIndex) {
     const blockTypes = [];
     
     if (json['@type']) {
       const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
       blockTypes.push(...types);
+      
+      // --- Detect Google Merchant Listing pattern ---
+      if (types.includes('Product') && detectMerchantListing(json)) {
+        blockTypes.push('MerchantListing (Google)');
+        debugLog(`MerchantListing (Google) detected in block ${scriptIndex}: Product schema contains all Merchant Center fields`, 'info');
+      }
     }
     
     if (json['@graph']) {
@@ -4410,6 +4457,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         if (item['@type']) {
           const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
           blockTypes.push(...types);
+          
+          // --- Detect Google Merchant Listing pattern in @graph items ---
+          if (types.includes('Product') && detectMerchantListing(item)) {
+            blockTypes.push('MerchantListing (Google)');
+            debugLog(`MerchantListing (Google) detected in @graph item of block ${scriptIndex}: Product schema contains all Merchant Center fields`, 'info');
+          }
         }
       }
     }
@@ -5662,9 +5715,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return explicit || '—';
     }
     
-    const inferred = inferredTypes.map(item => 
-      `<span style="font-style: italic; color: #6b7280;">*${item.type} (inferred)*</span>`
-    ).join(', ');
+    const inferred = inferredTypes.map(item => {
+      // Special formatting for MerchantListing (Google) with green check emoji
+      if (item.type === 'MerchantListing (Google)') {
+        return `<span style="font-style: italic; color: #27AE60;">🟩 ${item.type} (inferred)</span>`;
+      }
+      return `<span style="font-style: italic; color: #6b7280;">*${item.type} (inferred)*</span>`;
+    }).join(', ');
     
     if (explicit) {
       return `${explicit}, ${inferred}`;
