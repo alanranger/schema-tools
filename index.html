@@ -8617,7 +8617,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 status.textContent = "✅ Local executor active.";
                 log("✅ Local executor ready.");
                 serverStatus = 'running';
+                updateStepStatus('0', 'complete', 'Ready');
                 unlockStep1();
+                updateStepStatus('1', 'waiting', 'Ready');
               } else {
                 status.textContent = "⚠️ Local server starting... (check console for details)";
                 status.style.background = "#fff3cd";
@@ -8691,6 +8693,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
               status.style.borderColor = "#c3e6cb";
               status.style.color = "#155724";
               unlockStep1();
+              updateStepStatus('1', 'waiting', 'Ready');
               if (startBtn) startBtn.style.display = 'none';
             };
           }
@@ -8808,22 +8811,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
       }
     });
-    function updateStatus(step, msg, percent) {
-      const bar = document.querySelector(`#progress-step${step} .progress-bar`);
-      const wrap = document.querySelector(`#progress-step${step}`);
-      const status = document.querySelector(`#status-step${step}`);
-      
-      if (wrap && bar) {
-        wrap.style.display = 'block';
-        bar.style.width = percent + '%';
-      }
-      
-      if (status) {
-        status.textContent = msg;
-        status.style.color = '#4a5568';
-      }
-    }
-
     // Update step status dashboard
     function updateStepStatus(stepId, status, message) {
       const card = document.getElementById(`step-status-${stepId}`);
