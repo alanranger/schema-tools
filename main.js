@@ -9,12 +9,13 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 900,
+    title: "Alan Ranger Schema Tools v1.5.0",
     webPreferences: {
-      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
+      nodeIntegration: false,
       enableRemoteModule: false,
       webSecurity: false, // Allow localhost connections
-      preload: path.join(__dirname, "preload.js"), // Load preload script
     },
     show: false, // Don't show until ready
   });
@@ -29,17 +30,19 @@ function createWindow() {
   // Handle window closed
   mainWindow.on("closed", () => {
     mainWindow = null;
+    if (localServer) {
+      console.log("🧹 Stopping local executor...");
+      localServer.kill();
+    }
   });
-
-  // Development: Open DevTools (comment out for production)
-  // mainWindow.webContents.openDevTools();
 }
 
-function startLocalServer() {
+app.whenReady().then(() => {
+  // Start local executor first
   const serverPath = path.join(__dirname, "scripts", "local-server.js");
-  console.log("⚙️ Launching local executor bridge...");
+  console.log("⚙️ Starting local executor...");
   console.log(`   Server path: ${serverPath}`);
-
+  
   localServer = spawn("node", [serverPath], {
     stdio: "inherit",
     shell: true,
@@ -60,17 +63,8 @@ function startLocalServer() {
   // Give server a moment to start before loading the window
   setTimeout(() => {
     console.log("✅ Local executor bridge ready");
-  }, 1000);
-}
-
-app.whenReady().then(() => {
-  // Start local executor first
-  startLocalServer();
-
-  // Create window after a brief delay to ensure server is starting
-  setTimeout(() => {
     createWindow();
-  }, 500);
+  }, 1000);
 
   app.on("activate", () => {
     // On macOS re-create window when dock icon is clicked

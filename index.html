@@ -8499,14 +8499,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Check server status on page load (only in browser mode)
     window.addEventListener("DOMContentLoaded", async () => {
-      if (!isElectronMode) {
-        await ensureLocalExecutorRunning();
-      } else {
-        // In Electron, give server a moment to start, then verify
-        setTimeout(async () => {
-          await ensureLocalExecutorRunning();
-        }, 1500);
+      // Skip browser checks in Electron mode - server auto-starts
+      if (window?.electronAPI?.isElectron || isElectronMode) {
+        console.log("✅ Electron mode detected - local server auto-started");
+        serverStatus = 'running';
+        return;
       }
+      
+      // Browser mode: check server status
+      await ensureLocalExecutorRunning();
     });
     function updateStatus(step, msg, percent) {
       const bar = document.querySelector(`#progress-step${step} .progress-bar`);
