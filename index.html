@@ -1436,16 +1436,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code></li>
           </ul>
           <div id="step2WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
-            <strong>ℹ️ Why Steps 2-4 Need Local Execution:</strong><br>
-            These steps run Python scripts that need to:
+            <strong>ℹ️ Why Steps 2-4 Can't Run Automatically on Web:</strong><br><br>
+            <strong>The Problem:</strong> These steps run Python scripts that need to:
             <ul style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
               <li>Read/write files on your computer</li>
               <li>Execute Python commands</li>
               <li>Access your local file system</li>
             </ul>
-            <strong>Web hosting (Vercel) cannot do this for security reasons.</strong><br><br>
-            <strong>✅ Solution:</strong> Download the Electron desktop app or run locally.<br>
-            <small>The web version is read-only for validation purposes.</small>
+            <strong>Web browsers cannot do this for security reasons.</strong> If websites could run arbitrary code and access your files, it would be a major security risk!<br><br>
+            <strong>✅ The Solution:</strong> The code DOES auto-chain all steps (Step 1 → 2 → 3a → 3b → 4 automatically), but you need to run it in one of these ways:
+            <ol style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
+              <li><strong>Electron Desktop App:</strong> Download it - everything runs automatically with one click</li>
+              <li><strong>Local Development:</strong> Run <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">npm run start-local</code> in terminal, then open index.html</li>
+            </ol>
+            <small>The web version (Vercel) is read-only for validation - you can upload files and preview, but scripts can't execute.</small>
           </div>
           <div id="progress-step2" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
@@ -8612,6 +8616,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           log("📦 For full automation: Download Electron desktop app or run locally.");
           log("✅ Step 1 unlocked for read-only validation (file uploads work).");
           log("⚠️ Steps 2-4 require local server (not available on web).");
+          log("");
+          log("🔍 WHY CAN'T IT RUN AUTOMATICALLY?");
+          log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          log("The code DOES auto-chain all steps (1→2→3a→3b→4), BUT:");
+          log("• Web browsers block Python script execution (security)");
+          log("• Web hosting can't access your local file system");
+          log("• This prevents malicious websites from harming your computer");
+          log("");
+          log("✅ SOLUTION: Use Electron app or run locally");
+          log("   → Then ALL steps run automatically with one click!");
+          log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
           
           // Show web mode notices on Steps 2-4
           const step2Notice = document.getElementById('step2WebModeNotice');
