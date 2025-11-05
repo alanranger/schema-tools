@@ -1384,84 +1384,136 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <!-- Step 1: Squarespace Product Export Setup -->
       <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
         <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
-          📦 Step 1 – Squarespace Product Export Setup
+          🧩 Step 1 – Squarespace Product Export Setup
         </summary>
         <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
           <p style="margin-bottom: 0.75rem;">
-            1️⃣ Export your products from Squarespace (<strong>Commerce → Products → Export CSV</strong>).
+            Export your latest CSV from Squarespace:<br>
+            <strong>Commerce → Products → Export CSV</strong>
           </p>
           <p style="margin-bottom: 0.75rem;">
-            2️⃣ Place the file inside <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/schema-tools/workflow/</code> and name it:<br>
-            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">01 – products_&lt;date/time&gt;.csv</code>
+            Save it in: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/</code>
           </p>
           <p style="margin-bottom: 0.75rem;">
-            3️⃣ Run the cleaning script to create a standardized version:<br>
-            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python scripts/clean-products-csv.py</code>
+            Name format: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">01 – products_&lt;date&gt;_&lt;time&gt;.csv</code>
           </p>
-          <p style="margin-bottom: 0.75rem;">
-            4️⃣ This tool will automatically create a cleaned version as:<br>
-            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">02 – products_cleaned.xlsx</code>
-          </p>
-          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
-            <strong>Cleaned file contains:</strong><br>
-            • <code>name</code> • <code>description</code> • <code>image</code> • <code>url</code> • <code>price</code> • <code>category</code> (optional)
-          </p>
-          <p style="margin-top: 0.75rem; margin-bottom: 0;">
-            You can review/edit that file before continuing to <strong>Step 2 (Add Reviews)</strong>.
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
+            This file is your raw export (unmodified).
           </p>
         </div>
       </details>
 
-      <!-- Step 2: Add Reviews & Generate Schema -->
+      <!-- Step 2: Clean and Normalize CSV -->
       <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
         <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
-          🧩 Step 2 — Add Reviews & Generate Schema
+          🧩 Step 2 – Clean and Normalize CSV
         </summary>
         <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
-          <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; line-height: 1.8;">
-            <li>Upload cleaned file from Step 1.</li>
-            <li>System merges with review datasets.</li>
-            <li>Filters low-rated reviews automatically.</li>
-            <li>Outputs <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final.xlsx</code>.</li>
-            <li>Generates per-product JSON-LD schema preview below.</li>
+          <p style="margin-bottom: 0.75rem;">
+            Run <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">scripts/clean-products-csv.py</code>
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Generates: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code>
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Review/edit before moving to Step 3.
+          </p>
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+            <strong>Columns standardized:</strong> <code>name</code>, <code>description</code>, <code>price</code>, <code>image</code>, <code>category</code>, <code>url</code>
+          </p>
+        </div>
+      </details>
+
+      <!-- Step 3: Add Reviews and Generate Merged Dataset -->
+      <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          🧩 Step 3 – Add Reviews and Generate Merged Dataset
+        </summary>
+        <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
+          <p style="margin-bottom: 0.75rem;">
+            Upload the cleaned file from Step 2.
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Merges with:
+          </p>
+          <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem;">
+            <li><code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">combined_product_reviews.csv</code></li>
+            <li><code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">event_mappings_with_reviewer.csv</code></li>
+          </ul>
+          <p style="margin-bottom: 0.75rem;">
+            Filters out reviews < 4★.
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Produces: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – products_with_review_data_final.xlsx</code>
+          </p>
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
+            JSON-LD blocks are validated for rating data.
+          </p>
+        </div>
+      </details>
+
+      <!-- Step 4: Generate Product Schema -->
+      <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          🧩 Step 4 – Generate Product Schema
+        </summary>
+        <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
+          <p style="margin-bottom: 0.75rem;">
+            Read from: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – products_with_review_data_final.xlsx</code>
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Creates JSON-LD schema for each product.
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Exports:
+          </p>
+          <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem;">
+            <li>Individual <code>.json</code> and <code>.html</code> schema files to <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/outputs/</code></li>
+            <li>Combined master file <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
           </ul>
           <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
-            <strong>💾 Note:</strong> Run <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">python scripts/merge-product-reviews.py</code> to merge reviews with cleaned products. Output saved to <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/workflow/</code> directory with version tag.
+            Adds suppression logic automatically for Squarespace's built-in product schema.
+          </p>
+        </div>
+      </details>
+
+      <!-- Step 5: Insert Schema into Squarespace -->
+      <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          🧩 Step 5 – Insert Schema into Squarespace
+        </summary>
+        <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
+          <p style="margin-bottom: 0.75rem;">
+            Open each product page → <strong>Code Block</strong> → Paste schema.
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Do not place global schema on every page.
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            Validate via:
+          </p>
+          <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem;">
+            <li><strong>Rich Results Test</strong></li>
+            <li><strong>Schema.org Validator</strong></li>
+          </ul>
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
+            Commit and push results to GitHub once verified.
           </p>
         </div>
       </details>
 
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
-
-      <strong>📄 Complete Workflow Summary:</strong><br>
-      <pre>
-Step 1: Export from Squarespace → 01 – products_Nov-05_04-25-26PM.csv
-     ↓
-Step 2: Clean & normalize → 02 – products_cleaned.xlsx
-     ↓
-Step 3: Add Reviews & Generate Schema:
-     • Upload cleaned file → merges with product_reviews.csv
-     • Maps via event_mappings_with_reviewer.csv
-     • Filters reviews < 4★
-     • Produces products_with_review_data_final.xlsx
-     • Generates JSON-LD blocks with Trustpilot + Google reviews
-     ↓
-Step 4: Paste ONLY relevant schema into Squarespace product page
-      </pre>
-
-      <strong>📌 Squarespace Instructions:</strong><br>
-      • Open your product page in Squarespace.<br>
-      • Navigate to <b>Page Settings → Advanced → Header Code Injection</b><br>
-      • OR insert a <b>Code Block</b> onto the product page.<br>
-      • <b>Paste only the schema for that specific product.</b><br>
-      • <span class="warning">⚠️ Do NOT paste all schemas into every product page.</span><br>
-      • One schema block per product, on its matching product page only.
     </div>
 
-    <label for="productCsvFile">Upload Cleaned Product Excel File (from Step 1):</label>
+    <label for="productCsvFile">Upload Product Excel File (from Step 3):</label>
     <input type="file" id="productCsvFile" accept=".csv,.xlsx" aria-label="Product CSV/XLSX file upload">
-    <button onclick="generateProductSchema()">Generate Schema (Step 2)</button>
+    <button onclick="generateProductSchema()">Generate Schema (Step 4)</button>
+
+    <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
+      ✅ Schema generation complete.<br>
+      Files saved in /outputs and /workflow.
+    </div>
 
     <h3>Generated JSON-LD Schema:</h3>
     <p style="color: #4a5568; font-size: 0.9rem; margin-bottom: 0.5rem;">Preview of JSON-LD schema blocks for each product:</p>
@@ -4187,13 +4239,15 @@ Step 4: Paste ONLY relevant schema into Squarespace product page
   function generateProductSchema() {
     const fileInput = document.getElementById('productCsvFile');
     const output = document.getElementById('productOutput');
+    const successMsg = document.getElementById('productSchemaSuccess');
 
     if (!fileInput.files.length) {
-      alert("Please upload a cleaned Excel file (from Step 1) first.");
+      alert("Please upload a product Excel file (from Step 3) first.");
       return;
     }
 
     output.value = "Processing... Please wait.";
+    if (successMsg) successMsg.style.display = 'none';
     
     Papa.parse(fileInput.files[0], {
       header: true,
@@ -4274,9 +4328,16 @@ Step 4: Paste ONLY relevant schema into Squarespace product page
         }).length} products with valid reviews (4★+)\n\n`;
         
         output.value = summary + outputSchema;
+        
+        // Show success message
+        if (successMsg) {
+          successMsg.style.display = 'block';
+          successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
       },
       error: function(error) {
-        output.value = "Error parsing file: " + error.message + "\n\nPlease ensure you uploaded a valid CSV or Excel file from Step 1.";
+        output.value = "Error parsing file: " + error.message + "\n\nPlease ensure you uploaded a valid CSV or Excel file from Step 3.";
+        if (successMsg) successMsg.style.display = 'none';
       }
     });
   }
