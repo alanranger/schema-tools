@@ -6481,8 +6481,20 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Get inferred types
     const inferredTypes = result.inferredTypes || [];
     
+    // Debug logging
+    if (inferredTypes.length > 0) {
+      console.log(`[DEBUG] generateSchemaTypeHtml: Found ${inferredTypes.length} inferred types for ${result.url}:`, inferredTypes);
+    }
+    
     // Format with inferred types
-    return formatSchemaTypesWithInferred(explicitTypes, inferredTypes) || 'None';
+    const formatted = formatSchemaTypesWithInferred(explicitTypes, inferredTypes) || 'None';
+    
+    // Debug logging
+    if (inferredTypes.length > 0) {
+      console.log(`[DEBUG] generateSchemaTypeHtml: Formatted output:`, formatted);
+    }
+    
+    return formatted;
   }
   
   // Helper: Generate status select HTML
@@ -6696,10 +6708,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // CRITICAL: Update schema type cell with inferred types if they exist
     // This ensures inferred types persist even after row.innerHTML replacement
     const schemaTypeCell = document.getElementById(`schemaTypeCell_${index}`);
-    if (schemaTypeCell && result.inferredTypes && result.inferredTypes.length > 0) {
+    if (schemaTypeCell) {
+      // Always update the cell to ensure inferred types are shown
       const explicitTypes = result.schemaType ? result.schemaType.split(',').map(t => t.trim()).filter(Boolean) : [];
-      const formattedTypes = formatSchemaTypesWithInferred(explicitTypes, result.inferredTypes);
-      schemaTypeCell.innerHTML = formattedTypes;
+      const inferredTypes = result.inferredTypes || [];
+      
+      if (inferredTypes.length > 0) {
+        console.log(`[DEBUG] updateTableRow: Updating schema type cell with ${inferredTypes.length} inferred types for index ${index}`);
+        const formattedTypes = formatSchemaTypesWithInferred(explicitTypes, inferredTypes);
+        schemaTypeCell.innerHTML = formattedTypes;
+        console.log(`[DEBUG] updateTableRow: Set cell innerHTML to:`, formattedTypes);
+      } else {
+        // Even if no inferred types, ensure the cell shows the correct content
+        if (result.schemaType && result.schemaType !== 'Processing...') {
+          schemaTypeCell.innerHTML = result.schemaType || '—';
+        }
+      }
     }
     
     // Verify the status cell was updated correctly
