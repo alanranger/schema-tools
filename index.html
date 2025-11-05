@@ -8474,28 +8474,38 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     let isElectronMode = false;
     
     // Detect if running in Electron (check for Electron user agent or window properties)
-    if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
-      isElectronMode = true;
-      console.log("✅ Running in Electron mode - local server auto-started");
-      serverStatus = 'running';
-    } else if (window.electronAPI && window.electronAPI.isElectron) {
-      // Check preload script exposed API
-      isElectronMode = true;
-      console.log("✅ Running in Electron mode - local server auto-started");
-      serverStatus = 'running';
-    } else {
-      // Check for Electron-specific window properties
-      try {
-        if (window.process && window.process.versions && window.process.versions.electron) {
-          isElectronMode = true;
-          console.log("✅ Running in Electron mode - local server auto-started");
-          serverStatus = 'running';
-        }
-      } catch (e) {
-        // Not in Electron
-        isElectronMode = false;
+    // This runs immediately, but initLocalExecutor will do a more thorough check
+    function detectElectronMode() {
+      if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
+        isElectronMode = true;
+        console.log("✅ Electron detected via user agent");
+        serverStatus = 'running';
+        return true;
+      } else if (window.electronAPI && window.electronAPI.isElectron) {
+        isElectronMode = true;
+        console.log("✅ Electron detected via preload API");
+        serverStatus = 'running';
+        return true;
+      } else if (window.process && window.process.versions && window.process.versions.electron) {
+        isElectronMode = true;
+        console.log("✅ Electron detected via process.versions");
+        serverStatus = 'running';
+        return true;
       }
+      return false;
     }
+    
+    // Try immediate detection
+    detectElectronMode();
+    
+    // Also check after a short delay (in case preload script loads late)
+    setTimeout(() => {
+      if (!isElectronMode) {
+        if (detectElectronMode()) {
+          console.log("✅ Electron detected after delay");
+        }
+      }
+    }, 500);
     
     async function ensureLocalExecutorRunning() {
       // In Electron mode, server is always running
@@ -8588,8 +8598,40 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       if (!status) return;
       
-      // Detect Electron
-      const isElectron = !!(window.electronAPI && window.electronAPI.isElectron);
+      // Detect Electron - check multiple methods with fallback
+      let isElectron = false;
+      
+      // Method 1: Check preload API (most reliable)
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        isElectron = true;
+        log("✅ Electron detected via preload API");
+      }
+      // Method 2: Check user agent
+      else if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
+        isElectron = true;
+        log("✅ Electron detected via user agent");
+      }
+      // Method 3: Check process.versions (if available)
+      else if (typeof window !== 'undefined' && window.process && window.process.versions && window.process.versions.electron) {
+        isElectron = true;
+        log("✅ Electron detected via process.versions");
+      }
+      
+      // If still not detected, wait a bit for preload script to load
+      if (!isElectron) {
+        log("⏳ Waiting for Electron API to load...");
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Retry detection
+        if (window.electronAPI && window.electronAPI.isElectron) {
+          isElectron = true;
+          log("✅ Electron detected after delay");
+        } else if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
+          isElectron = true;
+          log("✅ Electron detected via user agent after delay");
+        }
+      }
+      
       log("🔍 Detecting environment...");
       
       if (isElectron) {
@@ -8653,6 +8695,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           status.style.borderColor = "#2196f3";
           status.style.color = "#1565c0";
           log("🌐 Web Mode: Read-only validation. Download Electron app for full automation.");
+          log("💡 To use Electron: Run 'npm start' in your project folder.");
           
           // Show web mode notices on Steps 2-4
           const step2Notice = document.getElementById('step2WebModeNotice');
