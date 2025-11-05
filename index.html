@@ -1509,10 +1509,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <label for="productCsvFile">Upload Product Excel File (from Step 3):</label>
     <input type="file" id="productCsvFile" accept=".csv,.xlsx" aria-label="Product CSV/XLSX file upload">
     <button onclick="generateProductSchema()">Generate Schema (Step 4)</button>
+    <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">
+      <strong>Note:</strong> After uploading, click "Generate Schema" to preview. Then run 
+      <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">python scripts/generate-product-schema.py</code> 
+      to generate output files.
+    </p>
 
     <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
       ✅ Schema generation complete.<br>
-      Files saved in /outputs and /workflow.
+      Files saved in /outputs and /workflow.<br>
+      <small style="display: block; margin-top: 0.5rem; opacity: 0.8;">
+        Run <code>python scripts/generate-product-schema.py</code> to generate individual JSON/HTML files and combined CSV.
+      </small>
     </div>
 
     <h3>Generated JSON-LD Schema:</h3>
@@ -4246,6 +4254,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       return;
     }
 
+    const fileName = fileInput.files[0].name;
+    
+    // Check if file needs to be saved to workflow directory first
+    if (!fileName.includes('products_with_review_data_final') && !fileName.includes('03')) {
+      const proceed = confirm(
+        "The uploaded file doesn't match the expected name (03 – products_with_review_data_final.xlsx).\n\n" +
+        "Please ensure the file from Step 3 is saved in /inputs-files/workflow/ as:\n" +
+        "03 – products_with_review_data_final.xlsx\n\n" +
+        "Click OK to continue with preview, or Cancel to upload the correct file."
+      );
+      if (!proceed) return;
+    }
+
     output.value = "Processing... Please wait.";
     if (successMsg) successMsg.style.display = 'none';
     
@@ -4329,11 +4350,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         
         output.value = summary + outputSchema;
         
-        // Show success message
+        // Show success message with instructions
         if (successMsg) {
           successMsg.style.display = 'block';
           successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+        
+        // Log instruction for Python script
+        console.log('✅ Schema preview generated.');
+        console.log('📝 Next step: Run: python scripts/generate-product-schema.py');
+        console.log('   This will generate individual JSON/HTML files and combined CSV.');
       },
       error: function(error) {
         output.value = "Error parsing file: " + error.message + "\n\nPlease ensure you uploaded a valid CSV or Excel file from Step 3.";
