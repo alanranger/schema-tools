@@ -5776,6 +5776,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       };
       
       console.log(`[✓] Stored result at index ${resultIndex}: schemaFound=${validationResults[resultIndex].schemaFound}, schemaType="${validationResults[resultIndex].schemaType}", error=${validationResults[resultIndex].error}`);
+      if (validationResults[resultIndex].inferredTypes && validationResults[resultIndex].inferredTypes.length > 0) {
+        console.log(`[DEBUG] processUrl: Stored inferredTypes in validationResults[${resultIndex}]:`, validationResults[resultIndex].inferredTypes);
+      }
       
       // Update table row with final result (will restore schemaFound in determineStatusHtml if needed)
       updateTableRow(resultIndex, validationResults[resultIndex]);
