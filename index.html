@@ -8685,10 +8685,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         step1.style.opacity = '1';
         step1.style.cursor = 'pointer';
       }
-      const step1Card = step1?.closest('div[style*="border-radius"]');
+      const step1Card = step1 ? step1.closest('div[style*="border-radius"]') : null;
       if (step1Card) {
         step1Card.style.opacity = '1';
         step1Card.style.pointerEvents = 'auto';
+      }
+      // Hide the "Complete Step 0 first" message
+      const lockMessage = document.getElementById('step1LockMessage');
+      if (lockMessage) {
+        lockMessage.style.display = 'none';
       }
     }
     
