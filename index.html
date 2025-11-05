@@ -1846,11 +1846,26 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return types.includes('Product');
     });
     
+    console.log(`[MerchantListing] Checking ${productNodes.length} Product node(s) for Merchant Center fields`);
     debugLog(`[MerchantListing] Checking ${productNodes.length} Product node(s) for Merchant Center fields`, 'info');
+    
+    // Debug: Log Product node details
+    productNodes.forEach((node, idx) => {
+      console.log(`[MerchantListing] Product node ${idx + 1}:`, {
+        '@type': node['@type'],
+        hasOffers: !!node.offers,
+        offersType: node.offers ? (Array.isArray(node.offers) ? 'array' : 'object') : 'none',
+        hasPriceCurrency: !!node.offers?.priceCurrency || !!node.offers?.[0]?.priceCurrency,
+        hasPrice: !!node.offers?.price || !!node.offers?.[0]?.price,
+        hasAvailability: !!node.offers?.availability || !!node.offers?.[0]?.availability,
+        hasMerchantReturnPolicy: !!node.hasMerchantReturnPolicy
+      });
+    });
     
     const hasMerchantListing = productNodes.some(node => {
       const detected = detectMerchantListing(node);
       if (detected) {
+        console.log(`[MerchantListing] ✅ Detected MerchantListing in Product node:`, node);
         debugLog(`[MerchantListing] ✅ Detected MerchantListing in Product node: ${JSON.stringify({ '@type': node['@type'], hasOffers: !!node.offers, hasReturnPolicy: !!node.hasMerchantReturnPolicy })}`, 'success');
       }
       return detected;
@@ -1858,8 +1873,10 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (hasMerchantListing) {
       inferredTypes.push({ type: 'MerchantListing (Google)', reason: 'Product schema contains all Merchant Center fields (offers, price, priceCurrency, availability, hasMerchantReturnPolicy)' });
+      console.log(`[MerchantListing] ✅ Added MerchantListing (Google) to inferred types. Total inferred types:`, inferredTypes);
       debugLog(`[MerchantListing] ✅ Added MerchantListing (Google) to inferred types`, 'success');
     } else {
+      console.log(`[MerchantListing] ❌ No Product schemas found with all Merchant Center fields`);
       debugLog(`[MerchantListing] ❌ No Product schemas found with all Merchant Center fields`, 'info');
     }
     
@@ -4441,20 +4458,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Handle offers as object or array
     const offer = Array.isArray(offers) ? offers[0] : offers;
     
+    // Check for price: can be direct price OR AggregateOffer with lowPrice/highPrice
+    const hasPrice = offer && (
+      offer.price || 
+      (offer.lowPrice && offer.highPrice) || // AggregateOffer pattern
+      (offer.lowPrice && offer.lowPrice === offer.highPrice) // Single price in AggregateOffer
+    );
+    
+    const hasPriceCurrency = offer && offer.priceCurrency;
+    const hasAvailability = offer && offer.availability;
+    
+    // Check for hasMerchantReturnPolicy at Product level OR inside offers object
+    const hasReturnPolicy = json.hasMerchantReturnPolicy || (offer && offer.hasMerchantReturnPolicy);
+    
     const hasMerchantListingFields = 
-      offer &&
-      offer.priceCurrency &&
-      offer.price &&
-      offer.availability &&
-      json.hasMerchantReturnPolicy;
+      hasPrice &&
+      hasPriceCurrency &&
+      hasAvailability &&
+      hasReturnPolicy;
     
     if (!hasMerchantListingFields) {
       const missingFields = [];
-      if (!offer) missingFields.push('offer object');
-      if (!offer?.priceCurrency) missingFields.push('priceCurrency');
-      if (!offer?.price) missingFields.push('price');
-      if (!offer?.availability) missingFields.push('availability');
-      if (!json.hasMerchantReturnPolicy) missingFields.push('hasMerchantReturnPolicy');
+      if (!hasPrice) missingFields.push('price (or lowPrice/highPrice for AggregateOffer)');
+      if (!hasPriceCurrency) missingFields.push('priceCurrency');
+      if (!hasAvailability) missingFields.push('availability');
+      if (!hasReturnPolicy) missingFields.push('hasMerchantReturnPolicy (at Product or Offer level)');
       debugLog(`[MerchantListing] Product schema missing Merchant Center fields: ${missingFields.join(', ')}`, 'info');
     } else {
       debugLog(`[MerchantListing] ✅ Product schema has all Merchant Center fields!`, 'success');
