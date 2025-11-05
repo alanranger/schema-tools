@@ -14,6 +14,7 @@ function createWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
       webSecurity: false, // Allow localhost connections
+      preload: path.join(__dirname, "preload.js"), // Load preload script
     },
     show: false, // Don't show until ready
   });
