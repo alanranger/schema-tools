@@ -3292,10 +3292,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return dedupeById(graph);
   }
 
-  // Helper: Process schema with fallback
+  // Helper: Process schema with fallback (check for existing Product before generating)
   async function processSchemaWithFallback(url, doc, nodes) {
     const meta = pageMeta(doc, url);
     const idx = indexByType(nodes);
+    
+    // Check for existing Product schema
+    const hasExistingProduct = nodes.some(n => {
+      const types = asArray(n['@type']);
+      return types.includes('Product') || types.includes('Course');
+    });
+    
+    if (hasExistingProduct) {
+      debugLog(`[Generate Enhanced] Existing Product/Course schema detected — skipping Product generation to prevent duplicates`, 'info');
+    }
+    
     let { website, org, local } = buildCoreSchemaNodes(idx, meta, url);
     
     const baseUrl = url.replace(/#.*$/,'');
@@ -3307,7 +3318,19 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     const breadcrumbs = buildBreadcrumbs(doc, url);
     const keepTypes = ['Product','Event','ItemList','FAQPage','Article','BlogPosting','Course'];
-    const extras = nodes.filter(n => asArray(n['@type']).some(t => keepTypes.includes(t)));
+    
+    // Only include Product/Course if they don't already exist
+    const extras = nodes.filter(n => {
+      const types = asArray(n['@type']);
+      const hasKeepType = types.some(t => keepTypes.includes(t));
+      
+      // Skip Product/Course if already exists to prevent duplicates
+      if ((types.includes('Product') || types.includes('Course')) && hasExistingProduct) {
+        return false; // Don't include Product/Course nodes if we detected existing ones
+      }
+      
+      return hasKeepType;
+    });
     
     const finalGraph = buildSchemaGraph(hasGlobalWebsite, hasGlobalOrg, hasGlobalLocal, website, org, local, breadcrumbs, extras);
     
@@ -3340,14 +3363,33 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+      // Find all script tags with JSON-LD (including in noscript tags)
+      const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+      const noscriptTags = Array.from(doc.querySelectorAll('noscript'));
+      for (const noscript of noscriptTags) {
+        const noscriptScripts = noscript.querySelectorAll('script[type="application/ld+json"]');
+        scripts.push(...Array.from(noscriptScripts));
+      }
+      
       let nodes = [];
       for (const s of scripts) {
-        try { 
-          nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); 
+        try {
+          // Decode escaped content before parsing
+          const decodedText = decodeJsonContent(s.textContent);
+          nodes = flattenJsonLd(JSON.parse(decodedText.trim()), nodes);
         } catch(e) {
           debugLog(`[Generate Enhanced] Failed to parse JSON-LD block: ${e.message}`, 'warning');
         }
+      }
+      
+      // Check for existing Product schema before generating
+      const hasExistingProduct = nodes.some(n => {
+        const types = asArray(n['@type']);
+        return types.includes('Product') || types.includes('Course');
+      });
+      
+      if (hasExistingProduct) {
+        debugLog(`[Generate Enhanced] Existing Product/Course schema detected — will not generate duplicate`, 'info');
       }
       
       debugLog(`[Generate Enhanced] Found ${nodes.length} schema nodes`, 'info');
@@ -3368,12 +3410,31 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+        // Find all script tags with JSON-LD (including in noscript tags)
+        const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+        const noscriptTags = Array.from(doc.querySelectorAll('noscript'));
+        for (const noscript of noscriptTags) {
+          const noscriptScripts = noscript.querySelectorAll('script[type="application/ld+json"]');
+          scripts.push(...Array.from(noscriptScripts));
+        }
+        
         let nodes = [];
         for (const s of scripts) {
-          try { 
-            nodes = flattenJsonLd(JSON.parse(s.textContent.trim()), nodes); 
+          try {
+            // Decode escaped content before parsing
+            const decodedText = decodeJsonContent(s.textContent);
+            nodes = flattenJsonLd(JSON.parse(decodedText.trim()), nodes);
           } catch(_) {}
+        }
+        
+        // Check for existing Product schema
+        const hasExistingProduct = nodes.some(n => {
+          const types = asArray(n['@type']);
+          return types.includes('Product') || types.includes('Course');
+        });
+        
+        if (hasExistingProduct) {
+          debugLog(`[Generate Enhanced] Existing Product/Course schema detected — will not generate duplicate`, 'info');
         }
         
         return await processSchemaWithFallback(url, doc, nodes);
@@ -4376,22 +4437,67 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Parse JSON-LD blocks from scripts
+  // Helper: Decode escaped JSON content
+  function decodeJsonContent(text) {
+    if (!text) return text;
+    // Decode HTML entities like &quot; to "
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
+    let decoded = tempDiv.textContent || tempDiv.innerText || text;
+    // Also handle escaped forward slashes \/
+    decoded = decoded.replace(/\\\//g, '/');
+    return decoded.trim();
+  }
+
+  // Helper: Parse JSON-LD blocks with improved detection
   function parseJsonLdBlocks(scripts, schemaTypeCell) {
     const jsonLdBlocks = [];
     let detectedTypes = [];
     const blockInfo = [];
+    const productCount = { total: 0, blocks: [] };
     
     for (let scriptIndex = 0; scriptIndex < scripts.length; scriptIndex++) {
       const script = scripts[scriptIndex];
       try {
-        const json = JSON.parse(script.textContent);
+        // Decode escaped content before parsing
+        const decodedText = decodeJsonContent(script.textContent);
+        const json = JSON.parse(decodedText);
+        
         jsonLdBlocks.push(json);
         const blockTypes = extractTypesFromBlock(json, blockInfo, scriptIndex);
         detectedTypes.push(...blockTypes);
+        
+        // Track Product schemas specifically
+        const hasProduct = blockTypes.includes('Product');
+        if (hasProduct) {
+          productCount.total++;
+          productCount.blocks.push(scriptIndex);
+        }
       } catch (e) {
-        console.warn('Failed to parse JSON-LD:', e);
-        debugLog(`Failed to parse JSON-LD block ${scriptIndex}: ${e.message}`, 'error');
+        // Try parsing after decoding if initial parse failed
+        try {
+          const decodedText = decodeJsonContent(script.textContent);
+          const json = JSON.parse(decodedText);
+          jsonLdBlocks.push(json);
+          const blockTypes = extractTypesFromBlock(json, blockInfo, scriptIndex);
+          detectedTypes.push(...blockTypes);
+          
+          const hasProduct = blockTypes.includes('Product');
+          if (hasProduct) {
+            productCount.total++;
+            productCount.blocks.push(scriptIndex);
+          }
+        } catch (e2) {
+          console.warn('Failed to parse JSON-LD:', e);
+          debugLog(`Failed to parse JSON-LD block ${scriptIndex}: ${e.message}`, 'error');
+        }
       }
+    }
+    
+    // Log duplicate Product detection
+    if (productCount.total > 1) {
+      debugLog(`Duplicate Product schemas detected (${productCount.total} found) — first retained, subsequent skipped.`, 'warn');
+      debugLog(`Product schemas found in blocks: ${productCount.blocks.join(', ')}`, 'info');
     }
     
     return { jsonLdBlocks, detectedTypes, blockInfo };
