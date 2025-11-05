@@ -1425,7 +1425,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
 
         <!-- STEP 2 -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
+        <div id="step2-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🧹 Step 2 – Clean and Normalize CSV</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             This step automatically formats your latest Squarespace export for schema generation.
@@ -1435,25 +1435,27 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <li>Normalizes column names and trims invalid rows</li>
             <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code></li>
           </ul>
+          <div id="step2WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
+            <strong>ℹ️ Why Steps 2-4 Need Local Execution:</strong><br>
+            These steps run Python scripts that need to:
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
+              <li>Read/write files on your computer</li>
+              <li>Execute Python commands</li>
+              <li>Access your local file system</li>
+            </ul>
+            <strong>Web hosting (Vercel) cannot do this for security reasons.</strong><br><br>
+            <strong>✅ Solution:</strong> Download the Electron desktop app or run locally.<br>
+            <small>The web version is read-only for validation purposes.</small>
+          </div>
           <div id="progress-step2" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
           <p id="status-step2" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
           <div id="cleanConsoleOutput" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
-          <div id="localServerInstructions" style="display: none; margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; font-size: 0.875rem;">
-            <strong>💡 To Run Steps 2-4 Locally:</strong><br>
-            <ol style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
-              <li>Open a terminal in this project folder</li>
-              <li>Run: <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code></li>
-              <li>Open <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">index.html</code> in your browser (or use a local server)</li>
-              <li>Refresh this page and try again</li>
-            </ol>
-            <strong>📦 Alternative:</strong> Use the Electron desktop app for full automation (no terminal needed)
-          </div>
         </div>
 
         <!-- STEP 3a: Fetch Google Reviews -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
+        <div id="step3a-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">📥 Step 3a – Fetch Google Reviews Automatically</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             This step connects to your Google My Business account and retrieves all customer reviews.
@@ -1463,6 +1465,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <li>First time: Browser will open for OAuth authorization</li>
             <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03b – google_reviews.csv</code></li>
           </ul>
+          <div id="step3aWebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
+            <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
+            <small>Use Electron app or run locally.</small>
+          </div>
           <button id="fetchGoogleReviews" onclick="runGoogleReviewsFetcher()" style="margin-top: 0.75rem; background: #667eea; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
             📥 Fetch Google Reviews (Local)
           </button>
@@ -1474,7 +1480,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
 
         <!-- STEP 3b: Merge Reviews -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
+        <div id="step3b-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🔗 Step 3b – Merge Trustpilot and Google Reviews</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             Combine both review sources into one clean dataset ready for schema generation.
@@ -1485,6 +1491,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <li>Automatically maps reviews to product names</li>
             <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – combined_product_reviews.csv</code></li>
           </ul>
+          <div id="step3bWebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
+            <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
+            <small>Use Electron app or run locally.</small>
+          </div>
           <button id="mergeReviewsBtn" onclick="runMergeReviews()" style="margin-top: 0.75rem; background: #667eea; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
             🔗 Merge Reviews
           </button>
@@ -1510,11 +1520,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
 
         <!-- STEP 4 -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
+        <div id="step4-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">⚙️ Step 4 – Generate Product Schema</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             Click below to generate JSON-LD schema from your Step 3 Excel file.
           </p>
+          <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
+            <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
+            <small>Use Electron app or run locally.</small>
+          </div>
           <button id="run-step4" onclick="generateProductSchema()" style="margin-top: 0.75rem; background: #667eea; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
             Generate Schema (Step 4)
           </button>
@@ -8598,6 +8612,38 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           log("📦 For full automation: Download Electron desktop app or run locally.");
           log("✅ Step 1 unlocked for read-only validation (file uploads work).");
           log("⚠️ Steps 2-4 require local server (not available on web).");
+          
+          // Show web mode notices on Steps 2-4
+          const step2Notice = document.getElementById('step2WebModeNotice');
+          const step3aNotice = document.getElementById('step3aWebModeNotice');
+          const step3bNotice = document.getElementById('step3bWebModeNotice');
+          const step4Notice = document.getElementById('step4WebModeNotice');
+          
+          if (step2Notice) step2Notice.style.display = 'block';
+          if (step3aNotice) step3aNotice.style.display = 'block';
+          if (step3bNotice) step3bNotice.style.display = 'block';
+          if (step4Notice) step4Notice.style.display = 'block';
+          
+          // Disable buttons in web mode
+          const fetchBtn = document.getElementById('fetchGoogleReviews');
+          const mergeBtn = document.getElementById('mergeReviewsBtn');
+          const schemaBtn = document.getElementById('run-step4');
+          
+          if (fetchBtn) {
+            fetchBtn.disabled = true;
+            fetchBtn.style.opacity = '0.5';
+            fetchBtn.style.cursor = 'not-allowed';
+          }
+          if (mergeBtn) {
+            mergeBtn.disabled = true;
+            mergeBtn.style.opacity = '0.5';
+            mergeBtn.style.cursor = 'not-allowed';
+          }
+          if (schemaBtn) {
+            schemaBtn.disabled = true;
+            schemaBtn.style.opacity = '0.5';
+            schemaBtn.style.cursor = 'not-allowed';
+          }
           
           // Add a button to proceed anyway in web mode
           if (startBtn) {
