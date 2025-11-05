@@ -1794,6 +1794,64 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Multi-instance allowed schema types (expected to appear multiple times on a page)
   const MULTI_INSTANCE_ALLOWED_TYPES = ['Event', 'Product', 'Course', 'Article', 'Review', 'FAQPage', 'ListItem', 'Offer'];
 
+  // Helper: Detect inferred schema types based on patterns in JSON-LD
+  function detectInferredTypes(allNodes) {
+    const inferredTypes = [];
+    const typeCounts = {};
+    
+    // Count occurrences of each type
+    allNodes.forEach(node => {
+      const types = asArray(node['@type']);
+      types.forEach(type => {
+        typeCounts[type] = (typeCounts[type] || 0) + 1;
+      });
+    });
+    
+    // Rule 1: Carousel inference
+    // If ≥3 Event items exist → infer Carousel
+    const eventCount = typeCounts['Event'] || 0;
+    if (eventCount >= 3) {
+      inferredTypes.push({ type: 'Carousel', reason: `from ${eventCount} Event schemas` });
+    }
+    
+    // Rule 2: Carousel inference from Product/Course
+    // If multiple Product or Course schemas exist → also infer Carousel
+    const productCount = typeCounts['Product'] || 0;
+    const courseCount = typeCounts['Course'] || 0;
+    if ((productCount + courseCount) >= 3) {
+      inferredTypes.push({ type: 'Carousel', reason: `from ${productCount + courseCount} Product/Course schemas` });
+    }
+    
+    // Rule 3: ReviewSnippet inference
+    // If any item contains aggregateRating or review → infer ReviewSnippet
+    const hasReviews = allNodes.some(node => {
+      return node.aggregateRating || 
+             (node.review && Array.isArray(node.review) && node.review.length > 0) ||
+             node.reviews;
+    });
+    
+    if (hasReviews) {
+      const reviewCount = allNodes.filter(node => {
+        return node.aggregateRating || 
+               (node.review && Array.isArray(node.review) && node.review.length > 0) ||
+               node.reviews;
+      }).length;
+      inferredTypes.push({ type: 'ReviewSnippet', reason: `from ${reviewCount} item${reviewCount !== 1 ? 's' : ''} with reviews` });
+    }
+    
+    // Deduplicate inferred types (e.g., if Carousel appears twice)
+    const uniqueInferred = [];
+    const seenTypes = new Set();
+    inferredTypes.forEach(item => {
+      if (!seenTypes.has(item.type)) {
+        seenTypes.add(item.type);
+        uniqueInferred.push(item);
+      }
+    });
+    
+    return uniqueInferred;
+  }
+
   // Suppression Filtering Functions
   function shouldSuppressWarning(message, url = '') {
     if (!message) return false;
@@ -2733,12 +2791,29 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // Use actual block count from result or cached data
     const blockCount = result?.blockCount || blocks.length || result?.schemas?.length || 0;
     
+    // Get inferred types from result
+    const inferredTypes = result?.inferredTypes || [];
+    
     // Collect existing schema types from blocks
     const existingTypes = collectExistingSchemaTypes(blocks);
     
     const severityBadge = determineSeverityBadge(issueCount, duplicates);
     const humanReadableSummary = buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges);
     const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges, existingTypes);
+    
+    // Build inferred types HTML section
+    let inferredTypesHtml = '';
+    if (inferredTypes.length > 0) {
+      inferredTypesHtml = `
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #f9fafb; border-radius: 8px; border-left: 4px solid #6b7280;">
+          <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #374151;">Inferred Structured Data Types</h4>
+          <p style="margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #6b7280;">Based on schema relationships and patterns:</p>
+          <ul style="margin: 0; padding-left: 1.5rem; list-style: disc;">
+            ${inferredTypes.map(item => `<li style="margin-bottom: 0.5rem;"><strong>${item.type}</strong> (${item.reason})</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
     
     // Extract missing recommended fields from warnings
     const missingRecommended = warnings.filter(w => w.includes('Missing recommended:')).map(w => {
@@ -5012,9 +5087,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       setProgress(schemaTypeCell, 100, 'Done');
       setTimeout(() => {
         const uniqueTypes = [...new Set((pageData.schemaType || analysis.schemaTypes.join(', ') || '—').split(',').map(t => t.trim()))];
-        const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+        
+        // Get inferred types from result if available
+        const resultIndex = validationResults.findIndex(r => r.url === urlData.url);
+        const inferredTypes = resultIndex >= 0 && validationResults[resultIndex]?.inferredTypes || [];
+        
+        // Format with inferred types
+        const schemaTypeText = formatSchemaTypesWithInferred(uniqueTypes, inferredTypes);
         const serverBadge = pageData.serverFallback ? ' (server)' : '';
-        schemaTypeCell.textContent = schemaTypeText + serverBadge;
+        
+        // Use innerHTML to render HTML (for italic styling)
+        schemaTypeCell.innerHTML = schemaTypeText + serverBadge;
       }, 500);
     }
   }
@@ -5415,6 +5498,23 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
   }
 
+  // Helper: Format schema types with inferred types visually differentiated
+  function formatSchemaTypesWithInferred(explicitTypes, inferredTypes = []) {
+    const explicit = explicitTypes.length > 0 ? explicitTypes.join(', ') : '';
+    if (inferredTypes.length === 0) {
+      return explicit || '—';
+    }
+    
+    const inferred = inferredTypes.map(item => 
+      `<span style="font-style: italic; color: #6b7280;">*${item.type} (inferred)*</span>`
+    ).join(', ');
+    
+    if (explicit) {
+      return `${explicit}, ${inferred}`;
+    }
+    return inferred;
+  }
+
   // Helper: Update schema type display
   function updateSchemaTypeDisplay(result, pageData, analysis, urlData) {
     updateSchemaTypeCellUI(urlData, pageData, analysis);
@@ -5447,11 +5547,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     ];
     
     const uniqueTypes = [...new Set(allTypes.filter(Boolean))];
-    const schemaTypeText = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
-    const serverBadge = pageData.serverFallback ? ' (server)' : '';
-    result.schemaType = schemaTypeText + serverBadge;
+    
+    // Get inferred types from result
+    const inferredTypes = result.inferredTypes || [];
+    
+    // Store both explicit and inferred separately
+    result.schemaType = uniqueTypes.length > 0 ? uniqueTypes.join(', ') : '—';
+    result.inferredTypes = inferredTypes;
     
     console.log(`[✓] Updated schemaType: "${result.schemaType}" (from result.schemaTypes: [${schemaTypesFromResult.join(', ')}], analysis.schemaTypes: [${schemaTypesFromAnalysis.join(', ')}], pageData.schemaType: "${schemaTypeFromPageData}")`);
+    if (inferredTypes.length > 0) {
+      console.log(`[✓] Inferred types: ${inferredTypes.map(t => t.type).join(', ')}`);
+    }
   }
 
   // Helper: Merge analysis results into result object
@@ -5563,6 +5670,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Stage 4: Process schema nodes (~60%)
       updateRowProgress(urlData.url, 60);
       const { allNodes, missingDetails } = processSchemaNodes(pageData);
+      
+      // Detect inferred types from allNodes
+      const inferredTypes = detectInferredTypes(allNodes);
+      result.inferredTypes = inferredTypes;
+      if (inferredTypes.length > 0) {
+        debugLog(`Detected ${inferredTypes.length} inferred type(s): ${inferredTypes.map(t => t.type).join(', ')}`, 'info');
+      }
       
       // Stage 5: Process duplicate detection (~70%)
       updateRowProgress(urlData.url, 70);
@@ -6353,7 +6467,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     if (result.schemaType === 'Processing...') {
       return '<div class="progress-wrap"><div class="progress"><span style="width:0%"></span></div><div class="progress-label">0%</div></div>';
     }
-    return result.schemaType || 'None';
+    
+    // Get explicit types
+    const explicitTypes = result.schemaType ? result.schemaType.split(',').map(t => t.trim()).filter(Boolean) : [];
+    
+    // Get inferred types
+    const inferredTypes = result.inferredTypes || [];
+    
+    // Format with inferred types
+    return formatSchemaTypesWithInferred(explicitTypes, inferredTypes) || 'None';
   }
   
   // Helper: Generate status select HTML
