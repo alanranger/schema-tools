@@ -4472,7 +4472,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       } catch (e) {
         // Try parsing after decoding if initial parse failed
         try {
-          const decodedText = decodeJsonContent(script.textContent);
+          const decodedText = decodeHTML(script.textContent);
           const json = JSON.parse(decodedText);
           jsonLdBlocks.push(json);
           const blockTypes = extractTypesFromBlock(json, blockInfo, scriptIndex);
