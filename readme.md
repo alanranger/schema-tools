@@ -17,13 +17,19 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Injects performer, organizer, address, validFrom, and location fields.
 - Fully structured schema output compliant with Google's Rich Results.
 
-### 3. `unified-schema-generator.html`
+### 3. `index.html` (Unified Schema Generator)
 - Combines both tools into one UI with three tabs:
-  - **Event Schema**: Generate Event and ItemList schema blocks from CSV
-  - **Product Schema**: Generate Product schema blocks with review support
-  - **Schema Validator**: Validate and enhance schemas from live URLs (NEW!)
-- Designed for future expansion with automatic validation and page scanning.
-- Includes built-in schema validation and enhancement capabilities.
+  - **Event Schema**: Generate Event and ItemList schema blocks from CSV (🚧 In Development)
+  - **Product Schema**: Generate Product schema blocks with review support (🚧 In Development)
+  - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
+- **Schema Validator Features (v1.5.0 - Complete)**:
+  - Single URL and batch CSV validation
+  - Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
+  - Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
+  - MerchantListing badge with green background and white checkmark
+  - Improved duplicate detection for multi-instance types
+  - Supabase integration for audit logging
+  - Comprehensive schema details modal
 
 ### 4. `schema-validator.js` (Schema Validator Agent)
 - Automated CLI tool to validate schema markup on live URLs.
@@ -164,6 +170,14 @@ https://www.example.com/product-2,Product Two,Products
 - ✅ Fixed redundant variable assignments
 - ✅ Added accessibility attributes (`title`) to select elements
 - ✅ Improved code maintainability and readability throughout
+
+**Schema Validator Enhancements (v1.5.0):**
+- ✅ Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
+- ✅ Enhanced JSON-LD detection for Squarespace-specific patterns
+- ✅ MerchantListing badge with green background and white checkmark
+- ✅ Improved duplicate detection with multi-instance type support
+- ✅ Fixed Supabase RLS policy violations
+- ✅ Comprehensive schema details modal with inferred types section
 
 ## Schema Validation
 

@@ -20,39 +20,29 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Injects fixed location, organizer, image
 - Outputs valid Event + ItemList blocks
 
-### ✅ `unified-schema-generator.html` (v1.3.0 - COMPLETE)
+### ✅ `index.html` (Unified Schema Generator - v1.5.0)
 - Combines both generators into one file with tabbed interface
 - Three tabs:
-  - Event Schema Generator
-  - Product Schema Generator  
-  - Schema Validator - validates URLs from CSV, detects schema types, identifies missing fields, and generates enhanced schemas
+  - **Event Schema Generator** (🚧 In Development)
+  - **Product Schema Generator** (🚧 In Development)
+  - **Schema Validator** ✅ Complete - validates URLs from CSV, detects schema types, identifies missing fields, generates enhanced schemas, and detects inferred types
 - Includes built-in validation and enhancement logic
 - Works entirely in browser (no server required)
-- **New in v1.2.1:**
-  - Template CSV download button for easy setup
-  - Real-time progress indicators during validation
-  - Enhanced schema generation with @graph support for multiple schemas
-  - Downloads both JSON and HTML script tag formats
-  - Improved UI with status badges and better error handling
-  - Better table rendering with processing status updates
-- **New in v1.3.0:**
-  - **Supabase Integration**: Store validation results in `schema_audit_logs` table
-  - Manual status input dropdowns for Google and Schema.org validators
-  - Notes textarea for each validation result
-  - "Save to Supabase" button for each URL row
-  - Toast notifications for save success/failure
-  - Automatic storage of schema JSON and validation metadata
-- **New in v1.4.0:**
-  - **Code Quality Improvements**: Comprehensive refactoring to meet SonarLint standards
-  - Reduced cognitive complexity (all functions ≤ 15)
-  - Modernized JavaScript syntax (globalThis, for...of, structuredClone)
-  - Improved error handling with proper exception logging
-  - Enhanced accessibility (added title attributes to select elements)
-  - Better code maintainability and readability
+- **Schema Validator Tab (v1.5.0 - Complete):**
+  - ✅ Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
+  - ✅ Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
+  - ✅ MerchantListing badge with green background and white checkmark
+  - ✅ Improved duplicate detection for multi-instance types
+  - ✅ Supabase RLS policy fixes
+  - ✅ Comprehensive schema details modal
+- **Previous Versions:**
+  - **v1.2.1**: Template CSV download, progress indicators, @graph support, dual format downloads
+  - **v1.3.0**: Supabase integration, manual status input, notes capture
+  - **v1.4.0**: Code quality improvements (cognitive complexity ≤ 15, modernized syntax, better error handling)
 
-## Goals for Next Tool Phase
+## Current Status
 
-✅ **COMPLETED:**
+✅ **Schema Validator Tab - COMPLETE (v1.5.0):**
 - Schema validation (built into unified generator)
 - Bulk URL validation from CSV
 - Schema enhancement with missing fields
@@ -60,6 +50,16 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Real-time progress indicators
 - Multiple schema support (@graph structure)
 - Dual format downloads (JSON + HTML script tags)
+- **Inferred schema type detection** (Carousel, ReviewSnippet, MerchantListing)
+- **Enhanced JSON-LD detection** (Squarespace patterns, noscript tags)
+- **MerchantListing badge** with green background and white checkmark
+- **Improved duplicate detection** for multi-instance types
+- **Supabase RLS policy fixes**
+
+🚧 **Next Phase - Events & Products Tabs:**
+- Complete Events tab functionality
+- Complete Products tab functionality
+- Ensure both tabs match the quality and features of the validation tab
 
 ### 🗃️ Supabase Integration (COMPLETE)
 - **Table**: `schema_audit_logs` created and configured

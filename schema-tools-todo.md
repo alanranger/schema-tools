@@ -39,6 +39,21 @@ Build a **single HTML tool** that can:
 - [x] Generate correct structured data output
 - [x] Add a button to copy output to clipboard
 
+### 🎯 Current Status
+
+**✅ Schema Validator Tab - COMPLETE (v1.5.0)**
+- Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
+- Enhanced JSON-LD detection (Squarespace patterns, noscript tags)
+- MerchantListing badge with green background and white checkmark
+- Improved duplicate detection for multi-instance types
+- Supabase RLS policy fixes
+- Comprehensive schema details modal
+
+**🚧 Next Phase: Events & Products Tabs**
+- Events tab: Generate Event schemas from CSV
+- Products tab: Generate Product schemas from CSV
+- Both tabs need full functionality similar to validation tab
+
 ---
 
 ### 🌍 SEO Validator Integration
@@ -128,7 +143,7 @@ Build a **single HTML tool** that can:
 
 ---
 
-### 🧪 Optional Enhancements
+### ✅ Schema Validator Tab (COMPLETE v1.5.0)
 
 - [x] Add HTML UI for bulk validator (browser-based CSV upload) - **COMPLETED v1.2.0**
 - [x] Add progress bar for bulk validation - **COMPLETED v1.2.1**
@@ -140,6 +155,24 @@ Build a **single HTML tool** that can:
   - Modernized JavaScript syntax (globalThis, for...of, structuredClone)
   - Improved error handling and accessibility
   - Enhanced code maintainability
+- [x] **Inferred schema type detection** - **COMPLETED v1.5.0**
+  - Carousel detection (from ≥3 Event items or Product/Course schemas)
+  - ReviewSnippet detection (from aggregateRating, review, reviews fields)
+  - MerchantListing (Google) detection (from Product schemas with Merchant Center fields)
+- [x] **MerchantListing badge styling** - **COMPLETED v1.5.0**
+  - Green background badge with white checkmark
+  - Compact design to prevent column width issues
+- [x] **Enhanced JSON-LD detection** - **COMPLETED v1.5.0**
+  - Squarespace pattern support (`script[data-type="application/ld+json"]`)
+  - Nested `<noscript>` tag detection
+  - HTML entity decoding for proper JSON parsing
+- [x] **Improved duplicate detection** - **COMPLETED v1.5.0**
+  - Multi-instance allowed types (Event, Product, Course, Article, Review, FAQPage, ListItem, Offer)
+  - Informational messages for expected multi-instance schemas
+  - Accurate duplicate counting excluding multi-instance types
+- [x] **Supabase RLS policy fixes** - **COMPLETED v1.5.0**
+  - Fixed Row-Level Security policies for `anon` and `authenticated` roles
+  - Improved error handling for auto-save operations
 - [ ] Add CSV pre-cleaning checks: invalid rows, missing `Product ID`, etc.
 - [ ] Show warning if CSV has invalid/missing fields
 - [ ] Allow user to preview JSON-LD block in a collapsible box
@@ -147,6 +180,7 @@ Build a **single HTML tool** that can:
 - [ ] Export validation results to CSV/Excel
 - [ ] Add batch enhancement for all URLs at once
 - [ ] Add filtering/sorting options in results table
+- [ ] Change filter inputs to dropdowns with actual field values
 
 ---
 

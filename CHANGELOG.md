@@ -2,6 +2,54 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## [1.5.0] - 2024-11-05
+
+### Schema Validator Tab Enhancements
+
+#### Added
+- **Inferred Schema Type Detection**:
+  - Carousel detection from ≥3 Event items or Product/Course schemas
+  - ReviewSnippet detection from aggregateRating, review, or reviews fields
+  - MerchantListing (Google) detection for Product schemas with Merchant Center fields (offers, priceCurrency, availability, hasMerchantReturnPolicy)
+- **Visual Enhancements**:
+  - MerchantListing badge with green background (`#27AE60`) and white checkmark emoji
+  - Compact badge design (0.85em font, reduced padding) to prevent column width issues
+  - Inferred types displayed in italic gray text with special styling for MerchantListing
+- **JSON-LD Detection Improvements**:
+  - Squarespace pattern support: `script[data-type="application/ld+json"]`
+  - Nested `<noscript>` tag detection for both standard and Squarespace patterns
+  - HTML entity decoding (`&quot;`, `&apos;`, `&amp;`, `&#x2F;`, `\/`) before JSON parsing
+  - Deduplication of found script tags
+- **Duplicate Detection Enhancements**:
+  - Multi-instance allowed types: Event, Product, Course, Article, Review, FAQPage, ListItem, Offer
+  - Informational messages for expected multi-instance schemas (e.g., "✅ Multiple Event schemas detected (45) — expected for event listings.")
+  - Accurate duplicate counting excluding multi-instance types
+  - Friendly classification messages for duplicate issues
+
+#### Fixed
+- **Supabase Integration**:
+  - Fixed Row-Level Security (RLS) policy violations (Code 42501)
+  - Added RLS policies for `anon` and `authenticated` roles
+  - Improved error handling for auto-save operations (suppresses RLS errors with warnings)
+  - Better user feedback for save operations
+- **Inferred Types Display**:
+  - Fixed race condition where inferred types disappeared after scan completion
+  - Ensured inferred types persist in table after row updates
+  - Correct display of inferred types in schema type cell and modal
+
+#### Improved
+- **Debug Logging**:
+  - Detailed logging for MerchantListing detection (shows missing fields)
+  - Informational messages downgraded from `warn` to `info` level
+  - Better console output for troubleshooting
+
+#### Technical Details
+- `detectInferredTypes()` function analyzes all schema nodes to identify implicit types
+- `formatSchemaTypesWithInferred()` function formats inferred types with visual differentiation
+- `detectMerchantListing()` function checks for Merchant Center compliance fields
+- `findAllJsonLdScripts()` helper function expands JSON-LD detection coverage
+- `decodeHTML()` helper function handles HTML entity decoding
+
 ## [1.4.0] - 2024-01-XX
 
 ### Code Quality Improvements
