@@ -4407,7 +4407,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const duplicates = Object.keys(typeCounts).filter(t => typeCounts[t] > 1);
     
     if (duplicates.length > 0) {
-      debugLog(`⚠️ Duplicate schema types detected: ${duplicates.map(t => `${t} (${typeCounts[t]}x)`).join(', ')}`, 'warn');
+      // Log duplicate detection as info (expected for multi-instance schemas like Event, Product)
+      debugLog(`Duplicate schema types detected: ${duplicates.map(t => `${t} (${typeCounts[t]}x)`).join(', ')}`, 'info');
       debugLog(`Block details: ${blockInfo.map(b => `Block ${b.index}: ${b.types.join(',')}${b.hasId ? ' (has @id)' : ''}${b.isGraph ? ' (@graph)' : ''}`).join('; ')}`, 'info');
     }
     
@@ -4497,7 +4498,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Handle server fallback
   async function handleServerFallback(url, schemaTypeCell) {
-    debugLog(`Local parse failed for ${url}, trying server fallback...`, 'warn');
+    debugLog(`Local parse failed for ${url}, trying server fallback...`, 'info');
     if (schemaTypeCell) {
       setProgress(schemaTypeCell, 10, 'Server fallback...');
     }
@@ -5072,12 +5073,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     const orgNodesMissingName = orgNodes.filter(n => !n.name || !n.name.trim());
     if (orgNodesMissingName.length > 0) {
-      debugLog(`⚠️ Found ${orgNodesMissingName.length} Organization node(s) missing 'name':`, 'warn');
+      // Log as info - these are typically Squarespace-injected nodes without @id, expected behavior
+      debugLog(`Found ${orgNodesMissingName.length} Organization node(s) missing 'name' (likely Squarespace-injected):`, 'info');
       for (let idx = 0; idx < orgNodesMissingName.length; idx++) {
         const n = orgNodesMissingName[idx];
         const idInfo = n['@id'] ? `@id: ${n['@id']}` : 'no @id';
         const urlInfo = n.url ? `url: ${n.url}` : 'no url';
-        debugLog(`  Organization ${idx + 1}: ${idInfo}, ${urlInfo}`, 'warn');
+        debugLog(`  Organization ${idx + 1}: ${idInfo}, ${urlInfo}`, 'info');
       }
     }
   }
@@ -5138,7 +5140,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
     
     if (pageData.duplicateWarnings && pageData.duplicateWarnings.length > 0) {
-      debugLog(`Server fallback detected duplicates: ${pageData.duplicateWarnings.join('; ')}`, 'warn');
+      debugLog(`Server fallback detected duplicates: ${pageData.duplicateWarnings.join('; ')}`, 'info');
     }
   }
 
@@ -6796,7 +6798,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       // Check if explanation element exists (null-safe fallback)
       const explanationEl = statusCell.querySelector('.status-explanation');
       if (!explanationEl) {
-        console.warn('Status explanation missing for', result.url);
+        // This is expected for some status types (e.g., "Valid" or "No Schema") - only log in debug mode
+        debugLog(`Status explanation not found for ${result.url} (this is normal for some status types)`, 'info');
       } else {
         debugLog(`Explanation element text: "${explanationEl.textContent}"`);
         debugLog(`Explanation element HTML: ${explanationEl.outerHTML}`);
