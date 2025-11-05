@@ -1841,13 +1841,26 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     // Rule 4: MerchantListing (Google) inference
     // If any Product schema contains all Merchant Center fields → infer MerchantListing (Google)
-    const hasMerchantListing = allNodes.some(node => {
+    const productNodes = allNodes.filter(node => {
       const types = asArray(node['@type']);
-      return types.includes('Product') && detectMerchantListing(node);
+      return types.includes('Product');
+    });
+    
+    debugLog(`[MerchantListing] Checking ${productNodes.length} Product node(s) for Merchant Center fields`, 'info');
+    
+    const hasMerchantListing = productNodes.some(node => {
+      const detected = detectMerchantListing(node);
+      if (detected) {
+        debugLog(`[MerchantListing] ✅ Detected MerchantListing in Product node: ${JSON.stringify({ '@type': node['@type'], hasOffers: !!node.offers, hasReturnPolicy: !!node.hasMerchantReturnPolicy })}`, 'success');
+      }
+      return detected;
     });
     
     if (hasMerchantListing) {
       inferredTypes.push({ type: 'MerchantListing (Google)', reason: 'Product schema contains all Merchant Center fields (offers, price, priceCurrency, availability, hasMerchantReturnPolicy)' });
+      debugLog(`[MerchantListing] ✅ Added MerchantListing (Google) to inferred types`, 'success');
+    } else {
+      debugLog(`[MerchantListing] ❌ No Product schemas found with all Merchant Center fields`, 'info');
     }
     
     // Deduplicate inferred types (e.g., if Carousel appears twice)
@@ -4421,6 +4434,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     // offers can be an object or array
     const offers = json.offers;
     if (!offers) {
+      debugLog(`[MerchantListing] Product schema missing 'offers' field`, 'info');
       return false;
     }
     
@@ -4433,6 +4447,18 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       offer.price &&
       offer.availability &&
       json.hasMerchantReturnPolicy;
+    
+    if (!hasMerchantListingFields) {
+      const missingFields = [];
+      if (!offer) missingFields.push('offer object');
+      if (!offer?.priceCurrency) missingFields.push('priceCurrency');
+      if (!offer?.price) missingFields.push('price');
+      if (!offer?.availability) missingFields.push('availability');
+      if (!json.hasMerchantReturnPolicy) missingFields.push('hasMerchantReturnPolicy');
+      debugLog(`[MerchantListing] Product schema missing Merchant Center fields: ${missingFields.join(', ')}`, 'info');
+    } else {
+      debugLog(`[MerchantListing] ✅ Product schema has all Merchant Center fields!`, 'success');
+    }
     
     return hasMerchantListingFields;
   }
