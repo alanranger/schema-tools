@@ -4233,9 +4233,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   // Product Schema Generation
   async function generateProductSchema() {
-    // Check server status first (skip alert in Electron mode)
+    // Check server status first (skip alert in Electron mode or web deployment)
     const isRunning = await ensureLocalExecutorRunning();
     if (!isRunning && !isElectronMode) {
+      const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                              window.location.hostname.includes('localhost') === false;
+      
+      if (isWebDeployment) {
+        const output = document.getElementById('productOutput');
+        if (output) {
+          output.value = 'ℹ️ Local server features require Electron app or local development.\n';
+          output.value += '   Download the Electron app for full automation.\n';
+          output.value += '   Or run locally: npm run start-local\n';
+        }
+        return;
+      }
+      
       alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
       return;
     }
@@ -8580,9 +8593,26 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 2: Auto-clean products (triggered automatically after Step 1)
     async function autoCleanProducts() {
-      // Check server status first (skip alert in Electron mode)
+      // Check server status first (skip alert in Electron mode or web deployment)
       const isRunning = await ensureLocalExecutorRunning();
       if (!isRunning && !isElectronMode) {
+        // Check if running on Vercel/web (don't show blocking alert)
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          // On web deployment, show info message instead of blocking alert
+          const consoleOutput = document.getElementById('cleanConsoleOutput');
+          if (consoleOutput) {
+            consoleOutput.style.display = 'block';
+            consoleOutput.textContent = 'ℹ️ Local server features require Electron app or local development.\n';
+            consoleOutput.textContent += '   Download the Electron app for full automation.\n';
+            consoleOutput.textContent += '   Or run locally: npm run start-local\n';
+          }
+          return;
+        }
+        
+        // Only show alert in local browser mode
         alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
         return;
       }
@@ -8618,9 +8648,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     });
     // Step 3a: Google Reviews Fetcher
     async function runGoogleReviewsFetcher() {
-      // Check server status first (skip alert in Electron mode)
+      // Check server status first (skip alert in Electron mode or web deployment)
       const isRunning = await ensureLocalExecutorRunning();
       if (!isRunning && !isElectronMode) {
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          const consoleOutput = document.getElementById('googleConsoleOutput');
+          if (consoleOutput) {
+            consoleOutput.style.display = 'block';
+            consoleOutput.textContent = 'ℹ️ Local server features require Electron app or local development.\n';
+            consoleOutput.textContent += '   Download the Electron app for full automation.\n';
+          }
+          return;
+        }
+        
         alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
         return;
       }
@@ -8643,9 +8686,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 3b: Merge Reviews
     async function runMergeReviews() {
-      // Check server status first (skip alert in Electron mode)
+      // Check server status first (skip alert in Electron mode or web deployment)
       const isRunning = await ensureLocalExecutorRunning();
       if (!isRunning && !isElectronMode) {
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          const consoleOutput = document.getElementById('mergeConsoleOutput');
+          if (consoleOutput) {
+            consoleOutput.style.display = 'block';
+            consoleOutput.textContent = 'ℹ️ Local server features require Electron app or local development.\n';
+            consoleOutput.textContent += '   Download the Electron app for full automation.\n';
+          }
+          return;
+        }
+        
         alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
         return;
       }
