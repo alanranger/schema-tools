@@ -1379,8 +1379,42 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   <!-- Product Tab Content -->
   <div id="productTab" class="tab-content">
     <div class="instructions">
-      <strong>🛠 Product Schema Generator</strong><br>
-      1. Upload your product CSV/XLSX file (e.g. <code>products_with_review_data_final.xlsx</code>).<br>
+      <strong>🛠 Product Schema Generator</strong><br><br>
+
+      <!-- Step 1: Squarespace Product Export Setup -->
+      <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          📦 Step 1 – Squarespace Product Export Setup
+        </summary>
+        <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
+          <p style="margin-bottom: 0.75rem;">
+            1️⃣ Export your products from Squarespace (<strong>Commerce → Products → Export CSV</strong>).
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            2️⃣ Place the file inside <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/schema-tools/workflow/</code> and name it:<br>
+            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">01 – products_&lt;date/time&gt;.csv</code>
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            3️⃣ Run the cleaning script to create a standardized version:<br>
+            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">python scripts/clean-products-csv.py</code>
+          </p>
+          <p style="margin-bottom: 0.75rem;">
+            4️⃣ This tool will automatically create a cleaned version as:<br>
+            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 0.25rem;">02 – products_cleaned.xlsx</code>
+          </p>
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+            <strong>Cleaned file contains:</strong><br>
+            • <code>name</code> • <code>description</code> • <code>image</code> • <code>url</code> • <code>price</code> • <code>category</code> (optional)
+          </p>
+          <p style="margin-top: 0.75rem; margin-bottom: 0;">
+            You can review/edit that file before continuing to <strong>Step 2 (Add Reviews)</strong>.
+          </p>
+        </div>
+      </details>
+
+      <!-- Step 2: Upload and Generate Schema -->
+      <strong>📤 Step 2 – Upload Cleaned File & Generate Schema</strong><br>
+      1. Upload your cleaned product Excel file (e.g. <code>02 – products_cleaned.xlsx</code>).<br>
       2. Ensure it includes these fields: <code>name</code>, <code>description</code>, <code>image</code>, <code>url</code>, <code>price</code>, <code>review_count</code>, <code>average_rating</code>, <code>reviews</code>.<br>
       3. Reviews rated below 4★ are ignored automatically.<br>
       4. Products without valid reviews will NOT include an <code>aggregateRating</code> or <code>review</code> block.<br>
@@ -1389,15 +1423,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
 
-      <strong>📄 Data Workflow Summary:</strong><br>
+      <strong>📄 Complete Workflow Summary:</strong><br>
       <pre>
-Step 1: Export from Squarespace → products_Nov-02_11-15-24AM.csv
+Step 1: Export from Squarespace → 01 – products_Nov-05_04-25-26PM.csv
      ↓
-Step 2: Clean + filter → products_Jul-21_01-43-36PM cleaned.xlsx
+Step 2: Clean & normalize → 02 – products_cleaned.xlsx
      ↓
 Step 3: Add reviews (OCR or manual) → products_with_review_data_final.xlsx
      ↓
-Step 4: Final JSON-LD export → alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.xlsx
+Step 4: Generate JSON-LD → Product schema blocks
      ↓
 Step 5: Paste ONLY relevant schema into Squarespace product page
       </pre>
