@@ -8398,20 +8398,42 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         console.log("💡 To start the server, run in terminal: npm run start-local");
         serverStatus = 'stopped';
         
+        // Check if running on Vercel/web deployment
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
         // Show a helpful message in the UI (only in browser mode)
         if (!isElectronMode) {
-          const firstStep = document.querySelector('#file-step1')?.parentElement;
-          if (firstStep && !document.getElementById('serverStatusWarning')) {
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'serverStatusWarning';
-            statusDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; color: #856404; font-size: 0.875rem;';
-            statusDiv.innerHTML = `
-              <strong>⚠️ Local Server Not Running</strong><br>
-              Start the local executor server first:<br>
-              <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code><br>
-              <small>Then refresh this page and try again.</small>
-            `;
-            firstStep.insertBefore(statusDiv, firstStep.firstChild);
+          if (isWebDeployment) {
+            // On web deployment, show info message instead of warning
+            const firstStep = document.querySelector('#file-step1')?.parentElement;
+            if (firstStep && !document.getElementById('serverStatusWarning')) {
+              const statusDiv = document.createElement('div');
+              statusDiv.id = 'serverStatusWarning';
+              statusDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; color: #1565c0; font-size: 0.875rem;';
+              statusDiv.innerHTML = `
+                <strong>ℹ️ Web Deployment Mode</strong><br>
+                Local server features require the Electron app or local development.<br>
+                <strong>For full automation:</strong> Download the Electron desktop app or run locally with <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code><br>
+                <small>The web version is read-only for validation purposes.</small>
+              `;
+              firstStep.insertBefore(statusDiv, firstStep.firstChild);
+            }
+          } else {
+            // Local browser mode: show warning
+            const firstStep = document.querySelector('#file-step1')?.parentElement;
+            if (firstStep && !document.getElementById('serverStatusWarning')) {
+              const statusDiv = document.createElement('div');
+              statusDiv.id = 'serverStatusWarning';
+              statusDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; color: #856404; font-size: 0.875rem;';
+              statusDiv.innerHTML = `
+                <strong>⚠️ Local Server Not Running</strong><br>
+                Start the local executor server first:<br>
+                <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code><br>
+                <small>Then refresh this page and try again.</small>
+              `;
+              firstStep.insertBefore(statusDiv, firstStep.firstChild);
+            }
           }
         }
         return false;
