@@ -13,8 +13,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
+      webSecurity: false, // Allow localhost connections
     },
-    icon: path.join(__dirname, "assets", "icon.png"), // Optional: add icon later
     show: false, // Don't show until ready
   });
 

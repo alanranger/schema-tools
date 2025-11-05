@@ -8339,15 +8339,23 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     let serverStatus = 'running'; // Assume running in Electron
     let isElectronMode = false;
     
-    // Detect if running in Electron
-    try {
-      if (window.require && window.require('electron')) {
-        isElectronMode = true;
-        console.log("✅ Running in Electron mode - local server auto-started");
+    // Detect if running in Electron (check for Electron user agent or window properties)
+    if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
+      isElectronMode = true;
+      console.log("✅ Running in Electron mode - local server auto-started");
+      serverStatus = 'running';
+    } else {
+      // Check for Electron-specific window properties
+      try {
+        if (window.process && window.process.versions && window.process.versions.electron) {
+          isElectronMode = true;
+          console.log("✅ Running in Electron mode - local server auto-started");
+          serverStatus = 'running';
+        }
+      } catch (e) {
+        // Not in Electron
+        isElectronMode = false;
       }
-    } catch (e) {
-      // Not in Electron, check server status
-      isElectronMode = false;
     }
     
     async function ensureLocalExecutorRunning() {
