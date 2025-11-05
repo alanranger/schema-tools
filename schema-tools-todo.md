@@ -41,8 +41,6 @@ Build a **single HTML tool** that can:
 
 ### 🎯 Current Status
 
-### 🎯 Current Status
-
 **✅ Schema Validator Tab - COMPLETE (v1.5.2)**
 - Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)
 - Enhanced JSON-LD detection (Squarespace patterns, noscript tags)

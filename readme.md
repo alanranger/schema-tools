@@ -19,11 +19,6 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 
 ### 3. `index.html` (Unified Schema Generator)
 - Combines both tools into one UI with three tabs:
-  - **Event Schema**: Generate Event and ItemList schema blocks from CSV (🚧 In Development)
-  - **Product Schema**: Generate Product schema blocks with review support (🚧 In Development)
-  - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
-### 3. `index.html` (Unified Schema Generator)
-- Combines both tools into one UI with three tabs:
   - **Event Schema**: Generate Event schemas from CSV (🚧 In Development)
   - **Product Schema**: Generate Product schemas with review support (🚧 In Development)
   - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
