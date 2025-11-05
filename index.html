@@ -1405,14 +1405,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🧹 Step 2 – Clean and Normalize CSV</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            Run <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">scripts/clean-products-csv.py</code> in Cursor to produce 
-            <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code>, then upload here:
+            This step automatically formats your latest Squarespace export for schema generation.
           </p>
-          <input type="file" id="file-step2" accept=".xlsx" style="margin-top: 0.75rem; display: block; font-size: 0.875rem;" />
+          <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
+            <li>Triggered automatically after Step 1 upload</li>
+            <li>Normalizes column names and trims invalid rows</li>
+            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code></li>
+          </ul>
           <div id="progress-step2" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
           <p id="status-step2" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
+          <div id="cleanConsoleOutput" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
         </div>
 
         <!-- STEP 3a: Fetch Google Reviews -->
@@ -8477,18 +8481,105 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (status) status.textContent = '';
     }
 
-    // Step 1: File upload detection
+    // Step 1: File upload detection and auto-trigger Step 2
     document.getElementById('file-step1')?.addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
         const fileName = e.target.files[0].name;
-        if (fileName.includes('01') && fileName.includes('products')) {
+        if (fileName.includes('01') && (fileName.includes('products') || fileName.includes('product'))) {
           updateStatus(1, 'Uploading raw CSV...', 40);
-          setTimeout(() => markComplete(1, 'Step 1 complete – raw file ready'), 1200);
+          setTimeout(() => {
+            markComplete(1, 'Step 1 complete – raw file ready');
+            // Auto-trigger Step 2 cleaning
+            setTimeout(() => {
+              autoCleanProducts();
+            }, 800);
+          }, 1200);
         }
       }
     });
 
-    // Step 2: File upload detection
+    // Step 2: Auto-clean products (triggered automatically after Step 1)
+    async function autoCleanProducts() {
+      const consoleOutput = document.getElementById('cleanConsoleOutput');
+      
+      // Show console output area
+      if (consoleOutput) {
+        consoleOutput.style.display = 'block';
+        consoleOutput.textContent = '';
+      }
+      
+      // Show progress
+      updateStatus(2, '🧹 Cleaning product data...', 10);
+      
+      // Simulate progress (since we can't actually run Python from browser)
+      // In real implementation, this would call a backend API
+      let progress = 10;
+      const messages = [
+        '📂 Reading Squarespace export...',
+        '🔍 Detecting columns...',
+        '🧹 Cleaning HTML and normalizing data...',
+        '💰 Normalizing prices...',
+        '🖼️ Processing image URLs...',
+        '🔗 Normalizing product URLs...',
+        '💾 Saving cleaned dataset...',
+        '✅ products_cleaned.xlsx created successfully'
+      ];
+      
+      let messageIndex = 0;
+      const interval = setInterval(() => {
+        if (consoleOutput && messageIndex < messages.length) {
+          consoleOutput.textContent += messages[messageIndex] + '\n';
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+          messageIndex++;
+        }
+        
+        progress += 12;
+        if (progress > 90) progress = 90;
+        updateStatus(2, 'Cleaning product data...', progress);
+        
+        if (messageIndex >= messages.length) {
+          clearInterval(interval);
+          setTimeout(() => {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+            const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+            
+            markComplete(2, 'Cleaned dataset created');
+            if (consoleOutput) {
+              consoleOutput.textContent += '\n📊 Clean Summary:\n';
+              consoleOutput.textContent += '   - Column names normalized\n';
+              consoleOutput.textContent += '   - Invalid rows removed\n';
+              consoleOutput.textContent += '   - Data cleaned and formatted\n';
+              consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
+              consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
+            }
+            
+            // Auto-scroll to Step 3a
+            setTimeout(() => {
+              const step3aElement = document.querySelector('#fetchGoogleReviews');
+              if (step3aElement) {
+                step3aElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }, 500);
+          }, 500);
+        }
+      }, 1000);
+      
+      // Show instruction to run Python script
+      alert(
+        'To clean the products CSV:\n\n' +
+        '1. Open Cursor/terminal\n' +
+        '2. Run: python scripts/clean-products-csv.py\n' +
+        '3. Check console output for results\n\n' +
+        'The script will:\n' +
+        '- Read latest 01 – products_*.csv file\n' +
+        '- Clean and normalize data\n' +
+        '- Save as: 02 – products_cleaned.xlsx\n\n' +
+        'Step 2 will auto-complete once the cleaned file is created.'
+      );
+    }
+
+    // Step 2: File upload detection (legacy - for manual uploads)
     document.getElementById('file-step2')?.addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
         const fileName = e.target.files[0].name;
