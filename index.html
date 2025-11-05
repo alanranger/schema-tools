@@ -1412,13 +1412,33 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
       </details>
 
-      <!-- Step 2: Upload and Generate Schema -->
-      <strong>📤 Step 2 – Upload Cleaned File & Generate Schema</strong><br>
-      1. Upload your cleaned product Excel file (e.g. <code>02 – products_cleaned.xlsx</code>).<br>
-      2. Ensure it includes these fields: <code>name</code>, <code>description</code>, <code>image</code>, <code>url</code>, <code>price</code>, <code>review_count</code>, <code>average_rating</code>, <code>reviews</code>.<br>
-      3. Reviews rated below 4★ are ignored automatically.<br>
-      4. Products without valid reviews will NOT include an <code>aggregateRating</code> or <code>review</code> block.<br>
-      5. Click <b>Generate Schema</b> to create a valid JSON-LD block per product.<br><br>
+      <!-- Step 2: Add Reviews & Generate Schema -->
+      <details style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <summary style="cursor: pointer; font-weight: 600; color: #2d3748; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          📤 Step 2 – Add Reviews & Generate Schema
+        </summary>
+        <div style="margin-top: 1rem; padding-left: 0.5rem; color: #4a5568; line-height: 1.6;">
+          <p style="margin-bottom: 0.75rem;">
+            <strong>Upload the cleaned Excel file from Step 1</strong> (e.g. <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code>).
+          </p>
+          <p style="margin-bottom: 0.75rem; margin-top: 1rem;">
+            <strong>📊 Data Pipeline:</strong>
+          </p>
+          <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; line-height: 1.8;">
+            <li>Upload cleaned file → merges with <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">combined product_reviews.csv</code></li>
+            <li>Automatically maps product ↔ review via <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">event_mappings_with_reviewer.csv</code></li>
+            <li>Filters out reviews < 4★ (only 4★ and 5★ reviews are included)</li>
+            <li>Produces <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final.xlsx</code></li>
+            <li>Generates JSON-LD schema blocks with Trustpilot + Google reviews</li>
+          </ul>
+          <p style="margin-bottom: 0; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #718096;">
+            <strong>💾 Note:</strong> Script automatically saves results in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/workflow/</code> directory with version tag (e.g., <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">products_with_review_data_final_v20241105.xlsx</code>).
+          </p>
+          <p style="margin-top: 0.75rem; margin-bottom: 0;">
+            Products without valid reviews (4★+) will NOT include an <code>aggregateRating</code> or <code>review</code> block in the schema.
+          </p>
+        </div>
+      </details>
 
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
@@ -1429,11 +1449,14 @@ Step 1: Export from Squarespace → 01 – products_Nov-05_04-25-26PM.csv
      ↓
 Step 2: Clean & normalize → 02 – products_cleaned.xlsx
      ↓
-Step 3: Add reviews (OCR or manual) → products_with_review_data_final.xlsx
+Step 3: Add Reviews & Generate Schema:
+     • Upload cleaned file → merges with product_reviews.csv
+     • Maps via event_mappings_with_reviewer.csv
+     • Filters reviews < 4★
+     • Produces products_with_review_data_final.xlsx
+     • Generates JSON-LD blocks with Trustpilot + Google reviews
      ↓
-Step 4: Generate JSON-LD → Product schema blocks
-     ↓
-Step 5: Paste ONLY relevant schema into Squarespace product page
+Step 4: Paste ONLY relevant schema into Squarespace product page
       </pre>
 
       <strong>📌 Squarespace Instructions:</strong><br>
@@ -1445,12 +1468,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       • One schema block per product, on its matching product page only.
     </div>
 
-    <label for="productCsvFile">Upload Product CSV/XLSX File:</label>
+    <label for="productCsvFile">Upload Cleaned Product Excel File (from Step 1):</label>
     <input type="file" id="productCsvFile" accept=".csv,.xlsx" aria-label="Product CSV/XLSX file upload">
-    <button onclick="generateProductSchema()">Generate Product Schema</button>
+    <button onclick="generateProductSchema()">Generate Schema (Step 2)</button>
 
     <h3>Generated JSON-LD Schema:</h3>
-    <textarea id="productOutput" readonly></textarea>
+    <p style="color: #4a5568; font-size: 0.9rem; margin-bottom: 0.5rem;">Preview of JSON-LD schema blocks for each product:</p>
+    <textarea id="productOutput" readonly style="min-height: 400px; font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
     <button onclick="copyToClipboard('productOutput')">Copy to Clipboard</button>
 
     <div class="test-url-section">
@@ -4174,17 +4198,24 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const output = document.getElementById('productOutput');
 
     if (!fileInput.files.length) {
-      alert("Please upload a CSV file first.");
+      alert("Please upload a cleaned Excel file (from Step 1) first.");
       return;
     }
 
+    output.value = "Processing... Please wait.";
+    
     Papa.parse(fileInput.files[0], {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        const products = results.data;
+        const products = results.data.filter(p => p.name && p.name.trim()); // Filter out empty products
+        
+        if (products.length === 0) {
+          output.value = "Error: No valid products found in the file. Please check that the file contains product data.";
+          return;
+        }
 
-        const outputSchema = products.map(product => {
+        const outputSchema = products.map((product, index) => {
           let reviews = [];
           try {
             reviews = JSON.parse(product.reviews || '[]').filter(r => Number(r.rating) >= 4);
@@ -4201,10 +4232,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
             "@context": "https://schema.org/",
             "@type": "Product",
             "name": product.name,
-            "image": product.image,
-            "description": product.description,
-            "url": product.url
+            "image": product.image || "",
+            "description": product.description || "",
+            "url": product.url || ""
           };
+
+          // Add offers if price is available
+          if (product.price) {
+            schema.offers = {
+              "@type": "Offer",
+              "price": product.price,
+              "priceCurrency": "GBP",
+              "availability": "https://schema.org/InStock",
+              "url": product.url || ""
+            };
+          }
 
           if (reviewCount > 0) {
             schema.aggregateRating = {
@@ -4215,24 +4257,35 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
             schema.review = reviews.map(r => ({
               "@type": "Review",
-              "author": r.author,
+              "author": r.author || { "@type": "Person", "name": "Anonymous" },
               "reviewRating": {
                 "@type": "Rating",
                 "ratingValue": r.rating,
                 "bestRating": "5",
                 "worstRating": "1"
               },
-              "reviewBody": r.body
+              "reviewBody": r.body || ""
             }));
           }
 
-          return '<script type="application/ld+json">\n' + JSON.stringify(schema, null, 2) + '\n<\/script>';
+          const schemaBlock = '<script type="application/ld+json">\n' + JSON.stringify(schema, null, 2) + '\n<\/script>';
+          
+          // Add product header for clarity
+          return `// Product ${index + 1}: ${product.name}\n${schemaBlock}`;
         }).join('\n\n');
 
-        output.value = outputSchema;
+        // Add summary header
+        const summary = `// Generated ${products.length} product schema block(s)\n// Reviews: ${products.filter(p => {
+          try {
+            const revs = JSON.parse(p.reviews || '[]');
+            return revs.filter(r => Number(r.rating) >= 4).length > 0;
+          } catch { return false; }
+        }).length} products with valid reviews (4★+)\n\n`;
+        
+        output.value = summary + outputSchema;
       },
       error: function(error) {
-        alert('Error parsing CSV file: ' + error.message);
+        output.value = "Error parsing file: " + error.message + "\n\nPlease ensure you uploaded a valid CSV or Excel file from Step 1.";
       }
     });
   }
