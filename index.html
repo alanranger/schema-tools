@@ -2906,6 +2906,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       
       ${recommendedFixHtml}
       
+      ${inferredTypesHtml}
+      
       ${schemaTableHtml}
       
       ${jsonLdHtml}
@@ -5747,6 +5749,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         ...result,
         schemaFound: result.schemaFound, // Ensure schemaFound is preserved
         schemaType: result.schemaType || (initialAnalysis.schemaTypes.join(', ') || '—'), // Ensure schemaType is set from initialAnalysis if missing
+        inferredTypes: result.inferredTypes || [], // Ensure inferredTypes are preserved
         missingFields: result.missingFields || [],
         warnings: result.warnings || [],
         info: result.info || [],
