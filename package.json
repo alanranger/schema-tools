@@ -9,7 +9,8 @@
     "validate-csv": "node scripts/csv-schema-validator.js",
     "enhance": "node scripts/schema-enhancer.js",
     "test": "node scripts/schema-validator.js",
-    "dev": "vercel dev --listen 3000"
+    "dev": "vercel dev --listen 3000",
+    "start-local": "node scripts/local-server.js"
   },
   "keywords": [
     "schema",
@@ -23,7 +24,9 @@
   "dependencies": {
     "puppeteer": "^21.5.0",
     "commander": "^11.1.0",
-    "googleapis": "^144.0.0"
+    "googleapis": "^144.0.0",
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
   }
 }
 

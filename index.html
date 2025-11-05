@@ -4232,7 +4232,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 
   // Product Schema Generation
-  function generateProductSchema() {
+  async function generateProductSchema() {
     const fileInput = document.getElementById('productCsvFile');
     const step3Input = document.getElementById('file-step3');
     const output = document.getElementById('productOutput');
@@ -4260,129 +4260,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (!proceed) return;
     }
 
-    output.value = "Processing... Please wait.";
-    if (successMsg) successMsg.style.display = 'none';
-    
-    // Show progress for Step 4
-    let progressInterval;
-    let progressPercent = 0;
-    const progressSteps = ["Parsing Excel...", "Generating JSON-LD...", "Exporting final outputs..."];
-    let currentStep = 0;
-    
-    updateStatus(4, progressSteps[0], 10);
-    
-    progressInterval = setInterval(() => {
-      progressPercent += 30;
-      if (progressPercent > 99) progressPercent = 99;
-      
-      currentStep = Math.floor(progressPercent / 33);
-      if (currentStep < progressSteps.length) {
-        updateStatus(4, progressSteps[currentStep], progressPercent);
-      }
-    }, 1000);
-    
-    Papa.parse(fileToProcess, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        clearInterval(progressInterval);
-        
-        const products = results.data.filter(p => p.name && p.name.trim()); // Filter out empty products
-        
-        if (products.length === 0) {
-          output.value = "Error: No valid products found in the file. Please check that the file contains product data.";
-          resetProgress(4);
-          return;
-        }
-
-        const outputSchema = products.map((product, index) => {
-          let reviews = [];
-          try {
-            reviews = JSON.parse(product.reviews || '[]').filter(r => Number(r.rating) >= 4);
-          } catch (e) {
-            reviews = [];
-          }
-          
-          const reviewCount = reviews.length;
-          const averageRating = reviewCount > 0 ? (
-            reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviewCount
-          ).toFixed(1) : null;
-
-          let schema = {
-            "@context": "https://schema.org/",
-            "@type": "Product",
-            "name": product.name,
-            "image": product.image || "",
-            "description": product.description || "",
-            "url": product.url || ""
-          };
-
-          // Add offers if price is available
-          if (product.price) {
-            schema.offers = {
-              "@type": "Offer",
-              "price": product.price,
-              "priceCurrency": "GBP",
-              "availability": "https://schema.org/InStock",
-              "url": product.url || ""
-            };
-          }
-
-          if (reviewCount > 0) {
-            schema.aggregateRating = {
-              "@type": "AggregateRating",
-              "ratingValue": averageRating,
-              "reviewCount": reviewCount
-            };
-
-            schema.review = reviews.map(r => ({
-              "@type": "Review",
-              "author": r.author || { "@type": "Person", "name": "Anonymous" },
-              "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": r.rating,
-                "bestRating": "5",
-                "worstRating": "1"
-              },
-              "reviewBody": r.body || ""
-            }));
-          }
-
-          const schemaBlock = '<script type="application/ld+json">\n' + JSON.stringify(schema, null, 2) + '\n<\/script>';
-          
-          // Add product header for clarity
-          return `// Product ${index + 1}: ${product.name}\n${schemaBlock}`;
-        }).join('\n\n');
-
-        // Add summary header
-        const summary = `// Generated ${products.length} product schema block(s)\n// Reviews: ${products.filter(p => {
-          try {
-            const revs = JSON.parse(p.reviews || '[]');
-            return revs.filter(r => Number(r.rating) >= 4).length > 0;
-          } catch { return false; }
-        }).length} products with valid reviews (4★+)\n\n`;
-        
-        output.value = summary + outputSchema;
-        
-        // Mark Step 4 as complete
-        markComplete(4, 'Schema generation complete – files saved in /outputs and /workflow');
-        
-        // Show success message with instructions
-        if (successMsg) {
-          successMsg.style.display = 'block';
-          successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-        
-        // Log instruction for Python script
-        console.log('✅ Schema preview generated.');
-        console.log('📝 Next step: Run: python scripts/generate-product-schema.py');
-        console.log('   This will generate individual JSON/HTML files and combined CSV.');
-      },
-      error: function(error) {
-        clearInterval(progressInterval);
-        output.value = "Error parsing file: " + error.message + "\n\nPlease ensure you uploaded a valid CSV or Excel file from Step 3.";
-        resetProgress(4);
-        if (successMsg) successMsg.style.display = 'none';
+    // Use local task runner for schema generation
+    await runLocalTask('schema', 4, '⚙️ Generating Product Schema...', () => {
+      output.value = "Schema generation complete. Check /outputs/ folder for individual files and /workflow/ for combined CSV.";
+      if (successMsg) {
+        successMsg.style.display = 'block';
+        successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     });
   }
@@ -8480,6 +8363,98 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (status) status.textContent = '';
     }
 
+    // Local task runner - executes Python scripts via local server
+    async function runLocalTask(task, stepId, statusMessage, onComplete) {
+      const consoleOutput = document.getElementById(stepId === 2 ? 'cleanConsoleOutput' : 
+                                                      stepId === '3a' ? 'googleConsoleOutput' : 
+                                                      stepId === '3b' ? 'mergeConsoleOutput' : 
+                                                      stepId === 4 ? 'productOutput' : null);
+      const progressBar = document.querySelector(`#progress-step${stepId} .progress-bar`);
+      
+      // Show console output area
+      if (consoleOutput) {
+        consoleOutput.style.display = 'block';
+        consoleOutput.textContent = '';
+      }
+      
+      // Show progress
+      updateStatus(stepId, statusMessage, 10);
+      
+      if (progressBar) {
+        progressBar.style.background = '#E57200'; // Orange during execution
+        progressBar.style.width = '25%';
+      }
+      
+      const log = (msg) => {
+        if (consoleOutput) {
+          consoleOutput.textContent += msg;
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+      };
+      
+      try {
+        log(`🚀 Starting ${task} task...\n`);
+        
+        const response = await fetch(`http://localhost:8000/run?task=${task}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Stream response text
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.trim()) {
+              log(line + '\n');
+              // Update progress based on keywords
+              if (line.includes('✅') || line.includes('complete')) {
+                if (progressBar) {
+                  progressBar.style.width = '90%';
+                }
+              }
+            }
+          }
+        }
+        
+        // Process remaining buffer
+        if (buffer.trim()) {
+          log(buffer + '\n');
+        }
+        
+        // Complete progress
+        if (progressBar) {
+          progressBar.style.width = '100%';
+        }
+        
+        if (onComplete) {
+          onComplete();
+        }
+        
+        markComplete(stepId, statusMessage.replace('🔄 ', '✅ '));
+        
+      } catch (err) {
+        log(`\n❌ Task '${task}' failed: ${err.message}\n`);
+        log(`💡 Make sure the local server is running: npm run start-local\n`);
+        
+        if (progressBar) {
+          progressBar.style.background = '#E57200'; // Reset to orange on error
+        }
+        
+        resetProgress(stepId);
+      }
+    }
+
     // Step 1: File upload detection and auto-trigger Step 2
     document.getElementById('file-step1')?.addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
@@ -8499,70 +8474,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 2: Auto-clean products (triggered automatically after Step 1)
     async function autoCleanProducts() {
-      const consoleOutput = document.getElementById('cleanConsoleOutput');
-      
-      // Show console output area
-      if (consoleOutput) {
-        consoleOutput.style.display = 'block';
-        consoleOutput.textContent = '';
-      }
-      
-      // Show progress
-      updateStatus(2, '🧹 Cleaning product data...', 10);
-      
-      // Simulate script execution (in production, this would call a backend API)
-      let progress = 10;
-      const messages = [
-        '🧹 Auto-clean triggered...',
-        '📂 Reading Squarespace export...',
-        '🔍 Detecting columns...',
-        '🧹 Cleaning HTML and normalizing data...',
-        '💰 Normalizing prices...',
-        '🖼️ Processing image URLs...',
-        '🔗 Normalizing product URLs...',
-        '💾 Saving cleaned dataset...',
-        '✅ Cleaned dataset created: 02 – products_cleaned.xlsx'
-      ];
-      
-      let messageIndex = 0;
-      const interval = setInterval(() => {
-        if (consoleOutput && messageIndex < messages.length) {
-          consoleOutput.textContent += messages[messageIndex] + '\n';
-          consoleOutput.scrollTop = consoleOutput.scrollHeight;
-          messageIndex++;
+      await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+        const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+        const consoleOutput = document.getElementById('cleanConsoleOutput');
+        if (consoleOutput) {
+          consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
+          consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
         }
         
-        progress += 12;
-        if (progress > 90) progress = 90;
-        updateStatus(2, 'Cleaning product data...', progress);
-        
-        if (messageIndex >= messages.length) {
-          clearInterval(interval);
-          setTimeout(() => {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
-            const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-            
-            markComplete(2, 'Cleaned dataset created');
-            if (consoleOutput) {
-              consoleOutput.textContent += '\n📊 Clean Summary:\n';
-              consoleOutput.textContent += '   - Column names normalized\n';
-              consoleOutput.textContent += '   - Invalid rows removed\n';
-              consoleOutput.textContent += '   - Data cleaned and formatted\n';
-              consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
-              consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
-            }
-            
-            // Auto-scroll to Step 3a
-            setTimeout(() => {
-              const step3aElement = document.querySelector('#fetchGoogleReviews');
-              if (step3aElement) {
-                step3aElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }, 500);
-          }, 500);
-        }
-      }, 1000);
+        // Auto-scroll to Step 3a
+        setTimeout(() => {
+          const step3aElement = document.querySelector('#fetchGoogleReviews');
+          if (step3aElement) {
+            step3aElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 500);
+      });
     }
 
     // Step 2: File upload detection (legacy - for manual uploads)
@@ -8576,126 +8505,41 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
     });
     // Step 3a: Google Reviews Fetcher
-    function runGoogleReviewsFetcher() {
-      const consoleOutput = document.getElementById('googleConsoleOutput');
-      const statusEl = document.getElementById('status-step3a');
-      const progressEl = document.getElementById('progress-step3a');
-      
-      // Show console output area
-      if (consoleOutput) {
-        consoleOutput.style.display = 'block';
-        consoleOutput.textContent = '';
-      }
-      
-      // Show progress
-      updateStatus('3a', '🔄 Fetching Google reviews...', 10);
-      
-      // Simulate script execution (in production, this would call a backend API)
-      let progress = 10;
-      const messages = [
-        '🔄 Fetching Google reviews...',
-        '🔐 Authenticating with Google API...',
-        '✅ Authentication successful.',
-        '📡 Fetching Google Business reviews...',
-        '✅ Fetched reviews.',
-        '💾 Saving CSV to workflow...',
-        '✅ Google reviews fetched → 03b – google_reviews.csv'
-      ];
-      
-      let messageIndex = 0;
-      const interval = setInterval(() => {
-        if (consoleOutput && messageIndex < messages.length) {
-          consoleOutput.textContent += messages[messageIndex] + '\n';
-          consoleOutput.scrollTop = consoleOutput.scrollHeight;
-          messageIndex++;
+    async function runGoogleReviewsFetcher() {
+      await runLocalTask('fetch', '3a', '🔄 Fetching Google reviews...', () => {
+        const consoleOutput = document.getElementById('googleConsoleOutput');
+        if (consoleOutput) {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+          consoleOutput.textContent += `\n📊 Total reviews: Check file\n`;
+          consoleOutput.textContent += `📅 Date: ${dateStr}\n`;
+          consoleOutput.textContent += `📁 File: 03b – google_reviews.csv\n`;
+          consoleOutput.textContent += `💡 Next: Merge with Trustpilot reviews in Step 3b\n`;
         }
-        
-        progress += 15;
-        if (progress > 90) progress = 90;
-        updateStatus('3a', 'Fetching reviews...', progress);
-        
-        if (messageIndex >= messages.length) {
-          clearInterval(interval);
-          setTimeout(() => {
-            markComplete('3a', 'Google reviews CSV generated: 03b – google_reviews.csv');
-            if (consoleOutput) {
-              const now = new Date();
-              const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
-              consoleOutput.textContent += `\n📊 Total reviews: Check file\n`;
-              consoleOutput.textContent += `📅 Date: ${dateStr}\n`;
-              consoleOutput.textContent += `📁 File: 03b – google_reviews.csv\n`;
-              consoleOutput.textContent += `💡 Next: Merge with Trustpilot reviews in Step 3b\n`;
-            }
-          }, 500);
-        }
-      }, 1500);
+      });
     }
 
     // Step 3b: Merge Reviews
-    function runMergeReviews() {
-      const consoleOutput = document.getElementById('mergeConsoleOutput');
-      
-      // Show console output area
-      if (consoleOutput) {
-        consoleOutput.style.display = 'block';
-        consoleOutput.textContent = '';
-      }
-      
-      // Show progress
-      updateStatus('3b', '🔄 Merging Trustpilot + Google reviews...', 10);
-      
-      // Simulate progress (since we can't actually run Python from browser)
-      // In real implementation, this would call a backend API
-      let progress = 10;
-      const messages = [
-        '🔄 Merging Trustpilot + Google reviews...',
-        '📥 Loading review sources...',
-        '✅ Loaded Trustpilot reviews',
-        '✅ Loaded Google reviews',
-        '✨ Filtering reviews (keeping only ≥ 4★)...',
-        '✅ Filtered valid reviews',
-        '🔗 Matching reviews to product names...',
-        '✅ Mapped reviews to products',
-        '🔍 Removing duplicate reviews...',
-        '💾 Saving combined dataset...',
-        '✅ Merged dataset saved → 03 – combined_product_reviews.csv'
-      ];
-      
-      let messageIndex = 0;
-      const interval = setInterval(() => {
-        if (consoleOutput && messageIndex < messages.length) {
-          consoleOutput.textContent += messages[messageIndex] + '\n';
-          consoleOutput.scrollTop = consoleOutput.scrollHeight;
-          messageIndex++;
+    async function runMergeReviews() {
+      await runLocalTask('merge', '3b', '🔄 Merging Trustpilot + Google reviews...', () => {
+        const consoleOutput = document.getElementById('mergeConsoleOutput');
+        if (consoleOutput) {
+          consoleOutput.textContent += '\n📊 Merge Summary:\n';
+          consoleOutput.textContent += '   - Trustpilot + Google reviews combined\n';
+          consoleOutput.textContent += '   - Low ratings filtered out\n';
+          consoleOutput.textContent += '   - Reviews mapped to products\n';
+          consoleOutput.textContent += '   - Duplicates removed\n';
+          consoleOutput.textContent += '\n💡 Next step: Proceed to Step 4 - Generate Product Schema\n';
         }
         
-        progress += 10;
-        if (progress > 90) progress = 90;
-        updateStatus('3b', 'Merging reviews...', progress);
-        
-        if (messageIndex >= messages.length) {
-          clearInterval(interval);
-          setTimeout(() => {
-            markComplete('3b', 'Combined reviews ready for schema generation');
-            if (consoleOutput) {
-              consoleOutput.textContent += '\n📊 Merge Summary:\n';
-              consoleOutput.textContent += '   - Trustpilot + Google reviews combined\n';
-              consoleOutput.textContent += '   - Low ratings filtered out\n';
-              consoleOutput.textContent += '   - Reviews mapped to products\n';
-              consoleOutput.textContent += '   - Duplicates removed\n';
-              consoleOutput.textContent += '\n💡 Next step: Proceed to Step 4 - Generate Product Schema\n';
-            }
-            
-            // Auto-scroll to Step 4
-            setTimeout(() => {
-              const step4Element = document.querySelector('#run-step4');
-              if (step4Element) {
-                step4Element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }, 500);
-          }, 500);
-        }
-      }, 1200);
+        // Auto-scroll to Step 4
+        setTimeout(() => {
+          const step4Element = document.querySelector('#run-step4');
+          if (step4Element) {
+            step4Element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 500);
+      });
     }
 
     // Step 3: File upload detection (for Step 3c)
