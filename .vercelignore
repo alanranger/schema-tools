@@ -1,0 +1,11 @@
+# Ignore files that don't need to be deployed
+node_modules/
+package-lock.json
+*.log
+.env
+.env.local
+.vercel
+dist/
+outputs/
+inputs-files/
+
