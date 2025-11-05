@@ -1417,6 +1417,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           </div>
           <p id="status-step2" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
           <div id="cleanConsoleOutput" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
+          <div id="localServerInstructions" style="display: none; margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; font-size: 0.875rem;">
+            <strong>💡 To Run Steps 2-4 Locally:</strong><br>
+            <ol style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
+              <li>Open a terminal in this project folder</li>
+              <li>Run: <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code></li>
+              <li>Open <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">index.html</code> in your browser (or use a local server)</li>
+              <li>Refresh this page and try again</li>
+            </ol>
+            <strong>📦 Alternative:</strong> Use the Electron desktop app for full automation (no terminal needed)
+          </div>
         </div>
 
         <!-- STEP 3a: Fetch Google Reviews -->
@@ -8685,13 +8695,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         if (isWebDeployment) {
           // On web deployment, show info message instead of blocking alert
           if (consoleOutput) {
-            consoleOutput.textContent = 'ℹ️ Web Deployment Mode\n';
+            consoleOutput.textContent = 'ℹ️ Web Deployment Mode Detected\n';
             consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-            consoleOutput.textContent += 'Local server features require Electron app or local development.\n\n';
-            consoleOutput.textContent += '📦 For full automation:\n';
+            consoleOutput.textContent += '❌ Python scripts cannot run on Vercel (web hosting).\n';
+            consoleOutput.textContent += '   This requires local file system access.\n\n';
+            consoleOutput.textContent += '📦 TO MAKE IT WORK - Choose one:\n\n';
+            consoleOutput.textContent += '   Option 1: Run Locally\n';
+            consoleOutput.textContent += '   1. Open terminal in project folder\n';
+            consoleOutput.textContent += '   2. Run: npm run start-local\n';
+            consoleOutput.textContent += '   3. Open index.html in browser\n';
+            consoleOutput.textContent += '   4. Refresh and try again\n\n';
+            consoleOutput.textContent += '   Option 2: Use Electron App\n';
             consoleOutput.textContent += '   • Download the Electron desktop app\n';
-            consoleOutput.textContent += '   • Or run locally: npm run start-local\n\n';
-            consoleOutput.textContent += '💡 The web version is read-only for validation purposes.\n';
+            consoleOutput.textContent += '   • Everything runs automatically\n\n';
+            consoleOutput.textContent += '💡 The web version is read-only for validation.\n';
             consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
           }
           if (progressBarFill) {
@@ -8702,6 +8719,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             statusText.textContent = '⏸️ Step 2 requires local server (not available on web)';
             statusText.style.color = '#667eea';
           }
+          // Show instructions box
+          const instructionsBox = document.getElementById('localServerInstructions');
+          if (instructionsBox) {
+            instructionsBox.style.display = 'block';
+          }
           return;
         }
         
@@ -8710,10 +8732,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           consoleOutput.textContent = '⚠️ Local Server Not Running\n';
           consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
           consoleOutput.textContent += 'To run Step 2 automatically:\n';
-          consoleOutput.textContent += '   1. Open your terminal\n';
+          consoleOutput.textContent += '   1. Open your terminal in the project folder\n';
           consoleOutput.textContent += '   2. Run: npm run start-local\n';
-          consoleOutput.textContent += '   3. Refresh this page\n';
-          consoleOutput.textContent += '   4. Upload the file again\n';
+          consoleOutput.textContent += '   3. Wait for: "⚡ Local executor running at http://localhost:8000"\n';
+          consoleOutput.textContent += '   4. Refresh this page\n';
+          consoleOutput.textContent += '   5. Upload the file again\n';
           consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
         }
         if (progressBarFill) {
@@ -8723,6 +8746,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         if (statusText) {
           statusText.textContent = '⚠️ Local server required - run "npm run start-local" first';
           statusText.style.color = '#856404';
+        }
+        // Show instructions box
+        const instructionsBox = document.getElementById('localServerInstructions');
+        if (instructionsBox) {
+          instructionsBox.style.display = 'block';
         }
         
         // Only show alert in local browser mode (not on web)
