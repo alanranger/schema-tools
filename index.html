@@ -4233,6 +4233,13 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   // Product Schema Generation
   async function generateProductSchema() {
+    // Check server status first
+    const isRunning = await ensureLocalExecutorRunning();
+    if (!isRunning) {
+      alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+      return;
+    }
+    
     const fileInput = document.getElementById('productCsvFile');
     const step3Input = document.getElementById('file-step3');
     const output = document.getElementById('productOutput');
@@ -4267,6 +4274,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         successMsg.style.display = 'block';
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+      
+      // Optionally stop the server after completion (commented out by default)
+      // fetch("http://localhost:8000/exit").then(() => console.log("🧹 Local executor stopped."));
     });
   }
 
@@ -8325,7 +8335,55 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   <!-- Product Schema Workflow Controller -->
   <script>
-    // Progress tracking functions for Product Schema workflow
+    // Server status check and auto-start detection
+    let serverStatus = 'unknown';
+    
+    async function ensureLocalExecutorRunning() {
+      try {
+        const res = await fetch("http://localhost:8000/health");
+        const data = await res.json();
+        if (data.status === "ok") {
+          console.log("✅ Local executor already running.");
+          serverStatus = 'running';
+          return true;
+        }
+      } catch (err) {
+        console.log("⚠️ Local executor not running.");
+        console.log("💡 To start the server, run in terminal: npm run start-local");
+        serverStatus = 'stopped';
+        
+        // Show a helpful message in the UI
+        const firstStep = document.querySelector('#file-step1')?.parentElement;
+        if (firstStep) {
+          const statusDiv = document.createElement('div');
+          statusDiv.id = 'serverStatusWarning';
+          statusDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; color: #856404; font-size: 0.875rem;';
+          statusDiv.innerHTML = `
+            <strong>⚠️ Local Server Not Running</strong><br>
+            Start the local executor server first:<br>
+            <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">npm run start-local</code><br>
+            <small>Then refresh this page and try again.</small>
+          `;
+          firstStep.insertBefore(statusDiv, firstStep.firstChild);
+        }
+        return false;
+      }
+    }
+
+    // Auto-chain steps automatically
+    function chainNextStep(nextStepFunction, delay = 2000) {
+      setTimeout(() => {
+        console.log(`⏩ Automatically continuing to next step...`);
+        if (nextStepFunction) {
+          nextStepFunction();
+        }
+      }, delay);
+    }
+
+    // Check server status on page load
+    window.addEventListener("DOMContentLoaded", async () => {
+      await ensureLocalExecutorRunning();
+    });
     function updateStatus(step, msg, percent) {
       const bar = document.querySelector(`#progress-step${step} .progress-bar`);
       const wrap = document.querySelector(`#progress-step${step}`);
@@ -8452,6 +8510,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
         
         resetProgress(stepId);
+        
+        // Hide server status warning if it exists
+        const warning = document.getElementById('serverStatusWarning');
+        if (warning) {
+          warning.style.display = 'block';
+        }
       }
     }
 
@@ -8474,6 +8538,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 2: Auto-clean products (triggered automatically after Step 1)
     async function autoCleanProducts() {
+      // Check server status first
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning) {
+        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        return;
+      }
+      
+      // Hide server warning if visible
+      const warning = document.getElementById('serverStatusWarning');
+      if (warning) warning.style.display = 'none';
+      
       await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
@@ -8484,13 +8559,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
         }
         
-        // Auto-scroll to Step 3a
-        setTimeout(() => {
-          const step3aElement = document.querySelector('#fetchGoogleReviews');
-          if (step3aElement) {
-            step3aElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        }, 500);
+        // Auto-chain to Step 3a
+        chainNextStep(runGoogleReviewsFetcher, 2000);
       });
     }
 
@@ -8506,6 +8576,13 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     });
     // Step 3a: Google Reviews Fetcher
     async function runGoogleReviewsFetcher() {
+      // Check server status first
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning) {
+        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        return;
+      }
+      
       await runLocalTask('fetch', '3a', '🔄 Fetching Google reviews...', () => {
         const consoleOutput = document.getElementById('googleConsoleOutput');
         if (consoleOutput) {
@@ -8516,11 +8593,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           consoleOutput.textContent += `📁 File: 03b – google_reviews.csv\n`;
           consoleOutput.textContent += `💡 Next: Merge with Trustpilot reviews in Step 3b\n`;
         }
+        
+        // Auto-chain to Step 3b
+        chainNextStep(runMergeReviews, 2000);
       });
     }
 
     // Step 3b: Merge Reviews
     async function runMergeReviews() {
+      // Check server status first
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning) {
+        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        return;
+      }
+      
       await runLocalTask('merge', '3b', '🔄 Merging Trustpilot + Google reviews...', () => {
         const consoleOutput = document.getElementById('mergeConsoleOutput');
         if (consoleOutput) {
@@ -8532,13 +8619,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           consoleOutput.textContent += '\n💡 Next step: Proceed to Step 4 - Generate Product Schema\n';
         }
         
-        // Auto-scroll to Step 4
-        setTimeout(() => {
-          const step4Element = document.querySelector('#run-step4');
-          if (step4Element) {
-            step4Element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        }, 500);
+        // Auto-chain to Step 4
+        chainNextStep(generateProductSchema, 2000);
       });
     }
 

@@ -35,6 +35,15 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Local executor server is running" });
 });
 
+// Exit endpoint - gracefully stop the server
+app.get("/exit", (req, res) => {
+  res.json({ status: "shutting down", message: "Local executor stopping..." });
+  console.log("🛑 Shutdown requested via /exit endpoint");
+  setTimeout(() => {
+    process.exit(0);
+  }, 500);
+});
+
 // Task execution endpoint
 app.get("/run", (req, res) => {
   const task = req.query.task;
