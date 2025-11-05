@@ -8642,12 +8642,13 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       
       // Show progress
-      updateStatus('3b', 'Merging Trustpilot and Google reviews...', 10);
+      updateStatus('3b', '🔄 Merging Trustpilot + Google reviews...', 10);
       
       // Simulate progress (since we can't actually run Python from browser)
       // In real implementation, this would call a backend API
       let progress = 10;
       const messages = [
+        '🔄 Merging Trustpilot + Google reviews...',
         '📥 Loading review sources...',
         '✅ Loaded Trustpilot reviews',
         '✅ Loaded Google reviews',
@@ -8657,7 +8658,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         '✅ Mapped reviews to products',
         '🔍 Removing duplicate reviews...',
         '💾 Saving combined dataset...',
-        '✅ Merge complete. File saved: 03 – combined_product_reviews.csv'
+        '✅ Merged dataset saved → 03 – combined_product_reviews.csv'
       ];
       
       let messageIndex = 0;
@@ -8695,19 +8696,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           }, 500);
         }
       }, 1200);
-      
-      // Show instruction to run Python script
-      alert(
-        'To merge reviews:\n\n' +
-        '1. Open Cursor/terminal\n' +
-        '2. Run: python scripts/merge-reviews.py\n' +
-        '3. Check console output for results\n\n' +
-        'Required files:\n' +
-        '- 03a – trustpilot_historical_reviews.csv\n' +
-        '- 03b – google_reviews.csv\n' +
-        '- 02 – products_cleaned.xlsx\n\n' +
-        'Output: 03 – combined_product_reviews.csv'
-      );
     }
 
     // Step 3: File upload detection (for Step 3c)
