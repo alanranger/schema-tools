@@ -12,7 +12,8 @@
     "validate-csv": "node scripts/csv-schema-validator.js",
     "enhance": "node scripts/schema-enhancer.js",
     "test": "node scripts/schema-validator.js",
-    "build": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite",
+    "build": "echo 'Skipping Electron build for web deployment' || exit 0",
+    "build:electron": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite",
     "build:web": "echo 'Skipping Electron build for web deployment' || exit 0"
   },
   "keywords": [

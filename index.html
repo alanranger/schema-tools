@@ -8538,7 +8538,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (!status) return;
       
       // Detect Electron
-      const isElectron = !!window?.electronAPI?.isElectron;
+      const isElectron = !!(window.electronAPI && window.electronAPI.isElectron);
       log("🔍 Detecting environment...");
       
       if (isElectron) {
@@ -8688,7 +8688,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       lockStep1();
       
       // Initialize Step 0
-      await initLocalExecutor();
+      try {
+        await initLocalExecutor();
+      } catch (err) {
+        console.error("Error initializing local executor:", err);
+        const status = document.getElementById("executorStatus");
+        if (status) {
+          status.textContent = "❌ Error initializing executor. Check console for details.";
+          status.style.background = "#f8d7da";
+          status.style.borderColor = "#f5c6cb";
+          status.style.color = "#721c24";
+        }
+      }
     });
     function updateStatus(step, msg, percent) {
       const bar = document.querySelector(`#progress-step${step} .progress-bar`);
