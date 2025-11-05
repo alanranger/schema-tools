@@ -3363,19 +3363,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // Find all script tags with JSON-LD (including in noscript tags)
-      const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
-      const noscriptTags = Array.from(doc.querySelectorAll('noscript'));
-      for (const noscript of noscriptTags) {
-        const noscriptScripts = noscript.querySelectorAll('script[type="application/ld+json"]');
-        scripts.push(...Array.from(noscriptScripts));
-      }
+      // Find all script tags with JSON-LD (including Squarespace patterns)
+      const scripts = findAllJsonLdScripts(doc);
       
       let nodes = [];
       for (const s of scripts) {
         try {
-          // Decode escaped content before parsing
-          const decodedText = decodeJsonContent(s.textContent);
+          // Decode HTML entities before parsing
+          const decodedText = decodeHTML(s.textContent);
           nodes = flattenJsonLd(JSON.parse(decodedText.trim()), nodes);
         } catch(e) {
           debugLog(`[Generate Enhanced] Failed to parse JSON-LD block: ${e.message}`, 'warning');
@@ -4437,16 +4432,17 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   }
 
   // Helper: Parse JSON-LD blocks from scripts
-  // Helper: Decode escaped JSON content
-  function decodeJsonContent(text) {
-    if (!text) return text;
-    // Decode HTML entities like &quot; to "
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = text;
-    let decoded = tempDiv.textContent || tempDiv.innerText || text;
-    // Also handle escaped forward slashes \/
-    decoded = decoded.replace(/\\\//g, '/');
-    return decoded.trim();
+  // Helper: Decode HTML entities to normal JSON (Squarespace-compatible)
+  function decodeHTML(str) {
+    if (!str) return str;
+    return str
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&')
+      .replace(/&#x2F;/g, '/')
+      .replace(/&#x2f;/g, '/')
+      .replace(/\\\//g, '/') // Also handle escaped forward slashes
+      .trim();
   }
 
   // Helper: Parse JSON-LD blocks with improved detection
@@ -4460,7 +4456,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       const script = scripts[scriptIndex];
       try {
         // Decode escaped content before parsing
-        const decodedText = decodeJsonContent(script.textContent);
+        const decodedText = decodeHTML(script.textContent);
         const json = JSON.parse(decodedText);
         
         jsonLdBlocks.push(json);
@@ -4543,12 +4539,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
-  // Helper: Parse JSON-LD blocks from scripts
+  // Helper: Parse JSON-LD blocks from scripts (with Squarespace pattern support)
   function parseJsonLdBlocksFromScripts(scripts) {
     const jsonLdBlocks = [];
     for (const script of scripts) {
       try {
-        const json = JSON.parse(script.textContent);
+        // Decode HTML entities before parsing
+        const decodedText = decodeHTML(script.textContent);
+        const json = JSON.parse(decodedText);
         jsonLdBlocks.push(json);
       } catch (e) {
         console.warn('Failed to parse JSON-LD:', e);
@@ -4557,12 +4555,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return jsonLdBlocks;
   }
 
-  // Helper: Extract detected types from scripts
+  // Helper: Extract detected types from scripts (with Squarespace pattern support)
   function extractDetectedTypes(scripts) {
     const detectedTypes = [];
     for (const s of scripts) {
       try {
-        const data = JSON.parse(s.textContent.trim());
+        // Decode HTML entities before parsing
+        const decodedText = decodeHTML(s.textContent.trim());
+        const data = JSON.parse(decodedText);
         extractTypesFromJsonLd(data, detectedTypes);
       } catch (err) {
         console.warn('Invalid JSON-LD block', err);
@@ -4581,7 +4581,8 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
     
-    const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+    // Find all JSON-LD script tags (including Squarespace patterns)
+    const scripts = findAllJsonLdScripts(doc);
     const detectedTypes = extractDetectedTypes(scripts);
     
     if (schemaTypeCell) {
@@ -4633,19 +4634,23 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   }
 
-  // Helper: Process fetched HTML and extract schema
+  // Helper: Process fetched HTML and extract schema (also check noscript tags and Squarespace patterns)
   function processFetchedHtml(html, schemaTypeCell, url) {
     if (schemaTypeCell) setProgress(schemaTypeCell, 40, 'Fetched');
     
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+    
+    // Find all JSON-LD script tags (including Squarespace patterns)
+    const scripts = findAllJsonLdScripts(doc);
     
     if (schemaTypeCell) setProgress(schemaTypeCell, 60, 'Parsed DOM');
     
     const { jsonLdBlocks, detectedTypes, blockInfo } = parseJsonLdBlocks(scripts, schemaTypeCell);
     detectDuplicateTypes(detectedTypes, blockInfo);
     
+    // Diagnostic log for detected blocks
+    console.info(`Detected ${jsonLdBlocks.length} JSON-LD blocks (including Squarespace code blocks)`);
     debugLog(`Found ${scripts.length} JSON-LD script blocks, detected types: ${detectedTypes.length > 0 ? [...new Set(detectedTypes)].join(', ') : 'None'} (${detectedTypes.length} total, ${[...new Set(detectedTypes)].length} unique)`, detectedTypes.length > 0 ? 'success' : 'warn');
     
     if (schemaTypeCell) {
