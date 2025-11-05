@@ -4437,19 +4437,13 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     return hasMerchantListingFields;
   }
 
-  // Helper: Extract types from JSON-LD block (also detects MerchantListing)
+  // Helper: Extract types from JSON-LD block
   function extractTypesFromBlock(json, blockInfo, scriptIndex) {
     const blockTypes = [];
     
     if (json['@type']) {
       const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
       blockTypes.push(...types);
-      
-      // --- Detect Google Merchant Listing pattern ---
-      if (types.includes('Product') && detectMerchantListing(json)) {
-        blockTypes.push('MerchantListing (Google)');
-        debugLog(`MerchantListing (Google) detected in block ${scriptIndex}: Product schema contains all Merchant Center fields`, 'info');
-      }
     }
     
     if (json['@graph']) {
@@ -4457,12 +4451,6 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
         if (item['@type']) {
           const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
           blockTypes.push(...types);
-          
-          // --- Detect Google Merchant Listing pattern in @graph items ---
-          if (types.includes('Product') && detectMerchantListing(item)) {
-            blockTypes.push('MerchantListing (Google)');
-            debugLog(`MerchantListing (Google) detected in @graph item of block ${scriptIndex}: Product schema contains all Merchant Center fields`, 'info');
-          }
         }
       }
     }
