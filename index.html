@@ -3761,13 +3761,50 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   // Copy to clipboard
   function copyToClipboard(outputId) {
     const element = document.getElementById(outputId);
+    if (!element) {
+      console.error(`Element with id "${outputId}" not found`);
+      alert('Error: Output element not found. Please refresh the page.');
+      return;
+    }
+    
     const text = element.tagName === 'TEXTAREA' ? element.value : element.textContent;
     
-    navigator.clipboard.writeText(text).then(function() {
-      alert('Schema copied to clipboard!');
-    }, function(err) {
-      alert('Failed to copy text: ' + err);
-    });
+    if (!text || text.trim() === '') {
+      alert('Nothing to copy. Please generate schema first.');
+      return;
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        // Show temporary success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = '✅ Schema copied to clipboard!';
+        successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27AE60; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; font-size: 0.875rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+        document.body.appendChild(successMsg);
+        setTimeout(() => {
+          successMsg.remove();
+        }, 2000);
+      }, function(err) {
+        console.error('Clipboard write failed:', err);
+        alert('Failed to copy text. Please try selecting and copying manually.');
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Schema copied to clipboard!');
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        alert('Failed to copy text. Please try selecting and copying manually.');
+      }
+      document.body.removeChild(textArea);
+    }
   }
 
   // Test URL functions
@@ -8615,6 +8652,29 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Step 2: Auto-clean products (triggered automatically after Step 1)
     async function autoCleanProducts() {
+      // Always show UI elements for feedback
+      const consoleOutput = document.getElementById('cleanConsoleOutput');
+      const progressBar = document.querySelector('#progress-step2');
+      const progressBarFill = document.querySelector('#progress-step2 .progress-bar');
+      const statusText = document.getElementById('status-step2');
+      
+      // Show console and progress bar immediately
+      if (consoleOutput) {
+        consoleOutput.style.display = 'block';
+        consoleOutput.textContent = '🔄 Checking local server status...\n';
+      }
+      if (progressBar) {
+        progressBar.style.display = 'block';
+      }
+      if (progressBarFill) {
+        progressBarFill.style.width = '10%';
+        progressBarFill.style.background = '#E57200';
+      }
+      if (statusText) {
+        statusText.textContent = '🔄 Checking server...';
+        statusText.style.color = '#4a5568';
+      }
+      
       // Check server status first (skip alert in Electron mode or web deployment)
       const isRunning = await ensureLocalExecutorRunning();
       if (!isRunning && !isElectronMode) {
@@ -8624,18 +8684,51 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         
         if (isWebDeployment) {
           // On web deployment, show info message instead of blocking alert
-          const consoleOutput = document.getElementById('cleanConsoleOutput');
           if (consoleOutput) {
-            consoleOutput.style.display = 'block';
-            consoleOutput.textContent = 'ℹ️ Local server features require Electron app or local development.\n';
-            consoleOutput.textContent += '   Download the Electron app for full automation.\n';
-            consoleOutput.textContent += '   Or run locally: npm run start-local\n';
+            consoleOutput.textContent = 'ℹ️ Web Deployment Mode\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            consoleOutput.textContent += 'Local server features require Electron app or local development.\n\n';
+            consoleOutput.textContent += '📦 For full automation:\n';
+            consoleOutput.textContent += '   • Download the Electron desktop app\n';
+            consoleOutput.textContent += '   • Or run locally: npm run start-local\n\n';
+            consoleOutput.textContent += '💡 The web version is read-only for validation purposes.\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+          }
+          if (progressBarFill) {
+            progressBarFill.style.width = '0%';
+            progressBarFill.style.background = '#e2e8f0';
+          }
+          if (statusText) {
+            statusText.textContent = '⏸️ Step 2 requires local server (not available on web)';
+            statusText.style.color = '#667eea';
           }
           return;
         }
         
-        // Only show alert in local browser mode
-        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        // Local browser mode: show warning and instructions
+        if (consoleOutput) {
+          consoleOutput.textContent = '⚠️ Local Server Not Running\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+          consoleOutput.textContent += 'To run Step 2 automatically:\n';
+          consoleOutput.textContent += '   1. Open your terminal\n';
+          consoleOutput.textContent += '   2. Run: npm run start-local\n';
+          consoleOutput.textContent += '   3. Refresh this page\n';
+          consoleOutput.textContent += '   4. Upload the file again\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        }
+        if (progressBarFill) {
+          progressBarFill.style.width = '0%';
+          progressBarFill.style.background = '#ffc107';
+        }
+        if (statusText) {
+          statusText.textContent = '⚠️ Local server required - run "npm run start-local" first';
+          statusText.style.color = '#856404';
+        }
+        
+        // Only show alert in local browser mode (not on web)
+        if (!isWebDeployment) {
+          alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        }
         return;
       }
       
@@ -8643,11 +8736,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const warning = document.getElementById('serverStatusWarning');
       if (warning) warning.style.display = 'none';
       
+      // Server is running - proceed with task
       await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
         const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-        const consoleOutput = document.getElementById('cleanConsoleOutput');
         if (consoleOutput) {
           consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
           consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
