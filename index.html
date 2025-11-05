@@ -1791,6 +1791,9 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     }
   };
 
+  // Multi-instance allowed schema types (expected to appear multiple times on a page)
+  const MULTI_INSTANCE_ALLOWED_TYPES = ['Event', 'Product', 'Course', 'Article', 'Review', 'FAQPage', 'ListItem', 'Offer'];
+
   // Suppression Filtering Functions
   function shouldSuppressWarning(message, url = '') {
     if (!message) return false;
@@ -2499,12 +2502,16 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (schemaTypes && schemaTypes.length > 0) {
       const typesList = Array.isArray(schemaTypes) ? schemaTypes.join(', ') : schemaTypes;
-      parts.push(`Schema types: ${typesList}`);
+      const uniqueTypesCount = Array.isArray(schemaTypes) ? schemaTypes.length : (schemaTypes.split(',').map(t => t.trim()).filter(Boolean).length);
+      parts.push(`${uniqueTypesCount} unique schema type${uniqueTypesCount !== 1 ? 's' : ''}: ${typesList}`);
     }
     
+    // Only show duplicate count for non-multi-instance types
     if (duplicates && duplicates.length > 0) {
-      const duplicateCount = duplicates.length;
-      parts.push(`${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} detected`);
+      const nonMultiInstanceDuplicates = duplicates.filter(d => !MULTI_INSTANCE_ALLOWED_TYPES.includes(d));
+      if (nonMultiInstanceDuplicates.length > 0) {
+        parts.push(`${nonMultiInstanceDuplicates.length} duplicate${nonMultiInstanceDuplicates.length !== 1 ? 's' : ''} detected`);
+      }
     }
     
     if (missingFieldsBadges && missingFieldsBadges.length > 0) {
@@ -2716,10 +2723,15 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     list.innerHTML = '';
     
     const missingFieldsBadges = result?.missingFieldsBadges || [];
-    const duplicates = issuesList.filter(i => i.message && i.message.includes('DUPLICATE')).map(i => i.type);
+    // Filter duplicates to exclude multi-instance allowed types
+    const duplicates = issuesList
+      .filter(i => i.message && i.message.includes('DUPLICATE'))
+      .map(i => i.type)
+      .filter(type => !MULTI_INSTANCE_ALLOWED_TYPES.includes(type));
     const schemaTypes = rowData.schemaType ? rowData.schemaType.split(', ') : (cachedData.schemaTypes || []);
     const issueCount = issuesList.filter(i => i.message && i.message.includes('missing')).length;
-    const blockCount = blocks.length || result?.schemas?.length || schemaTypes.length || 0;
+    // Use actual block count from result or cached data
+    const blockCount = result?.blockCount || blocks.length || result?.schemas?.length || 0;
     
     // Collect existing schema types from blocks
     const existingTypes = collectExistingSchemaTypes(blocks);
@@ -4906,9 +4918,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   function shouldSkipDuplicate(key, t, keyDetails, globalPatterns) {
     const isGlobal = key.includes('#') && globalPatterns.some(p => key.includes(p));
     const isBreadcrumb = t === 'BreadcrumbList';
+    const isMultiInstanceAllowed = MULTI_INSTANCE_ALLOWED_TYPES.includes(t);
     const nodeData = keyDetails[key];
     const isFooterInjected = nodeData?.node ? detectFooterInjectedSchema(nodeData.node) : false;
-    return isGlobal || isFooterInjected || isBreadcrumb;
+    
+    // Skip if it's a global schema, breadcrumb, multi-instance allowed type, or footer-injected
+    return isGlobal || isFooterInjected || isBreadcrumb || isMultiInstanceAllowed;
   }
 
   // Helper: Process duplicate warnings
@@ -5339,16 +5354,34 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
   // Helper: Add informational detections
   function addInformationalDetections(allNodes, result, url = '') {
     try {
+      if (!result.info) result.info = [];
+      
+      // Detect BreadcrumbList nodes
       const breadcrumbNodes = detectBreadcrumbListNodes(allNodes);
       if (breadcrumbNodes.length > 0) {
         debugLog(`Detected ${breadcrumbNodes.length} BreadcrumbList node(s)`, 'info');
-        if (!result.info) result.info = [];
         const infoMessage = `ℹ️ BreadcrumbList detected (${breadcrumbNodes.length} node${breadcrumbNodes.length !== 1 ? 's' : ''}) - normal navigation schema`;
-        // Only add if not suppressed
         if (!shouldSuppressInfo(infoMessage, url)) {
           result.info.push(infoMessage);
         }
       }
+      
+      // Add friendly messages for multi-instance allowed types
+      MULTI_INSTANCE_ALLOWED_TYPES.forEach(type => {
+        const typeNodes = allNodes.filter(n => {
+          const types = asArray(n['@type']);
+          return types.includes(type);
+        });
+        
+        if (typeNodes.length > 1) {
+          const infoMessage = `✅ Multiple ${type} schemas detected (${typeNodes.length}) — expected for ${type.toLowerCase()} listings.`;
+          // Only add if not already present (to avoid duplicates)
+          if (!result.info.some(msg => msg.includes(`${type} schemas detected`))) {
+            result.info.push(infoMessage);
+            debugLog(`Added multi-instance info: ${type} (${typeNodes.length} instances)`, 'info');
+          }
+        }
+      });
     } catch (error) {
       console.error('[⚠] Error in addInformationalDetections:', error);
       // Ensure result.info exists even if error occurs
@@ -5363,7 +5396,22 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     result.serverFallback = pageData.serverFallback || false;
     result.blockCount = pageData.blockCount || pageData.jsonLd.length;
     
-    debugLog(`Total schema nodes: ${result.blockCount}, unique types: ${Object.keys(duplicateGroups).length}`, 'info');
+    // Calculate unique schema types (excluding multi-instance allowed types from duplicate count)
+    const allUniqueTypes = Object.keys(duplicateGroups);
+    const multiInstanceCounts = {};
+    let totalMultiInstanceNodes = 0;
+    
+    MULTI_INSTANCE_ALLOWED_TYPES.forEach(type => {
+      if (duplicateGroups[type]) {
+        multiInstanceCounts[type] = duplicateGroups[type].length;
+        totalMultiInstanceNodes += duplicateGroups[type].length;
+      }
+    });
+    
+    result.uniqueSchemaTypes = allUniqueTypes.length;
+    result.multiInstanceCounts = multiInstanceCounts;
+    
+    debugLog(`Total JSON-LD blocks: ${result.blockCount}, unique schema types: ${allUniqueTypes.length}, multi-instance nodes: ${totalMultiInstanceNodes}`, 'info');
     debugLog(`Schema type from pageData: ${pageData.schemaType || 'none'}, from analysis: ${analysis.schemaTypes.join(', ') || 'none'}`, 'info');
   }
 
@@ -5639,9 +5687,27 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
 
   // Helper: Classify duplicate issues as warnings or info
   function classifyDuplicateIssue(item, allNodes) {
+    const schemaType = item.type || 'Unknown';
+    
+    // Check if this is a multi-instance allowed type
+    if (MULTI_INSTANCE_ALLOWED_TYPES.includes(schemaType)) {
+      const typeNodes = allNodes.filter(n => {
+        const types = asArray(n['@type']);
+        return types.includes(schemaType);
+      });
+      const totalCount = typeNodes.length;
+      const cleanMessage = item.message.replace('⚠️ DUPLICATE:', '').replace('⚠️', '').trim();
+      return { 
+        type: 'info', 
+        message: `✅ Multiple ${schemaType} schemas detected (${totalCount}) — expected for ${schemaType.toLowerCase()} listings.`,
+        isMultiInstance: true
+      };
+    }
+    
+    // For other types, check if they have unique IDs or multiple types
     const typeNodes = allNodes.filter(n => {
       const types = asArray(n['@type']);
-      return types.includes(item.type);
+      return types.includes(schemaType);
     });
     const hasUniqueIds = typeNodes.some(n => n['@id']);
     const uniqueTypes = new Set(typeNodes.map(n => {
@@ -5652,7 +5718,7 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     
     if (hasUniqueIds || hasMultipleTypes) {
       const cleanMessage = item.message.replace('⚠️ DUPLICATE:', '').replace('⚠️', '').trim();
-      return { type: 'info', message: `ℹ️ Multi-instance ${item.type} schemas detected (${cleanMessage})` };
+      return { type: 'info', message: `ℹ️ Multi-instance ${schemaType} schemas detected (${cleanMessage})` };
     }
     return { type: 'warning', message: item.message };
   }
