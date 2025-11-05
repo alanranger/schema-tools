@@ -8637,6 +8637,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (isElectron) {
         log("✅ Electron desktop app detected!");
         log("⚙️ Local server auto-started by Electron.");
+        updateStepStatus('0', 'running', 'Detecting...');
         status.textContent = "✅ Electron Mode Active – Local server running automatically";
         status.style.background = "#d4edda";
         status.style.borderColor = "#c3e6cb";
@@ -8657,6 +8658,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             updateStepStatus('1', 'waiting', 'Ready');
           } else {
             log("⚙️ Waiting for built-in local server to start...");
+            updateStepStatus('0', 'running', 'Starting server...');
             // Retry after another delay
             setTimeout(async () => {
               const retryRes = await fetch("http://localhost:8000/health").catch(() => null);
@@ -8673,7 +8675,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 status.style.background = "#fff3cd";
                 status.style.borderColor = "#ffc107";
                 status.style.color = "#856404";
+                updateStepStatus('0', 'error', 'Server not responding');
                 log("⚠️ Server may still be starting. If issue persists, check Electron console.");
+                log("💡 Check Electron console (main window) for server startup messages.");
               }
             }, 2000);
           }
@@ -8682,6 +8686,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           status.style.background = "#f8d7da";
           status.style.borderColor = "#f5c6cb";
           status.style.color = "#721c24";
+          updateStepStatus('0', 'error', 'Error');
           log(`❌ Error: ${err.message}`);
         }
       } else {
