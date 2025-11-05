@@ -1,16 +1,18 @@
 {
   "name": "schema-validator-agent",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
+  "main": "main.js",
   "description": "Automated schema validator for testing URLs against Schema.org and Google Rich Results Test",
-  "main": "scripts/schema-validator.js",
   "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "start-local": "node scripts/local-server.js",
     "validate": "node scripts/schema-validator.js",
     "validate-csv": "node scripts/csv-schema-validator.js",
     "enhance": "node scripts/schema-enhancer.js",
     "test": "node scripts/schema-validator.js",
-    "dev": "vercel dev --listen 3000",
-    "start-local": "node scripts/local-server.js"
+    "build": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite"
   },
   "keywords": [
     "schema",
@@ -22,11 +24,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "puppeteer": "^21.5.0",
     "commander": "^11.1.0",
-    "googleapis": "^144.0.0",
+    "cors": "^2.8.5",
     "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "googleapis": "^144.0.0",
+    "puppeteer": "^21.5.0"
+  },
+  "devDependencies": {
+    "electron": "^39.1.0"
   }
 }
-
