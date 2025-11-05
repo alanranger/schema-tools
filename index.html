@@ -5682,6 +5682,21 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       result.inferredTypes = inferredTypes;
       if (inferredTypes.length > 0) {
         debugLog(`Detected ${inferredTypes.length} inferred type(s): ${inferredTypes.map(t => t.type).join(', ')}`, 'info');
+        console.log(`[DEBUG] processUrl: Detected inferred types for ${urlData.url}:`, inferredTypes);
+      } else {
+        const eventCount = allNodes.filter(n => {
+          const types = asArray(n['@type']);
+          return types.includes('Event');
+        }).length;
+        const productCount = allNodes.filter(n => {
+          const types = asArray(n['@type']);
+          return types.includes('Product');
+        }).length;
+        const courseCount = allNodes.filter(n => {
+          const types = asArray(n['@type']);
+          return types.includes('Course');
+        }).length;
+        console.log(`[DEBUG] processUrl: No inferred types detected for ${urlData.url} (Event count: ${eventCount}, Product count: ${productCount}, Course count: ${courseCount})`);
       }
       
       // Stage 5: Process duplicate detection (~70%)
