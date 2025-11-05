@@ -2721,9 +2721,12 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
     const issueCount = issuesList.filter(i => i.message && i.message.includes('missing')).length;
     const blockCount = blocks.length || result?.schemas?.length || schemaTypes.length || 0;
     
+    // Collect existing schema types from blocks
+    const existingTypes = collectExistingSchemaTypes(blocks);
+    
     const severityBadge = determineSeverityBadge(issueCount, duplicates);
     const humanReadableSummary = buildHumanReadableSummary(blockCount, schemaTypes, duplicates, missingFieldsBadges);
-    const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges);
+    const orgFixCheck = checkOrganizationNodesForFix(result, missingFieldsBadges, existingTypes);
     
     // Extract missing recommended fields from warnings
     const missingRecommended = warnings.filter(w => w.includes('Missing recommended:')).map(w => {
@@ -2737,9 +2740,14 @@ Step 5: Paste ONLY relevant schema into Squarespace product page
       return match ? `${match[1]}.${match[2]}` : null;
     }).filter(Boolean);
     
-    // Build recommended fix using the new function
-    const recommendedFix = buildRecommendedFix(rowData.url, missingRequiredFields, missingRecommended);
-    const recommendedFixHtml = buildRecommendedFixHtml(orgFixCheck.shouldShowRecommendedFix || missingRecommended.length > 0, orgFixCheck.hasValidOrgNode, recommendedFix);
+    // Build recommended fix using the new function with existing types
+    const recommendedFix = buildRecommendedFix(rowData.url, missingRequiredFields, missingRecommended, existingTypes);
+    const recommendedFixHtml = buildRecommendedFixHtml(
+      orgFixCheck.shouldShowRecommendedFix || (missingRecommended.length > 0 && recommendedFix !== null), 
+      orgFixCheck.hasValidOrgNode, 
+      recommendedFix,
+      orgFixCheck.existingGlobalTypes || []
+    );
     const schemaTableHtml = buildSchemaTableHtml(result);
     
     // Build issues list HTML
