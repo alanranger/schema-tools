@@ -8,7 +8,8 @@
     "validate": "node scripts/schema-validator.js",
     "validate-csv": "node scripts/csv-schema-validator.js",
     "enhance": "node scripts/schema-enhancer.js",
-    "test": "node scripts/schema-validator.js"
+    "test": "node scripts/schema-validator.js",
+    "dev": "vercel dev --listen 3000"
   },
   "keywords": [
     "schema",
