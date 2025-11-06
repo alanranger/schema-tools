@@ -1442,7 +1442,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
               📋 Copy CLI Command
             </button>
           </div>
-          <pre id="executorConsole" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></pre>
+          <pre id="executorConsole" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 150px; overflow-y: auto; white-space: pre-wrap;"></pre>
         </div>
 
         <!-- STEP 1 -->
@@ -8684,8 +8684,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         
         if (isWebDeployment) {
           // VERCEL/WEB DEPLOYMENT
-          log("🌐 Running in web browser (read-only mode)");
-          log("💡 For full automation, use the Electron desktop app");
+          // Hide console in web mode for cleaner UI
+          if (consoleOutput) consoleOutput.style.display = 'none';
+          
           status.textContent = "✅ Web Mode – Step 1 unlocked for validation";
           status.style.background = "#d4edda";
           status.style.borderColor = "#c3e6cb";
