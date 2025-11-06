@@ -9051,10 +9051,32 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       try {
         log(`🚀 Starting ${task} task...\n`);
         
-        const response = await fetch(`http://localhost:8000/run?task=${task}`);
+        // First check if server is reachable
+        try {
+          const healthCheck = await fetch('http://localhost:8000/health', { 
+            method: 'GET',
+            signal: AbortSignal.timeout(3000) // 3 second timeout
+          });
+          if (!healthCheck.ok) {
+            throw new Error('Server health check failed');
+          }
+        } catch (healthError) {
+          if (healthError.name === 'AbortError' || healthError.message.includes('Failed to fetch') || healthError.message.includes('NetworkError')) {
+            throw new Error('Cannot connect to local server. Make sure the server is running on port 8000.');
+          }
+          throw healthError;
+        }
+        
+        log(`✅ Server connection verified\n`);
+        log(`📡 Sending task request...\n`);
+        
+        const response = await fetch(`http://localhost:8000/run?task=${task}`, {
+          signal: AbortSignal.timeout(300000) // 5 minute timeout for long tasks
+        });
         
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text().catch(() => response.statusText);
+          throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
         }
         
         // Stream response text
