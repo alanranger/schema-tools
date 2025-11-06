@@ -450,18 +450,19 @@ def main():
                     merged_df = pd.DataFrame()
             
             if not merged_df.empty:
-            before_sanitize = len(merged_df)
-            merged_df = merged_df.dropna(subset=['product_slug'])
-            merged_df = merged_df[merged_df['product_slug'].astype(str).str.strip() != '']
-            merged_df = merged_df.drop_duplicates(subset=['product_slug', 'author', 'reviewBody'], keep='first')
-            # Remove outlier rows with very short review bodies
-            if 'reviewBody' in merged_df.columns:
-                merged_df = merged_df[merged_df['reviewBody'].astype(str).str.len() > 10]
-            elif 'review' in merged_df.columns:
-                merged_df = merged_df[merged_df['review'].astype(str).str.len() > 10]
-            after_sanitize = len(merged_df)
-            if before_sanitize > after_sanitize:
-                print(f"✅ Sanitized reviews dataset: {after_sanitize} valid reviews (removed {before_sanitize - after_sanitize} invalid/duplicate rows)")
+                # Sanitize dataset: Drop any NaN, blanks, or invalid mappings
+                before_sanitize = len(merged_df)
+                merged_df = merged_df.dropna(subset=['product_slug'])
+                merged_df = merged_df[merged_df['product_slug'].astype(str).str.strip() != '']
+                merged_df = merged_df.drop_duplicates(subset=['product_slug', 'author', 'reviewBody'], keep='first')
+                # Remove outlier rows with very short review bodies
+                if 'reviewBody' in merged_df.columns:
+                    merged_df = merged_df[merged_df['reviewBody'].astype(str).str.len() > 10]
+                elif 'review' in merged_df.columns:
+                    merged_df = merged_df[merged_df['review'].astype(str).str.len() > 10]
+                after_sanitize = len(merged_df)
+                if before_sanitize > after_sanitize:
+                    print(f"✅ Sanitized reviews dataset: {after_sanitize} valid reviews (removed {before_sanitize - after_sanitize} invalid/duplicate rows)")
             
             # Normalize rating
             rating_col = None
