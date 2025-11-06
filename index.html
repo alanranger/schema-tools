@@ -3913,6 +3913,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     // Get step name
     const stepNames = {
+      '0': 'Step 0 - Setup Check',
       2: 'Step 2 - Clean',
       '3a': 'Step 3a - Fetch Google Reviews',
       '3b': 'Step 3b - Merge Reviews',
@@ -8834,6 +8835,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           consoleOutput.textContent += msg + '\n';
           consoleOutput.scrollTop = consoleOutput.scrollHeight;
         }
+        // Also add to combined log
+        addToCombinedLog(msg + '\n', '0', 'setup');
       };
       
       if (!status) return;
