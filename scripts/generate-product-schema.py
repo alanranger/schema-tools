@@ -408,25 +408,61 @@ def main():
         except:
             pass
     
-    # Use merged CSV if available (has product_name already mapped)
+    # Create product slugs for matching
+    df_products['product_slug'] = df_products['name'].fillna('').apply(slugify)
+    
+    # Use merged CSV if available (has product_name/product_slug already mapped)
     if merged_reviews_file.exists():
         print(f"📂 Using merged reviews file: {merged_reviews_file.name}")
         try:
             merged_df = pd.read_csv(merged_reviews_file, encoding='utf-8-sig')
             merged_df.columns = [c.strip().lower().replace(' ', '_') for c in merged_df.columns]
             
-            if 'product_name' in merged_df.columns:
-                for product_name, group in merged_df.groupby('product_name'):
-                    product_name = str(product_name).strip()
-                    if not product_name:
-                        continue
+            # Normalize rating
+            rating_col = None
+            for col in ['rating', 'ratingvalue', 'star_rating', 'stars']:
+                if col in merged_df.columns:
+                    rating_col = col
+                    break
+            
+            if rating_col:
+                merged_df['ratingValue'] = merged_df[rating_col].apply(normalize_rating)
+            else:
+                merged_df['ratingValue'] = None
+            
+            # Filter reviews >= 4
+            merged_df = merged_df[merged_df['ratingValue'] >= 4].copy()
+            
+            # Ensure product_slug exists
+            if 'product_slug' not in merged_df.columns:
+                if 'product_name' in merged_df.columns:
+                    merged_df['product_slug'] = merged_df['product_name'].fillna('').apply(slugify)
+                elif 'reference_id' in merged_df.columns:
+                    merged_df['product_slug'] = merged_df['reference_id'].fillna('').apply(slugify)
+                else:
+                    merged_df['product_slug'] = ''
+            
+            # Normalize slugs
+            merged_df['product_slug'] = merged_df['product_slug'].fillna('').apply(slugify)
+            
+            # Group reviews by product_slug
+            reviews_grouped = merged_df.groupby('product_slug')
+            
+            # Match reviews to products using slugs
+            matched_reviews_count = 0
+            matched_products = set()
+            
+            for _, product_row in df_products.iterrows():
+                product_slug = product_row['product_slug']
+                if not product_slug:
+                    continue
+                
+                if product_slug in reviews_grouped.groups:
+                    group = reviews_grouped.get_group(product_slug)
+                    product_name = str(product_row.get('name', '')).strip()
                     
-                    # Filter rating >= 4
-                    group['rating_normalized'] = group.get('rating', pd.Series([0]*len(group))).apply(normalize_rating)
-                    group = group[group['rating_normalized'] >= 4].copy()
-                    
-                    for _, row in group.iterrows():
-                        rating_val = row.get('rating_normalized')
+                    for _, review_row in group.iterrows():
+                        rating_val = review_row.get('ratingValue')
                         if rating_val and rating_val >= 4:
                             review_obj = {
                                 "@type": "Review",
@@ -436,71 +472,78 @@ def main():
                                     "bestRating": "5",
                                     "worstRating": "1"
                                 },
-                                "reviewBody": str(row.get('review', row.get('review_text', ''))).strip()
+                                "reviewBody": str(review_row.get('review', review_row.get('review_text', review_row.get('reviewbody', '')))).strip()
                             }
                             
-                            reviewer = str(row.get('reviewer', row.get('author', ''))).strip()
+                            reviewer = str(review_row.get('reviewer', review_row.get('author', ''))).strip()
                             if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
                                 review_obj["author"] = {"@type": "Person", "name": reviewer}
                             else:
                                 review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
                             
                             reviews_by_product[product_name].append(review_obj)
+                            matched_reviews_count += 1
+                    
+                    if product_name not in matched_products:
+                        matched_products.add(product_name)
                 
-                # Show console message with source file counts
-                google_count = len(google_df_source) if not google_df_source.empty else 0
-                trust_count = len(trust_df_source) if not trust_df_source.empty else 0
-                total_reviews = len(merged_df[merged_df.get('rating', pd.Series([0]*len(merged_df))).apply(normalize_rating) >= 4])
-                today = date.today()
-                print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
-                print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
+            # Show console message with source file counts
+            google_count = len(google_df_source) if not google_df_source.empty else 0
+            trust_count = len(trust_df_source) if not trust_df_source.empty else 0
+            total_reviews = len(merged_df)
+            today = date.today()
+            print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
+            print(f"✅ Matched {matched_reviews_count} reviews to {len(matched_products)} products")
             else:
-                # Check for alternative column names
-                product_col = None
-                for col in ['product_name', 'product', 'productname', 'name']:
-                    if col in merged_df.columns:
-                        product_col = col
-                        break
-                
-                if product_col:
-                    print(f"ℹ️  Using '{product_col}' column for product matching")
-                    for product_name, group in merged_df.groupby(product_col):
-                        product_name = str(product_name).strip()
-                        if not product_name:
+                print("⚠️  Merged file missing product_slug column, attempting to create from product_name...")
+                if 'product_name' in merged_df.columns:
+                    merged_df['product_slug'] = merged_df['product_name'].fillna('').apply(slugify)
+                    # Retry matching with newly created slugs
+                    reviews_grouped = merged_df.groupby('product_slug')
+                    matched_reviews_count = 0
+                    matched_products = set()
+                    
+                    for _, product_row in df_products.iterrows():
+                        product_slug = product_row['product_slug']
+                        if not product_slug:
                             continue
                         
-                        # Filter rating >= 4
-                        group['rating_normalized'] = group.get('rating', pd.Series([0]*len(group))).apply(normalize_rating)
-                        group = group[group['rating_normalized'] >= 4].copy()
-                        
-                        for _, row in group.iterrows():
-                            rating_val = row.get('rating_normalized')
-                            if rating_val and rating_val >= 4:
-                                review_obj = {
-                                    "@type": "Review",
-                                    "reviewRating": {
-                                        "@type": "Rating",
-                                        "ratingValue": str(int(rating_val)),
-                                        "bestRating": "5",
-                                        "worstRating": "1"
-                                    },
-                                    "reviewBody": str(row.get('review', row.get('review_text', ''))).strip()
-                                }
-                                
-                                reviewer = str(row.get('reviewer', row.get('author', ''))).strip()
-                                if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
-                                    review_obj["author"] = {"@type": "Person", "name": reviewer}
-                                else:
-                                    review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
-                                
-                                reviews_by_product[product_name].append(review_obj)
+                        if product_slug in reviews_grouped.groups:
+                            group = reviews_grouped.get_group(product_slug)
+                            product_name = str(product_row.get('name', '')).strip()
+                            
+                            for _, review_row in group.iterrows():
+                                rating_val = review_row.get('ratingValue')
+                                if rating_val and rating_val >= 4:
+                                    review_obj = {
+                                        "@type": "Review",
+                                        "reviewRating": {
+                                            "@type": "Rating",
+                                            "ratingValue": str(int(rating_val)),
+                                            "bestRating": "5",
+                                            "worstRating": "1"
+                                        },
+                                        "reviewBody": str(review_row.get('review', review_row.get('review_text', review_row.get('reviewbody', '')))).strip()
+                                    }
+                                    
+                                    reviewer = str(review_row.get('reviewer', review_row.get('author', ''))).strip()
+                                    if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
+                                        review_obj["author"] = {"@type": "Person", "name": reviewer}
+                                    else:
+                                        review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
+                                    
+                                    reviews_by_product[product_name].append(review_obj)
+                                    matched_reviews_count += 1
+                            
+                            if product_name not in matched_products:
+                                matched_products.add(product_name)
                     
                     google_count = len(google_df_source) if not google_df_source.empty else 0
                     trust_count = len(trust_df_source) if not trust_df_source.empty else 0
-                    total_reviews = len(merged_df[merged_df.get('rating', pd.Series([0]*len(merged_df))).apply(normalize_rating) >= 4])
+                    total_reviews = len(merged_df)
                     today = date.today()
                     print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
-                    print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
+                    print(f"✅ Matched {matched_reviews_count} reviews to {len(matched_products)} products")
                 else:
                     print("⚠️  Merged file missing product_name column, loading from source files...")
                     reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
@@ -559,9 +602,9 @@ def main():
         
         # Verification log per product
         if review_count > 0:
-            print(f"✅ [{product_name}] schema generated with live reviews and ratingValue {avg_rating} / reviewCount {review_count}")
+            print(f"✅ [{product_name}] schema generated ({review_count} reviews, avg {avg_rating})")
         else:
-            print(f"✅ [{product_name}] schema generated (no reviews)")
+            print(f"⚠️ [{product_name}] schema generated (no reviews)")
     
     print(f"✅ Generated {len(html_files)} HTML files")
     
@@ -578,12 +621,35 @@ def main():
     
     # Summary
     products_with_reviews = len(schemas_df[schemas_df['has_reviews'] == 'Yes'])
+    products_without_reviews = len(schemas_df) - products_with_reviews
+    
+    # Get latest review date if available
+    latest_review_date = None
+    if merged_reviews_file.exists():
+        try:
+            merged_df_summary = pd.read_csv(merged_reviews_file, encoding='utf-8-sig')
+            if 'date' in merged_df_summary.columns:
+                dates = pd.to_datetime(merged_df_summary['date'], errors='coerce')
+                dates = dates.dropna()
+                if len(dates) > 0:
+                    latest_review_date = dates.max().strftime('%Y-%m-%d')
+        except:
+            pass
+    
+    # Get source counts
+    google_count = len(google_df_source) if not google_df_source.empty else 0
+    trust_count = len(trust_df_source) if not trust_df_source.empty else 0
+    
     print("\n" + "="*60)
     print("📊 SCHEMA GENERATION SUMMARY")
     print("="*60)
     print(f"Total products: {len(schemas_df)}")
     print(f"Products with reviews: {products_with_reviews}")
-    print(f"Products without reviews: {len(schemas_df) - products_with_reviews}")
+    print(f"Products without reviews: {products_without_reviews}")
+    if latest_review_date:
+        print(f"Latest review date: {latest_review_date}")
+    print(f"Google reviews: {google_count}")
+    print(f"Trustpilot reviews: {trust_count}")
     print(f"HTML files saved to: {outputs_dir.absolute()}")
     print(f"Combined CSV saved to: {output_csv.absolute()}")
     print("="*60)

@@ -259,6 +259,39 @@ def merge_reviews():
         print("📅 Sorted reviews by date (newest first)")
     print()
     
+    # Rename reference_id to product_name if it exists and has values
+    if 'reference_id' in reviews.columns:
+        # Only rename if reference_id has actual product names
+        non_empty_refs = reviews['reference_id'].astype(str).str.strip()
+        non_empty_refs = non_empty_refs[non_empty_refs != '']
+        if len(non_empty_refs) > 0:
+            reviews['product_name'] = reviews['reference_id']
+            print(f"✅ Renamed reference_id to product_name for {len(non_empty_refs)} reviews")
+    
+    # Ensure product_name column exists (create from reference_id or leave empty)
+    if 'product_name' not in reviews.columns:
+        reviews['product_name'] = reviews.get('reference_id', '')
+    
+    # Add product_slug column for matching
+    def slugify(text):
+        """Convert text to URL-friendly slug"""
+        if pd.isna(text) or not text:
+            return ''
+        import re
+        text_str = str(text).lower().strip()
+        # Remove special characters, keep alphanumeric and spaces
+        text_str = re.sub(r'[^\w\s-]', '', text_str)
+        # Replace spaces and multiple hyphens with single hyphen
+        text_str = re.sub(r'[-\s]+', '-', text_str)
+        return text_str.strip('-')
+    
+    reviews['product_slug'] = reviews['product_name'].fillna('').apply(slugify)
+    
+    # Count matched reviews
+    matched_count = reviews['product_slug'].astype(bool).sum()
+    if matched_count > 0:
+        print(f"✅ Added product_slug column for {matched_count} reviews with product matches")
+    
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
