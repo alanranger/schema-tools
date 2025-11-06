@@ -1400,11 +1400,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
         
         <div style="text-align:center;">
-          <button id="copyPathBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+          <button id="copyPathBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
             📋 Copy Build Command
           </button>
-          <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+          <button id="openFolderBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+            📁 Open Folder in Explorer
+          </button>
+          <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
             ℹ️ Show Full Path
+          </button>
+          <button id="openExeBtnWeb" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#9b59b6; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-bottom:0.5rem;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
+            ▶️ Open Electron App (if built)
           </button>
         </div>
       </div>
@@ -9000,11 +9006,72 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             });
           }
           
+          // Open folder in Explorer button
+          const openFolderBtn = document.getElementById('openFolderBtn');
+          if (openFolderBtn) {
+            openFolderBtn.addEventListener('click', async () => {
+              try {
+                // Copy command to clipboard first
+                await navigator.clipboard.writeText(buildCommand);
+                
+                // Try to open folder in Windows Explorer
+                // Get the project folder path (parent of current location)
+                const projectPath = window.location.pathname.includes('/') 
+                  ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))
+                  : '.';
+                
+                // For local file access, try file:// protocol
+                // Note: This works best when running from file:// protocol, not http://
+                const folderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
+                const folderUrl = `file:///${folderPath.replace(/\\/g, '/')}`;
+                
+                // Try opening folder
+                try {
+                  window.open(folderUrl);
+                  openFolderBtn.textContent = '✅ Folder Opened!';
+                  setTimeout(() => {
+                    openFolderBtn.textContent = '📁 Open Folder in Explorer';
+                  }, 2000);
+                  
+                  // Show instructions
+                  setTimeout(() => {
+                    alert(`✅ Folder opened!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Right-click in the folder\n2. Select "Open PowerShell here" or "Open Terminal here"\n3. Paste (Ctrl+V) and press Enter`);
+                  }, 500);
+                } catch (e) {
+                  // Fallback: show manual instructions
+                  await navigator.clipboard.writeText(buildCommand);
+                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${folderPath}\n\n💡 To open terminal:\n1. Navigate to the folder above\n2. Right-click → "Open PowerShell here"\n3. Paste (Ctrl+V) and press Enter\n\nOr manually run:\n${buildCommand}`);
+                }
+              } catch (e) {
+                alert(`Unable to open folder automatically.\n\nPlease:\n1. Navigate to: ${fullExePath.substring(0, fullExePath.lastIndexOf('\\'))}\n2. Right-click → "Open PowerShell here"\n3. Run: ${buildCommand}`);
+              }
+            });
+          }
+          
           // Show full path button
           const showInstructionsBtn = document.getElementById('showInstructionsBtn');
           if (showInstructionsBtn) {
             showInstructionsBtn.addEventListener('click', () => {
               alert(`📁 Full Path to Desktop App:\n\n${fullExePath}\n\n💡 To build the app:\n1. Open terminal in your project folder\n2. Run: ${buildCommand}\n3. Navigate to the dist folder\n4. Double-click SchemaTools.exe`);
+            });
+          }
+          
+          // Open Electron app button (web mode - will try but may fail)
+          const openExeBtnWeb = document.getElementById('openExeBtnWeb');
+          if (openExeBtnWeb) {
+            openExeBtnWeb.addEventListener('click', () => {
+              try {
+                // Try to open the exe file
+                const exeUrl = `file:///${fullExePath.replace(/\\/g, '/')}`;
+                window.open(exeUrl);
+                
+                // Show fallback instructions after a delay
+                setTimeout(() => {
+                  alert(`⚠️ Browser may block opening .exe files for security.\n\n📁 If it didn't open, navigate to:\n${fullExePath}\n\nAnd double-click SchemaTools.exe\n\n💡 Or use the Electron app (npm start) to build and open it directly.`);
+                }, 1000);
+              } catch (e) {
+                alert(`⚠️ Cannot open .exe from browser (security restriction).\n\n📁 Please open manually:\n${fullExePath}\n\n💡 Or use the Electron app (npm start) to build and open it directly.`);
+              }
             });
           }
         }
