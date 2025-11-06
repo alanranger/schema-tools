@@ -140,7 +140,7 @@ def fetch_reviews(creds, location_id=None):
                 print("   Please edit the script and set location_id manually.")
                 return []
         
-        # Google deprecated "mybusiness" v4 API - try newer APIs
+        # Google deprecated "mybusiness" v4 API - use alternative discovery URL
         print("🔍 Building Google My Business API service...")
         print(f"   Using credentials from: {CREDENTIALS_PATH}")
         print(f"   Project ID: alan-ranger-photography")
@@ -151,62 +151,46 @@ def fetch_reviews(creds, location_id=None):
         # IMPORTANT: Reviews endpoint is ONLY in the original "mybusiness" v4 API
         # Even though Google says it's deprecated, it's still needed for reviews
         print("   ⚠️  Note: Reviews require 'mybusiness' v4 API (even if deprecated)")
+        print("   Trying with alternative discovery document URL...")
         
-        # Try the original mybusiness v4 API first (this is where reviews are)
-        api_services_to_try = [
-            ("mybusiness", "v4", "Original My Business API (has reviews endpoint)"),
-        ]
+        # Use alternative discovery document URL (Google removed the default one)
+        discovery_url = 'https://developers.google.com/static/my-business/samples/mybusiness_google_rest_v4p9.json'
         
-        for api_name, api_version, api_description in api_services_to_try:
+        try:
+            print("   Attempting to build 'mybusiness' v4 service with alternative discovery URL...")
+            service = build(
+                'mybusiness',
+                'v4',
+                credentials=creds,
+                discoveryServiceUrl=discovery_url,
+                cache_discovery=False
+            )
+            print("✅ Successfully built mybusiness v4 service using alternative discovery URL")
+        except Exception as api_error:
+            api_error_msg = str(api_error)
+            error_lower = api_error_msg.lower()
+            print(f"❌ Failed to build service: {api_error_msg[:200]}")
+            
+            # Try without the alternative URL as fallback
             try:
-                print(f"   Trying {api_description} ({api_name} {api_version})...")
-                # Try building with cache_discovery=False to force fresh discovery
-                try:
-                    service = build(api_name, api_version, credentials=creds, cache_discovery=False)
-                    print(f"✅ Successfully built {api_description}")
-                    break
-                except Exception as build_error:
-                    error_str = str(build_error)
-                    print(f"   ⚠️  First attempt failed: {error_str[:150]}")
-                    
-                    # If it's a discovery error, try with explicit discovery URL
-                    if "name: mybusiness" in error_str.lower() or "version: v4" in error_str.lower():
-                        print("   ℹ️  This usually means the API discovery document can't be found")
-                        print("   ℹ️  Even though the API is enabled, Google may have removed the discovery doc")
-                        print("\n   💡 Possible solutions:")
-                        print("      1. The 'mybusiness' v4 API may be fully deprecated")
-                        print("      2. Reviews might now be in Google Places API")
-                        print("      3. You may need to request API access/quota")
-                        print("      4. Check: https://developers.google.com/my-business/content/reviews")
-                        raise build_error
-                    else:
-                        # Try with cache_discovery=True as fallback
-                        service = build(api_name, api_version, credentials=creds, cache_discovery=True)
-                        print(f"✅ Successfully built {api_description} (with cache)")
-                        break
-            except Exception as api_error:
-                api_error_msg = str(api_error)
-                error_lower = api_error_msg.lower()
-                print(f"   ❌ {api_description} failed: {api_error_msg[:200]}")
-                break
-        
-        if not service:
-            print("\n" + "="*60)
-            print("❌  COULD NOT BUILD GOOGLE MY BUSINESS API SERVICE")
-            print("="*60)
-            print("\nThe 'mybusiness' v4 API service cannot be discovered.")
-            print("\nEven though the API shows as 'Enabled' in Google Cloud Console,")
-            print("Google may have removed the discovery document for this deprecated API.")
-            print("\n⚠️  IMPORTANT: The reviews endpoint may no longer be available via API.")
-            print("\nPossible solutions:")
-            print("1. Check Google's current documentation:")
-            print("   https://developers.google.com/my-business/content/reviews")
-            print("\n2. Reviews might now require Google Places API:")
-            print("   https://console.cloud.google.com/apis/library/places-backend.googleapis.com")
-            print("\n3. You may need to manually export reviews from Google Business Profile")
-            print("\n4. Contact Google Support about API access for reviews")
-            print("="*60)
-            return []
+                print("   Trying standard discovery URL as fallback...")
+                service = build('mybusiness', 'v4', credentials=creds, cache_discovery=False)
+                print("✅ Successfully built using standard discovery URL")
+            except Exception as fallback_error:
+                print(f"❌ Fallback also failed: {str(fallback_error)[:200]}")
+                print("\n" + "="*60)
+                print("❌  COULD NOT BUILD GOOGLE MY BUSINESS API SERVICE")
+                print("="*60)
+                print("\nThe 'mybusiness' v4 API service cannot be discovered.")
+                print("\nEven with alternative discovery URL, the service build failed.")
+                print("\nPossible solutions:")
+                print("1. Check Google's current documentation:")
+                print("   https://developers.google.com/my-business/content/reviews")
+                print("\n2. Reviews might now require Google Places API:")
+                print("   https://console.cloud.google.com/apis/library/places-backend.googleapis.com")
+                print("\n3. You may need to manually export reviews from Google Business Profile")
+                print("="*60)
+                return []
         
         reviews = []
         next_page_token = None
