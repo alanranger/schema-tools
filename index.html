@@ -9158,10 +9158,8 @@ echo ========================================
 echo.
 echo Project folder: ${projectFolderPath}
 echo.
-echo ⚠️  IMPORTANT: If build fails with "EBUSY" or "locked" error:
-echo    1. Close Dropbox (right-click Dropbox icon → Quit Dropbox)
-echo    2. Wait 10 seconds for sync to complete
-echo    3. Run this batch file again
+echo ⚠️  IMPORTANT: Build output goes to %LOCALAPPDATA%\\SchemaTools
+echo    (No more Dropbox lock errors!)
 echo.
 echo Starting build process...
 echo.
@@ -9189,9 +9187,9 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
                 }, 500);
               } catch (e) {
                 // Fallback: show manual instructions
-                const projectFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
+                const projectFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools';
                 await navigator.clipboard.writeText(buildCommand);
-                alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}`);
+                alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}\n\n📁 Built app will be at:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`);
               }
             });
           }
