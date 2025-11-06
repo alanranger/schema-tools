@@ -62,13 +62,11 @@ LOCAL_BUSINESS = {
 }
 
 def slugify(text):
-    """Convert text to URL-friendly slug"""
+    """Convert text to URL-friendly slug - standardized across all scripts"""
+    import re
     if not text:
         return ''
-    import re
-    # More aggressive slugify - only alphanumeric and hyphens
-    slug = re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip())
-    return slug.strip('-')
+    return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
 
 def get_breadcrumbs(product_name, product_url):
     """Generate breadcrumb list for product"""
@@ -427,6 +425,9 @@ def main():
     else:
         df_products['product_slug'] = df_products['name'].fillna('').apply(slugify)
     
+    # Ensure product slugs are normalized (remove any inconsistencies)
+    df_products['product_slug'] = df_products['product_slug'].fillna('').apply(slugify)
+    
     # Use merged CSV if available (has product_name/product_slug already mapped)
     if merged_reviews_file.exists():
         print(f"📂 Using merged reviews file: {merged_reviews_file.name}")
@@ -509,8 +510,21 @@ def main():
                     else:
                         merged_df['product_slug'] = ''
                 
-                # Regenerate slugs for consistency
+                # Regenerate slugs for consistency (must match product slugs exactly)
                 merged_df['product_slug'] = merged_df['product_slug'].fillna('').apply(slugify)
+                
+                # Diagnostic: Check for shared slugs between products and reviews
+                product_slugs_set = set(df_products['product_slug'].dropna())
+                review_slugs_set = set(merged_df['product_slug'].dropna())
+                common_slugs = product_slugs_set.intersection(review_slugs_set)
+                print(f"✅ Found {len(common_slugs)} shared product slugs for review matching")
+                if len(common_slugs) > 0:
+                    example_matches = list(common_slugs)[:10]
+                    print(f"🔍 Example matches: {example_matches}")
+                else:
+                    print(f"⚠️ No matching slugs found!")
+                    print(f"   Product slugs sample: {list(product_slugs_set)[:5]}")
+                    print(f"   Review slugs sample: {list(review_slugs_set)[:5]}")
                 
                 # Ensure author and reviewBody columns exist (use lowercase consistently)
                 if 'author' not in merged_df.columns:

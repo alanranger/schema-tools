@@ -273,19 +273,16 @@ def merge_reviews():
         reviews['product_name'] = reviews.get('reference_id', '')
     
     # Add product_slug column for matching
+    # Use standardized slugify function (must match generate-product-schema.py)
     def slugify(text):
-        """Convert text to URL-friendly slug"""
+        """Convert text to URL-friendly slug - standardized across all scripts"""
+        import re
         if pd.isna(text) or not text:
             return ''
-        import re
-        text_str = str(text).lower().strip()
-        # Remove special characters, keep alphanumeric and spaces
-        text_str = re.sub(r'[^\w\s-]', '', text_str)
-        # Replace spaces and multiple hyphens with single hyphen
-        text_str = re.sub(r'[-\s]+', '-', text_str)
-        return text_str.strip('-')
+        return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
     
     reviews['product_slug'] = reviews['product_name'].fillna('').apply(slugify)
+    print("✅ Added product_slug column to merged reviews")
     
     # Drop any rows where product_name or product_slug is missing/blank
     before_filter = len(reviews)
@@ -393,7 +390,9 @@ def merge_reviews():
     # Save merged dataset
     reviews.to_csv(output_path, index=False, encoding='utf-8-sig')
     
-    print(f"✅ Saved merged reviews with {len(reviews)} rows and columns {list(reviews.columns)}")
+    # Show sample slugs for verification
+    sample_slugs = reviews['product_slug'].head(5).tolist() if len(reviews) > 0 else []
+    print(f"✅ Saved merged reviews: {len(reviews)} rows with slugs like {sample_slugs}")
     
     print("="*60)
     print("✅ MERGE COMPLETE")
