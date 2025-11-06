@@ -9409,9 +9409,10 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
             if (line.trim()) {
               log(line + '\n');
               // Update progress based on keywords
-              if (line.includes('✅') || line.includes('complete')) {
+              if (line.includes('✅') || line.includes('complete') || line.includes('Success')) {
                 if (progressBar) {
                   progressBar.style.width = '90%';
+                  progressBar.style.background = '#27AE60'; // Green when complete
                 }
               }
             }
@@ -9426,13 +9427,15 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
         // Complete progress
         if (progressBar) {
           progressBar.style.width = '100%';
+          progressBar.style.background = '#27AE60'; // Green for complete
         }
+        
+        // Mark step as complete FIRST
+        markComplete(stepId, statusMessage.replace('🔄 ', '✅ ').replace('🧹 ', '✅ ').replace('⚙️ ', '✅ '));
         
         if (onComplete) {
           onComplete();
         }
-        
-        markComplete(stepId, statusMessage.replace('🔄 ', '✅ '));
         
       } catch (err) {
         const errorMsg = err.message || 'Unknown error';

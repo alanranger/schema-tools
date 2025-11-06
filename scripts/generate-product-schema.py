@@ -108,8 +108,11 @@ def schema_to_html(schema_json):
     return f'<script type="application/ld+json">\n{json.dumps(schema_json, indent=2, ensure_ascii=False)}\n</script>'
 
 def main():
-    workflow_dir = Path('inputs-files/workflow')
-    outputs_dir = Path('outputs')
+    # Use absolute paths based on script location to ensure files save to project root
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    workflow_dir = project_root / 'inputs-files' / 'workflow'
+    outputs_dir = project_root / 'outputs'
     outputs_dir.mkdir(exist_ok=True)
     
     # Find input file - check for both Excel and CSV files from Step 3
