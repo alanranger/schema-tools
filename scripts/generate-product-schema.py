@@ -407,8 +407,25 @@ def main():
         except:
             pass
     
-    # Create product slugs for matching
-    df_products['product_slug'] = df_products['name'].fillna('').apply(slugify)
+    # Create product slugs for matching - use URL-based slugs for better accuracy
+    def get_slug_from_url(url):
+        """Extract slug from URL"""
+        if pd.isna(url) or not url:
+            return ''
+        try:
+            url_str = str(url).strip().rstrip('/')
+            return slugify(url_str.split('/')[-1])
+        except:
+            return ''
+    
+    # Use URL-based slugs if available, fallback to name-based
+    if 'url' in df_products.columns:
+        df_products['product_slug'] = df_products['url'].apply(get_slug_from_url)
+        # Fill any missing slugs with name-based slugs
+        missing_slugs = df_products['product_slug'].isna() | (df_products['product_slug'] == '')
+        df_products.loc[missing_slugs, 'product_slug'] = df_products.loc[missing_slugs, 'name'].fillna('').apply(slugify)
+    else:
+        df_products['product_slug'] = df_products['name'].fillna('').apply(slugify)
     
     # Use merged CSV if available (has product_name/product_slug already mapped)
     if merged_reviews_file.exists():
@@ -416,6 +433,20 @@ def main():
         try:
             merged_df = pd.read_csv(merged_reviews_file, encoding='utf-8-sig')
             merged_df.columns = [c.strip().lower().replace(' ', '_') for c in merged_df.columns]
+            
+            # Sanitize dataset: Drop any NaN, blanks, or invalid mappings
+            before_sanitize = len(merged_df)
+            merged_df = merged_df.dropna(subset=['product_slug'])
+            merged_df = merged_df[merged_df['product_slug'].astype(str).str.strip() != '']
+            merged_df = merged_df.drop_duplicates(subset=['product_slug', 'author', 'reviewBody'], keep='first')
+            # Remove outlier rows with very short review bodies
+            if 'reviewBody' in merged_df.columns:
+                merged_df = merged_df[merged_df['reviewBody'].astype(str).str.len() > 10]
+            elif 'review' in merged_df.columns:
+                merged_df = merged_df[merged_df['review'].astype(str).str.len() > 10]
+            after_sanitize = len(merged_df)
+            if before_sanitize > after_sanitize:
+                print(f"✅ Sanitized reviews dataset: {after_sanitize} valid reviews (removed {before_sanitize - after_sanitize} invalid/duplicate rows)")
             
             # Normalize rating
             rating_col = None
@@ -432,7 +463,7 @@ def main():
             # Filter reviews >= 4
             merged_df = merged_df[merged_df['ratingValue'] >= 4].copy()
             
-            # Ensure product_slug exists
+            # Ensure product_slug exists and normalize
             if 'product_slug' not in merged_df.columns:
                 if 'product_name' in merged_df.columns:
                     merged_df['product_slug'] = merged_df['product_name'].fillna('').apply(slugify)
@@ -441,11 +472,17 @@ def main():
                 else:
                     merged_df['product_slug'] = ''
             
-            # Normalize slugs
+            # Regenerate slugs for consistency
             merged_df['product_slug'] = merged_df['product_slug'].fillna('').apply(slugify)
             
-            # Group reviews by product_slug
-            reviews_grouped = merged_df.groupby('product_slug')
+            # Ensure author and reviewBody columns exist
+            if 'author' not in merged_df.columns:
+                merged_df['author'] = merged_df.get('reviewer', 'Anonymous')
+            if 'reviewBody' not in merged_df.columns:
+                merged_df['reviewBody'] = merged_df.get('review', merged_df.get('review_text', ''))
+            
+            # Group reviews by product_slug (dropna=True to exclude invalid slugs)
+            reviews_grouped = merged_df.groupby('product_slug', dropna=True)
             
             # Match reviews to products using slugs
             matched_reviews_count = 0
@@ -453,12 +490,15 @@ def main():
             
             for _, product_row in df_products.iterrows():
                 product_slug = product_row['product_slug']
-                if not product_slug:
+                if not product_slug or pd.isna(product_slug):
                     continue
                 
                 if product_slug in reviews_grouped.groups:
                     group = reviews_grouped.get_group(product_slug)
                     product_name = str(product_row.get('name', '')).strip()
+                    
+                    # Limit to 25 reviews per product to prevent inflation
+                    group = group.head(25)
                     
                     for _, review_row in group.iterrows():
                         rating_val = review_row.get('ratingValue')
@@ -471,10 +511,10 @@ def main():
                                     "bestRating": "5",
                                     "worstRating": "1"
                                 },
-                                "reviewBody": str(review_row.get('review', review_row.get('review_text', review_row.get('reviewbody', '')))).strip()
+                                "reviewBody": str(review_row.get('reviewBody', review_row.get('review', review_row.get('review_text', '')))).strip()
                             }
                             
-                            reviewer = str(review_row.get('reviewer', review_row.get('author', ''))).strip()
+                            reviewer = str(review_row.get('author', review_row.get('reviewer', ''))).strip()
                             if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
                                 review_obj["author"] = {"@type": "Person", "name": reviewer}
                             else:
@@ -485,6 +525,11 @@ def main():
                     
                     if product_name not in matched_products:
                         matched_products.add(product_name)
+                        
+                    # Log per product
+                    avg = round(group['ratingValue'].mean(), 2)
+                    count = len(group)
+                    print(f"✅ [{product_name}] matched {count} reviews, avg {avg}")
                 
             # Show console message with source file counts
             google_count = len(google_df_source) if not google_df_source.empty else 0
