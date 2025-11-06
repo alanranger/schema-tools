@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, date
 import re
 from urllib.parse import urlparse
 from collections import defaultdict
@@ -250,7 +250,7 @@ def load_and_merge_reviews(google_path, trustpilot_path, products_df):
     google_count = len(google_df[google_df.get('ratingValue', pd.Series([0]*len(google_df))) >= 4]) if 'ratingValue' in google_df.columns else len(google_df)
     trust_count = len(trust_df[trust_df.get('ratingValue', pd.Series([0]*len(trust_df))) >= 4]) if 'ratingValue' in trust_df.columns else len(trust_df)
     
-    today = datetime.date.today()
+    today = date.today()
     print(f"✅ Reviews merged — {len(reviews_df)} total ({len(google_df)} Google + {len(trust_df)} Trustpilot) on {today}")
     print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
     
@@ -451,12 +451,59 @@ def main():
                 google_count = len(google_df_source) if not google_df_source.empty else 0
                 trust_count = len(trust_df_source) if not trust_df_source.empty else 0
                 total_reviews = len(merged_df[merged_df.get('rating', pd.Series([0]*len(merged_df))).apply(normalize_rating) >= 4])
-                today = datetime.date.today()
+                today = date.today()
                 print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
                 print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
             else:
-                print("⚠️  Merged file missing product_name column, loading from source files...")
-                reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
+                # Check for alternative column names
+                product_col = None
+                for col in ['product_name', 'product', 'productname', 'name']:
+                    if col in merged_df.columns:
+                        product_col = col
+                        break
+                
+                if product_col:
+                    print(f"ℹ️  Using '{product_col}' column for product matching")
+                    for product_name, group in merged_df.groupby(product_col):
+                        product_name = str(product_name).strip()
+                        if not product_name:
+                            continue
+                        
+                        # Filter rating >= 4
+                        group['rating_normalized'] = group.get('rating', pd.Series([0]*len(group))).apply(normalize_rating)
+                        group = group[group['rating_normalized'] >= 4].copy()
+                        
+                        for _, row in group.iterrows():
+                            rating_val = row.get('rating_normalized')
+                            if rating_val and rating_val >= 4:
+                                review_obj = {
+                                    "@type": "Review",
+                                    "reviewRating": {
+                                        "@type": "Rating",
+                                        "ratingValue": str(int(rating_val)),
+                                        "bestRating": "5",
+                                        "worstRating": "1"
+                                    },
+                                    "reviewBody": str(row.get('review', row.get('review_text', ''))).strip()
+                                }
+                                
+                                reviewer = str(row.get('reviewer', row.get('author', ''))).strip()
+                                if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
+                                    review_obj["author"] = {"@type": "Person", "name": reviewer}
+                                else:
+                                    review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
+                                
+                                reviews_by_product[product_name].append(review_obj)
+                    
+                    google_count = len(google_df_source) if not google_df_source.empty else 0
+                    trust_count = len(trust_df_source) if not trust_df_source.empty else 0
+                    total_reviews = len(merged_df[merged_df.get('rating', pd.Series([0]*len(merged_df))).apply(normalize_rating) >= 4])
+                    today = date.today()
+                    print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
+                    print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
+                else:
+                    print("⚠️  Merged file missing product_name column, loading from source files...")
+                    reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
         except Exception as e:
             print(f"⚠️  Error reading merged file: {e}")
             print("📂 Falling back to source files...")
