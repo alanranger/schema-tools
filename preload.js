@@ -1,5 +1,6 @@
 // Preload script to expose Electron context to renderer
-import { contextBridge, ipcRenderer } from 'electron';
+// Note: Preload scripts must use CommonJS, not ES modules
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
