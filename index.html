@@ -8695,6 +8695,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         consoleOutput.style.display = 'block';
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
         console.log(`[Main Process] ${message}`);
+        
+        // Also add to combined log
+        addToCombinedLog(logLine, '0', 'setup');
       }
     }
     
