@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "start-local": "node scripts/local-server.js",
-    "build:desktop": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite",
+    "build:desktop": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"dist/**\"",
     "build:web": "echo \"Skipping Electron build for web deployment\"",
     "build": "node -e \"if (process.env.VERCEL || process.env.CI) { console.log('Skipping Electron build for web deployment'); process.exit(0); } else { require('child_process').execSync('npm run build:desktop', {stdio:'inherit'}); }\""
   },
