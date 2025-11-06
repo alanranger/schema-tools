@@ -9228,77 +9228,30 @@ ${expandedPath}
             });
           }
           
-          // Open Electron app button (web mode - will try but may fail)
+          // Open Electron app button (web mode - direct link to exe)
           const openExeBtnWeb = document.getElementById('openExeBtnWeb');
           if (openExeBtnWeb) {
-            openExeBtnWeb.addEventListener('click', async () => {
-              // Expand LOCALAPPDATA to actual path
-              // In browser, we can't access env vars, so we'll show instructions
-              // But we can try to open the folder in Windows Explorer
-              const expandedPath = `C:\\Users\\${navigator.userAgent.includes('Windows') ? 'YourUsername' : 'User'}\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`;
-              const folderPath = `C:\\Users\\${navigator.userAgent.includes('Windows') ? 'YourUsername' : 'User'}\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64`;
+            openExeBtnWeb.addEventListener('click', () => {
+              const exePath = 'C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe';
               
-              // Try multiple methods to open the file/folder
-              let opened = false;
-              
-              // Method 1: Try to open the folder in Windows Explorer using shell: protocol
+              // Try to open the exe directly
               try {
-                // Try opening the folder in Explorer
-                const folderUrl = `file:///${folderPath.replace(/\\/g, '/')}`;
-                window.open(folderUrl, '_blank');
-                opened = true;
+                // Method 1: Create a link and click it
+                const link = document.createElement('a');
+                link.href = `file:///${exePath.replace(/\\/g, '/')}`;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Also try window.open as fallback
+                setTimeout(() => {
+                  window.open(`file:///${exePath.replace(/\\/g, '/')}`, '_blank');
+                }, 100);
               } catch (e) {
-                console.log('Method 1 failed:', e);
+                // If browser blocks it, show instructions
+                alert(`⚠️ Browser blocked opening .exe file (security restriction).\n\n📁 Please open manually:\n${exePath}\n\nOr double-click SchemaTools.exe in:\nC:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\`);
               }
-              
-              // Method 2: Try direct file:// URL (will likely be blocked)
-              if (!opened) {
-                try {
-                  const exeUrl = `file:///${expandedPath.replace(/\\/g, '/')}`;
-                  window.open(exeUrl);
-                  opened = true;
-                } catch (e) {
-                  console.log('Method 2 failed:', e);
-                }
-              }
-              
-              // Show instructions with actual path and copy command to clipboard
-              setTimeout(async () => {
-                const runCommand = '%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64';
-                const actualPathInstructions = `
-⚠️ Browser Security Restriction
-
-Browsers cannot directly open .exe files for security reasons.
-
-📁 Quick Way to Open the Folder:
-
-1. Press Windows Key + R
-2. Paste this (already copied to clipboard):
-   ${runCommand}
-3. Press Enter
-4. Double-click SchemaTools.exe
-
-Or navigate directly to:
-${expandedPath.replace('YourUsername', 'YOUR_USERNAME')}
-
-💡 Tip: Replace YOUR_USERNAME with your actual Windows username
-   (Check C:\\Users\\ folder to see your username)
-
-🔨 To build the app first:
-1. Open terminal in your project folder
-2. Run: npm run build:desktop
-3. Then follow steps above to open it`;
-                
-                // Copy the Run dialog command to clipboard
-                try {
-                  await navigator.clipboard.writeText(runCommand);
-                } catch (e) {
-                  // Fallback if clipboard API fails
-                  console.log('Could not copy to clipboard:', e);
-                }
-                
-                alert(actualPathInstructions);
-              }, 500);
             });
           }
         }
