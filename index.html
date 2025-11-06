@@ -1404,7 +1404,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             📋 Copy Build Command
           </button>
           <button id="openFolderBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
-            📁 Open Folder in Explorer
+            📁 Open PowerShell Here
           </button>
           <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
             ℹ️ Show Full Path
@@ -9006,7 +9006,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             });
           }
           
-          // Open folder in Explorer button
+          // Open folder in Explorer button - Creates batch file to open PowerShell in correct directory
           const openFolderBtn = document.getElementById('openFolderBtn');
           if (openFolderBtn) {
             openFolderBtn.addEventListener('click', async () => {
@@ -9014,37 +9014,51 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 // Copy command to clipboard first
                 await navigator.clipboard.writeText(buildCommand);
                 
-                // Try to open folder in Windows Explorer
-                // Get the project folder path (parent of current location)
-                const projectPath = window.location.pathname.includes('/') 
-                  ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))
-                  : '.';
-                
                 // Calculate project root folder (parent of dist folder)
                 const distFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
                 const projectFolderPath = distFolderPath || fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
-                const folderUrl = `file:///${projectFolderPath.replace(/\\/g, '/')}`;
                 
-                // Try opening folder in Windows Explorer
-                try {
-                  // Use file:// protocol to open folder
-                  window.open(folderUrl);
-                  openFolderBtn.textContent = '✅ Folder Opened!';
-                  setTimeout(() => {
-                    openFolderBtn.textContent = '📁 Open Folder in Explorer';
-                  }, 2000);
-                  
-                  // Show instructions
-                  setTimeout(() => {
-                    alert(`✅ Project folder opened in Explorer!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. In the Explorer window, right-click in empty space\n3. Select "Open PowerShell here" or "Open Terminal here"\n4. Paste (Ctrl+V) and press Enter to build\n\n⚠️ Note: Make sure you're in the project folder, not C:\\WINDOWS\\system32`);
-                  }, 500);
-                } catch (e) {
-                  // Fallback: show manual instructions
-                  await navigator.clipboard.writeText(buildCommand);
-                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps (SchemaTools.exe) first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}`);
-                }
+                // Create a batch file that opens PowerShell in the project directory
+                const batchContent = `@echo off
+cd /d "${projectFolderPath}"
+echo.
+echo ========================================
+echo   Schema Tools - Build Desktop App
+echo ========================================
+echo.
+echo Project folder: ${projectFolderPath}
+echo.
+echo Build command copied to clipboard!
+echo.
+echo Next: Paste (Ctrl+V) and press Enter
+echo.
+powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host ''; Write-Host '📁 Project folder:' -ForegroundColor Green; Write-Host '${projectFolderPath}' -ForegroundColor Cyan; Write-Host ''; Write-Host '📋 Build command copied to clipboard: ${buildCommand}' -ForegroundColor Yellow; Write-Host ''; Write-Host '💡 Paste (Ctrl+V) and press Enter to build' -ForegroundColor Magenta; Write-Host ''"`;
+                
+                // Create blob and download the batch file
+                const blob = new Blob([batchContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Open-PowerShell-Here.bat';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                openFolderBtn.textContent = '✅ Batch file downloaded!';
+                setTimeout(() => {
+                  openFolderBtn.textContent = '📁 Open PowerShell Here';
+                }, 2000);
+                
+                // Show instructions
+                setTimeout(() => {
+                  alert(`✅ Batch file downloaded!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. Go to your Downloads folder\n3. Double-click "Open-PowerShell-Here.bat"\n4. PowerShell will open in the project folder automatically\n5. Paste (Ctrl+V) and press Enter to build\n\n📁 Project folder:\n${projectFolderPath}`);
+                }, 500);
               } catch (e) {
-                alert(`Unable to open folder automatically.\n\nPlease:\n1. Navigate to: ${fullExePath.substring(0, fullExePath.lastIndexOf('\\'))}\n2. Right-click → "Open PowerShell here"\n3. Run: ${buildCommand}`);
+                // Fallback: show manual instructions
+                const projectFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
+                await navigator.clipboard.writeText(buildCommand);
+                alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}`);
               }
             });
           }
