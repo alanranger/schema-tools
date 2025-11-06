@@ -37,8 +37,8 @@ async function prepareBuild() {
         try {
           execSync('taskkill /F /IM SchemaTools.exe', { stdio: 'ignore' });
           console.log('✅ Closed running instances');
-          // Wait a moment for files to unlock
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait longer for files to unlock
+          await new Promise(resolve => setTimeout(resolve, 3000));
         } catch (e) {
           console.log('⚠️  Could not close instances automatically. Please close SchemaTools.exe manually.');
         }
@@ -47,25 +47,61 @@ async function prepareBuild() {
       // No instances running or tasklist failed - continue
     }
     
-    // Try to remove old directory if it exists (with retry)
+    // Try to remove old directory if it exists (with retry and rename fallback)
     if (fs.existsSync(oldAppDir)) {
       console.log('🗑️  Removing old build directory...');
       let removed = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          fs.rmSync(oldAppDir, { recursive: true, force: true });
-          removed = true;
-          console.log('✅ Old directory removed');
-          break;
-        } catch (e) {
-          if (attempt < 2) {
-            console.log(`⚠️  Attempt ${attempt + 1} failed, waiting 2 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else {
-            console.log('⚠️  Could not remove old directory. It may be locked.');
-            console.log('💡 Please close SchemaTools.exe and any Windows Explorer windows showing that folder.');
+      
+      // First, try to rename it (this works even if files are locked)
+      const oldAppDirRenamed = oldAppDir + '.old.' + Date.now();
+      try {
+        fs.renameSync(oldAppDir, oldAppDirRenamed);
+        console.log('✅ Renamed old directory (will delete after build)');
+        removed = true;
+      } catch (renameError) {
+        // If rename fails, try direct deletion with retries
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            // Use more aggressive deletion
+            if (attempt > 0) {
+              // Try to unlock files using Windows attrib command
+              try {
+                execSync(`attrib -r "${oldAppDir}\\*.*" /s /d`, { stdio: 'ignore' });
+              } catch (e) {
+                // Ignore attrib errors
+              }
+            }
+            fs.rmSync(oldAppDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 1000 });
+            removed = true;
+            console.log('✅ Old directory removed');
+            break;
+          } catch (e) {
+            if (attempt < 4) {
+              console.log(`⚠️  Attempt ${attempt + 1} failed, waiting 3 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            } else {
+              console.log('⚠️  Could not remove old directory. It may be locked.');
+              console.log('💡 Troubleshooting:');
+              console.log('   1. Close SchemaTools.exe if it\'s running');
+              console.log('   2. Close any Windows Explorer windows');
+              console.log('   3. Check Task Manager for any Node/Electron processes');
+              console.log('   4. Restart your computer if needed');
+              console.log(`\n   The build will continue, but electron-packager will try to overwrite.`);
+            }
           }
         }
+      }
+      
+      // If we renamed it, try to delete the renamed directory after a delay
+      if (removed && fs.existsSync(oldAppDirRenamed)) {
+        setTimeout(() => {
+          try {
+            fs.rmSync(oldAppDirRenamed, { recursive: true, force: true });
+            console.log('✅ Cleaned up renamed old directory');
+          } catch (e) {
+            // Ignore - will clean up next time
+          }
+        }, 5000);
       }
     }
   }
