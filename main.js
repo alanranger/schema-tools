@@ -320,8 +320,22 @@ ipcMain.handle('open-exe', async (event, exePath) => {
 
 // IPC handler for getting the exe path
 ipcMain.handle('get-exe-path', async () => {
-  const exePath = path.join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
-  return exePath;
+  // Use LOCALAPPDATA environment variable (standard Windows app data location)
+  const localAppData = process.env.LOCALAPPDATA || process.env.APPDATA || path.join(process.env.HOME || process.env.USERPROFILE || '', 'AppData', 'Local');
+  const exePath = path.join(localAppData, 'SchemaTools', 'SchemaTools-win32-x64', 'SchemaTools.exe');
+  
+  // Check if file exists
+  if (fs.existsSync(exePath)) {
+    return exePath;
+  }
+  
+  // Fallback to old dist location (for backwards compatibility)
+  const oldPath = path.join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
+  if (fs.existsSync(oldPath)) {
+    return oldPath;
+  }
+  
+  return exePath; // Return expected path even if not found yet
 });
 
 // IPC handler for opening DevTools (Electron console)
