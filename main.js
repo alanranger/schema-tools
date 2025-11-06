@@ -78,6 +78,10 @@ app.whenReady().then(async () => {
     const output = data.toString();
     serverOutput.push({ type: 'stdout', data: output });
     console.log(`[Server] ${output.trim()}`);
+    // Send to renderer if window exists
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('server-log', { type: 'stdout', message: output.trim() });
+    }
   });
 
   // Capture server stderr
@@ -85,6 +89,10 @@ app.whenReady().then(async () => {
     const output = data.toString();
     serverOutput.push({ type: 'stderr', data: output });
     console.error(`[Server Error] ${output.trim()}`);
+    // Send to renderer if window exists
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('server-log', { type: 'stderr', message: output.trim() });
+    }
   });
 
   localServer.on("error", (err) => {
@@ -118,6 +126,10 @@ app.whenReady().then(async () => {
   localServer.on("spawn", () => {
     serverStarted = true;
     console.log("✅ Local server process spawned");
+    // Send to renderer if window exists
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('server-log', { type: 'info', message: '✅ Local server process spawned' });
+    }
   });
 
   // Verify server is actually listening by checking health endpoint
@@ -150,18 +162,35 @@ app.whenReady().then(async () => {
   setTimeout(async () => {
     const isHealthy = await checkServerHealth();
     
+    // Send status to renderer
+    const sendToRenderer = (type, message) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('server-log', { type, message });
+      }
+    };
+    
     if (serverError) {
       console.error("⚠️ Local server failed to start - app will continue but automation may not work");
       console.error("   Error:", serverError.message);
       console.error("   Server output:", serverOutput);
+      sendToRenderer('error', `⚠️ Local server failed to start: ${serverError.message}`);
+      if (serverOutput.length > 0) {
+        sendToRenderer('error', `Server output: ${JSON.stringify(serverOutput.slice(-3))}`);
+      }
     } else if (isHealthy) {
       console.log("✅ Local executor bridge ready and responding");
+      sendToRenderer('success', '✅ Local executor bridge ready and responding on port 8000');
     } else if (serverStarted) {
       console.warn("⚠️ Local server spawned but not responding on port 8000");
       console.warn("   This may be normal if the server is still starting...");
       console.warn("   Server output:", serverOutput.slice(-3));
+      sendToRenderer('warning', '⚠️ Local server spawned but not responding on port 8000');
+      if (serverOutput.length > 0) {
+        sendToRenderer('info', `Last output: ${serverOutput.slice(-3).map(o => o.data.trim()).join('; ')}`);
+      }
     } else {
       console.warn("⚠️ Local server status unclear - app will continue");
+      sendToRenderer('warning', '⚠️ Local server status unclear - app will continue');
     }
     createWindow();
   }, 2000); // Increased timeout to 2 seconds

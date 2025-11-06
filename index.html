@@ -8532,6 +8532,26 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     let serverStatus = 'running'; // Assume running in Electron
     let isElectronMode = false;
     
+    // Helper function to log server messages to Step 0 console
+    function logServerMessage(type, message) {
+      const consoleOutput = document.getElementById('executorConsole') || document.querySelector('[id*="step0"][id*="console"]');
+      if (consoleOutput && isElectronMode) {
+        const prefix = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+        const logLine = `${prefix} [Server] ${message}\n`;
+        consoleOutput.textContent = (consoleOutput.textContent || '') + logLine;
+        consoleOutput.style.display = 'block';
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        console.log(`[Main Process] ${message}`);
+      }
+    }
+    
+    // Listen for server logs from main process (Electron only)
+    if (window.electronAPI && window.electronAPI.onServerLog) {
+      window.electronAPI.onServerLog((data) => {
+        logServerMessage(data.type || 'info', data.message || JSON.stringify(data));
+      });
+    }
+    
     // Detect if running in Electron (check for Electron user agent or window properties)
     // This runs immediately, but initLocalExecutor will do a more thorough check
     function detectElectronMode() {
