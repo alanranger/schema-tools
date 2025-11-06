@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
@@ -117,5 +117,72 @@ app.on("before-quit", () => {
     console.log("🧹 Shutting down local executor...");
     localServer.kill("SIGTERM");
   }
+});
+
+// IPC handler for building desktop app
+ipcMain.handle('build-desktop', async () => {
+  return new Promise((resolve, reject) => {
+    console.log("🔨 Starting desktop build...");
+    
+    const buildProcess = spawn("npm", ["run", "build:desktop"], {
+      cwd: __dirname,
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    buildProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      stdout += output;
+      console.log(output.trim());
+      if (mainWindow) {
+        mainWindow.webContents.send('build-progress', { type: 'stdout', data: output });
+      }
+    });
+
+    buildProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+      stderr += output;
+      console.error(output.trim());
+      if (mainWindow) {
+        mainWindow.webContents.send('build-progress', { type: 'stderr', data: output });
+      }
+    });
+
+    buildProcess.on('close', (code) => {
+      if (code === 0) {
+        console.log("✅ Desktop build completed successfully");
+        if (mainWindow) {
+          mainWindow.webContents.send('build-complete', { 
+            success: true, 
+            message: 'Build completed successfully!',
+            output: stdout 
+          });
+        }
+        resolve({ success: true, output: stdout });
+      } else {
+        const error = `Build failed with exit code ${code}`;
+        console.error(`❌ ${error}`);
+        if (mainWindow) {
+          mainWindow.webContents.send('build-error', { 
+            error: error,
+            stderr: stderr,
+            stdout: stdout 
+          });
+        }
+        reject(new Error(error));
+      }
+    });
+
+    buildProcess.on('error', (err) => {
+      console.error("❌ Build process error:", err);
+      if (mainWindow) {
+        mainWindow.webContents.send('build-error', { error: err.message });
+      }
+      reject(err);
+    });
+  });
 });
 

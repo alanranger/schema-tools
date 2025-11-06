@@ -1409,6 +1409,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         </div>
       </div>
 
+      <!-- Build Desktop App Section (Electron Mode Only) -->
+      <div id="build-desktop-section" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px solid #27AE60; border-radius:12px; background:#f0fdf4;">
+        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">🔨 Build Desktop App</h3>
+        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">Build the Windows .exe file directly from this app.</p>
+        
+        <div style="text-align:center; margin-bottom:1rem;">
+          <button id="buildDesktopBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+            🔨 Build Desktop App (npm run build:desktop)
+          </button>
+        </div>
+        
+        <div id="buildOutput" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
+      </div>
+
       <!-- ===================== STATUS DASHBOARD ===================== -->
       <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="color: #2d3748; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
@@ -8853,10 +8867,74 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
     }
     
-    // Desktop App Launch Button Handler (Web Mode Only)
+    // Desktop App Launch Button Handler (Web Mode Only) + Build Button (Electron Mode)
     document.addEventListener('DOMContentLoaded', () => {
       const isElectron = !!(window.electronAPI && window.electronAPI.isElectron) || 
                          navigator.userAgent.toLowerCase().includes('electron');
+      
+      // Show build section in Electron mode
+      if (isElectron && window.electronAPI && window.electronAPI.buildDesktop) {
+        const buildSection = document.getElementById('build-desktop-section');
+        if (buildSection) {
+          buildSection.style.display = 'block';
+          
+          const buildBtn = document.getElementById('buildDesktopBtn');
+          const buildOutput = document.getElementById('buildOutput');
+          
+          if (buildBtn && buildOutput) {
+            buildBtn.addEventListener('click', async () => {
+              buildBtn.disabled = true;
+              buildBtn.textContent = '🔨 Building...';
+              buildBtn.style.background = '#95a5a6';
+              buildOutput.style.display = 'block';
+              buildOutput.textContent = '🔨 Starting build process...\n';
+              buildOutput.scrollTop = buildOutput.scrollHeight;
+              
+              // Set up event listeners for build progress
+              if (window.electronAPI.onBuildProgress) {
+                window.electronAPI.onBuildProgress((data) => {
+                  buildOutput.textContent += data.data;
+                  buildOutput.scrollTop = buildOutput.scrollHeight;
+                });
+              }
+              
+              if (window.electronAPI.onBuildComplete) {
+                window.electronAPI.onBuildComplete((data) => {
+                  buildOutput.textContent += `\n✅ ${data.message}\n`;
+                  buildOutput.textContent += `\n📁 Output location: dist\\SchemaTools-win32-x64\\SchemaTools.exe\n`;
+                  buildBtn.disabled = false;
+                  buildBtn.textContent = '✅ Build Complete!';
+                  buildBtn.style.background = '#27AE60';
+                  buildOutput.scrollTop = buildOutput.scrollHeight;
+                });
+              }
+              
+              if (window.electronAPI.onBuildError) {
+                window.electronAPI.onBuildError((data) => {
+                  buildOutput.textContent += `\n❌ Build Error: ${data.error}\n`;
+                  if (data.stderr) {
+                    buildOutput.textContent += `\nError output:\n${data.stderr}\n`;
+                  }
+                  buildBtn.disabled = false;
+                  buildBtn.textContent = '❌ Build Failed - Try Again';
+                  buildBtn.style.background = '#e74c3c';
+                  buildOutput.scrollTop = buildOutput.scrollHeight;
+                });
+              }
+              
+              try {
+                await window.electronAPI.buildDesktop();
+              } catch (error) {
+                buildOutput.textContent += `\n❌ Build failed: ${error.message}\n`;
+                buildBtn.disabled = false;
+                buildBtn.textContent = '❌ Build Failed - Try Again';
+                buildBtn.style.background = '#e74c3c';
+                buildOutput.scrollTop = buildOutput.scrollHeight;
+              }
+            });
+          }
+        }
+      }
       
       if (!isElectron) {
         const launchDiv = document.getElementById('desktop-launch');
