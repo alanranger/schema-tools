@@ -9101,14 +9101,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           // Get the actual exe path from Electron API if available, otherwise show expected location
           let fullExePath = "%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe";
           if (isElectronMode && window.electronAPI && window.electronAPI.getExePath) {
-            try {
-              const actualPath = await window.electronAPI.getExePath();
-              if (actualPath) {
-                fullExePath = actualPath;
+            // Use async IIFE to handle await
+            (async () => {
+              try {
+                const actualPath = await window.electronAPI.getExePath();
+                if (actualPath) {
+                  fullExePath = actualPath;
+                }
+              } catch (e) {
+                // Fallback to default
               }
-            } catch (e) {
-              // Fallback to default
-            }
+            })();
           }
           const buildCommand = "npm run build:desktop";
           
