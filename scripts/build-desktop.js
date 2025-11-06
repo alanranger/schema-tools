@@ -30,8 +30,39 @@ async function killLockingProcesses() {
   if (process.platform === 'win32') {
     try {
       console.log('🔍 Checking for Node/Electron processes that might lock files...');
-      const processes = ['node.exe', 'electron.exe', 'SchemaTools.exe'];
+      const currentPid = process.pid;
+      const processes = ['electron.exe', 'SchemaTools.exe'];
       
+      // Only kill node.exe processes that are NOT this build script
+      try {
+        const nodeProcesses = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH', { 
+          encoding: 'utf-8',
+          stdio: 'pipe'
+        });
+        if (nodeProcesses.trim() && nodeProcesses.includes('node.exe')) {
+          // Get all node.exe PIDs and kill only those that aren't this process
+          const lines = nodeProcesses.trim().split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            try {
+              // Extract PID from CSV format: "node.exe","12345","Session Name","Session#","Mem Usage"
+              const match = line.match(/"node\.exe","(\d+)"/);
+              if (match) {
+                const pid = parseInt(match[1]);
+                if (pid !== currentPid && pid !== process.ppid) {
+                  console.log(`⚠️  Found node.exe process (PID ${pid}). Closing...`);
+                  execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+                }
+              }
+            } catch (e) {
+              // Ignore individual process kill errors
+            }
+          }
+        }
+      } catch (e) {
+        // No node.exe processes or couldn't list them
+      }
+      
+      // Kill Electron and SchemaTools processes
       for (const proc of processes) {
         try {
           const result = execSync(`tasklist /FI "IMAGENAME eq ${proc}" /FO CSV /NH`, { 
