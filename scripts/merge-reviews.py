@@ -347,11 +347,53 @@ def merge_reviews():
     if matched_count > 0:
         print(f"✅ Filtered merged reviews to {matched_count} unique reviews mapped to {unique_products} valid products")
     
+    # Ensure correct column names exist before saving
+    # Map common column variations to standard names
+    column_mapping = {
+        'reviewer': 'author',
+        'review': 'reviewBody',
+        'review_text': 'reviewBody',
+        'rating': 'ratingValue',
+        'star_rating': 'ratingValue',
+        'stars': 'ratingValue'
+    }
+    
+    for old_col, new_col in column_mapping.items():
+        if old_col in reviews.columns and new_col not in reviews.columns:
+            reviews[new_col] = reviews[old_col]
+    
+    # Ensure all expected columns exist
+    expected_cols = ['product_name', 'product_slug', 'author', 'ratingValue', 'reviewBody', 'source', 'date']
+    for col in expected_cols:
+        if col not in reviews.columns:
+            if col == 'author':
+                reviews[col] = reviews.get('reviewer', 'Anonymous')
+            elif col == 'reviewBody':
+                reviews[col] = reviews.get('review', reviews.get('review_text', ''))
+            elif col == 'ratingValue':
+                # Normalize rating if we have a rating column
+                if 'rating' in reviews.columns:
+                    reviews[col] = reviews['rating'].apply(normalize_rating)
+                else:
+                    reviews[col] = None
+            elif col == 'source':
+                reviews[col] = reviews.get('source', 'Unknown')
+            elif col == 'date':
+                reviews[col] = reviews.get('date', '')
+            else:
+                reviews[col] = ''
+    
+    # Select only expected columns (plus any additional useful columns)
+    columns_to_keep = expected_cols + [col for col in reviews.columns if col not in expected_cols and col not in ['reviewer', 'review', 'review_text', 'rating', 'star_rating', 'stars', 'reference_id']]
+    reviews = reviews[[col for col in columns_to_keep if col in reviews.columns]]
+    
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Save merged dataset
     reviews.to_csv(output_path, index=False, encoding='utf-8-sig')
+    
+    print(f"✅ Saved merged reviews with {len(reviews)} rows and columns {list(reviews.columns)}")
     
     print("="*60)
     print("✅ MERGE COMPLETE")

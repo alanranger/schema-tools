@@ -432,9 +432,24 @@ def main():
         print(f"📂 Using merged reviews file: {merged_reviews_file.name}")
         try:
             merged_df = pd.read_csv(merged_reviews_file, encoding='utf-8-sig')
-            merged_df.columns = [c.strip().lower().replace(' ', '_') for c in merged_df.columns]
+            print(f"✅ Loaded merged reviews: {merged_df.shape[0]} rows, {merged_df.shape[1]} columns")
             
-            # Sanitize dataset: Drop any NaN, blanks, or invalid mappings
+            # Fail-safe for malformed CSV (only reviewBody header)
+            if merged_df.columns.tolist() == ['reviewBody'] or len(merged_df.columns) == 1:
+                print("⚠️ Detected malformed CSV (only 'reviewBody' header or single column). Skipping this file.")
+                merged_df = pd.DataFrame()
+            else:
+                # Normalize column names
+                merged_df.columns = [c.strip().lower().replace(' ', '_') for c in merged_df.columns]
+                
+                # Verify essential columns
+                required = {'product_name', 'product_slug', 'ratingvalue', 'reviewbody'}
+                missing = required - set(merged_df.columns)
+                if missing:
+                    print(f"⚠️ Missing columns {missing} — falling back to manual matching.")
+                    merged_df = pd.DataFrame()
+            
+            if not merged_df.empty:
             before_sanitize = len(merged_df)
             merged_df = merged_df.dropna(subset=['product_slug'])
             merged_df = merged_df[merged_df['product_slug'].astype(str).str.strip() != '']
@@ -540,6 +555,8 @@ def main():
             print(f"✅ Matched {matched_reviews_count} reviews to {len(matched_products)} products")
         except Exception as e:
             print(f"⚠️  Error reading merged file: {e}")
+            import traceback
+            traceback.print_exc()
             print("📂 Falling back to source files...")
             reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
     else:
