@@ -190,91 +190,100 @@ def fetch_reviews(creds, location_id=None):
         reviews = []
         next_page_token = None
         
-        # Try different API paths for reviews
+        # Try to fetch reviews using the available service
+        # Note: Reviews endpoint structure may vary by API
+        print("🔍 Attempting to fetch reviews...")
+        
         try:
-            # Method 1: Try the standard reviews endpoint
-            while True:
-                try:
-                    # The reviews endpoint path might vary - try different structures
-                    if hasattr(service, 'accounts') and hasattr(service.accounts(), 'locations'):
-                        locations_resource = service.accounts().locations()
-                        if hasattr(locations_resource, 'reviews'):
+            # Method 1: Try standard reviews endpoint structure
+            if hasattr(service, 'accounts') and hasattr(service.accounts(), 'locations'):
+                locations_resource = service.accounts().locations()
+                
+                # Check if reviews endpoint exists
+                if hasattr(locations_resource, 'reviews'):
+                    print("   ✅ Found reviews endpoint in locations resource")
+                    while True:
+                        try:
                             response = locations_resource.reviews().list(
                                 parent=location_id,
                                 pageToken=next_page_token,
                                 pageSize=50
                             ).execute()
-                        else:
-                            # Try alternative path
-                            response = service.accounts().locations().reviews().list(
-                                name=location_id,
-                                pageToken=next_page_token,
-                                pageSize=50
-                            ).execute()
-                    else:
-                        raise AttributeError("API structure not recognized")
-                    
-                    reviews_data = response.get("reviews", [])
-                    
-                    for r in reviews_data:
-                        reviewer_info = r.get("reviewer", {})
-                        reviewer = reviewer_info.get("displayName", "Anonymous")
-                        
-                        # Handle star rating (can be string or number)
-                        star_rating = r.get("starRating", "UNSPECIFIED")
-                        if star_rating == "UNSPECIFIED":
-                            rating = "N/A"
-                        elif isinstance(star_rating, str):
-                            rating = star_rating
-                        else:
-                            rating = str(star_rating)
-                        
-                        comment = r.get("comment", "").replace("\n", " ").strip()
-                        update_time = r.get("updateTime", "")
-                        
-                        # Parse date if available
-                        date_str = ""
-                        if update_time:
-                            try:
-                                # Google API returns ISO 8601 format
-                                dt = datetime.fromisoformat(update_time.replace('Z', '+00:00'))
-                                date_str = dt.strftime('%Y-%m-%dT%H:%M:%S')
-                            except:
-                                date_str = update_time
-                        
-                        reviews.append({
-                            "reviewer": reviewer,
-                            "rating": rating,
-                            "review": comment,
-                            "date": date_str,
-                            "source": "Google",
-                            "reference_id": ""
-                        })
-                    
-                    next_page_token = response.get("nextPageToken")
-                    if not next_page_token:
-                        break
-                        
-                except Exception as e:
-                    print(f"⚠️ Error fetching reviews page: {e}")
-                    # If we got some reviews, return them; otherwise break
-                    if reviews:
-                        break
-                    else:
-                        raise
+                            
+                            reviews_data = response.get("reviews", [])
+                            
+                            for r in reviews_data:
+                                reviewer_info = r.get("reviewer", {})
+                                reviewer = reviewer_info.get("displayName", "Anonymous")
+                                
+                                # Handle star rating (can be string or number)
+                                star_rating = r.get("starRating", "UNSPECIFIED")
+                                if star_rating == "UNSPECIFIED":
+                                    rating = "N/A"
+                                elif isinstance(star_rating, str):
+                                    rating = star_rating
+                                else:
+                                    rating = str(star_rating)
+                                
+                                comment = r.get("comment", "").replace("\n", " ").strip()
+                                update_time = r.get("updateTime", "")
+                                
+                                # Parse date if available
+                                date_str = ""
+                                if update_time:
+                                    try:
+                                        # Google API returns ISO 8601 format
+                                        dt = datetime.fromisoformat(update_time.replace('Z', '+00:00'))
+                                        date_str = dt.strftime('%Y-%m-%dT%H:%M:%S')
+                                    except:
+                                        date_str = update_time
+                                
+                                reviews.append({
+                                    "reviewer": reviewer,
+                                    "rating": rating,
+                                    "review": comment,
+                                    "date": date_str,
+                                    "source": "Google",
+                                    "reference_id": ""
+                                })
+                            
+                            next_page_token = response.get("nextPageToken")
+                            if not next_page_token:
+                                break
+                                
+                        except Exception as e:
+                            print(f"⚠️ Error fetching reviews page: {e}")
+                            if reviews:
+                                break
+                            else:
+                                raise
+                else:
+                    print("   ⚠️ Reviews endpoint not found in this API service")
+                    print("   The API service doesn't have a reviews() method")
+                    raise AttributeError("Reviews endpoint not available in this API")
+            else:
+                print("   ⚠️ API structure not recognized - no accounts().locations() found")
+                raise AttributeError("API structure not recognized")
+                
         except Exception as e:
-            # If the standard method fails, try using Business Information API
-            print(f"⚠️ Standard reviews API failed: {e}")
-            print("   Trying Business Information API...")
-            try:
-                biz_service = build("mybusinessbusinessinformation", "v1", credentials=creds)
-                # Business Information API doesn't have reviews endpoint directly
-                # Reviews are typically in the mybusiness API
-                print("   Business Information API doesn't support reviews directly.")
-                print("   Reviews must be fetched via My Business API.")
-                raise
-            except Exception as e2:
-                print(f"❌ Alternative API method also failed: {e2}")
+            print(f"❌ Failed to fetch reviews: {e}")
+            print("\n" + "="*60)
+            print("⚠️  REVIEWS ENDPOINT NOT AVAILABLE")
+            print("="*60)
+            print("\nThe reviews endpoint is not available in the current API.")
+            print("\n⚠️ IMPORTANT: You need to enable the original 'Google My Business API':")
+            print("   https://console.cloud.google.com/apis/library/mybusiness.googleapis.com?project=alan-ranger-photography")
+            print("\nThe newer APIs (Business Information, Account Management) don't have reviews.")
+            print("Reviews are only available in the original 'Google My Business API'.")
+            print("\nSteps:")
+            print("1. Click the link above")
+            print("2. Click 'ENABLE' if it's not already enabled")
+            print("3. Wait a few minutes for the API to activate")
+            print("4. Try Step 3a again")
+            print("="*60)
+            import traceback
+            traceback.print_exc()
+            return []
         
         if reviews:
             print(f"✅ Fetched {len(reviews)} reviews.")
