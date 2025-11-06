@@ -9228,30 +9228,33 @@ ${expandedPath}
             });
           }
           
-          // Open Electron app button (web mode - direct link to exe)
+          // Open Electron app button (web mode - creates batch file to open exe)
           const openExeBtnWeb = document.getElementById('openExeBtnWeb');
           if (openExeBtnWeb) {
             openExeBtnWeb.addEventListener('click', () => {
               const exePath = 'C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe';
               
-              // Try to open the exe directly
-              try {
-                // Method 1: Create a link and click it
-                const link = document.createElement('a');
-                link.href = `file:///${exePath.replace(/\\/g, '/')}`;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Also try window.open as fallback
-                setTimeout(() => {
-                  window.open(`file:///${exePath.replace(/\\/g, '/')}`, '_blank');
-                }, 100);
-              } catch (e) {
-                // If browser blocks it, show instructions
-                alert(`⚠️ Browser blocked opening .exe file (security restriction).\n\n📁 Please open manually:\n${exePath}\n\nOr double-click SchemaTools.exe in:\nC:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\`);
-              }
+              // Create a batch file that opens the exe
+              const batchContent = `@echo off
+cd /d "C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64"
+start "" "SchemaTools.exe"
+exit`;
+              
+              // Create blob and download
+              const blob = new Blob([batchContent], { type: 'text/plain;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'Open-SchemaTools.bat';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              // Show instructions
+              setTimeout(() => {
+                alert(`✅ Batch file downloaded!\n\n💡 To open the app:\n1. Go to your Downloads folder\n2. Double-click "Open-SchemaTools.bat"\n3. The app will launch!\n\nOr open directly:\n${exePath}`);
+              }, 500);
             });
           }
         }
