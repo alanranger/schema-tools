@@ -9144,9 +9144,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 // Copy command to clipboard first
                 await navigator.clipboard.writeText(buildCommand);
                 
-                // Calculate project root folder (parent of dist folder)
-                const distFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
-                const projectFolderPath = distFolderPath || fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
+                // Calculate project root folder (use hardcoded path since exe is now in LOCALAPPDATA)
+                const projectFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools';
                 
                 // Create a batch file that opens PowerShell and runs the build command
                 const batchContent = `@echo off
