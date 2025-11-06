@@ -8541,6 +8541,44 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Server status check - disabled in Electron mode (server always runs)
     let serverStatus = 'running'; // Assume running in Electron
     let isElectronMode = false;
+    let serverPort = 8000; // Default port, will be discovered if different
+    
+    // Helper function to discover server port (tries 8000-8009)
+    async function discoverServerPort() {
+      const startPort = 8000;
+      const maxPorts = 10;
+      
+      for (let port = startPort; port < startPort + maxPorts; port++) {
+        try {
+          const res = await fetch(`http://localhost:${port}/health`, { 
+            signal: AbortSignal.timeout(500) 
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === "ok") {
+              return port;
+            }
+          }
+        } catch (e) {
+          // Port not responding, try next
+          continue;
+        }
+      }
+      return null;
+    }
+    
+    // Discover server port on load (in Electron mode)
+    if (typeof window !== 'undefined') {
+      // Try to discover port immediately
+      discoverServerPort().then(port => {
+        if (port) {
+          serverPort = port;
+          if (port !== 8000) {
+            console.log(`ℹ️ Server discovered on port ${port} (8000 was in use)`);
+          }
+        }
+      });
+    }
     
     // Helper function to log server messages to Step 0 console
     function logServerMessage(type, message) {
@@ -8604,19 +8642,29 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         return true;
       }
       
-      // Browser mode: check server status
-      try {
-        const res = await fetch("http://localhost:8000/health");
-        const data = await res.json();
-        if (data.status === "ok") {
-          console.log("✅ Local executor already running.");
-          serverStatus = 'running';
-          return true;
+      // Browser mode: discover server port and check status
+      const discoveredPort = await discoverServerPort();
+      if (discoveredPort) {
+        serverPort = discoveredPort;
+        if (discoveredPort !== 8000) {
+          console.log(`ℹ️ Server found on port ${discoveredPort} (8000 was in use)`);
         }
-      } catch (err) {
-        console.log("⚠️ Local executor not running.");
-        console.log("💡 To start the server, run in terminal: npm run start-local");
-        serverStatus = 'stopped';
+        try {
+          const res = await fetch(`http://localhost:${discoveredPort}/health`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            console.log("✅ Local executor already running.");
+            serverStatus = 'running';
+            return true;
+          }
+        } catch (err) {
+          // Fall through
+        }
+      }
+      
+      console.log("⚠️ Local executor not running.");
+      console.log("💡 To start the server, run in terminal: npm run start-local");
+      serverStatus = 'stopped';
         
         // Check if running on Vercel/web deployment
         const isWebDeployment = window.location.hostname.includes('vercel.app') || 
@@ -8736,7 +8784,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           // Give server a moment to start
           await new Promise(resolve => setTimeout(resolve, 1500));
           
-          const res = await fetch("http://localhost:8000/health").catch(() => null);
+          // Discover server port first
+          const discoveredPort = await discoverServerPort();
+          if (discoveredPort) {
+            serverPort = discoveredPort;
+            if (discoveredPort !== 8000) {
+              log(`ℹ️ Server found on port ${discoveredPort} (8000 was in use)`);
+            }
+          }
+          
+          const res = await fetch(`http://localhost:${serverPort}/health`).catch(() => null);
           if (res && res.ok) {
             log("✅ Ready! All steps will run automatically.");
             serverStatus = 'running';
@@ -8746,7 +8803,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           } else {
             // Retry once more
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const retryRes = await fetch("http://localhost:8000/health").catch(() => null);
+            const retryPort = await discoverServerPort() || serverPort;
+            const retryRes = await fetch(`http://localhost:${retryPort}/health`).catch(() => null);
             if (retryRes && retryRes.ok) {
               log("✅ Ready! All steps will run automatically.");
               serverStatus = 'running';
@@ -8874,7 +8932,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       async function checkServerStatus() {
         log("🔄 Checking if local server is running...");
         try {
-          const res = await fetch("http://localhost:8000/health");
+          const discoveredPort = await discoverServerPort() || serverPort;
+          serverPort = discoveredPort;
+          const res = await fetch(`http://localhost:${serverPort}/health`);
           const data = await res.json();
           if (data.status === "ok") {
             log("✅ Local server is running!");
@@ -9301,9 +9361,13 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
       try {
         log(`🚀 Starting ${task} task...\n`);
         
+        // Discover server port if not already known
+        const discoveredPort = await discoverServerPort() || serverPort;
+        serverPort = discoveredPort;
+        
         // First check if server is reachable
         try {
-          const healthCheck = await fetch('http://localhost:8000/health', { 
+          const healthCheck = await fetch(`http://localhost:${serverPort}/health`, { 
             method: 'GET',
             signal: AbortSignal.timeout(3000) // 3 second timeout
           });
@@ -9312,7 +9376,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           }
         } catch (healthError) {
           if (healthError.name === 'AbortError' || healthError.message.includes('Failed to fetch') || healthError.message.includes('NetworkError')) {
-            throw new Error('Cannot connect to local server. Make sure the server is running on port 8000.');
+            throw new Error(`Cannot connect to local server. Make sure the server is running on port ${serverPort}.`);
           }
           throw healthError;
         }
@@ -9320,7 +9384,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
         log(`✅ Server connection verified\n`);
         log(`📡 Sending task request...\n`);
         
-        const response = await fetch(`http://localhost:8000/run?task=${task}`, {
+        const response = await fetch(`http://localhost:${serverPort}/run?task=${task}`, {
           signal: AbortSignal.timeout(300000) // 5 minute timeout for long tasks
         });
         
@@ -9389,7 +9453,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           } else {
             log(`   • Make sure the local server is running\n`);
             log(`   • Run: npm run start-local\n`);
-            log(`   • Wait for: "⚡ Local executor running at http://localhost:8000"\n`);
+            log(`   • Wait for: "⚡ Local executor running at http://localhost:${serverPort}"\n`);
             log(`   • Then refresh this page and try again\n`);
           }
         } else if (errorMsg.includes('timeout') || errorMsg.includes('aborted')) {
@@ -9550,7 +9614,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           consoleOutput.textContent += 'To run Step 2 automatically:\n';
           consoleOutput.textContent += '   1. Open your terminal in the project folder\n';
           consoleOutput.textContent += '   2. Run: npm run start-local\n';
-          consoleOutput.textContent += '   3. Wait for: "⚡ Local executor running at http://localhost:8000"\n';
+          consoleOutput.textContent += `   3. Wait for: "⚡ Local executor running at http://localhost:${serverPort}"\n`;
           consoleOutput.textContent += '   4. Refresh this page\n';
           consoleOutput.textContent += '   5. Upload the file again\n';
           consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';

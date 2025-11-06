@@ -21,7 +21,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 8000;
+const START_PORT = 8000;
+const MAX_PORT_ATTEMPTS = 10; // Try ports 8000-8009
 
 const TASK_MAP = {
   clean: "clean",
@@ -116,85 +117,78 @@ app.get("/run", (req, res) => {
   });
 });
 
-// Function to check if port is in use and kill the process (Windows)
-async function killProcessOnPort(port) {
-  if (process.platform !== 'win32') {
-    return false; // Only works on Windows
-  }
-  
-  try {
-    // Find process using the port
-    const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' });
-    const lines = result.trim().split('\n');
+// Function to find an available port
+function findAvailablePort(startPort, maxAttempts) {
+  return new Promise((resolve, reject) => {
+    let currentPort = startPort;
+    let attempts = 0;
     
-    for (const line of lines) {
-      if (line.includes('LISTENING')) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parts[parts.length - 1];
-        if (pid && !isNaN(pid)) {
-          console.log(`🔄 Killing process ${pid} using port ${port}...`);
-          try {
-            execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
-            console.log(`✅ Process ${pid} terminated`);
-            // Wait a moment for port to be released
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return true;
-          } catch (e) {
-            console.log(`⚠️ Could not kill process ${pid}: ${e.message}`);
-          }
+    function tryPort() {
+      if (attempts >= maxAttempts) {
+        reject(new Error(`Could not find available port after ${maxAttempts} attempts`));
+        return;
+      }
+      
+      const testServer = app.listen(currentPort, () => {
+        // Port is available, close test server and return port
+        testServer.close(() => {
+          resolve(currentPort);
+        });
+      });
+      
+      testServer.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          // Port is in use, try next one
+          attempts++;
+          currentPort++;
+          tryPort();
+        } else {
+          reject(err);
         }
-      }
+      });
     }
-  } catch (e) {
-    // Port might not be in use, or netstat failed
-    return false;
-  }
-  return false;
+    
+    tryPort();
+  });
 }
 
-// Function to start the server
-function startServer() {
-  const server = app.listen(PORT, () => {
-    console.log(`⚡ Local executor running at http://localhost:${PORT}`);
-    console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
-    console.log(`💡 Health check: http://localhost:${PORT}/health`);
-  });
+// Start server on first available port
+let actualPort = START_PORT;
 
-  server.on('error', async (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Port ${PORT} is already in use`);
-      console.log(`🔄 Attempting to free port ${PORT}...`);
-      
-      // Try to kill the process using the port
-      const killed = await killProcessOnPort(PORT);
-      
-      if (killed) {
-        console.log(`✅ Port ${PORT} freed, restarting server...`);
-        // Close the failed server and create a new one
-        server.close();
-        setTimeout(() => {
-          startServer();
-        }, 1000);
-      } else {
-        console.error(`\n⚠️ Could not free port ${PORT}`);
-        console.error(`\n💡 Solutions:`);
-        console.error(`   1. Close any other instances of this app`);
-        console.error(`   2. Close any other applications using port ${PORT}`);
-        console.error(`   3. Manually kill the process:`);
-        console.error(`      - Run: netstat -ano | findstr :${PORT}`);
-        console.error(`      - Find the PID and run: taskkill /F /PID <PID>`);
-        console.error(`   4. Restart your computer`);
-        process.exit(1);
-      }
-    } else {
-      console.error(`❌ Server error: ${err.message}`);
-      process.exit(1);
+findAvailablePort(START_PORT, MAX_PORT_ATTEMPTS)
+  .then((port) => {
+    actualPort = port;
+    
+    if (port !== START_PORT) {
+      console.log(`ℹ️ Port ${START_PORT} was in use, using port ${port} instead`);
     }
+    
+    app.listen(port, () => {
+      console.log(`⚡ Local executor running at http://localhost:${port}`);
+      console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
+      console.log(`💡 Health check: http://localhost:${port}/health`);
+      
+      // Write port to a file so client can discover it
+      const portFile = path.join(__dirname, '..', 'inputs-files', 'workflow', '.server-port');
+      try {
+        const fs = await import('fs');
+        const portDir = path.dirname(portFile);
+        if (!fs.existsSync(portDir)) {
+          fs.mkdirSync(portDir, { recursive: true });
+        }
+        fs.writeFileSync(portFile, port.toString(), 'utf-8');
+      } catch (e) {
+        // Ignore if we can't write the file
+        console.log(`⚠️ Could not write port file: ${e.message}`);
+      }
+    });
+  })
+  .catch((err) => {
+    console.error(`❌ Failed to start server: ${err.message}`);
+    console.error(`\n💡 Solutions:`);
+    console.error(`   1. Close any other instances of this app`);
+    console.error(`   2. Close any other applications using ports ${START_PORT}-${START_PORT + MAX_PORT_ATTEMPTS - 1}`);
+    console.error(`   3. Restart your computer`);
+    process.exit(1);
   });
-
-  return server;
-}
-
-// Start the server
-startServer();
 
