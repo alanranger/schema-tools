@@ -3,6 +3,7 @@ import path from "path";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,18 +121,29 @@ app.whenReady().then(async () => {
   });
 
   // Verify server is actually listening by checking health endpoint
-  const checkServerHealth = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/health');
-      if (response.ok) {
-        console.log("✅ Local server is responding on port 8000");
-        return true;
-      }
-    } catch (err) {
-      // Server not ready yet, this is expected initially
-      return false;
-    }
-    return false;
+  const checkServerHealth = () => {
+    return new Promise((resolve) => {
+      const req = http.get('http://localhost:8000/health', (res) => {
+        if (res.statusCode === 200) {
+          console.log("✅ Local server is responding on port 8000");
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+        res.on('data', () => {}); // Consume response
+        res.on('end', () => {});
+      });
+      
+      req.on('error', () => {
+        // Server not ready yet, this is expected initially
+        resolve(false);
+      });
+      
+      req.setTimeout(1000, () => {
+        req.destroy();
+        resolve(false);
+      });
+    });
   };
 
   // Give server time to start, then verify it's running
