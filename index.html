@@ -4427,26 +4427,36 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const output = document.getElementById('productOutput');
     const successMsg = document.getElementById('productSchemaSuccess');
 
-    // Use file from Step 3 input if available, otherwise use hidden input
+    // In Electron mode with auto-chaining, skip file upload check - the Python script will find the file automatically
+    // The merge script creates: 03 – combined_product_reviews.csv
+    // The schema script looks for: 03*.xlsx or products_with_review_data_final*.xlsx
+    // If no file uploaded but we're in Electron mode, proceed anyway - script will handle it
     const fileToProcess = (step3Input && step3Input.files.length > 0) ? step3Input.files[0] : 
                           (fileInput && fileInput.files.length > 0) ? fileInput.files[0] : null;
 
-    if (!fileToProcess) {
+    if (!fileToProcess && !isElectronMode) {
+      // Only require file upload in browser mode
       alert("Please upload a product Excel file (from Step 3) first.");
       return;
     }
 
-    const fileName = fileToProcess.name;
-    
-    // Check if file needs to be saved to workflow directory first
-    if (!fileName.includes('products_with_review_data_final') && !fileName.includes('03')) {
-      const proceed = confirm(
-        "The uploaded file doesn't match the expected name (03 – products_with_review_data_final.xlsx).\n\n" +
-        "Please ensure the file from Step 3 is saved in /inputs-files/workflow/ as:\n" +
-        "03 – products_with_review_data_final.xlsx\n\n" +
-        "Click OK to continue with preview, or Cancel to upload the correct file."
-      );
-      if (!proceed) return;
+    // In Electron mode, the file was already created by Step 3b automatically
+    // The Python script will automatically find and use: 03 – combined_product_reviews.csv
+    if (isElectronMode && !fileToProcess) {
+      console.log("ℹ️ Electron mode: Using automatically created file from Step 3b");
+      console.log("   Expected file: inputs-files/workflow/03 – combined_product_reviews.csv");
+    } else if (fileToProcess) {
+      const fileName = fileToProcess.name;
+      // Check if file needs to be saved to workflow directory first (browser mode only)
+      if (!fileName.includes('products_with_review_data_final') && !fileName.includes('03')) {
+        const proceed = confirm(
+          "The uploaded file doesn't match the expected name (03 – products_with_review_data_final.xlsx).\n\n" +
+          "Please ensure the file from Step 3 is saved in /inputs-files/workflow/ as:\n" +
+          "03 – products_with_review_data_final.xlsx\n\n" +
+          "Click OK to continue with preview, or Cancel to upload the correct file."
+        );
+        if (!proceed) return;
+      }
     }
 
     // Use local task runner for schema generation

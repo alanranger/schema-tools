@@ -112,25 +112,33 @@ def main():
     outputs_dir = Path('outputs')
     outputs_dir.mkdir(exist_ok=True)
     
-    # Find input file
+    # Find input file - check for both Excel and CSV files from Step 3
     input_files = []
-    patterns = ['03*.xlsx', 'products_with_review_data_final*.xlsx']
+    patterns = ['03*.xlsx', 'products_with_review_data_final*.xlsx', '03*.csv', 'combined_product_reviews*.csv']
     for pattern in patterns:
         input_files.extend(list(workflow_dir.glob(pattern)))
     
     if not input_files:
         print("❌ Error: No input file found")
         print(f"   Expected: {workflow_dir.absolute()}/03 – products_with_review_data_final.xlsx")
-        print(f"   Or: {workflow_dir.absolute()}/products_with_review_data_final.xlsx")
+        print(f"   Or: {workflow_dir.absolute()}/03 – combined_product_reviews.csv")
         sys.exit(1)
     
     input_file = sorted(input_files)[-1]
     print(f"📂 Reading: {input_file.name}")
     
     try:
-        df = pd.read_excel(input_file, engine='openpyxl')
+        # Try Excel first, then CSV
+        if input_file.suffix.lower() == '.xlsx':
+            df = pd.read_excel(input_file, engine='openpyxl')
+        elif input_file.suffix.lower() == '.csv':
+            df = pd.read_csv(input_file, encoding='utf-8-sig')
+            print("ℹ️ Reading CSV file (from Step 3b merge)")
+        else:
+            print(f"❌ Unsupported file format: {input_file.suffix}")
+            sys.exit(1)
     except Exception as e:
-        print(f"❌ Error reading Excel file: {e}")
+        print(f"❌ Error reading file: {e}")
         sys.exit(1)
     
     print(f"✅ Loaded {len(df)} products")
