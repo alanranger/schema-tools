@@ -1385,12 +1385,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
 
       <!-- Desktop App Launch Button (Web Mode Only) -->
-      <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6; text-align:center;">
-        <h3 style="margin-bottom:0.5rem; color:#2d3748;">💻 Want Full Automation?</h3>
-        <p style="margin-bottom:1rem; color:#4a5568;">This web version runs in read-only mode. To generate schema files automatically, use the desktop app.</p>
-        <button id="launchExeBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
-          ▶️ Open Desktop App (SchemaTools.exe)
-        </button>
+      <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6;">
+        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">💻 Want Full Automation?</h3>
+        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">This web version runs in read-only mode. To generate schema files automatically, use the desktop app.</p>
+        
+        <div style="background:#f7fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; border:1px solid #e2e8f0;">
+          <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;">📋 How to use the desktop app:</p>
+          <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
+            <li>Open your project folder in a terminal</li>
+            <li>Run: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;">npm run build:desktop</code></li>
+            <li>Navigate to: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;" id="exePathDisplay">dist\SchemaTools-win32-x64\SchemaTools.exe</code></li>
+            <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
+          </ol>
+        </div>
+        
+        <div style="text-align:center;">
+          <button id="copyPathBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+            📋 Copy Build Command
+          </button>
+          <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+            ℹ️ Show Full Path
+          </button>
+        </div>
       </div>
 
       <!-- ===================== STATUS DASHBOARD ===================== -->
@@ -8847,24 +8863,42 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         if (launchDiv) {
           launchDiv.style.display = 'block';
           
-          const exePath = "G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\dist\\SchemaTools-win32-x64\\SchemaTools.exe";
+          const fullExePath = "G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\dist\\SchemaTools-win32-x64\\SchemaTools.exe";
+          const buildCommand = "npm run build:desktop";
           
-          const launchBtn = document.getElementById('launchExeBtn');
-          if (launchBtn) {
-            launchBtn.addEventListener('click', () => {
+          // Copy build command button
+          const copyPathBtn = document.getElementById('copyPathBtn');
+          if (copyPathBtn) {
+            copyPathBtn.addEventListener('click', async () => {
               try {
-                // Try to open the EXE file
-                const link = document.createElement('a');
-                link.href = `file:///${exePath.replace(/\\/g, '/')}`;
-                link.click();
-                
-                // Fallback: show manual instructions
+                await navigator.clipboard.writeText(buildCommand);
+                copyPathBtn.textContent = '✅ Copied!';
+                copyPathBtn.style.background = '#27AE60';
                 setTimeout(() => {
-                  alert("⚠️ Unable to open the desktop app automatically.\n\nPlease open it manually:\n\n" + exePath);
-                }, 1000);
+                  copyPathBtn.textContent = '📋 Copy Build Command';
+                  copyPathBtn.style.background = '#0078D4';
+                }, 2000);
               } catch (e) {
-                alert("⚠️ Unable to open the desktop app automatically.\n\nPlease open it manually:\n\n" + exePath + "\n\nError: " + e.message);
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = buildCommand;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyPathBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                  copyPathBtn.textContent = '📋 Copy Build Command';
+                }, 2000);
               }
+            });
+          }
+          
+          // Show full path button
+          const showInstructionsBtn = document.getElementById('showInstructionsBtn');
+          if (showInstructionsBtn) {
+            showInstructionsBtn.addEventListener('click', () => {
+              alert(`📁 Full Path to Desktop App:\n\n${fullExePath}\n\n💡 To build the app:\n1. Open terminal in your project folder\n2. Run: ${buildCommand}\n3. Navigate to the dist folder\n4. Double-click SchemaTools.exe`);
             });
           }
         }
