@@ -94,8 +94,12 @@ def list_locations(creds):
         print(f"📋 Found account: {account_name}")
         
         # Get locations for this account
+        # Note: read_mask is required by the API - specifies which fields to return
         locations_service = build("mybusinessbusinessinformation", "v1", credentials=creds)
-        locations = locations_service.accounts().locations().list(parent=account_name).execute()
+        locations = locations_service.accounts().locations().list(
+            parent=account_name,
+            read_mask="name,title,storefrontAddress"
+        ).execute()
         
         if not locations.get('locations'):
             print("⚠️ No locations found for this account.")
