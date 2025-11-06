@@ -1394,7 +1394,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
             <li>Open your project folder in a terminal</li>
             <li>Run: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;">npm run build:desktop</code></li>
-            <li>Navigate to: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;" id="exePathDisplay">dist\SchemaTools-win32-x64\SchemaTools.exe</code></li>
+            <li>Navigate to: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
             <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
           </ol>
         </div>
@@ -9028,7 +9028,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
               if (window.electronAPI.onBuildComplete) {
                 window.electronAPI.onBuildComplete((data) => {
                   buildOutput.textContent += `\n✅ ${data.message}\n`;
-                  buildOutput.textContent += `\n📁 Output location: dist\\SchemaTools-win32-x64\\SchemaTools.exe\n`;
+                  buildOutput.textContent += `\n📁 Output location: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe\n`;
+                  buildOutput.textContent += `   (Typically: C:\\Users\\<YourUsername>\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe)\n`;
                   buildBtn.disabled = false;
                   buildBtn.textContent = '✅ Build Complete!';
                   buildBtn.style.background = '#27AE60';
@@ -9051,7 +9052,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                           const exePath = await window.electronAPI.getExePath();
                           alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n${exePath}`);
                         } catch {
-                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\ndist\\SchemaTools-win32-x64\\SchemaTools.exe`);
+                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`);
                         }
                       }
                     };
@@ -9093,7 +9094,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         if (launchDiv) {
           launchDiv.style.display = 'block';
           
-          const fullExePath = "G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\dist\\SchemaTools-win32-x64\\SchemaTools.exe";
+          // Get the actual exe path from Electron API if available, otherwise show expected location
+          let fullExePath = "%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe";
+          if (isElectronMode && window.electronAPI && window.electronAPI.getExePath) {
+            try {
+              const actualPath = await window.electronAPI.getExePath();
+              if (actualPath) {
+                fullExePath = actualPath;
+              }
+            } catch (e) {
+              // Fallback to default
+            }
+          }
           const buildCommand = "npm run build:desktop";
           
           // Copy build command button
