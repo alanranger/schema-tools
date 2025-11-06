@@ -97,63 +97,164 @@ def get_breadcrumbs(product_name, product_url):
         ]
     }
 
-def load_reviews(reviews_path):
-    """Load and group reviews by product name"""
-    if not reviews_path.exists():
-        print(f"⚠️  Reviews file not found: {reviews_path.name}")
+def normalize_rating(rating):
+    """Normalize rating to numeric value"""
+    if pd.isna(rating):
+        return None
+    
+    rating_str = str(rating).strip()
+    
+    # Handle numeric strings
+    try:
+        rating_num = float(rating_str)
+        if 1 <= rating_num <= 5:
+            return rating_num
+    except ValueError:
+        pass
+    
+    # Handle star ratings (e.g., "5", "FIVE", "FIVE_STAR")
+    rating_upper = rating_str.upper()
+    if "FIVE" in rating_upper or rating_str == "5":
+        return 5.0
+    elif "FOUR" in rating_upper or rating_str == "4":
+        return 4.0
+    elif "THREE" in rating_upper or rating_str == "3":
+        return 3.0
+    elif "TWO" in rating_upper or rating_str == "2":
+        return 2.0
+    elif "ONE" in rating_upper or rating_str == "1":
+        return 1.0
+    
+    return None
+
+def load_and_merge_reviews(google_path, trustpilot_path, products_df):
+    """Load reviews from both sources, merge, filter, and match to products"""
+    google_df = pd.DataFrame()
+    trust_df = pd.DataFrame()
+    
+    # Load Google reviews
+    if google_path.exists():
+        try:
+            google_df = pd.read_csv(google_path, encoding='utf-8-sig')
+            google_df.columns = [c.strip().lower().replace(' ', '_') for c in google_df.columns]
+            print(f"✅ Loaded {len(google_df)} reviews from Google")
+        except Exception as e:
+            print(f"⚠️  Error loading Google reviews: {e}")
+    else:
+        print(f"⚠️  Google reviews file not found: {google_path.name}")
+    
+    # Load Trustpilot reviews
+    if trustpilot_path.exists():
+        try:
+            trust_df = pd.read_csv(trustpilot_path, encoding='utf-8-sig')
+            trust_df.columns = [c.strip().lower().replace(' ', '_') for c in trust_df.columns]
+            print(f"✅ Loaded {len(trust_df)} reviews from Trustpilot")
+        except Exception as e:
+            print(f"⚠️  Error loading Trustpilot reviews: {e}")
+    else:
+        print(f"⚠️  Trustpilot reviews file not found: {trustpilot_path.name}")
+    
+    # Merge both dataframes
+    if google_df.empty and trust_df.empty:
+        print("⚠️  No reviews found from either source")
         return defaultdict(list)
     
-    try:
-        df_reviews = pd.read_csv(reviews_path, encoding='utf-8-sig')
-        print(f"✅ Loaded {len(df_reviews)} reviews from {reviews_path.name}")
-        
-        # Normalize column names
-        df_reviews.columns = [c.strip().lower().replace(' ', '_') for c in df_reviews.columns]
-        
-        # Group reviews by product_name
-        reviews_by_product = defaultdict(list)
-        
-        for _, row in df_reviews.iterrows():
-            product_name = str(row.get('product_name', '')).strip()
+    reviews_df = pd.concat([google_df, trust_df], ignore_index=True)
+    print(f"✅ Merged {len(reviews_df)} total reviews ({len(google_df)} Google + {len(trust_df)} Trustpilot)")
+    
+    # Normalize rating column
+    rating_col = None
+    for col in ['rating', 'ratingvalue', 'star_rating', 'stars']:
+        if col in reviews_df.columns:
+            rating_col = col
+            break
+    
+    if rating_col:
+        reviews_df['ratingValue'] = reviews_df[rating_col].apply(normalize_rating)
+    else:
+        reviews_df['ratingValue'] = None
+    
+    # Filter reviews with rating >= 4
+    before_filter = len(reviews_df)
+    reviews_df = reviews_df[reviews_df['ratingValue'] >= 4].copy()
+    filtered_count = before_filter - len(reviews_df)
+    if filtered_count > 0:
+        print(f"✅ Filtered to {len(reviews_df)} reviews (≥4★), removed {filtered_count} low ratings")
+    
+    # Clean review body
+    review_col = None
+    for col in ['review', 'reviewbody', 'review_text', 'comment', 'text']:
+        if col in reviews_df.columns:
+            review_col = col
+            break
+    
+    if review_col:
+        reviews_df['reviewBody'] = reviews_df[review_col].fillna("").astype(str).str.strip()
+    else:
+        reviews_df['reviewBody'] = ""
+    
+    # Get author/reviewer name
+    author_col = None
+    for col in ['reviewer', 'author', 'reviewer_name', 'name']:
+        if col in reviews_df.columns:
+            author_col = col
+            break
+    
+    if author_col:
+        reviews_df['author'] = reviews_df[author_col].fillna("").astype(str).str.strip()
+    else:
+        reviews_df['author'] = ""
+    
+    # Match reviews to products using the merged CSV if available
+    # Otherwise, try to match by product name from products_df
+    reviews_by_product = defaultdict(list)
+    
+    # First, try to use product_name if it exists (from merged CSV)
+    if 'product_name' in reviews_df.columns:
+        for product_name, group in reviews_df.groupby('product_name'):
+            product_name = str(product_name).strip()
             if not product_name:
                 continue
             
-            # Only include reviews with rating >= 4
-            rating = row.get('rating')
-            try:
-                rating_val = float(rating) if pd.notna(rating) else 0
-                if rating_val < 4:
-                    continue
-            except (ValueError, TypeError):
-                continue
-            
-            review_obj = {
-                "@type": "Review",
-                "reviewRating": {
-                    "@type": "Rating",
-                    "ratingValue": str(int(rating_val)),
-                    "bestRating": "5",
-                    "worstRating": "1"
-                },
-                "reviewBody": str(row.get('review', row.get('review_text', ''))).strip()
-            }
-            
-            # Add author if available
-            reviewer = row.get('reviewer', row.get('author', ''))
-            if reviewer and str(reviewer).strip():
-                review_obj["author"] = {
-                    "@type": "Person",
-                    "name": str(reviewer).strip()
+            for _, row in group.iterrows():
+                review_obj = {
+                    "@type": "Review",
+                    "reviewRating": {
+                        "@type": "Rating",
+                        "ratingValue": str(int(row['ratingValue'])),
+                        "bestRating": "5",
+                        "worstRating": "1"
+                    },
+                    "reviewBody": str(row['reviewBody'])
                 }
-            
-            reviews_by_product[product_name].append(review_obj)
-        
-        print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
-        return reviews_by_product
-        
-    except Exception as e:
-        print(f"⚠️  Error loading reviews: {e}")
-        return defaultdict(list)
+                
+                author_name = str(row['author']).strip()
+                if author_name and author_name.lower() not in ['anonymous', 'n/a', '']:
+                    review_obj["author"] = {
+                        "@type": "Person",
+                        "name": author_name
+                    }
+                else:
+                    review_obj["author"] = {
+                        "@type": "Person",
+                        "name": "Anonymous"
+                    }
+                
+                reviews_by_product[product_name].append(review_obj)
+    else:
+        # If no product_name column, try fuzzy matching (simplified - use exact match on reference_id or review text)
+        # For now, assign all reviews to a generic bucket - in production, you'd use fuzzy matching
+        print("⚠️  No product_name column found. Reviews will need manual matching.")
+        # This is a fallback - ideally reviews should be pre-matched in Step 3b
+    
+    google_count = len(google_df[google_df.get('ratingValue', pd.Series([0]*len(google_df))) >= 4]) if 'ratingValue' in google_df.columns else len(google_df)
+    trust_count = len(trust_df[trust_df.get('ratingValue', pd.Series([0]*len(trust_df))) >= 4]) if 'ratingValue' in trust_df.columns else len(trust_df)
+    
+    today = datetime.date.today()
+    print(f"✅ Reviews merged — {len(reviews_df)} total ({len(google_df)} Google + {len(trust_df)} Trustpilot) on {today}")
+    print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
+    
+    return reviews_by_product
 
 def calculate_aggregate_rating(reviews):
     """Calculate aggregate rating from reviews"""
@@ -175,10 +276,10 @@ def calculate_aggregate_rating(reviews):
     if count == 0:
         return None
     
-    avg_rating = total_rating / count
+    avg_rating = round(total_rating / count, 2)
     return {
         "@type": "AggregateRating",
-        "ratingValue": f"{avg_rating:.1f}",
+        "ratingValue": str(avg_rating),
         "reviewCount": count
     }
 
@@ -267,7 +368,9 @@ def main():
     
     # Find input files
     products_file = workflow_dir / '02 – products_cleaned.xlsx'
-    reviews_file = workflow_dir / '03 – combined_product_reviews.csv'
+    google_reviews_file = workflow_dir / '03b – google_reviews.csv'
+    trustpilot_reviews_file = workflow_dir / '03a – trustpilot_historical_reviews.csv'
+    merged_reviews_file = workflow_dir / '03 – combined_product_reviews.csv'
     
     if not products_file.exists():
         print(f"❌ Error: Products file not found")
@@ -283,8 +386,84 @@ def main():
         print(f"❌ Error reading products file: {e}")
         sys.exit(1)
     
-    # Load reviews
-    reviews_by_product = load_reviews(reviews_file)
+    # Load reviews - prefer merged CSV (has product_name already mapped from Step 3b)
+    # But also load source files to show counts in console message
+    reviews_by_product = defaultdict(list)
+    
+    # Load source files for console message
+    google_df_source = pd.DataFrame()
+    trust_df_source = pd.DataFrame()
+    
+    if google_reviews_file.exists():
+        try:
+            google_df_source = pd.read_csv(google_reviews_file, encoding='utf-8-sig')
+            google_df_source.columns = [c.strip().lower().replace(' ', '_') for c in google_df_source.columns]
+        except:
+            pass
+    
+    if trustpilot_reviews_file.exists():
+        try:
+            trust_df_source = pd.read_csv(trustpilot_reviews_file, encoding='utf-8-sig')
+            trust_df_source.columns = [c.strip().lower().replace(' ', '_') for c in trust_df_source.columns]
+        except:
+            pass
+    
+    # Use merged CSV if available (has product_name already mapped)
+    if merged_reviews_file.exists():
+        print(f"📂 Using merged reviews file: {merged_reviews_file.name}")
+        try:
+            merged_df = pd.read_csv(merged_reviews_file, encoding='utf-8-sig')
+            merged_df.columns = [c.strip().lower().replace(' ', '_') for c in merged_df.columns]
+            
+            if 'product_name' in merged_df.columns:
+                for product_name, group in merged_df.groupby('product_name'):
+                    product_name = str(product_name).strip()
+                    if not product_name:
+                        continue
+                    
+                    # Filter rating >= 4
+                    group['rating_normalized'] = group.get('rating', pd.Series([0]*len(group))).apply(normalize_rating)
+                    group = group[group['rating_normalized'] >= 4].copy()
+                    
+                    for _, row in group.iterrows():
+                        rating_val = row.get('rating_normalized')
+                        if rating_val and rating_val >= 4:
+                            review_obj = {
+                                "@type": "Review",
+                                "reviewRating": {
+                                    "@type": "Rating",
+                                    "ratingValue": str(int(rating_val)),
+                                    "bestRating": "5",
+                                    "worstRating": "1"
+                                },
+                                "reviewBody": str(row.get('review', row.get('review_text', ''))).strip()
+                            }
+                            
+                            reviewer = str(row.get('reviewer', row.get('author', ''))).strip()
+                            if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
+                                review_obj["author"] = {"@type": "Person", "name": reviewer}
+                            else:
+                                review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
+                            
+                            reviews_by_product[product_name].append(review_obj)
+                
+                # Show console message with source file counts
+                google_count = len(google_df_source) if not google_df_source.empty else 0
+                trust_count = len(trust_df_source) if not trust_df_source.empty else 0
+                total_reviews = len(merged_df[merged_df.get('rating', pd.Series([0]*len(merged_df))).apply(normalize_rating) >= 4])
+                today = datetime.date.today()
+                print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
+                print(f"✅ Grouped reviews for {len(reviews_by_product)} products")
+            else:
+                print("⚠️  Merged file missing product_name column, loading from source files...")
+                reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
+        except Exception as e:
+            print(f"⚠️  Error reading merged file: {e}")
+            print("📂 Falling back to source files...")
+            reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
+    else:
+        print(f"📂 Loading reviews from source files...")
+        reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
     
     # Generate schemas
     schemas_data = []
@@ -330,6 +509,12 @@ def main():
             'has_reviews': 'Yes' if review_count > 0 else 'No',
             'file_name': html_filename
         })
+        
+        # Verification log per product
+        if review_count > 0:
+            print(f"✅ [{product_name}] schema generated with live reviews and ratingValue {avg_rating} / reviewCount {review_count}")
+        else:
+            print(f"✅ [{product_name}] schema generated (no reviews)")
     
     print(f"✅ Generated {len(html_files)} HTML files")
     
