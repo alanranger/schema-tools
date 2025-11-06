@@ -150,26 +150,34 @@ def fetch_reviews(creds, location_id=None):
         api_error_msg = None
         
         # Try multiple API services - Google has restructured the APIs
+        # IMPORTANT: Reviews endpoint is ONLY in the original "mybusiness" v4 API
         api_services_to_try = [
+            ("mybusiness", "v4", "Original My Business API (has reviews endpoint)"),
             ("mybusinessbusinessinformation", "v1", "Business Information API"),
             ("mybusinessaccountmanagement", "v1", "Account Management API"),
-            ("mybusiness", "v4", "Legacy My Business API (may be deprecated)"),
         ]
         
         for api_name, api_version, api_description in api_services_to_try:
             try:
                 print(f"   Trying {api_description} ({api_name} {api_version})...")
-                service = build(api_name, api_version, credentials=creds)
-                print(f"✅ Successfully built {api_description}")
-                break
+                # Try building with explicit discovery document URL if needed
+                try:
+                    service = build(api_name, api_version, credentials=creds, cache_discovery=False)
+                    print(f"✅ Successfully built {api_description}")
+                    break
+                except Exception as build_error:
+                    # If that fails, try with cache_discovery=True
+                    service = build(api_name, api_version, credentials=creds, cache_discovery=True)
+                    print(f"✅ Successfully built {api_description} (with cache)")
+                    break
             except Exception as api_error:
                 api_error_msg = str(api_error)
                 error_lower = api_error_msg.lower()
+                print(f"   ❌ {api_description} failed: {api_error_msg[:100]}")
                 if "name: mybusiness" in error_lower or "version: v4" in error_lower:
                     # This is expected for deprecated API, try next
                     continue
                 else:
-                    print(f"   ⚠️ {api_description} failed: {api_error}")
                     continue
         
         if not service:
@@ -177,13 +185,15 @@ def fetch_reviews(creds, location_id=None):
             print("❌  COULD NOT BUILD ANY GOOGLE MY BUSINESS API SERVICE")
             print("="*60)
             print("\nAll API services failed to build.")
+            print("\nEven though the APIs are enabled, the service discovery is failing.")
             print("\nPossible solutions:")
-            print("1. Enable 'Google My Business API' (the original one, not just the new ones):")
+            print("1. Update google-api-python-client library:")
+            print("   pip install --upgrade google-api-python-client")
+            print("\n2. Clear API discovery cache:")
+            print("   Delete: ~/.google-api-python-client/discovery_cache/")
+            print("\n3. Try enabling the API again (sometimes takes time to propagate):")
             print("   https://console.cloud.google.com/apis/library/mybusiness.googleapis.com?project=alan-ranger-photography")
-            print("\n2. Reviews might require a different API. Check Google's documentation:")
-            print("   https://developers.google.com/my-business/content/reviews")
-            print("\n3. The reviews endpoint might be in a different service.")
-            print("   You may need to use Google Places API or Business Profile Performance API.")
+            print("\n4. Check if your OAuth token has the correct scopes")
             print("="*60)
             return []
         
