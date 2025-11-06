@@ -9200,30 +9200,95 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
             });
           }
           
-          // Show full path button
+          // Show full path button - expand LOCALAPPDATA
           const showInstructionsBtn = document.getElementById('showInstructionsBtn');
           if (showInstructionsBtn) {
             showInstructionsBtn.addEventListener('click', () => {
-              alert(`📁 Full Path to Desktop App:\n\n${fullExePath}\n\n💡 To build the app:\n1. Open terminal in your project folder\n2. Run: ${buildCommand}\n3. Navigate to: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\\n4. Double-click SchemaTools.exe`);
+              const expandedPath = `C:\\Users\\YOUR_USERNAME\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`;
+              const instructions = `📁 Full Path to Desktop App:
+
+Environment Variable:
+%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe
+
+Actual Path (replace YOUR_USERNAME):
+${expandedPath}
+
+💡 To find your actual path:
+1. Press Windows Key + R
+2. Type: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64
+3. Press Enter
+4. Windows Explorer will open to the folder
+
+💡 To build the app:
+1. Open terminal in your project folder
+2. Run: ${buildCommand}
+3. Then navigate to the path above`;
+              
+              alert(instructions);
             });
           }
           
           // Open Electron app button (web mode - will try but may fail)
           const openExeBtnWeb = document.getElementById('openExeBtnWeb');
           if (openExeBtnWeb) {
-            openExeBtnWeb.addEventListener('click', () => {
+            openExeBtnWeb.addEventListener('click', async () => {
+              // Expand LOCALAPPDATA to actual path
+              // In browser, we can't access env vars, so we'll show instructions
+              // But we can try to open the folder in Windows Explorer
+              const expandedPath = `C:\\Users\\${navigator.userAgent.includes('Windows') ? 'YourUsername' : 'User'}\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`;
+              const folderPath = `C:\\Users\\${navigator.userAgent.includes('Windows') ? 'YourUsername' : 'User'}\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64`;
+              
+              // Try multiple methods to open the file/folder
+              let opened = false;
+              
+              // Method 1: Try to open the folder in Windows Explorer using shell: protocol
               try {
-                // Try to open the exe file
-                const exeUrl = `file:///${fullExePath.replace(/\\/g, '/')}`;
-                window.open(exeUrl);
-                
-                // Show fallback instructions after a delay
-                setTimeout(() => {
-                  alert(`⚠️ Browser may block opening .exe files for security.\n\n📁 If it didn't open, navigate to:\n${fullExePath}\n\nAnd double-click SchemaTools.exe\n\n💡 Or use the Electron app (npm start) to build and open it directly.`);
-                }, 1000);
+                // Try opening the folder in Explorer
+                const folderUrl = `file:///${folderPath.replace(/\\/g, '/')}`;
+                window.open(folderUrl, '_blank');
+                opened = true;
               } catch (e) {
-                alert(`⚠️ Cannot open .exe from browser (security restriction).\n\n📁 Please open manually:\n${fullExePath}\n\n💡 Or use the Electron app (npm start) to build and open it directly.`);
+                console.log('Method 1 failed:', e);
               }
+              
+              // Method 2: Try direct file:// URL (will likely be blocked)
+              if (!opened) {
+                try {
+                  const exeUrl = `file:///${expandedPath.replace(/\\/g, '/')}`;
+                  window.open(exeUrl);
+                  opened = true;
+                } catch (e) {
+                  console.log('Method 2 failed:', e);
+                }
+              }
+              
+              // Show instructions with actual path
+              setTimeout(() => {
+                const actualPathInstructions = `
+⚠️ Browser Security Restriction
+
+Browsers cannot directly open .exe files for security reasons.
+
+📁 To find and open the app manually:
+
+1. Press Windows Key + R
+2. Type: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64
+3. Press Enter (Windows Explorer will open)
+4. Double-click SchemaTools.exe
+
+Or navigate directly to:
+${expandedPath.replace('YourUsername', 'YOUR_USERNAME')}
+
+💡 Tip: Replace YOUR_USERNAME with your actual Windows username
+   (usually visible in C:\\Users\\)
+
+🔨 To build the app first:
+1. Open terminal in your project folder
+2. Run: npm run build:desktop
+3. Then follow steps above to open it`;
+                
+                alert(actualPathInstructions);
+              }, 500);
             });
           }
         }
