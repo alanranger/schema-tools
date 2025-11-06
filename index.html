@@ -9018,7 +9018,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 const distFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
                 const projectFolderPath = distFolderPath || fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
                 
-                // Create a batch file that opens PowerShell in the project directory
+                // Create a batch file that opens PowerShell and runs the build command
                 const batchContent = `@echo off
 cd /d "${projectFolderPath}"
 echo.
@@ -9028,11 +9028,9 @@ echo ========================================
 echo.
 echo Project folder: ${projectFolderPath}
 echo.
-echo Build command copied to clipboard!
+echo Starting build process...
 echo.
-echo Next: Paste (Ctrl+V) and press Enter
-echo.
-powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host ''; Write-Host '📁 Project folder:' -ForegroundColor Green; Write-Host '${projectFolderPath}' -ForegroundColor Cyan; Write-Host ''; Write-Host '📋 Build command copied to clipboard: ${buildCommand}' -ForegroundColor Yellow; Write-Host ''; Write-Host '💡 Paste (Ctrl+V) and press Enter to build' -ForegroundColor Magenta; Write-Host ''"`;
+powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host ''; Write-Host '📁 Project folder:' -ForegroundColor Green; Write-Host '${projectFolderPath}' -ForegroundColor Cyan; Write-Host ''; Write-Host '🔨 Running build command: ${buildCommand}' -ForegroundColor Yellow; Write-Host ''; ${buildCommand}"`;
                 
                 // Create blob and download the batch file
                 const blob = new Blob([batchContent], { type: 'text/plain;charset=utf-8' });
@@ -9052,7 +9050,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
                 
                 // Show instructions
                 setTimeout(() => {
-                  alert(`✅ Batch file downloaded!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. Go to your Downloads folder\n3. Double-click "Open-PowerShell-Here.bat"\n4. PowerShell will open in the project folder automatically\n5. Paste (Ctrl+V) and press Enter to build\n\n📁 Project folder:\n${projectFolderPath}`);
+                  alert(`✅ Batch file downloaded!\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. Go to your Downloads folder\n3. Double-click "Open-PowerShell-Here.bat"\n4. PowerShell will open and automatically run the build!\n\n📁 Project folder:\n${projectFolderPath}\n\n🔨 Command: ${buildCommand}`);
                 }, 500);
               } catch (e) {
                 // Fallback: show manual instructions
