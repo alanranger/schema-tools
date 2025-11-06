@@ -1301,8 +1301,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.12.0</span>
-    <span class="date">2025-11-04</span>
+    <span class="version">v1.5.3</span>
+    <span class="date" id="version-date">Loading...</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -8517,6 +8517,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   <!-- Product Schema Workflow Controller -->
   <script>
+    // Update version date/time stamp on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const versionDateEl = document.getElementById('version-date');
+      if (versionDateEl) {
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+        versionDateEl.textContent = `${dateStr} ${timeStr}`;
+      }
+    });
+    
     // Server status check - disabled in Electron mode (server always runs)
     let serverStatus = 'running'; // Assume running in Electron
     let isElectronMode = false;

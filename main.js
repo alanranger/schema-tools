@@ -13,7 +13,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 900,
-    title: "Alan Ranger Schema Tools v1.5.0",
+    title: "Alan Ranger Schema Tools v1.5.3",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
