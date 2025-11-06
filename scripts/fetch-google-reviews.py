@@ -143,11 +143,15 @@ def fetch_reviews(creds, location_id=None):
         # Use My Business API v4 for reviews
         # Note: The API service name might need to be discovered dynamically
         print("🔍 Building Google My Business API service...")
+        print(f"   Using credentials from: {CREDENTIALS_PATH}")
+        print(f"   Project ID: alan-ranger-photography")
+        
         service = None
         api_error_msg = None
         
         try:
             # Try to build the service - this will fail if API isn't enabled
+            print("   Attempting to build 'mybusiness' v4 service...")
             service = build("mybusiness", "v4", credentials=creds)
             print("✅ Successfully built mybusiness v4 service")
         except Exception as api_error:
@@ -158,16 +162,26 @@ def fetch_reviews(creds, location_id=None):
             # Check for specific error patterns
             if "name: mybusiness" in error_lower or "version: v4" in error_lower or "not found" in error_lower:
                 print("\n" + "="*60)
-                print("⚠️  GOOGLE MY BUSINESS API NOT ENABLED")
+                print("⚠️  GOOGLE MY BUSINESS API NOT ENABLED OR NOT FOUND")
                 print("="*60)
-                print("\nThe Google My Business API v4 is not enabled in your Google Cloud project.")
-                print("\nTo fix this:")
-                print("1. Go to: https://console.cloud.google.com/apis/library")
-                print("2. Search for: 'Google My Business API'")
-                print("3. Click 'ENABLE'")
-                print("4. Also enable: 'My Business Account Management API'")
-                print("5. Also enable: 'My Business Business Information API'")
-                print("\nYour project ID is: alan-ranger-photography")
+                print("\nThe Google My Business API v4 service cannot be discovered.")
+                print("\nPossible causes:")
+                print("1. The API is not enabled in your Google Cloud project")
+                print("2. The API name/version has changed (Google may have deprecated v4)")
+                print("3. Your OAuth client doesn't have access to this API")
+                print("\nTo verify/fix:")
+                print("1. Go to: https://console.cloud.google.com/apis/library?project=alan-ranger-photography")
+                print("2. Search for and verify these are ENABLED:")
+                print("   - 'Google My Business API' (may be deprecated)")
+                print("   - 'My Business Account Management API'")
+                print("   - 'My Business Business Information API'")
+                print("   - 'Business Profile Performance API' (newer alternative)")
+                print("\n3. Check your OAuth client scopes:")
+                print("   - Go to: https://console.cloud.google.com/apis/credentials?project=alan-ranger-photography")
+                print("   - Edit your 'schema-generator' Desktop client")
+                print("   - Ensure it has access to My Business APIs")
+                print("\n4. Note: Google may have migrated to 'Business Profile Performance API'")
+                print("   Check: https://developers.google.com/my-business/content/overview")
                 print("="*60)
             else:
                 print(f"\nUnexpected error: {api_error_msg}")
