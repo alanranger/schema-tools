@@ -13,35 +13,33 @@ import sys
 import pandas as pd
 from pathlib import Path
 import re
+from difflib import SequenceMatcher
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
     os.environ['PYTHONIOENCODING'] = 'utf-8'
 
-try:
-    from fuzzywuzzy import process, fuzz
-except ImportError:
-    print("⚠️ Warning: fuzzywuzzy not installed. Product matching will be disabled.")
-    print("   Install with: pip install fuzzywuzzy python-Levenshtein")
-    process = None
+# ============================================================
+# Utility Functions
+# ============================================================
 
-# File paths
-workflow = Path("inputs-files/workflow")
-trustpilot_path = workflow / "03a – trustpilot_historical_reviews.csv"
-google_path = workflow / "03b – google_reviews.csv"
-products_path = workflow / "02 – products_cleaned.xlsx"
-output_path = workflow / "03 – combined_product_reviews.csv"
+def slugify(text):
+    """Standard slug generator for consistency between products and reviews."""
+    if pd.isna(text) or not text:
+        return ''
+    return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
 
-def clean_text(text):
-    """Clean and normalize text"""
-    if not isinstance(text, str):
-        return ""
-    # Remove HTML tags
-    text = re.sub(r'<[^>]+>', '', text)
-    # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
+def find_best_slug_match(review_text, product_slugs):
+    """Return the best fuzzy match for a review's related product text."""
+    best_match = None
+    best_ratio = 0.0
+    for ps in product_slugs:
+        ratio = SequenceMatcher(None, review_text, ps).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_match = ps
+    return best_match if best_ratio > 0.74 else None  # threshold adjustable
 
 def normalize_rating(rating):
     """Normalize rating to numeric value"""
@@ -72,341 +70,283 @@ def normalize_rating(rating):
     
     return None
 
-def read_reviews(path, source_name):
-    """Read and normalize review CSV"""
-    if not path.exists():
-        print(f"⚠️ Missing file: {path.name}")
-        return pd.DataFrame()
-    
-    try:
-        df = pd.read_csv(path, encoding="utf-8-sig")
-        
-        # Normalize column names
-        df.columns = [c.strip().lower().replace(' ', '_') for c in df.columns]
-        
-        # Ensure required columns exist
-        required_cols = ['reviewer', 'rating', 'review', 'date', 'source', 'reference_id']
-        existing_cols = df.columns.tolist()
-        
-        # Map common variations
-        column_mapping = {
-            'author': 'reviewer',
-            'name': 'reviewer',
-            'reviewer_name': 'reviewer',
-            'comment': 'review',
-            'text': 'review',
-            'review_text': 'review',
-            'star_rating': 'rating',
-            'stars': 'rating',
-            'review_date': 'date',
-            'created_at': 'date',
-            'source_type': 'source'
-        }
-        
-        for old_col, new_col in column_mapping.items():
-            if old_col in existing_cols and new_col not in existing_cols:
-                df.rename(columns={old_col: new_col}, inplace=True)
-        
-        # Add missing columns
-        for col in required_cols:
-            if col not in df.columns:
-                df[col] = ""
-        
-        # Set source
-        df['source'] = source_name
-        
-        # Clean data
-        df['review'] = df['review'].apply(clean_text)
-        df['reviewer'] = df['reviewer'].astype(str).str.strip()
-        
-        # Normalize ratings
-        df['rating'] = df['rating'].apply(normalize_rating)
-        
-        print(f"✅ Loaded {len(df)} reviews from {source_name}")
-        return df
-        
-    except Exception as e:
-        print(f"❌ Error reading {path.name}: {e}")
-        import traceback
-        traceback.print_exc()
-        return pd.DataFrame()
-
-def map_reference_ids(df, products_df):
-    """Map reviews to products by matching keywords"""
-    if process is None:
-        print("⚠️ Fuzzy matching not available. Skipping product mapping.")
-        return df
-    
-    print("🔗 Matching reviews to product names...")
-    
-    if products_df.empty or 'name' not in products_df.columns:
-        print("⚠️ No products available for matching.")
-        return df
-    
-    product_names = products_df['name'].dropna().astype(str).tolist()
-    
-    if not product_names:
-        print("⚠️ No product names found.")
-        return df
-    
-    matched_count = 0
-    
-    def find_product_match(review_text):
-        if not isinstance(review_text, str) or len(review_text) < 10:
-            return ""
-        
-        # Use fuzzy matching
-        try:
-            match, score = process.extractOne(review_text, product_names, scorer=fuzz.partial_ratio)
-            if score >= 70:  # Lower threshold for partial matches
-                return match
-        except Exception as e:
-            pass
-        
-        # Fallback: simple keyword matching
-        review_lower = review_text.lower()
-        for product_name in product_names:
-            product_lower = product_name.lower()
-            # Check if product name appears in review
-            if product_lower in review_lower or any(word in review_lower for word in product_lower.split() if len(word) > 4):
-                return product_name
-        
+def clean_text(text):
+    """Clean and normalize text"""
+    if not isinstance(text, str):
         return ""
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+# ============================================================
+# Paths and Inputs
+# ============================================================
+
+base_path = Path("inputs-files/workflow")
+products_path = base_path / "02 – products_cleaned.xlsx"
+trustpilot_path = base_path / "03a – trustpilot_historical_reviews.csv"
+google_path = base_path / "03b – google_reviews.csv"
+output_path = base_path / "03 – combined_product_reviews.csv"
+
+print("="*60)
+print("REVIEW MERGER - Step 3b")
+print("="*60)
+print()
+
+# Load product list to help map reviews
+print("📦 Loading products for mapping...")
+try:
+    products_df = pd.read_excel(products_path, engine='openpyxl')
+    # Create slugs from URLs (matching generate-product-schema.py)
+    products_df["product_slug"] = products_df["url"].apply(lambda u: slugify(str(u).split("/")[-1]) if pd.notna(u) else '')
+    # Fill missing slugs with name-based slugs
+    missing_slugs = products_df['product_slug'].isna() | (products_df['product_slug'] == '')
+    products_df.loc[missing_slugs, 'product_slug'] = products_df.loc[missing_slugs, 'name'].fillna('').apply(slugify)
+    product_slugs = products_df["product_slug"].dropna().tolist()
+    print(f"✅ Loaded {len(products_df)} products for mapping")
+except Exception as e:
+    print(f"⚠️ Could not load products file: {e}")
+    products_df = pd.DataFrame()
+    product_slugs = []
+
+# ============================================================
+# Load Review Sources
+# ============================================================
+
+print()
+print("📥 Loading review sources...")
+
+trustpilot_df = pd.DataFrame()
+google_df = pd.DataFrame()
+
+if trustpilot_path.exists():
+    try:
+        trustpilot_df = pd.read_csv(trustpilot_path, encoding="utf-8-sig")
+        trustpilot_df.columns = [c.strip().lower().replace(' ', '_') for c in trustpilot_df.columns]
+        print(f"✅ Loaded {len(trustpilot_df)} Trustpilot reviews")
+    except Exception as e:
+        print(f"⚠️ Error loading Trustpilot reviews: {e}")
+else:
+    print(f"⚠️ Missing file: {trustpilot_path.name}")
+
+if google_path.exists():
+    try:
+        google_df = pd.read_csv(google_path, encoding="utf-8-sig")
+        google_df.columns = [c.strip().lower().replace(' ', '_') for c in google_df.columns]
+        print(f"✅ Loaded {len(google_df)} Google reviews")
+    except Exception as e:
+        print(f"⚠️ Error loading Google reviews: {e}")
+else:
+    print(f"⚠️ Missing file: {google_path.name}")
+
+if trustpilot_df.empty and google_df.empty:
+    print("❌ No reviews found. Please ensure both review files exist.")
+    sys.exit(1)
+
+# Normalize columns and clean review data
+def clean_reviews(df, source):
+    """Clean and normalize review dataframe"""
+    df = df.copy()
+    df["source"] = source
     
-    # Apply matching
-    df['reference_id'] = df['review'].apply(find_product_match)
-    matched_count = df['reference_id'].astype(bool).sum()
+    # Normalize rating column
+    rating_col = None
+    for col in ['ratingvalue', 'rating', 'stars', 'review_stars', 'star_rating']:
+        if col in df.columns:
+            rating_col = col
+            break
     
-    print(f"✅ Mapped {matched_count} reviews to products (out of {len(df)} total)")
+    if rating_col:
+        df['ratingValue'] = df[rating_col].apply(normalize_rating)
+    else:
+        df['ratingValue'] = None
+    
+    # Normalize review body column
+    review_col = None
+    for col in ['reviewbody', 'review_body', 'review', 'review_text', 'content', 'comment', 'text']:
+        if col in df.columns:
+            review_col = col
+            break
+    
+    if review_col:
+        df['reviewBody'] = df[review_col].apply(clean_text)
+    else:
+        df['reviewBody'] = ''
+    
+    # Normalize author/reviewer column
+    author_col = None
+    for col in ['author', 'reviewer', 'reviewer_name', 'name', 'review_username']:
+        if col in df.columns:
+            author_col = col
+            break
+    
+    if author_col:
+        df['author'] = df[author_col].fillna('').astype(str).str.strip()
+    else:
+        df['author'] = 'Anonymous'
+    
+    # Normalize date column
+    date_col = None
+    for col in ['date', 'review_created_utc', 'review_created_(utc)', 'created_at', 'review_date']:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    if date_col:
+        df['date'] = df[date_col]
+    else:
+        df['date'] = ''
+    
     return df
 
-def merge_reviews():
-    """Main merge function"""
-    print("="*60)
-    print("REVIEW MERGER - Step 3b")
-    print("="*60)
-    print()
+trustpilot_df = clean_reviews(trustpilot_df, "Trustpilot")
+google_df = clean_reviews(google_df, "Google")
+
+# Combine
+reviews_df = pd.concat([trustpilot_df, google_df], ignore_index=True)
+print(f"📊 Loaded {len(reviews_df)} total reviews ({len(trustpilot_df)} Trustpilot + {len(google_df)} Google)")
+print()
+
+# ============================================================
+# Filter reviews (≥4★)
+# ============================================================
+
+print("✨ Filtering reviews (keeping only ≥ 4★)...")
+initial_count = len(reviews_df)
+valid_reviews = reviews_df[reviews_df['ratingValue'] >= 4].copy()
+filtered_count = len(valid_reviews)
+removed_count = initial_count - filtered_count
+
+print(f"✅ Filtered to {filtered_count} valid reviews (≥ 4★)")
+if removed_count > 0:
+    print(f"   Removed {removed_count} reviews with rating < 4")
+print()
+
+# ============================================================
+# Match Reviews to Products
+# ============================================================
+
+if len(product_slugs) > 0:
+    print("🔗 Matching reviews to product slugs...")
     
-    # Read review files
-    print("📥 Loading review sources...")
-    tp_df = read_reviews(trustpilot_path, "Trustpilot")
-    gg_df = read_reviews(google_path, "Google")
-    
-    if tp_df.empty and gg_df.empty:
-        print("❌ No reviews found. Please ensure both review files exist.")
-        sys.exit(1)
-    
-    total_tp = len(tp_df)
-    total_gg = len(gg_df)
-    print(f"📊 Loaded {total_tp} Trustpilot + {total_gg} Google reviews")
-    print()
-    
-    # Combine datasets
-    reviews = pd.concat([tp_df, gg_df], ignore_index=True)
-    
-    # Filter ratings < 4
-    print("✨ Filtering reviews (keeping only ≥ 4★)...")
-    initial_count = len(reviews)
-    reviews = reviews[reviews['rating'] >= 4].copy()
-    filtered_count = len(reviews)
-    removed_count = initial_count - filtered_count
-    
-    print(f"✅ Filtered to {filtered_count} valid reviews (≥ 4★)")
-    if removed_count > 0:
-        print(f"   Removed {removed_count} reviews with rating < 4")
-    print()
-    
-    # Load products for mapping
-    products_df = pd.DataFrame()
-    if products_path.exists():
-        try:
-            products_df = pd.read_excel(products_path, engine='openpyxl')
-            print(f"📦 Loaded {len(products_df)} products for mapping")
-        except Exception as e:
-            print(f"⚠️ Could not load products file: {e}")
-            print("   Continuing without product mapping...")
+    # Try to get product_name from reference_id or other columns
+    if 'reference_id' in valid_reviews.columns:
+        valid_reviews["product_name"] = valid_reviews["reference_id"].fillna('')
+    elif 'product_name' in valid_reviews.columns:
+        pass  # Already exists
     else:
-        print("⚠️ Products file not found. Continuing without product mapping...")
+        valid_reviews["product_name"] = ''
     
-    # Map to products if reference_id is empty
-    if not products_df.empty:
-        reviews = map_reference_ids(reviews, products_df)
+    # Create slugs from product names
+    valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
+    
+    # Check for exact matches
+    review_slugs_set = set(valid_reviews["product_slug"].dropna())
+    review_slugs_set = {s for s in review_slugs_set if s}  # Remove empty strings
+    exact_matches = review_slugs_set & set(product_slugs)
+    
+    if len(exact_matches) == 0:
+        print("⚠️ No exact matches found. Trying fuzzy mapping...")
+        corrected = {}
+        for rslug in review_slugs_set:
+            if rslug:  # Skip empty slugs
+                best = find_best_slug_match(rslug, product_slugs)
+                if best:
+                    corrected[rslug] = best
+        
+        if len(corrected) > 0:
+            valid_reviews["matched_slug"] = valid_reviews["product_slug"].map(corrected)
+            valid_reviews["product_slug"] = valid_reviews["matched_slug"].fillna(valid_reviews["product_slug"])
+            print(f"✅ Fuzzy-matched {len(corrected)} reviews to products")
+            print("🔍 Sample matches (review_slug → product_slug):")
+            for i, (rs, ps) in enumerate(list(corrected.items())[:10]):
+                print(f"   {rs} → {ps}")
+        else:
+            print("⚠️ No fuzzy matches found either. Reviews will have empty product_slug.")
     else:
-        # Ensure reference_id column exists
-        if 'reference_id' not in reviews.columns:
-            reviews['reference_id'] = ""
-    
-    # Add source_group column
-    reviews['source_group'] = reviews['source']
-    
-    # Remove duplicates based on reviewer + review text
-    print()
-    print("🔍 Removing duplicate reviews...")
-    before_dedup = len(reviews)
-    reviews = reviews.drop_duplicates(subset=['reviewer', 'review'], keep='first')
-    after_dedup = len(reviews)
-    duplicates_removed = before_dedup - after_dedup
-    
-    if duplicates_removed > 0:
-        print(f"✅ Removed {duplicates_removed} duplicate review(s)")
-    else:
-        print("✅ No duplicates found")
-    print()
-    
-    # Sort by date (newest first)
-    if 'date' in reviews.columns:
-        reviews = reviews.sort_values(by='date', ascending=False, na_position='last')
-        print("📅 Sorted reviews by date (newest first)")
-    print()
-    
-    # Rename reference_id to product_name if it exists and has values
-    if 'reference_id' in reviews.columns:
-        # Only rename if reference_id has actual product names
-        non_empty_refs = reviews['reference_id'].astype(str).str.strip()
-        non_empty_refs = non_empty_refs[non_empty_refs != '']
-        if len(non_empty_refs) > 0:
-            reviews['product_name'] = reviews['reference_id']
-            print(f"✅ Renamed reference_id to product_name for {len(non_empty_refs)} reviews")
-    
-    # Ensure product_name column exists (create from reference_id or leave empty)
-    if 'product_name' not in reviews.columns:
-        reviews['product_name'] = reviews.get('reference_id', '')
-    
-    # Add product_slug column for matching
-    # Use standardized slugify function (must match generate-product-schema.py)
-    def slugify(text):
-        """Convert text to URL-friendly slug - standardized across all scripts"""
-        import re
-        if pd.isna(text) or not text:
-            return ''
-        return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
-    
-    reviews['product_slug'] = reviews['product_name'].fillna('').apply(slugify)
-    print("✅ Added product_slug column to merged reviews")
-    
-    # Drop any rows where product_name or product_slug is missing/blank
-    before_filter = len(reviews)
-    reviews = reviews.dropna(subset=['product_name', 'product_slug'])
-    reviews = reviews[reviews['product_name'].astype(str).str.strip() != '']
-    reviews = reviews[reviews['product_slug'].astype(str).str.strip() != '']
-    after_filter = len(reviews)
-    if before_filter > after_filter:
-        print(f"✅ Removed {before_filter - after_filter} reviews with missing product mapping")
-    
-    # Ensure author and reviewBody columns exist for deduplication
-    if 'author' not in reviews.columns:
-        reviews['author'] = reviews.get('reviewer', 'Anonymous')
-    if 'reviewBody' not in reviews.columns:
-        reviews['reviewBody'] = reviews.get('review', reviews.get('review_text', ''))
-    
-    # Ensure unique combinations of product_slug + author + reviewBody
-    before_dedup = len(reviews)
-    reviews = reviews.drop_duplicates(subset=['product_slug', 'author', 'reviewBody'], keep='first')
-    after_dedup = len(reviews)
-    if before_dedup > after_dedup:
-        print(f"✅ Removed {before_dedup - after_dedup} duplicate reviews (same product + author + text)")
-    
-    # Safety filter: only include rows where product_slug exists in cleaned product list
-    if products_path.exists():
-        try:
-            products_df_check = pd.read_excel(products_path, engine='openpyxl')
-            # Extract slugs from product URLs
-            valid_slugs = set()
-            if 'url' in products_df_check.columns:
-                for url in products_df_check['url'].dropna():
-                    try:
-                        url_str = str(url).strip().rstrip('/')
-                        slug = slugify(url_str.split('/')[-1])
-                        if slug:
-                            valid_slugs.add(slug)
-                    except:
-                        pass
-            
-            # Also add slugs from product names as fallback
-            if 'name' in products_df_check.columns:
-                for name in products_df_check['name'].dropna():
-                    slug = slugify(name)
-                    if slug:
-                        valid_slugs.add(slug)
-            
-            before_valid = len(reviews)
-            reviews = reviews[reviews['product_slug'].isin(valid_slugs)]
-            after_valid = len(reviews)
-            if before_valid > after_valid:
-                print(f"✅ Filtered to {after_valid} reviews mapped to valid products (removed {before_valid - after_valid} invalid mappings)")
-        except Exception as e:
-            print(f"⚠️ Could not validate against product list: {e}")
-            print("   Continuing without product validation...")
+        print(f"✅ Found {len(exact_matches)} exact matches between reviews and products")
     
     # Count matched reviews
-    matched_count = reviews['product_slug'].astype(bool).sum()
-    unique_products = reviews['product_slug'].nunique()
-    if matched_count > 0:
-        print(f"✅ Filtered merged reviews to {matched_count} unique reviews mapped to {unique_products} valid products")
-    
-    # Ensure correct column names exist before saving
-    # Map common column variations to standard names
-    column_mapping = {
-        'reviewer': 'author',
-        'review': 'reviewBody',
-        'review_text': 'reviewBody',
-        'rating': 'ratingValue',
-        'star_rating': 'ratingValue',
-        'stars': 'ratingValue'
-    }
-    
-    for old_col, new_col in column_mapping.items():
-        if old_col in reviews.columns and new_col not in reviews.columns:
-            reviews[new_col] = reviews[old_col]
-    
-    # Ensure all expected columns exist
-    expected_cols = ['product_name', 'product_slug', 'author', 'ratingValue', 'reviewBody', 'source', 'date']
-    for col in expected_cols:
-        if col not in reviews.columns:
-            if col == 'author':
-                reviews[col] = reviews.get('reviewer', 'Anonymous')
-            elif col == 'reviewBody':
-                reviews[col] = reviews.get('review', reviews.get('review_text', ''))
-            elif col == 'ratingValue':
-                # Normalize rating if we have a rating column
-                if 'rating' in reviews.columns:
-                    reviews[col] = reviews['rating'].apply(normalize_rating)
-                else:
-                    reviews[col] = None
-            elif col == 'source':
-                reviews[col] = reviews.get('source', 'Unknown')
-            elif col == 'date':
-                reviews[col] = reviews.get('date', '')
-            else:
-                reviews[col] = ''
-    
-    # Select only expected columns (plus any additional useful columns)
-    columns_to_keep = expected_cols + [col for col in reviews.columns if col not in expected_cols and col not in ['reviewer', 'review', 'review_text', 'rating', 'star_rating', 'stars', 'reference_id']]
-    reviews = reviews[[col for col in columns_to_keep if col in reviews.columns]]
-    
-    # Ensure output directory exists
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Save merged dataset
-    reviews.to_csv(output_path, index=False, encoding='utf-8-sig')
-    
-    # Show sample slugs for verification
-    sample_slugs = reviews['product_slug'].head(5).tolist() if len(reviews) > 0 else []
-    print(f"✅ Saved merged reviews: {len(reviews)} rows with slugs like {sample_slugs}")
-    
-    print("="*60)
-    print("✅ MERGE COMPLETE")
-    print("="*60)
-    print(f"📊 Total reviews: {len(reviews)}")
-    print(f"   - Trustpilot: {len(reviews[reviews['source'] == 'Trustpilot'])}")
-    print(f"   - Google: {len(reviews[reviews['source'] == 'Google'])}")
-    print(f"📁 File saved: {output_path.name}")
-    print(f"💡 Next step: Use this file in Step 4 - Generate Product Schema")
-    print("="*60)
+    matched_count = valid_reviews['product_slug'].astype(bool).sum()
+    unique_products = valid_reviews['product_slug'].nunique()
+    print(f"✅ Matched {matched_count} reviews to {unique_products} unique products")
+else:
+    print("⚠️ No products available for matching. Reviews will have empty product_slug.")
+    valid_reviews["product_slug"] = ''
+    valid_reviews["product_name"] = valid_reviews.get("reference_id", '')
+
+print()
+
+# ============================================================
+# Remove Duplicates, Sort and Save
+# ============================================================
+
+print("🔍 Removing duplicate reviews...")
+before_dedup = len(valid_reviews)
+# Deduplicate by reviewBody and product_slug (or just reviewBody if no product_slug)
+dedup_cols = ['reviewbody', 'product_slug'] if 'product_slug' in valid_reviews.columns else ['reviewbody']
+dedup_cols = [col for col in dedup_cols if col in valid_reviews.columns]
+if len(dedup_cols) > 0:
+    valid_reviews = valid_reviews.drop_duplicates(subset=dedup_cols, keep='first')
+after_dedup = len(valid_reviews)
+if before_dedup > after_dedup:
+    print(f"✅ Removed {before_dedup - after_dedup} duplicate review(s)")
+else:
+    print("✅ No duplicates found")
+print()
+
+# Sort by date (newest first)
+if 'date' in valid_reviews.columns:
+    valid_reviews = valid_reviews.sort_values(by='date', ascending=False, na_position='last')
+    print("📅 Sorted reviews by date (newest first)")
+print()
+
+# Ensure all expected columns exist before saving
+expected_cols = ['product_name', 'product_slug', 'author', 'ratingValue', 'reviewBody', 'source', 'date']
+for col in expected_cols:
+    if col not in valid_reviews.columns:
+        if col == 'author':
+            valid_reviews[col] = valid_reviews.get('reviewer', 'Anonymous')
+        elif col == 'reviewBody':
+            valid_reviews[col] = valid_reviews.get('review', valid_reviews.get('review_text', ''))
+        elif col == 'ratingValue':
+            valid_reviews[col] = valid_reviews.get('rating', None)
+        elif col == 'source':
+            valid_reviews[col] = valid_reviews.get('source', 'Unknown')
+        elif col == 'date':
+            valid_reviews[col] = valid_reviews.get('date', '')
+        else:
+            valid_reviews[col] = ''
+
+# Select columns to keep (expected + any additional useful ones)
+columns_to_keep = expected_cols + [col for col in valid_reviews.columns if col not in expected_cols and col not in ['reviewer', 'review', 'review_text', 'rating', 'star_rating', 'stars', 'reference_id', 'matched_slug']]
+valid_reviews = valid_reviews[[col for col in columns_to_keep if col in valid_reviews.columns]]
+
+# Ensure output directory exists
+output_path.parent.mkdir(parents=True, exist_ok=True)
+
+# Save merged dataset
+valid_reviews.to_csv(output_path, index=False, encoding='utf-8-sig')
+
+# Show sample slugs for verification
+sample_slugs = valid_reviews['product_slug'].head(5).tolist() if len(valid_reviews) > 0 else []
+print(f"✅ Saved merged reviews: {len(valid_reviews)} rows with slugs like {sample_slugs}")
+
+print("="*60)
+print("✅ MERGE COMPLETE")
+print("="*60)
+print(f"📊 Total reviews: {len(valid_reviews)}")
+print(f"   - Trustpilot: {len(valid_reviews[valid_reviews['source'] == 'Trustpilot'])}")
+print(f"   - Google: {len(valid_reviews[valid_reviews['source'] == 'Google'])}")
+print(f"📁 File saved: {output_path.name}")
+print(f"💡 Next step: Use this file in Step 4 - Generate Product Schema")
+print("="*60)
 
 if __name__ == "__main__":
     try:
-        merge_reviews()
+        pass  # Main logic already executed above
     except KeyboardInterrupt:
         print("\n⚠️ Operation cancelled by user.")
         sys.exit(1)
@@ -415,4 +355,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-
