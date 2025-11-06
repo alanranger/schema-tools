@@ -1644,6 +1644,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
           <p id="status-step4" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
+          <div id="step4MatchStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
+            <strong>📊 Products Matched:</strong> <span id="step4MatchCount">0</span> products have reviews embedded in their schema
+          </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
             Files saved in your project folder: <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">/outputs/</code> (individual JSON/HTML files) and <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">/inputs-files/workflow/</code> (combined CSV).
@@ -9795,8 +9798,9 @@ exit`;
           }
         }
         
-        // Extract product count for Step 4 from console output
+        // Extract product count and match count for Step 4 from console output
         let productCount = null;
+        let matchCount = null;
         if (stepId === 4 && consoleOutput) {
           const outputText = consoleOutput.textContent || '';
           // Look for patterns like "✅ Generated 206 HTML files" or "Total products: 206" or "✅ Loaded 206 products"
@@ -9809,6 +9813,18 @@ exit`;
             productCount = parseInt(totalMatch[1]);
           } else if (loadedMatch) {
             productCount = parseInt(loadedMatch[1]);
+          }
+          
+          // Extract match count (products with reviews)
+          const matchCountMatch = outputText.match(/📊\s*MATCH_COUNT:\s*(\d+)/i);
+          const productsWithReviewsMatch = outputText.match(/Products\s+with\s+reviews?:\s*(\d+)/i);
+          const matchedProductsMatch = outputText.match(/(\d+)\s+products?\s+matched\s+with\s+reviews?/i);
+          if (matchCountMatch) {
+            matchCount = parseInt(matchCountMatch[1]);
+          } else if (productsWithReviewsMatch) {
+            matchCount = parseInt(productsWithReviewsMatch[1]);
+          } else if (matchedProductsMatch) {
+            matchCount = parseInt(matchedProductsMatch[1]);
           }
         }
         
@@ -9854,8 +9870,19 @@ exit`;
               message: info.message,
               file: info.file,
               reviewCount: stepId === '3a' ? reviewCount : null,
-              productCount: stepId === 4 ? productCount : null
+              productCount: stepId === 4 ? productCount : null,
+              matchCount: stepId === 4 ? matchCount : null
             };
+            
+            // Update Step 4 match status indicator
+            if (stepId === 4 && matchCount !== null) {
+              const matchStatusDiv = document.getElementById('step4MatchStatus');
+              const matchCountSpan = document.getElementById('step4MatchCount');
+              if (matchStatusDiv && matchCountSpan) {
+                matchCountSpan.textContent = matchCount;
+                matchStatusDiv.style.display = 'block';
+              }
+            }
             
             // If Step 4 completed, show final summary modal
             if (stepId === 4) {
