@@ -9036,12 +9036,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                   
                   // Show instructions
                   setTimeout(() => {
-                    alert(`✅ Project folder opened in Explorer!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. In the Explorer window, right-click in empty space\n2. Select "Open PowerShell here" or "Open Terminal here"\n3. Paste (Ctrl+V) and press Enter to build`);
+                    alert(`✅ Project folder opened in Explorer!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. In the Explorer window, right-click in empty space\n3. Select "Open PowerShell here" or "Open Terminal here"\n4. Paste (Ctrl+V) and press Enter to build\n\n⚠️ Note: Make sure you're in the project folder, not C:\\WINDOWS\\system32`);
                   }, 500);
                 } catch (e) {
                   // Fallback: show manual instructions
                   await navigator.clipboard.writeText(buildCommand);
-                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Navigate to the folder above in Windows Explorer\n2. Right-click in empty space → "Open PowerShell here"\n3. Paste (Ctrl+V) and press Enter\n\nOr manually run:\n${buildCommand}`);
+                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps (SchemaTools.exe) first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}`);
                 }
               } catch (e) {
                 alert(`Unable to open folder automatically.\n\nPlease:\n1. Navigate to: ${fullExePath.substring(0, fullExePath.lastIndexOf('\\'))}\n2. Right-click → "Open PowerShell here"\n3. Run: ${buildCommand}`);
