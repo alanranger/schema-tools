@@ -9020,13 +9020,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                   ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))
                   : '.';
                 
-                // For local file access, try file:// protocol
-                // Note: This works best when running from file:// protocol, not http://
-                const folderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
-                const folderUrl = `file:///${folderPath.replace(/\\/g, '/')}`;
+                // Calculate project root folder (parent of dist folder)
+                const distFolderPath = fullExePath.substring(0, fullExePath.lastIndexOf('\\dist\\'));
+                const projectFolderPath = distFolderPath || fullExePath.substring(0, fullExePath.lastIndexOf('\\'));
+                const folderUrl = `file:///${projectFolderPath.replace(/\\/g, '/')}`;
                 
-                // Try opening folder
+                // Try opening folder in Windows Explorer
                 try {
+                  // Use file:// protocol to open folder
                   window.open(folderUrl);
                   openFolderBtn.textContent = '✅ Folder Opened!';
                   setTimeout(() => {
@@ -9035,12 +9036,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                   
                   // Show instructions
                   setTimeout(() => {
-                    alert(`✅ Folder opened!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. Right-click in the folder\n2. Select "Open PowerShell here" or "Open Terminal here"\n3. Paste (Ctrl+V) and press Enter`);
+                    alert(`✅ Project folder opened in Explorer!\n\n📋 Build command copied to clipboard: ${buildCommand}\n\n💡 Next steps:\n1. In the Explorer window, right-click in empty space\n2. Select "Open PowerShell here" or "Open Terminal here"\n3. Paste (Ctrl+V) and press Enter to build`);
                   }, 500);
                 } catch (e) {
                   // Fallback: show manual instructions
                   await navigator.clipboard.writeText(buildCommand);
-                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${folderPath}\n\n💡 To open terminal:\n1. Navigate to the folder above\n2. Right-click → "Open PowerShell here"\n3. Paste (Ctrl+V) and press Enter\n\nOr manually run:\n${buildCommand}`);
+                  alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Navigate to the folder above in Windows Explorer\n2. Right-click in empty space → "Open PowerShell here"\n3. Paste (Ctrl+V) and press Enter\n\nOr manually run:\n${buildCommand}`);
                 }
               } catch (e) {
                 alert(`Unable to open folder automatically.\n\nPlease:\n1. Navigate to: ${fullExePath.substring(0, fullExePath.lastIndexOf('\\'))}\n2. Right-click → "Open PowerShell here"\n3. Run: ${buildCommand}`);
