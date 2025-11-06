@@ -64,8 +64,23 @@ app.get("/run", (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   
-  // Change to project root directory
-  const projectRoot = path.resolve(__dirname, "..");
+  // Determine project root directory
+  // If running from Electron, use the Dropbox project folder
+  // Otherwise, use the directory relative to this script
+  let projectRoot;
+  
+  // Check if we're running from Electron (in resources/app)
+  const isElectron = __dirname.includes('resources' + path.sep + 'app');
+  
+  if (isElectron) {
+    // Running from Electron - use hardcoded Dropbox project path
+    projectRoot = "G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools";
+    console.log(`[${task}] Using Dropbox project path: ${projectRoot}`);
+  } else {
+    // Running from development - use relative path
+    projectRoot = path.resolve(__dirname, "..");
+    console.log(`[${task}] Using relative project path: ${projectRoot}`);
+  }
   
   // Spawn Python process
   const py = spawn("python", ["scripts/run-local-task.py", "--task", task], {
