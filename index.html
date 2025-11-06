@@ -9407,9 +9407,13 @@ exit`;
       try {
         log(`🚀 Starting ${task} task...\n`);
         
-        // Discover server port if not already known
-        const discoveredPort = await discoverServerPort() || serverPort;
+        // Discover server port - MUST discover before using
+        const discoveredPort = await discoverServerPort();
+        if (!discoveredPort) {
+          throw new Error('Could not discover server port. Make sure the local server is running.');
+        }
         serverPort = discoveredPort;
+        log(`🔍 Using server on port ${serverPort}\n`);
         
         // First check if server is reachable
         try {
@@ -9422,12 +9426,12 @@ exit`;
           }
         } catch (healthError) {
           if (healthError.name === 'AbortError' || healthError.message.includes('Failed to fetch') || healthError.message.includes('NetworkError')) {
-            throw new Error(`Cannot connect to local server. Make sure the server is running on port ${serverPort}.`);
+            throw new Error(`Cannot connect to local server on port ${serverPort}. Make sure the server is running.`);
           }
           throw healthError;
         }
         
-        log(`✅ Server connection verified\n`);
+        log(`✅ Server connection verified on port ${serverPort}\n`);
         log(`📡 Sending task request...\n`);
         
         const response = await fetch(`http://localhost:${serverPort}/run?task=${task}`, {
