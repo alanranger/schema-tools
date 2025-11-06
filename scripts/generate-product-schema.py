@@ -494,59 +494,6 @@ def main():
             today = date.today()
             print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
             print(f"✅ Matched {matched_reviews_count} reviews to {len(matched_products)} products")
-            else:
-                print("⚠️  Merged file missing product_slug column, attempting to create from product_name...")
-                if 'product_name' in merged_df.columns:
-                    merged_df['product_slug'] = merged_df['product_name'].fillna('').apply(slugify)
-                    # Retry matching with newly created slugs
-                    reviews_grouped = merged_df.groupby('product_slug')
-                    matched_reviews_count = 0
-                    matched_products = set()
-                    
-                    for _, product_row in df_products.iterrows():
-                        product_slug = product_row['product_slug']
-                        if not product_slug:
-                            continue
-                        
-                        if product_slug in reviews_grouped.groups:
-                            group = reviews_grouped.get_group(product_slug)
-                            product_name = str(product_row.get('name', '')).strip()
-                            
-                            for _, review_row in group.iterrows():
-                                rating_val = review_row.get('ratingValue')
-                                if rating_val and rating_val >= 4:
-                                    review_obj = {
-                                        "@type": "Review",
-                                        "reviewRating": {
-                                            "@type": "Rating",
-                                            "ratingValue": str(int(rating_val)),
-                                            "bestRating": "5",
-                                            "worstRating": "1"
-                                        },
-                                        "reviewBody": str(review_row.get('review', review_row.get('review_text', review_row.get('reviewbody', '')))).strip()
-                                    }
-                                    
-                                    reviewer = str(review_row.get('reviewer', review_row.get('author', ''))).strip()
-                                    if reviewer and reviewer.lower() not in ['anonymous', 'n/a', '']:
-                                        review_obj["author"] = {"@type": "Person", "name": reviewer}
-                                    else:
-                                        review_obj["author"] = {"@type": "Person", "name": "Anonymous"}
-                                    
-                                    reviews_by_product[product_name].append(review_obj)
-                                    matched_reviews_count += 1
-                            
-                            if product_name not in matched_products:
-                                matched_products.add(product_name)
-                    
-                    google_count = len(google_df_source) if not google_df_source.empty else 0
-                    trust_count = len(trust_df_source) if not trust_df_source.empty else 0
-                    total_reviews = len(merged_df)
-                    today = date.today()
-                    print(f"✅ Reviews merged — {total_reviews} total ({google_count} Google + {trust_count} Trustpilot) on {today}")
-                    print(f"✅ Matched {matched_reviews_count} reviews to {len(matched_products)} products")
-                else:
-                    print("⚠️  Merged file missing product_name column, loading from source files...")
-                    reviews_by_product = load_and_merge_reviews(google_reviews_file, trustpilot_reviews_file, df_products)
         except Exception as e:
             print(f"⚠️  Error reading merged file: {e}")
             print("📂 Falling back to source files...")
