@@ -8911,18 +8911,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                   
                   // Show and enable the "Open Built App" button
                   const openExeBtn = document.getElementById('openExeBtn');
-                  if (openExeBtn && window.electronAPI.openExe) {
+                  if (openExeBtn && window.electronAPI.openExe && window.electronAPI.getExePath) {
                     openExeBtn.style.display = 'inline-block';
-                    const exePath = require('path').join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
                     openExeBtn.onclick = async () => {
                       try {
+                        // Get the exe path from Electron
+                        const exePath = await window.electronAPI.getExePath();
                         await window.electronAPI.openExe(exePath);
                         openExeBtn.textContent = '✅ Opened!';
                         setTimeout(() => {
                           openExeBtn.textContent = '▶️ Open Built App (SchemaTools.exe)';
                         }, 2000);
                       } catch (error) {
-                        alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n${exePath}`);
+                        try {
+                          const exePath = await window.electronAPI.getExePath();
+                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n${exePath}`);
+                        } catch {
+                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\ndist\\SchemaTools-win32-x64\\SchemaTools.exe`);
+                        }
                       }
                     };
                   }
