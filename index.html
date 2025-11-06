@@ -1436,6 +1436,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <div id="buildOutput" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
       </div>
 
+      <!-- ===================== COMBINED DEBUG LOG ===================== -->
+      <div id="combined-debug-log-section" style="margin-top: 2rem; margin-bottom: 1.5rem; padding: 1.5rem; background: #1e1e1e; border: 2px solid #4a5568; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="color: #d4d4d4; margin: 0; font-size: 1.25rem; font-weight: 600;">📋 Combined Debug Log (All Steps)</h3>
+          <div>
+            <button id="clearCombinedLogBtn" onclick="clearCombinedLog()" style="padding: 0.5rem 1rem; font-size: 0.875rem; border: 1px solid #4a5568; border-radius: 6px; background: #2d3748; color: #d4d4d4; cursor: pointer; margin-right: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='#4a5568'" onmouseout="this.style.background='#2d3748'">
+              🗑️ Clear Log
+            </button>
+            <button id="copyCombinedLogBtn" onclick="copyCombinedLog()" style="padding: 0.5rem 1rem; font-size: 0.875rem; border: none; border-radius: 6px; background: #667eea; color: white; cursor: pointer; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+              📋 Copy All Logs
+            </button>
+          </div>
+        </div>
+        <div id="combinedDebugLog" style="padding: 1rem; background: #0d1117; color: #d4d4d4; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 500px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #30363d;">No logs yet. Step outputs will appear here as they run...</div>
+      </div>
+
       <!-- ===================== STATUS DASHBOARD ===================== -->
       <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="color: #2d3748; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
@@ -3890,6 +3906,90 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   })();
   
   // Copy to clipboard
+  // Combined Debug Log Functions
+  function addToCombinedLog(msg, stepId, task) {
+    const combinedLog = document.getElementById('combinedDebugLog');
+    if (!combinedLog) return;
+    
+    // Get step name
+    const stepNames = {
+      2: 'Step 2 - Clean',
+      '3a': 'Step 3a - Fetch Google Reviews',
+      '3b': 'Step 3b - Merge Reviews',
+      4: 'Step 4 - Generate Schema'
+    };
+    const stepName = stepNames[stepId] || `Step ${stepId}`;
+    
+    // Add timestamp and step header if this is a new step
+    const currentText = combinedLog.textContent;
+    const stepHeader = `\n${'='.repeat(60)}\n${stepName} (${task})\n${'='.repeat(60)}\n`;
+    
+    // Check if we need to add step header (if this is the first message for this step)
+    if (!currentText.includes(stepHeader.trim()) && msg.includes('🚀 Starting')) {
+      combinedLog.textContent += stepHeader;
+    }
+    
+    // Add the message
+    combinedLog.textContent += msg;
+    combinedLog.scrollTop = combinedLog.scrollHeight;
+  }
+  
+  function copyCombinedLog() {
+    const combinedLog = document.getElementById('combinedDebugLog');
+    if (!combinedLog) return;
+    
+    const text = combinedLog.textContent || 'No logs available';
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyCombinedLogBtn');
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ Copied!';
+          btn.style.background = '#27AE60';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '#667eea';
+          }, 2000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard. Please select and copy manually.');
+      });
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        const btn = document.getElementById('copyCombinedLogBtn');
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ Copied!';
+          btn.style.background = '#27AE60';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '#667eea';
+          }, 2000);
+        }
+      } catch (err) {
+        alert('Failed to copy. Please select and copy manually.');
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+  
+  function clearCombinedLog() {
+    const combinedLog = document.getElementById('combinedDebugLog');
+    if (combinedLog) {
+      combinedLog.textContent = 'No logs yet. Step outputs will appear here as they run...';
+    }
+  }
+
   function copyToClipboard(outputId) {
     const element = document.getElementById(outputId);
     if (!element) {
@@ -9402,6 +9502,8 @@ exit`;
           consoleOutput.textContent += msg;
           consoleOutput.scrollTop = consoleOutput.scrollHeight;
         }
+        // Also add to combined debug log
+        addToCombinedLog(msg, stepId, task);
       };
       
       try {
