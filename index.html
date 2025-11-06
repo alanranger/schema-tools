@@ -2564,6 +2564,75 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     openModal(`❌ Step ${stepNumber} Failed`, html);
   }
 
+  function showFinalCompletionModal() {
+    if (!window.completedSteps) {
+      return;
+    }
+    
+    const steps = window.completedSteps;
+    const stepNames = {
+      2: 'Step 2 - Clean and Normalize CSV',
+      '3a': 'Step 3a - Fetch Google Reviews',
+      '3b': 'Step 3b - Merge Reviews',
+      4: 'Step 4 - Generate Product Schema'
+    };
+    
+    let summaryHtml = '<div style="padding: 1.5rem;">';
+    summaryHtml += '<div style="text-align: center; margin-bottom: 1.5rem;">';
+    summaryHtml += '<div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>';
+    summaryHtml += '<h2 style="color: #27AE60; margin: 0 0 0.5rem 0;">All Steps Complete!</h2>';
+    summaryHtml += '<p style="color: #4a5568; font-size: 1.1rem; margin: 0;">Your product schemas are ready</p>';
+    summaryHtml += '</div>';
+    
+    summaryHtml += '<div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">';
+    summaryHtml += '<p style="margin: 0 0 1rem 0; font-weight: 600; color: #2d3748;">📊 Step Summary:</p>';
+    
+    const stepOrder = [2, '3a', '3b', 4];
+    let allSuccess = true;
+    
+    for (const stepId of stepOrder) {
+      const step = steps[stepId];
+      const stepName = stepNames[stepId] || `Step ${stepId}`;
+      
+      if (step) {
+        summaryHtml += `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: #d4edda; border-left: 4px solid #27AE60; border-radius: 4px;">`;
+        summaryHtml += `<p style="margin: 0; font-weight: 600; color: #155724;">✅ ${stepName}</p>`;
+        summaryHtml += `<p style="margin: 0.25rem 0 0 0; color: #155724; font-size: 0.9rem;">${step.message}</p>`;
+        if (step.file) {
+          summaryHtml += `<p style="margin: 0.25rem 0 0 0; color: #155724; font-size: 0.85rem;"><code style="background: #c3e6cb; padding: 2px 6px; border-radius: 3px;">${step.file}</code></p>`;
+        }
+        summaryHtml += `</div>`;
+      } else {
+        allSuccess = false;
+        summaryHtml += `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">`;
+        summaryHtml += `<p style="margin: 0; font-weight: 600; color: #856404;">⚠️ ${stepName}</p>`;
+        summaryHtml += `<p style="margin: 0.25rem 0 0 0; color: #856404; font-size: 0.9rem;">Status unknown</p>`;
+        summaryHtml += `</div>`;
+      }
+    }
+    
+    summaryHtml += '</div>';
+    
+    summaryHtml += '<div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">';
+    summaryHtml += '<p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;">💡 Next Steps:</p>';
+    summaryHtml += '<ul style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
+    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">outputs/</code> folder</li>';
+    summaryHtml += '<li>Each product has a Squarespace-ready HTML file</li>';
+    summaryHtml += '<li>Copy-paste the HTML into Squarespace Code Blocks</li>';
+    summaryHtml += '<li>Validate with <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #007bff; text-decoration: underline;">Google Rich Results Test</a></li>';
+    summaryHtml += '</ul>';
+    summaryHtml += '</div>';
+    
+    summaryHtml += '<div style="text-align: center; margin-top: 1.5rem;">';
+    summaryHtml += '<button onclick="document.querySelector(\'#detail-modal\').remove()" style="padding: 0.75rem 2rem; background: #27AE60; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer;">';
+    summaryHtml += 'Got it!';
+    summaryHtml += '</button>';
+    summaryHtml += '</div>';
+    summaryHtml += '</div>';
+    
+    openModal('🎉 Workflow Complete!', summaryHtml);
+  }
+
   function codeBlock(label, code) {
     return `
       <div class="code-card">
@@ -9544,7 +9613,8 @@ exit`;
 
     function markComplete(step, msg) {
       const stepNum = step === '3a' ? '3a' : step === '3b' ? '3b' : String(step);
-      updateStepStatus(stepNum, 'complete', msg);
+      // Explicitly update dashboard status to complete
+      updateStepStatus(stepNum, 'complete', msg || 'Complete');
       
       const bar = document.querySelector(`#progress-step${step} .progress-bar`);
       if (bar) {
@@ -9768,6 +9838,25 @@ exit`;
               info.nextStep,
               info.file
             );
+            
+            // Track step completion for final summary
+            if (!window.completedSteps) {
+              window.completedSteps = {};
+            }
+            window.completedSteps[stepId] = {
+              name: info.name,
+              message: info.message,
+              file: info.file,
+              reviewCount: stepId === '3a' ? reviewCount : null,
+              productCount: stepId === 4 ? productCount : null
+            };
+            
+            // If Step 4 completed, show final summary modal
+            if (stepId === 4) {
+              setTimeout(() => {
+                showFinalCompletionModal();
+              }, 1500);
+            }
           }, 500);
         }
         
