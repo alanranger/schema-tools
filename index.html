@@ -1386,8 +1386,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
       <!-- Desktop App Launch Button (Web Mode Only) -->
       <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6;">
-        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">💻 Want Full Automation?</h3>
-        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">This web version runs in read-only mode. To generate schema files automatically, use the desktop app.</p>
+        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">💻 Want Automated Steps?</h3>
+        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">This web version runs in read-only mode. The desktop app can automatically chain steps 2→3a→3b→4 after you upload a file.</p>
         
         <div style="background:#f7fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; border:1px solid #e2e8f0;">
           <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;">📋 How to use the desktop app:</p>
@@ -1519,7 +1519,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">🧾 Step 1 – Squarespace Product Export Setup</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             <strong>What to do:</strong> Export your products from Squarespace → <strong>Commerce → Products → Export CSV</strong>.<br>
-            Then upload the CSV file below. The file will be cleaned automatically.
+            Then upload the CSV file below. <strong>After upload, Step 2 will start automatically.</strong>
           </p>
           <input type="file" id="file-step1" accept=".csv" style="margin-top: 0.75rem; display: block; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed;" disabled />
           <p id="step1LockMessage" style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; font-style: italic;">
@@ -1536,7 +1536,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <div id="step2-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏸️</div>
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">🧹 Step 2 – Clean and Normalize CSV</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            This step automatically formats your latest Squarespace export for schema generation.
+            <strong>What happens:</strong> This step formats your Squarespace export for schema generation.<br>
+            <strong>When:</strong> Runs automatically after Step 1 upload completes.<br>
+            <strong>You don't need to do anything</strong> - just wait for it to finish. Step 3a will start automatically next.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Triggered automatically after Step 1 upload</li>
@@ -1556,9 +1558,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
         <!-- STEP 3a: Fetch Google Reviews -->
         <div id="step3a-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">📥 Step 3a – Fetch Google Reviews Automatically</h3>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">📥 Step 3a – Fetch Google Reviews</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            This step connects to your Google My Business account and retrieves all customer reviews.
+            <strong>What happens:</strong> Connects to your Google My Business account and retrieves all customer reviews.<br>
+            <strong>When:</strong> Runs automatically after Step 2 completes.<br>
+            <strong>First time:</strong> A browser window will open for OAuth authorization - just approve it.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Requires valid OAuth JSON in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/credentials/</code></li>
@@ -1583,7 +1587,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <div id="step3b-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">🔗 Step 3b – Merge Trustpilot and Google Reviews</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            Combine both review sources into one clean dataset ready for schema generation.
+            <strong>What happens:</strong> Combines both review sources into one clean dataset ready for schema generation.<br>
+            <strong>When:</strong> Runs automatically after Step 3a completes.<br>
+            <strong>You don't need to do anything</strong> - just wait for it to finish. Step 4 will start automatically next.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03a – trustpilot_historical_reviews.csv</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03b – google_reviews.csv</code></li>
@@ -1623,7 +1629,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <div id="step4-container" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">⚙️ Step 4 – Generate Product Schema</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            Click below to generate JSON-LD schema from your Step 3 Excel file.
+            <strong>What happens:</strong> Generates JSON-LD schema files from your merged review data.<br>
+            <strong>When:</strong> Runs automatically after Step 3b completes.<br>
+            <strong>You don't need to do anything</strong> - just wait for it to finish. Your schema files will be ready!
           </p>
           <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2488,6 +2496,72 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
     modal.querySelector('#modal-title').textContent = title;
     modal.querySelector('.modal-body').innerHTML = html;
+  }
+
+  // Step completion modals
+  function showStepSuccessModal(stepNumber, stepName, message, nextStepInstructions, fileLocation) {
+    const html = `
+      <div style="padding: 1.5rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+          <h2 style="color: #27AE60; margin: 0 0 0.5rem 0;">Step ${stepNumber} Complete!</h2>
+          <p style="color: #4a5568; font-size: 1.1rem; margin: 0;">${stepName}</p>
+        </div>
+        
+        <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #2d3748;">What happened:</p>
+          <p style="margin: 0; color: #4a5568; line-height: 1.6;">${message}</p>
+          ${fileLocation ? `<p style="margin: 1rem 0 0 0; color: #2d3748;"><strong>📁 File saved:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${fileLocation}</code></p>` : ''}
+        </div>
+        
+        ${nextStepInstructions ? `
+        <div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;">💡 What's Next:</p>
+          <p style="margin: 0; color: #004085; line-height: 1.6;">${nextStepInstructions}</p>
+        </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin-top: 1.5rem;">
+          <button onclick="document.querySelector('#detail-modal').remove()" style="padding: 0.75rem 2rem; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            Got it!
+          </button>
+        </div>
+      </div>
+    `;
+    openModal(`✅ Step ${stepNumber} Complete`, html);
+  }
+
+  function showStepErrorModal(stepNumber, stepName, errorMessage, troubleshootingSteps) {
+    const html = `
+      <div style="padding: 1.5rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">❌</div>
+          <h2 style="color: #E74C3C; margin: 0 0 0.5rem 0;">Step ${stepNumber} Failed</h2>
+          <p style="color: #4a5568; font-size: 1.1rem; margin: 0;">${stepName}</p>
+        </div>
+        
+        <div style="background: #fff5f5; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #E74C3C;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #c53030;">Error:</p>
+          <p style="margin: 0; color: #742a2a; line-height: 1.6; font-family: monospace; background: #fff; padding: 0.5rem; border-radius: 4px;">${escapeHtml(errorMessage)}</p>
+        </div>
+        
+        ${troubleshootingSteps ? `
+        <div style="background: #fffbf0; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
+          <p style="margin: 0 0 0.75rem 0; font-weight: 600; color: #92400e;">🔧 Troubleshooting:</p>
+          <ul style="margin: 0; padding-left: 1.5rem; color: #78350f; line-height: 1.8;">
+            ${troubleshootingSteps.map(step => `<li>${step}</li>`).join('')}
+          </ul>
+        </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin-top: 1.5rem;">
+          <button onclick="document.querySelector('#detail-modal').remove()" style="padding: 0.75rem 2rem; background: #E74C3C; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            Close
+          </button>
+        </div>
+      </div>
+    `;
+    openModal(`❌ Step ${stepNumber} Failed`, html);
   }
 
   function codeBlock(label, code) {
@@ -8915,7 +8989,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           
           const res = await fetch(`http://localhost:${serverPort}/health`).catch(() => null);
           if (res && res.ok) {
-            log("✅ Ready! All steps will run automatically.");
+            log("✅ Ready! Steps will chain automatically after you upload a file in Step 1.");
             serverStatus = 'running';
             updateStepStatus('0', 'complete', 'Ready');
             unlockStep1();
@@ -8926,7 +9000,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             const retryPort = await discoverServerPort() || serverPort;
             const retryRes = await fetch(`http://localhost:${retryPort}/health`).catch(() => null);
             if (retryRes && retryRes.ok) {
-              log("✅ Ready! All steps will run automatically.");
+              log("✅ Ready! Steps will chain automatically after you upload a file in Step 1.");
               serverStatus = 'running';
               updateStepStatus('0', 'complete', 'Ready');
               unlockStep1();
@@ -9631,6 +9705,27 @@ exit`;
         // Mark step as complete FIRST
         markComplete(stepId, statusMessage.replace('🔄 ', '✅ ').replace('🧹 ', '✅ ').replace('⚙️ ', '✅ '));
         
+        // Show success modal based on step
+        const stepInfo = {
+          2: { name: 'Clean and Normalize CSV', message: 'Product data has been cleaned and normalized. Invalid rows removed, columns standardized.', nextStep: 'Step 3a will start automatically to fetch Google reviews.', file: 'inputs-files/workflow/02 – products_cleaned.xlsx' },
+          '3a': { name: 'Fetch Google Reviews', message: 'Successfully fetched Google My Business reviews. Reviews have been saved to CSV.', nextStep: 'Step 3b will start automatically to merge reviews.', file: 'inputs-files/workflow/03b – google_reviews.csv' },
+          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Step 4 will start automatically to generate product schema.', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
+          4: { name: 'Generate Product Schema', message: 'Product schema files have been generated successfully. JSON and HTML files are ready.', nextStep: null, file: 'outputs/ folder (JSON/HTML) and inputs-files/workflow/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv' }
+        };
+        
+        const info = stepInfo[stepId];
+        if (info) {
+          setTimeout(() => {
+            showStepSuccessModal(
+              stepId,
+              info.name,
+              info.message,
+              info.nextStep,
+              info.file
+            );
+          }, 500);
+        }
+        
         if (onComplete) {
           onComplete();
         }
@@ -9712,6 +9807,48 @@ exit`;
           stepContainer.style.borderColor = '#dc3545';
           stepContainer.style.borderWidth = '2px';
         }
+        
+        // Show error modal
+        const stepNames = {
+          2: 'Clean and Normalize CSV',
+          '3a': 'Fetch Google Reviews',
+          '3b': 'Merge Reviews',
+          4: 'Generate Product Schema'
+        };
+        
+        let troubleshootingSteps = [];
+        if (errorMsg.includes('Cannot connect') || errorMsg.includes('Failed to fetch')) {
+          if (isElectronMode) {
+            troubleshootingSteps = [
+              'Close and reopen the Electron app',
+              'Check that Python 3.10+ is installed',
+              'Ensure no antivirus is blocking local connections',
+              'Open Developer Console (Ctrl+Shift+I) for detailed errors'
+            ];
+          } else {
+            troubleshootingSteps = [
+              'Make sure the local server is running',
+              'Run: npm run start-local in your terminal',
+              'Wait for the server to start, then refresh this page'
+            ];
+          }
+        } else {
+          troubleshootingSteps = [
+            'Check the console output above for detailed error messages',
+            'Verify all required input files exist',
+            'Ensure Python 3.10+ is installed',
+            'Check that you have write permissions to the output folder'
+          ];
+        }
+        
+        setTimeout(() => {
+          showStepErrorModal(
+            stepId,
+            stepNames[stepId] || `Step ${stepId}`,
+            errorMsg,
+            troubleshootingSteps
+          );
+        }, 500);
         
         // Hide server status warning if it exists
         const warning = document.getElementById('serverStatusWarning');
