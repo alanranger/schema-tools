@@ -9705,10 +9705,31 @@ exit`;
         // Mark step as complete FIRST
         markComplete(stepId, statusMessage.replace('🔄 ', '✅ ').replace('🧹 ', '✅ ').replace('⚙️ ', '✅ '));
         
+        // Extract review count for Step 3a from console output
+        let reviewCount = null;
+        if (stepId === '3a' && consoleOutput) {
+          const outputText = consoleOutput.textContent || '';
+          // Look for patterns like "✅ Fetched 217 reviews" or "📊 Total reviews: 217"
+          const fetchedMatch = outputText.match(/✅\s*Fetched\s+(\d+)\s+reviews?/i);
+          const totalMatch = outputText.match(/📊\s*Total\s+reviews?:\s*(\d+)/i);
+          if (fetchedMatch) {
+            reviewCount = parseInt(fetchedMatch[1]);
+          } else if (totalMatch) {
+            reviewCount = parseInt(totalMatch[1]);
+          }
+        }
+        
         // Show success modal based on step
         const stepInfo = {
           2: { name: 'Clean and Normalize CSV', message: 'Product data has been cleaned and normalized. Invalid rows removed, columns standardized.', nextStep: 'Step 3a will start automatically to fetch Google reviews.', file: 'inputs-files/workflow/02 – products_cleaned.xlsx' },
-          '3a': { name: 'Fetch Google Reviews', message: 'Successfully fetched Google My Business reviews. Reviews have been saved to CSV.', nextStep: 'Step 3b will start automatically to merge reviews.', file: 'inputs-files/workflow/03b – google_reviews.csv' },
+          '3a': { 
+            name: 'Fetch Google Reviews', 
+            message: reviewCount 
+              ? `Successfully fetched ${reviewCount} Google My Business reviews. Reviews have been saved to CSV.`
+              : 'Successfully fetched Google My Business reviews. Reviews have been saved to CSV.',
+            nextStep: 'Step 3b will start automatically to merge reviews.', 
+            file: 'inputs-files/workflow/03b – google_reviews.csv' 
+          },
           '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Step 4 will start automatically to generate product schema.', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
           4: { name: 'Generate Product Schema', message: 'Product schema files have been generated successfully. JSON and HTML files are ready.', nextStep: null, file: 'outputs/ folder (JSON/HTML) and inputs-files/workflow/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv' }
         };
