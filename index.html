@@ -9200,7 +9200,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           const showInstructionsBtn = document.getElementById('showInstructionsBtn');
           if (showInstructionsBtn) {
             showInstructionsBtn.addEventListener('click', () => {
-              alert(`📁 Full Path to Desktop App:\n\n${fullExePath}\n\n💡 To build the app:\n1. Open terminal in your project folder\n2. Run: ${buildCommand}\n3. Navigate to the dist folder\n4. Double-click SchemaTools.exe`);
+              alert(`📁 Full Path to Desktop App:\n\n${fullExePath}\n\n💡 To build the app:\n1. Open terminal in your project folder\n2. Run: ${buildCommand}\n3. Navigate to: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\\n4. Double-click SchemaTools.exe`);
             });
           }
           
