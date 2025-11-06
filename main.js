@@ -41,33 +41,72 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Start local executor first
   const serverPath = path.join(__dirname, "scripts", "local-server.js");
   console.log("⚙️ Starting local executor...");
   console.log(`   Server path: ${serverPath}`);
+  console.log(`   Working directory: ${__dirname}`);
   
   let serverStarted = false;
   let serverError = null;
+  let serverOutput = [];
+  
+  // Check if server file exists
+  if (!fs.existsSync(serverPath)) {
+    const error = `Server file not found: ${serverPath}`;
+    console.error(`❌ ${error}`);
+    serverError = new Error(error);
+    createWindow();
+    return;
+  }
   
   localServer = spawn("node", [serverPath], {
-    stdio: "inherit",
+    stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
     shell: true,
     cwd: __dirname,
+    env: {
+      ...process.env,
+      NODE_ENV: process.env.NODE_ENV || 'production',
+    },
+  });
+
+  // Capture server stdout
+  localServer.stdout.on('data', (data) => {
+    const output = data.toString();
+    serverOutput.push({ type: 'stdout', data: output });
+    console.log(`[Server] ${output.trim()}`);
+  });
+
+  // Capture server stderr
+  localServer.stderr.on('data', (data) => {
+    const output = data.toString();
+    serverOutput.push({ type: 'stderr', data: output });
+    console.error(`[Server Error] ${output.trim()}`);
   });
 
   localServer.on("error", (err) => {
     console.error("❌ Failed to start local server:", err);
     serverError = err;
     if (mainWindow) {
-      mainWindow.webContents.send("server-error", err.message);
+      mainWindow.webContents.send("server-error", {
+        error: err.message,
+        output: serverOutput,
+      });
     }
   });
 
   localServer.on("exit", (code) => {
     if (code !== 0 && code !== null) {
       console.error(`🛑 Local server exited with error code ${code}`);
+      console.error(`   Last output:`, serverOutput.slice(-5));
       serverError = new Error(`Server exited with code ${code}`);
+      if (mainWindow) {
+        mainWindow.webContents.send("server-error", {
+          error: `Server exited with code ${code}`,
+          output: serverOutput,
+        });
+      }
     } else {
       console.log(`🛑 Local server exited with code ${code}`);
     }
@@ -79,18 +118,40 @@ app.whenReady().then(() => {
     console.log("✅ Local server process spawned");
   });
 
-  // Give server a moment to start before loading the window
-  setTimeout(() => {
+  // Verify server is actually listening by checking health endpoint
+  const checkServerHealth = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/health');
+      if (response.ok) {
+        console.log("✅ Local server is responding on port 8000");
+        return true;
+      }
+    } catch (err) {
+      // Server not ready yet, this is expected initially
+      return false;
+    }
+    return false;
+  };
+
+  // Give server time to start, then verify it's running
+  setTimeout(async () => {
+    const isHealthy = await checkServerHealth();
+    
     if (serverError) {
       console.error("⚠️ Local server failed to start - app will continue but automation may not work");
       console.error("   Error:", serverError.message);
+      console.error("   Server output:", serverOutput);
+    } else if (isHealthy) {
+      console.log("✅ Local executor bridge ready and responding");
     } else if (serverStarted) {
-      console.log("✅ Local executor bridge ready");
+      console.warn("⚠️ Local server spawned but not responding on port 8000");
+      console.warn("   This may be normal if the server is still starting...");
+      console.warn("   Server output:", serverOutput.slice(-3));
     } else {
       console.warn("⚠️ Local server status unclear - app will continue");
     }
     createWindow();
-  }, 1500);
+  }, 2000); // Increased timeout to 2 seconds
 
   app.on("activate", () => {
     // On macOS re-create window when dock icon is clicked
