@@ -9183,7 +9183,7 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
                 
                 // Show instructions
                 setTimeout(() => {
-                  alert(`✅ Batch file downloaded!\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. ⚠️ Close Dropbox if build fails with "locked" error\n3. Go to your Downloads folder\n4. Double-click "Open-PowerShell-Here.bat"\n5. PowerShell will open and automatically run the build!\n\n📁 Project folder:\n${projectFolderPath}\n\n🔨 Command: ${buildCommand}\n\n⚠️ Note: If you see "EBUSY" or "locked" errors, Dropbox is syncing files. Close Dropbox temporarily and try again.`);
+                  alert(`✅ Batch file downloaded!\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. Go to your Downloads folder\n3. Double-click "Open-PowerShell-Here.bat"\n4. PowerShell will open and automatically run the build!\n\n📁 Project folder:\n${projectFolderPath}\n\n📁 Built app will be at:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe\n\n🔨 Command: ${buildCommand}\n\n✅ No more Dropbox lock errors - builds go to LOCALAPPDATA!`);
                 }, 500);
               } catch (e) {
                 // Fallback: show manual instructions
