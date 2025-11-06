@@ -117,78 +117,82 @@ app.get("/run", (req, res) => {
   });
 });
 
-// Function to find an available port
-function findAvailablePort(startPort, maxAttempts) {
-  return new Promise((resolve, reject) => {
-    let currentPort = startPort;
-    let attempts = 0;
-    
-    function tryPort() {
-      if (attempts >= maxAttempts) {
-        reject(new Error(`Could not find available port after ${maxAttempts} attempts`));
-        return;
-      }
-      
-      const testServer = app.listen(currentPort, () => {
-        // Port is available, close test server and return port
-        testServer.close(() => {
-          resolve(currentPort);
-        });
+// Function to start server on first available port
+async function startServerOnAvailablePort() {
+  const fs = await import('fs');
+  let currentPort = START_PORT;
+  let attempts = 0;
+  
+  while (attempts < MAX_PORT_ATTEMPTS) {
+    try {
+      const server = app.listen(currentPort, () => {
+        console.log(`⚡ Local executor running at http://localhost:${currentPort}`);
+        console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
+        console.log(`💡 Health check: http://localhost:${currentPort}/health`);
+        
+        if (currentPort !== START_PORT) {
+          console.log(`ℹ️ Port ${START_PORT} was in use, using port ${currentPort} instead`);
+        }
+        
+        // Write port to a file so client can discover it
+        const portFile = path.join(__dirname, '..', 'inputs-files', 'workflow', '.server-port');
+        try {
+          const portDir = path.dirname(portFile);
+          if (!fs.existsSync(portDir)) {
+            fs.mkdirSync(portDir, { recursive: true });
+          }
+          fs.writeFileSync(portFile, currentPort.toString(), 'utf-8');
+        } catch (e) {
+          // Ignore if we can't write the file
+          console.log(`⚠️ Could not write port file: ${e.message}`);
+        }
       });
       
-      testServer.on('error', (err) => {
+      server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
           // Port is in use, try next one
           attempts++;
           currentPort++;
-          tryPort();
+          if (attempts >= MAX_PORT_ATTEMPTS) {
+            console.error(`❌ Failed to start server: Could not find available port after ${MAX_PORT_ATTEMPTS} attempts`);
+            console.error(`\n💡 Solutions:`);
+            console.error(`   1. Close any other instances of this app`);
+            console.error(`   2. Close any other applications using ports ${START_PORT}-${START_PORT + MAX_PORT_ATTEMPTS - 1}`);
+            console.error(`   3. Restart your computer`);
+            process.exit(1);
+          }
+          // Try next port
+          startServerOnAvailablePort();
         } else {
-          reject(err);
+          console.error(`❌ Server error: ${err.message}`);
+          process.exit(1);
         }
       });
+      
+      // Successfully started
+      return;
+    } catch (err) {
+      if (err.code === 'EADDRINUSE') {
+        attempts++;
+        currentPort++;
+        if (attempts >= MAX_PORT_ATTEMPTS) {
+          console.error(`❌ Failed to start server: Could not find available port after ${MAX_PORT_ATTEMPTS} attempts`);
+          console.error(`\n💡 Solutions:`);
+          console.error(`   1. Close any other instances of this app`);
+          console.error(`   2. Close any other applications using ports ${START_PORT}-${START_PORT + MAX_PORT_ATTEMPTS - 1}`);
+          console.error(`   3. Restart your computer`);
+          process.exit(1);
+        }
+        // Continue to next iteration
+        continue;
+      } else {
+        console.error(`❌ Server error: ${err.message}`);
+        process.exit(1);
+      }
     }
-    
-    tryPort();
-  });
+  }
 }
 
-// Start server on first available port
-let actualPort = START_PORT;
-
-findAvailablePort(START_PORT, MAX_PORT_ATTEMPTS)
-  .then((port) => {
-    actualPort = port;
-    
-    if (port !== START_PORT) {
-      console.log(`ℹ️ Port ${START_PORT} was in use, using port ${port} instead`);
-    }
-    
-    app.listen(port, () => {
-      console.log(`⚡ Local executor running at http://localhost:${port}`);
-      console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
-      console.log(`💡 Health check: http://localhost:${port}/health`);
-      
-      // Write port to a file so client can discover it
-      const portFile = path.join(__dirname, '..', 'inputs-files', 'workflow', '.server-port');
-      try {
-        const fs = await import('fs');
-        const portDir = path.dirname(portFile);
-        if (!fs.existsSync(portDir)) {
-          fs.mkdirSync(portDir, { recursive: true });
-        }
-        fs.writeFileSync(portFile, port.toString(), 'utf-8');
-      } catch (e) {
-        // Ignore if we can't write the file
-        console.log(`⚠️ Could not write port file: ${e.message}`);
-      }
-    });
-  })
-  .catch((err) => {
-    console.error(`❌ Failed to start server: ${err.message}`);
-    console.error(`\n💡 Solutions:`);
-    console.error(`   1. Close any other instances of this app`);
-    console.error(`   2. Close any other applications using ports ${START_PORT}-${START_PORT + MAX_PORT_ATTEMPTS - 1}`);
-    console.error(`   3. Restart your computer`);
-    process.exit(1);
-  });
+// Start the server
+startServerOnAvailablePort();
 
