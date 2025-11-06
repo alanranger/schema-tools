@@ -9546,28 +9546,34 @@ exit`;
       const text = document.getElementById(`step-status-text-${stepId}`);
       const badge = document.getElementById(`step${stepId}-badge`);
       
-      if (!card) return;
+      if (!card) {
+        console.warn(`Dashboard card not found for step ${stepId}`);
+        return;
+      }
+      
+      // Find the icon div (first child div)
+      const iconDiv = card.querySelector('div:first-child');
       
       // Update card
       if (status === 'complete') {
         card.style.background = 'rgba(39, 174, 96, 0.25)'; // Green tint
         card.style.opacity = '1';
-        card.querySelector('div').textContent = '✅';
+        if (iconDiv) iconDiv.textContent = '✅';
         if (text) text.textContent = message || 'Complete';
       } else if (status === 'running') {
         card.style.background = 'rgba(229, 114, 0, 0.25)'; // Orange tint
         card.style.opacity = '1';
-        card.querySelector('div').textContent = '🔄';
+        if (iconDiv) iconDiv.textContent = '🔄';
         if (text) text.textContent = message || 'Running';
       } else if (status === 'error') {
         card.style.background = 'rgba(231, 76, 60, 0.25)'; // Red tint
         card.style.opacity = '1';
-        card.querySelector('div').textContent = '❌';
+        if (iconDiv) iconDiv.textContent = '❌';
         if (text) text.textContent = message || 'Error';
       } else {
         card.style.background = 'rgba(0,0,0,0.03)';
         card.style.opacity = '0.5';
-        card.querySelector('div').textContent = '⏸️';
+        if (iconDiv) iconDiv.textContent = '⏸️';
         if (text) text.textContent = message || 'Waiting';
       }
       
