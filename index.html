@@ -9262,30 +9262,40 @@ ${expandedPath}
                 }
               }
               
-              // Show instructions with actual path
-              setTimeout(() => {
+              // Show instructions with actual path and copy command to clipboard
+              setTimeout(async () => {
+                const runCommand = '%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64';
                 const actualPathInstructions = `
 ⚠️ Browser Security Restriction
 
 Browsers cannot directly open .exe files for security reasons.
 
-📁 To find and open the app manually:
+📁 Quick Way to Open the Folder:
 
 1. Press Windows Key + R
-2. Type: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64
-3. Press Enter (Windows Explorer will open)
+2. Paste this (already copied to clipboard):
+   ${runCommand}
+3. Press Enter
 4. Double-click SchemaTools.exe
 
 Or navigate directly to:
 ${expandedPath.replace('YourUsername', 'YOUR_USERNAME')}
 
 💡 Tip: Replace YOUR_USERNAME with your actual Windows username
-   (usually visible in C:\\Users\\)
+   (Check C:\\Users\\ folder to see your username)
 
 🔨 To build the app first:
 1. Open terminal in your project folder
 2. Run: npm run build:desktop
 3. Then follow steps above to open it`;
+                
+                // Copy the Run dialog command to clipboard
+                try {
+                  await navigator.clipboard.writeText(runCommand);
+                } catch (e) {
+                  // Fallback if clipboard API fails
+                  console.log('Could not copy to clipboard:', e);
+                }
                 
                 alert(actualPathInstructions);
               }, 500);
