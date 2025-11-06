@@ -63,19 +63,33 @@ app.whenReady().then(async () => {
     return;
   }
   
-  // Ensure path is properly quoted for Windows paths with spaces
-  // Use absolute path and quote it for shell execution
-  const quotedServerPath = serverPath.includes(' ') ? `"${serverPath}"` : serverPath;
+  // On Windows with shell: true, use command string format to properly handle paths with spaces
+  // On Unix, use array format
+  const isWindows = process.platform === 'win32';
   
-  localServer = spawn("node", [quotedServerPath], {
-    stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
-    shell: true,
-    cwd: __dirname,
-    env: {
-      ...process.env,
-      NODE_ENV: process.env.NODE_ENV || 'production',
-    },
-  });
+  if (isWindows) {
+    // Windows: Pass as single command string with quoted path
+    localServer = spawn(`node "${serverPath}"`, [], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
+      cwd: __dirname,
+      env: {
+        ...process.env,
+        NODE_ENV: process.env.NODE_ENV || 'production',
+      },
+    });
+  } else {
+    // Unix/Linux/Mac: Use array format
+    localServer = spawn("node", [serverPath], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+      cwd: __dirname,
+      env: {
+        ...process.env,
+        NODE_ENV: process.env.NODE_ENV || 'production',
+      },
+    });
+  }
 
   // Helper to send logs to renderer (only after window is ready)
   const sendServerLog = (type, message) => {
