@@ -9122,20 +9122,73 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         markComplete(stepId, statusMessage.replace('🔄 ', '✅ '));
         
       } catch (err) {
-        log(`\n❌ Task '${task}' failed: ${err.message}\n`);
-        log(`💡 Make sure the local server is running: npm run start-local\n`);
+        const errorMsg = err.message || 'Unknown error';
+        log(`\n❌ Task '${task}' failed!\n`);
+        log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        log(`Error: ${errorMsg}\n`);
+        log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
         
-        if (progressBar) {
-          progressBar.style.background = '#E57200'; // Reset to orange on error
+        // Provide specific help based on error type
+        if (errorMsg.includes('Cannot connect') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+          log(`\n💡 Server Connection Issue:\n`);
+          if (isElectronMode) {
+            log(`   • The local server may not have started properly\n`);
+            log(`   • Check the Electron console window for server errors\n`);
+            log(`   • Try closing and reopening the app\n`);
+            log(`   • Ensure Python 3.10+ is installed\n`);
+          } else {
+            log(`   • Make sure the local server is running\n`);
+            log(`   • Run: npm run start-local\n`);
+            log(`   • Wait for: "⚡ Local executor running at http://localhost:8000"\n`);
+            log(`   • Then refresh this page and try again\n`);
+          }
+        } else if (errorMsg.includes('timeout') || errorMsg.includes('aborted')) {
+          log(`\n💡 Task Timeout:\n`);
+          log(`   • The task took too long to complete\n`);
+          log(`   • Check if Python scripts are running correctly\n`);
+          log(`   • Verify input files exist in inputs-files/workflow/\n`);
+        } else {
+          log(`\n💡 Troubleshooting:\n`);
+          log(`   • Check Electron console for detailed error messages\n`);
+          log(`   • Verify Python 3.10+ is installed\n`);
+          log(`   • Ensure input files are in the correct location\n`);
+          if (!isElectronMode) {
+            log(`   • Make sure local server is running: npm run start-local\n`);
+          }
         }
         
-        resetProgress(stepId);
+        if (progressBar) {
+          progressBar.style.background = '#dc3545'; // Red on error
+          progressBar.style.width = '0%';
+        }
+        
+        // Update status text
+        const statusText = document.getElementById(`status-step${stepId}`);
+        if (statusText) {
+          statusText.textContent = `❌ Failed: ${errorMsg.substring(0, 60)}...`;
+          statusText.style.color = '#dc3545';
+          statusText.style.fontWeight = '600';
+        }
+        
+        // Update dashboard
+        updateStepStatus(String(stepId), 'error', 'Failed');
+        
+        // Show error in a prominent way
+        const stepContainer = document.getElementById(`step${stepId}-container`) || 
+                             document.querySelector(`[id*="step${stepId}"]`);
+        if (stepContainer) {
+          stepContainer.style.borderColor = '#dc3545';
+          stepContainer.style.borderWidth = '2px';
+        }
         
         // Hide server status warning if it exists
         const warning = document.getElementById('serverStatusWarning');
         if (warning) {
           warning.style.display = 'block';
         }
+        
+        // Re-throw for Step 2's catch block to handle Electron-specific messaging
+        throw err;
       }
     }
 
