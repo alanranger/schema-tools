@@ -116,9 +116,82 @@ app.get("/run", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Function to check if port is in use and kill the process (Windows)
+async function killProcessOnPort(port) {
+  if (process.platform !== 'win32') {
+    return false; // Only works on Windows
+  }
+  
+  try {
+    const { execSync } = await import('child_process');
+    // Find process using the port
+    const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' });
+    const lines = result.trim().split('\n');
+    
+    for (const line of lines) {
+      if (line.includes('LISTENING')) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && !isNaN(pid)) {
+          console.log(`🔄 Killing process ${pid} using port ${port}...`);
+          try {
+            execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+            console.log(`✅ Process ${pid} terminated`);
+            // Wait a moment for port to be released
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return true;
+          } catch (e) {
+            console.log(`⚠️ Could not kill process ${pid}: ${e.message}`);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Port might not be in use, or netstat failed
+    return false;
+  }
+  return false;
+}
+
+// Start server with error handling for port conflicts
+const server = app.listen(PORT, async () => {
   console.log(`⚡ Local executor running at http://localhost:${PORT}`);
   console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
   console.log(`💡 Health check: http://localhost:${PORT}/health`);
+});
+
+server.on('error', async (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+    console.log(`🔄 Attempting to free port ${PORT}...`);
+    
+    // Try to kill the process using the port
+    const killed = await killProcessOnPort(PORT);
+    
+    if (killed) {
+      console.log(`✅ Port ${PORT} freed, restarting server...`);
+      // Retry listening after a short delay
+      setTimeout(() => {
+        server.listen(PORT, () => {
+          console.log(`⚡ Local executor running at http://localhost:${PORT}`);
+          console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
+          console.log(`💡 Health check: http://localhost:${PORT}/health`);
+        });
+      }, 1000);
+    } else {
+      console.error(`\n⚠️ Could not free port ${PORT}`);
+      console.error(`\n💡 Solutions:`);
+      console.error(`   1. Close any other instances of this app`);
+      console.error(`   2. Close any other applications using port ${PORT}`);
+      console.error(`   3. Manually kill the process:`);
+      console.error(`      - Run: netstat -ano | findstr :${PORT}`);
+      console.error(`      - Find the PID and run: taskkill /F /PID <PID>`);
+      console.error(`   4. Restart your computer`);
+      process.exit(1);
+    }
+  } else {
+    console.error(`❌ Server error: ${err.message}`);
+    process.exit(1);
+  }
 });
 
