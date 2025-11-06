@@ -47,6 +47,9 @@ app.whenReady().then(() => {
   console.log("⚙️ Starting local executor...");
   console.log(`   Server path: ${serverPath}`);
   
+  let serverStarted = false;
+  let serverError = null;
+  
   localServer = spawn("node", [serverPath], {
     stdio: "inherit",
     shell: true,
@@ -55,20 +58,39 @@ app.whenReady().then(() => {
 
   localServer.on("error", (err) => {
     console.error("❌ Failed to start local server:", err);
+    serverError = err;
     if (mainWindow) {
       mainWindow.webContents.send("server-error", err.message);
     }
   });
 
   localServer.on("exit", (code) => {
-    console.log(`🛑 Local server exited with code ${code}`);
+    if (code !== 0 && code !== null) {
+      console.error(`🛑 Local server exited with error code ${code}`);
+      serverError = new Error(`Server exited with code ${code}`);
+    } else {
+      console.log(`🛑 Local server exited with code ${code}`);
+    }
+  });
+
+  // Check if server started successfully
+  localServer.on("spawn", () => {
+    serverStarted = true;
+    console.log("✅ Local server process spawned");
   });
 
   // Give server a moment to start before loading the window
   setTimeout(() => {
-    console.log("✅ Local executor bridge ready");
+    if (serverError) {
+      console.error("⚠️ Local server failed to start - app will continue but automation may not work");
+      console.error("   Error:", serverError.message);
+    } else if (serverStarted) {
+      console.log("✅ Local executor bridge ready");
+    } else {
+      console.warn("⚠️ Local server status unclear - app will continue");
+    }
     createWindow();
-  }, 1000);
+  }, 1500);
 
   app.on("activate", () => {
     // On macOS re-create window when dock icon is clicked

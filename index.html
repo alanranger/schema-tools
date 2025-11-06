@@ -1384,6 +1384,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
 
+      <!-- Desktop App Launch Button (Web Mode Only) -->
+      <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6; text-align:center;">
+        <h3 style="margin-bottom:0.5rem; color:#2d3748;">💻 Want Full Automation?</h3>
+        <p style="margin-bottom:1rem; color:#4a5568;">This web version runs in read-only mode. To generate schema files automatically, use the desktop app.</p>
+        <button id="launchExeBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+          ▶️ Open Desktop App (SchemaTools.exe)
+        </button>
+      </div>
+
       <!-- ===================== STATUS DASHBOARD ===================== -->
       <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="color: #2d3748; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
@@ -8828,6 +8837,40 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
     }
     
+    // Desktop App Launch Button Handler (Web Mode Only)
+    document.addEventListener('DOMContentLoaded', () => {
+      const isElectron = !!(window.electronAPI && window.electronAPI.isElectron) || 
+                         navigator.userAgent.toLowerCase().includes('electron');
+      
+      if (!isElectron) {
+        const launchDiv = document.getElementById('desktop-launch');
+        if (launchDiv) {
+          launchDiv.style.display = 'block';
+          
+          const exePath = "G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\dist\\SchemaTools-win32-x64\\SchemaTools.exe";
+          
+          const launchBtn = document.getElementById('launchExeBtn');
+          if (launchBtn) {
+            launchBtn.addEventListener('click', () => {
+              try {
+                // Try to open the EXE file
+                const link = document.createElement('a');
+                link.href = `file:///${exePath.replace(/\\/g, '/')}`;
+                link.click();
+                
+                // Fallback: show manual instructions
+                setTimeout(() => {
+                  alert("⚠️ Unable to open the desktop app automatically.\n\nPlease open it manually:\n\n" + exePath);
+                }, 1000);
+              } catch (e) {
+                alert("⚠️ Unable to open the desktop app automatically.\n\nPlease open it manually:\n\n" + exePath + "\n\nError: " + e.message);
+              }
+            });
+          }
+        }
+      }
+    });
+
     // Check server status on page load (only in browser mode)
     window.addEventListener("DOMContentLoaded", async () => {
       // Lock Step 1 initially
@@ -9161,18 +9204,50 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (warning) warning.style.display = 'none';
       
       // Server is running - proceed with task
-      await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
-        const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-        if (consoleOutput) {
-          consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
-          consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
+      try {
+        await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+          const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+          if (consoleOutput) {
+            consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
+            consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
+          }
+          
+          // Auto-chain to Step 3a
+          chainNextStep(runGoogleReviewsFetcher, 2000);
+        });
+      } catch (error) {
+        // Enhanced error handling for Electron mode
+        if (isElectronMode) {
+          const errorMessage = `❌ Step 2 Failed: Local automation server did not start properly.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nPossible fixes:\n\n1️⃣ Close and reopen the app\n2️⃣ Check that Python 3.10+ is installed\n3️⃣ Ensure no antivirus is blocking local connections\n4️⃣ Check Electron console for detailed error messages\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nError details: ${error.message}`;
+          
+          if (consoleOutput) {
+            consoleOutput.textContent = errorMessage;
+            consoleOutput.style.display = 'block';
+          }
+          if (statusText) {
+            statusText.textContent = '❌ Step 2 failed - Local server error';
+            statusText.style.color = '#dc3545';
+            statusText.style.fontWeight = '600';
+          }
+          if (progressBarFill) {
+            progressBarFill.style.width = '0%';
+            progressBarFill.style.background = '#dc3545';
+          }
+          updateStepStatus('2', 'error', 'Server Error');
+          
+          // Show error in a prominent way
+          const step2Container = document.getElementById('step2-container') || document.querySelector('[id*="step2"]');
+          if (step2Container) {
+            step2Container.style.borderColor = '#dc3545';
+            step2Container.style.borderWidth = '2px';
+          }
+        } else {
+          // Re-throw for non-Electron mode to use existing error handling
+          throw error;
         }
-        
-        // Auto-chain to Step 3a
-        chainNextStep(runGoogleReviewsFetcher, 2000);
-      });
+      }
     }
 
     // Step 2: File upload detection (legacy - for manual uploads)
