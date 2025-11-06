@@ -1385,35 +1385,35 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br><br>
 
       <!-- ===================== STATUS DASHBOARD ===================== -->
-      <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 style="color: white; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
+      <div id="workflow-status-dashboard" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1.5rem; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="color: #2d3748; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;">📊 Workflow Status Dashboard</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem;">
-          <div id="step-status-0" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: center; color: white;">
+          <div id="step-status-0" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.05); border-radius: 8px; text-align: center; color: #2d3748;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏳</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 0</div>
             <div id="step-status-text-0" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Initializing</div>
           </div>
-          <div id="step-status-1" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+          <div id="step-status-1" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; color: #2d3748; opacity: 0.5;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 1</div>
             <div id="step-status-text-1" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
           </div>
-          <div id="step-status-2" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+          <div id="step-status-2" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; color: #2d3748; opacity: 0.5;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 2</div>
             <div id="step-status-text-2" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
           </div>
-          <div id="step-status-3a" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+          <div id="step-status-3a" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; color: #2d3748; opacity: 0.5;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 3a</div>
             <div id="step-status-text-3a" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
           </div>
-          <div id="step-status-3b" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+          <div id="step-status-3b" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; color: #2d3748; opacity: 0.5;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 3b</div>
             <div id="step-status-text-3b" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
           </div>
-          <div id="step-status-4" class="step-status-card" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; color: white; opacity: 0.5;">
+          <div id="step-status-4" class="step-status-card" style="padding: 0.75rem; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; color: #2d3748; opacity: 0.5;">
             <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏸️</div>
             <div style="font-size: 0.75rem; font-weight: 600;">Step 4</div>
             <div id="step-status-text-4" style="font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.9;">Waiting</div>
@@ -8872,7 +8872,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         card.querySelector('div').textContent = '❌';
         if (text) text.textContent = message || 'Error';
       } else {
-        card.style.background = 'rgba(255,255,255,0.1)';
+        card.style.background = 'rgba(0,0,0,0.03)';
         card.style.opacity = '0.5';
         card.querySelector('div').textContent = '⏸️';
         if (text) text.textContent = message || 'Waiting';
@@ -9091,19 +9091,30 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                                 window.location.hostname.includes('localhost') === false;
         
         if (isWebDeployment) {
-          // On web deployment, show simple info message
+          // On web deployment, show clear message and update dashboard
           if (consoleOutput) {
-            consoleOutput.textContent = 'ℹ️ Web Mode: Steps 2-4 require Electron app for automation.\n';
-            consoleOutput.textContent += '   Download Electron desktop app for full automation.\n';
+            consoleOutput.textContent = 'ℹ️ Web Mode Detected\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            consoleOutput.textContent += 'Step 2 cannot run automatically in web browser mode.\n';
+            consoleOutput.textContent += '\nWhy?\n';
+            consoleOutput.textContent += '• Browsers cannot access local files for security reasons\n';
+            consoleOutput.textContent += '• Step 2 needs to run Python scripts on your computer\n';
+            consoleOutput.textContent += '\nSolution:\n';
+            consoleOutput.textContent += '• Use the Electron desktop app for full automation\n';
+            consoleOutput.textContent += '• Or run locally: npm run start-local\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
           }
           if (progressBarFill) {
             progressBarFill.style.width = '0%';
             progressBarFill.style.background = '#e2e8f0';
           }
           if (statusText) {
-            statusText.textContent = '⏸️ Step 2 requires local server (not available on web)';
+            statusText.textContent = '⏸️ Step 2 requires Electron app or local server (not available in web browser)';
             statusText.style.color = '#667eea';
+            statusText.style.fontWeight = '500';
           }
+          // Update dashboard status
+          updateStepStatus('2', 'waiting', 'Web Mode');
           // Show instructions box
           const instructionsBox = document.getElementById('localServerInstructions');
           if (instructionsBox) {
