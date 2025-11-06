@@ -8713,7 +8713,25 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
               unlockStep1();
               updateStepStatus('1', 'waiting', 'Ready');
             } else {
-              log("⚠️ Server starting... check Electron console if this persists.");
+              log("⚠️ Server starting...");
+              if (isElectronMode && window.electronAPI && window.electronAPI.openDevTools) {
+                const consoleBtn = document.createElement('button');
+                consoleBtn.textContent = '🔍 Open Developer Console (Ctrl+Shift+I)';
+                consoleBtn.style.cssText = 'margin: 8px 0; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;';
+                consoleBtn.onclick = async () => {
+                  try {
+                    await window.electronAPI.openDevTools();
+                    log("✅ Developer Console opened! Check the Console tab for detailed logs.");
+                  } catch (e) {
+                    log("⚠️ Could not open console automatically. Press Ctrl+Shift+I to open it manually.");
+                  }
+                };
+                if (consoleOutput) {
+                  consoleOutput.appendChild(consoleBtn);
+                }
+              } else {
+                log("💡 Tip: Press Ctrl+Shift+I to open Developer Console for detailed logs.");
+              }
               updateStepStatus('0', 'complete', 'Ready');
               unlockStep1();
               updateStepStatus('1', 'waiting', 'Ready');
@@ -9340,7 +9358,25 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           log(`   • Verify input files exist in inputs-files/workflow/\n`);
         } else {
           log(`\n💡 Troubleshooting:\n`);
-          log(`   • Check Electron console for detailed error messages\n`);
+          if (isElectronMode && window.electronAPI && window.electronAPI.openDevTools) {
+            const consoleBtn = document.createElement('button');
+            consoleBtn.textContent = '🔍 Open Developer Console (Ctrl+Shift+I)';
+            consoleBtn.style.cssText = 'margin: 8px 0; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;';
+            consoleBtn.onclick = async () => {
+              try {
+                await window.electronAPI.openDevTools();
+                log("✅ Developer Console opened! Check the Console tab for detailed error messages.");
+              } catch (e) {
+                log("⚠️ Could not open console automatically. Press Ctrl+Shift+I to open it manually.");
+              }
+            };
+            if (consoleOutput) {
+              consoleOutput.appendChild(consoleBtn);
+            }
+            log(`   • Click the button above to open Developer Console\n`);
+          } else {
+            log(`   • Press Ctrl+Shift+I to open Developer Console for detailed error messages\n`);
+          }
           log(`   • Verify Python 3.10+ is installed\n`);
           log(`   • Ensure input files are in the correct location\n`);
           if (!isElectronMode) {
@@ -9520,11 +9556,35 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
       } catch (error) {
         // Enhanced error handling for Electron mode
         if (isElectronMode) {
-          const errorMessage = `❌ Step 2 Failed: Local automation server did not start properly.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nPossible fixes:\n\n1️⃣ Close and reopen the app\n2️⃣ Check that Python 3.10+ is installed\n3️⃣ Ensure no antivirus is blocking local connections\n4️⃣ Check Electron console for detailed error messages\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nError details: ${error.message}`;
+          const errorMessage = `❌ Step 2 Failed: Local automation server did not start properly.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nPossible fixes:\n\n1️⃣ Close and reopen the app\n2️⃣ Check that Python 3.10+ is installed\n3️⃣ Ensure no antivirus is blocking local connections\n4️⃣ Open Developer Console (button below) to see detailed error messages\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nError details: ${error.message}`;
           
           if (consoleOutput) {
             consoleOutput.textContent = errorMessage;
             consoleOutput.style.display = 'block';
+            
+            // Add button to open DevTools
+            if (window.electronAPI && window.electronAPI.openDevTools) {
+              const consoleBtn = document.createElement('button');
+              consoleBtn.textContent = '🔍 Open Developer Console (Ctrl+Shift+I)';
+              consoleBtn.style.cssText = 'margin: 12px 0; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600; display: block;';
+              consoleBtn.onclick = async () => {
+                try {
+                  await window.electronAPI.openDevTools();
+                  const successMsg = document.createElement('div');
+                  successMsg.textContent = '✅ Developer Console opened! Check the Console tab for detailed error messages.';
+                  successMsg.style.cssText = 'margin-top: 8px; padding: 8px; background: #d4edda; color: #155724; border-radius: 4px;';
+                  consoleOutput.appendChild(successMsg);
+                  setTimeout(() => successMsg.remove(), 5000);
+                } catch (e) {
+                  const errorMsg = document.createElement('div');
+                  errorMsg.textContent = '⚠️ Could not open console automatically. Press Ctrl+Shift+I to open it manually.';
+                  errorMsg.style.cssText = 'margin-top: 8px; padding: 8px; background: #fff3cd; color: #856404; border-radius: 4px;';
+                  consoleOutput.appendChild(errorMsg);
+                  setTimeout(() => errorMsg.remove(), 5000);
+                }
+              };
+              consoleOutput.appendChild(consoleBtn);
+            }
           }
           if (statusText) {
             statusText.textContent = '❌ Step 2 failed - Local server error';

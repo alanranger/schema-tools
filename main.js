@@ -203,3 +203,12 @@ ipcMain.handle('get-exe-path', async () => {
   return exePath;
 });
 
+// IPC handler for opening DevTools (Electron console)
+ipcMain.handle('open-devtools', async () => {
+  if (mainWindow) {
+    mainWindow.webContents.openDevTools();
+    return { success: true };
+  }
+  return { success: false, error: 'Window not available' };
+});
+
