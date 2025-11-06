@@ -147,22 +147,32 @@ def fetch_reviews(creds, location_id=None):
         api_error_msg = None
         
         try:
+            # Try to build the service - this will fail if API isn't enabled
             service = build("mybusiness", "v4", credentials=creds)
             print("✅ Successfully built mybusiness v4 service")
         except Exception as api_error:
             api_error_msg = str(api_error)
-            print(f"⚠️ Could not build mybusiness v4 service: {api_error}")
+            error_lower = api_error_msg.lower()
+            print(f"❌ Error building API service: {api_error}")
             
-            # The error might indicate the service doesn't exist or isn't enabled
-            if "name: mybusiness" in api_error_msg.lower() or "version: v4" in api_error_msg.lower():
-                print("   This usually means:")
-                print("   1. The Google My Business API is not enabled in your Google Cloud project")
-                print("   2. The API service name or version has changed")
-                print("   3. Your OAuth credentials don't have access to this API")
-                print("\n   Please check:")
-                print("   - Enable 'Google My Business API' in Google Cloud Console")
-                print("   - Verify your OAuth client has the correct API access")
-                print("   - Check Google's API documentation for any changes")
+            # Check for specific error patterns
+            if "name: mybusiness" in error_lower or "version: v4" in error_lower or "not found" in error_lower:
+                print("\n" + "="*60)
+                print("⚠️  GOOGLE MY BUSINESS API NOT ENABLED")
+                print("="*60)
+                print("\nThe Google My Business API v4 is not enabled in your Google Cloud project.")
+                print("\nTo fix this:")
+                print("1. Go to: https://console.cloud.google.com/apis/library")
+                print("2. Search for: 'Google My Business API'")
+                print("3. Click 'ENABLE'")
+                print("4. Also enable: 'My Business Account Management API'")
+                print("5. Also enable: 'My Business Business Information API'")
+                print("\nYour project ID is: alan-ranger-photography")
+                print("="*60)
+            else:
+                print(f"\nUnexpected error: {api_error_msg}")
+                import traceback
+                traceback.print_exc()
             
             return []
         
