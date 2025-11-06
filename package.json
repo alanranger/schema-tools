@@ -6,15 +6,10 @@
   "description": "Automated schema validator for testing URLs against Schema.org and Google Rich Results Test",
   "scripts": {
     "start": "electron .",
-    "dev": "electron .",
     "start-local": "node scripts/local-server.js",
-    "validate": "node scripts/schema-validator.js",
-    "validate-csv": "node scripts/csv-schema-validator.js",
-    "enhance": "node scripts/schema-enhancer.js",
-    "test": "node scripts/schema-validator.js",
-    "build": "echo 'Skipping Electron build for web deployment' || exit 0",
-    "build:electron": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite",
-    "build:web": "echo 'Skipping Electron build for web deployment' || exit 0"
+    "build:desktop": "electron-packager . SchemaTools --platform=win32 --arch=x64 --out=dist --overwrite",
+    "build:web": "echo \"Skipping Electron build for web deployment\"",
+    "build": "npm run build:desktop"
   },
   "keywords": [
     "schema",
