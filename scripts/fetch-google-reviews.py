@@ -140,54 +140,51 @@ def fetch_reviews(creds, location_id=None):
                 print("   Please edit the script and set location_id manually.")
                 return []
         
-        # Use My Business API v4 for reviews
-        # Note: The API service name might need to be discovered dynamically
+        # Google deprecated "mybusiness" v4 API - try newer APIs
         print("🔍 Building Google My Business API service...")
         print(f"   Using credentials from: {CREDENTIALS_PATH}")
         print(f"   Project ID: alan-ranger-photography")
+        print("   Note: 'mybusiness' v4 API is deprecated, trying newer APIs...")
         
         service = None
         api_error_msg = None
         
-        try:
-            # Try to build the service - this will fail if API isn't enabled
-            print("   Attempting to build 'mybusiness' v4 service...")
-            service = build("mybusiness", "v4", credentials=creds)
-            print("✅ Successfully built mybusiness v4 service")
-        except Exception as api_error:
-            api_error_msg = str(api_error)
-            error_lower = api_error_msg.lower()
-            print(f"❌ Error building API service: {api_error}")
-            
-            # Check for specific error patterns
-            if "name: mybusiness" in error_lower or "version: v4" in error_lower or "not found" in error_lower:
-                print("\n" + "="*60)
-                print("⚠️  GOOGLE MY BUSINESS API NOT ENABLED OR NOT FOUND")
-                print("="*60)
-                print("\nThe Google My Business API v4 service cannot be discovered.")
-                print("\nPossible causes:")
-                print("1. The API is not enabled in your Google Cloud project")
-                print("2. The API name/version has changed (Google may have deprecated v4)")
-                print("3. Your OAuth client doesn't have access to this API")
-                print("\nTo verify/fix:")
-                print("1. Go to: https://console.cloud.google.com/apis/library?project=alan-ranger-photography")
-                print("2. Search for and verify these are ENABLED:")
-                print("   - 'Google My Business API' (may be deprecated)")
-                print("   - 'My Business Account Management API'")
-                print("   - 'My Business Business Information API'")
-                print("   - 'Business Profile Performance API' (newer alternative)")
-                print("\n3. Check your OAuth client scopes:")
-                print("   - Go to: https://console.cloud.google.com/apis/credentials?project=alan-ranger-photography")
-                print("   - Edit your 'schema-generator' Desktop client")
-                print("   - Ensure it has access to My Business APIs")
-                print("\n4. Note: Google may have migrated to 'Business Profile Performance API'")
-                print("   Check: https://developers.google.com/my-business/content/overview")
-                print("="*60)
-            else:
-                print(f"\nUnexpected error: {api_error_msg}")
-                import traceback
-                traceback.print_exc()
-            
+        # Try multiple API services - Google has restructured the APIs
+        api_services_to_try = [
+            ("mybusinessbusinessinformation", "v1", "Business Information API"),
+            ("mybusinessaccountmanagement", "v1", "Account Management API"),
+            ("mybusiness", "v4", "Legacy My Business API (may be deprecated)"),
+        ]
+        
+        for api_name, api_version, api_description in api_services_to_try:
+            try:
+                print(f"   Trying {api_description} ({api_name} {api_version})...")
+                service = build(api_name, api_version, credentials=creds)
+                print(f"✅ Successfully built {api_description}")
+                break
+            except Exception as api_error:
+                api_error_msg = str(api_error)
+                error_lower = api_error_msg.lower()
+                if "name: mybusiness" in error_lower or "version: v4" in error_lower:
+                    # This is expected for deprecated API, try next
+                    continue
+                else:
+                    print(f"   ⚠️ {api_description} failed: {api_error}")
+                    continue
+        
+        if not service:
+            print("\n" + "="*60)
+            print("❌  COULD NOT BUILD ANY GOOGLE MY BUSINESS API SERVICE")
+            print("="*60)
+            print("\nAll API services failed to build.")
+            print("\nPossible solutions:")
+            print("1. Enable 'Google My Business API' (the original one, not just the new ones):")
+            print("   https://console.cloud.google.com/apis/library/mybusiness.googleapis.com?project=alan-ranger-photography")
+            print("\n2. Reviews might require a different API. Check Google's documentation:")
+            print("   https://developers.google.com/my-business/content/reviews")
+            print("\n3. The reviews endpoint might be in a different service.")
+            print("   You may need to use Google Places API or Business Profile Performance API.")
+            print("="*60)
             return []
         
         reviews = []
