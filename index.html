@@ -3925,13 +3925,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const currentText = combinedLog.textContent;
     const stepHeader = `\n${'='.repeat(60)}\n${stepName} (${task})\n${'='.repeat(60)}\n`;
     
-    // Check if we need to add step header (if this is the first message for this step)
-    if (!currentText.includes(stepHeader.trim()) && msg.includes('🚀 Starting')) {
+    // Check if we need to add step header
+    if (currentText === 'No logs yet. Step outputs will appear here as they run...') {
+      combinedLog.textContent = stepHeader;
+    } else if (msg.includes('🚀 Starting') && !currentText.includes(`${stepName} (${task})`)) {
       combinedLog.textContent += stepHeader;
+    } else if (stepId === '0' && (msg.includes('Running in Electron') || msg.includes('[Server]')) && !currentText.includes('Step 0')) {
+      // Add Step 0 header on first message
+      combinedLog.textContent = stepHeader;
     }
     
-    // Add the message
-    combinedLog.textContent += msg;
+    // Add the message with timestamp for important events
+    if (msg.includes('🚀 Starting') || msg.includes('❌') || msg.includes('✅ Task') || msg.includes('Error:') || msg.includes('[Server]')) {
+      const now = new Date();
+      const timestamp = `[${now.toTimeString().substring(0, 8)}]`;
+      combinedLog.textContent += `${timestamp} ${msg}`;
+    } else {
+      combinedLog.textContent += msg;
+    }
     combinedLog.scrollTop = combinedLog.scrollHeight;
   }
   
