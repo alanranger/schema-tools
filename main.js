@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "path";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
@@ -184,5 +184,22 @@ ipcMain.handle('build-desktop', async () => {
       reject(err);
     });
   });
+});
+
+// IPC handler for opening the built exe
+ipcMain.handle('open-exe', async (event, exePath) => {
+  try {
+    await shell.openPath(exePath);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to open exe:", error);
+    throw error;
+  }
+});
+
+// IPC handler for getting the exe path
+ipcMain.handle('get-exe-path', async () => {
+  const exePath = path.join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
+  return exePath;
 });
 

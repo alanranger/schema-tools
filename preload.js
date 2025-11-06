@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   platform: process.platform,
   buildDesktop: () => ipcRenderer.invoke('build-desktop'),
+  openExe: (exePath) => ipcRenderer.invoke('open-exe', exePath),
+  getExePath: () => ipcRenderer.invoke('get-exe-path'),
   onBuildProgress: (callback) => {
     ipcRenderer.on('build-progress', (event, data) => callback(data));
   },

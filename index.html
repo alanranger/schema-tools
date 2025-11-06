@@ -1418,6 +1418,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <button id="buildDesktopBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
             🔨 Build Desktop App (npm run build:desktop)
           </button>
+          <button id="openExeBtn" style="display:none; padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-left:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+            ▶️ Open Built App (SchemaTools.exe)
+          </button>
         </div>
         
         <div id="buildOutput" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
@@ -8905,6 +8908,25 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                   buildBtn.disabled = false;
                   buildBtn.textContent = '✅ Build Complete!';
                   buildBtn.style.background = '#27AE60';
+                  
+                  // Show and enable the "Open Built App" button
+                  const openExeBtn = document.getElementById('openExeBtn');
+                  if (openExeBtn && window.electronAPI.openExe) {
+                    openExeBtn.style.display = 'inline-block';
+                    const exePath = require('path').join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
+                    openExeBtn.onclick = async () => {
+                      try {
+                        await window.electronAPI.openExe(exePath);
+                        openExeBtn.textContent = '✅ Opened!';
+                        setTimeout(() => {
+                          openExeBtn.textContent = '▶️ Open Built App (SchemaTools.exe)';
+                        }, 2000);
+                      } catch (error) {
+                        alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n${exePath}`);
+                      }
+                    };
+                  }
+                  
                   buildOutput.scrollTop = buildOutput.scrollHeight;
                 });
               }
