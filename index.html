@@ -9396,6 +9396,8 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let hasError = false;
+        let exitCode = null;
         
         while (true) {
           const { done, value } = await reader.read();
@@ -9408,9 +9410,26 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
           for (const line of lines) {
             if (line.trim()) {
               log(line + '\n');
+              
+              // Check for error indicators
+              if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
+                  line.includes('exit code 1') || line.includes('exit code 2') || 
+                  line.includes('Error:') || line.includes('ERROR:')) {
+                hasError = true;
+              }
+              
+              // Extract exit code if present
+              const exitMatch = line.match(/exit code (\d+)/i);
+              if (exitMatch) {
+                exitCode = parseInt(exitMatch[1]);
+                if (exitCode !== 0) {
+                  hasError = true;
+                }
+              }
+              
               // Update progress based on keywords
               if (line.includes('✅') || line.includes('complete') || line.includes('Success')) {
-                if (progressBar) {
+                if (progressBar && !hasError) {
                   progressBar.style.width = '90%';
                   progressBar.style.background = '#27AE60'; // Green when complete
                 }
@@ -9422,6 +9441,15 @@ powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host
         // Process remaining buffer
         if (buffer.trim()) {
           log(buffer + '\n');
+          // Check buffer for errors too
+          if (buffer.includes('❌') || buffer.includes('failed') || buffer.includes('exit code 1')) {
+            hasError = true;
+          }
+        }
+        
+        // If we detected an error, throw it
+        if (hasError || (exitCode !== null && exitCode !== 0)) {
+          throw new Error(`Task failed with exit code ${exitCode || 1}. Check console output above for details.`);
         }
         
         // Complete progress
