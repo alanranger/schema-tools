@@ -1397,6 +1397,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <li>Navigate to: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
             <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
           </ol>
+          <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:0.875rem; color:#2c5282; border-left:3px solid #3182ce;">
+            <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
+            <strong>All input/output files remain in your Dropbox project folder</strong> (<code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">inputs-files/</code> and <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">outputs/</code>).
+          </p>
         </div>
         
         <div style="text-align:center;">
@@ -1618,7 +1622,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <p id="status-step4" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
-            Files saved in /outputs and /workflow.
+            Files saved in your project folder: <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">/outputs/</code> (individual JSON/HTML files) and <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">/inputs-files/workflow/</code> (combined CSV).
           </div>
         </div>
 
@@ -4461,7 +4465,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Use local task runner for schema generation
     await runLocalTask('schema', 4, '⚙️ Generating Product Schema...', () => {
-      output.value = "Schema generation complete. Check /outputs/ folder for individual files and /workflow/ for combined CSV.";
+      output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON/HTML files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
       if (successMsg) {
         successMsg.style.display = 'block';
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
