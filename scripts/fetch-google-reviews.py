@@ -120,8 +120,18 @@ def list_locations(creds):
         for loc in locations['locations']:
             print(f"   - {loc.get('title', 'Unknown')}: {loc.get('name', 'No ID')}")
         
-        # Return first location (user can modify if needed)
-        return locations['locations'][0]['name']
+        # Return full path: accounts/[account_id]/locations/[location_id]
+        # The location name from Business Information API is just "locations/..." 
+        # but mybusiness v4 API needs the full path
+        location_name = locations['locations'][0]['name']
+        if not location_name.startswith('accounts/'):
+            # Construct full path: accounts/[account_id]/locations/[location_id]
+            location_id_part = location_name.replace('locations/', '')
+            full_location_path = f"{account_name}/locations/{location_id_part}"
+            print(f"   Using full path for reviews API: {full_location_path}")
+            return full_location_path
+        
+        return location_name
     except Exception as e:
         print(f"⚠️ Could not list locations: {e}")
         print("   You may need to manually set the location_id in the script.")
