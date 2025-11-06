@@ -9,7 +9,7 @@
  */
 
 import express from "express";
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -123,7 +123,6 @@ async function killProcessOnPort(port) {
   }
   
   try {
-    const { execSync } = await import('child_process');
     // Find process using the port
     const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' });
     const lines = result.trim().split('\n');
@@ -153,45 +152,49 @@ async function killProcessOnPort(port) {
   return false;
 }
 
-// Start server with error handling for port conflicts
-const server = app.listen(PORT, async () => {
-  console.log(`⚡ Local executor running at http://localhost:${PORT}`);
-  console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
-  console.log(`💡 Health check: http://localhost:${PORT}/health`);
-});
+// Function to start the server
+function startServer() {
+  const server = app.listen(PORT, () => {
+    console.log(`⚡ Local executor running at http://localhost:${PORT}`);
+    console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
+    console.log(`💡 Health check: http://localhost:${PORT}/health`);
+  });
 
-server.on('error', async (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use`);
-    console.log(`🔄 Attempting to free port ${PORT}...`);
-    
-    // Try to kill the process using the port
-    const killed = await killProcessOnPort(PORT);
-    
-    if (killed) {
-      console.log(`✅ Port ${PORT} freed, restarting server...`);
-      // Retry listening after a short delay
-      setTimeout(() => {
-        server.listen(PORT, () => {
-          console.log(`⚡ Local executor running at http://localhost:${PORT}`);
-          console.log(`📋 Available tasks: ${Object.keys(TASK_MAP).join(", ")}`);
-          console.log(`💡 Health check: http://localhost:${PORT}/health`);
-        });
-      }, 1000);
+  server.on('error', async (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use`);
+      console.log(`🔄 Attempting to free port ${PORT}...`);
+      
+      // Try to kill the process using the port
+      const killed = await killProcessOnPort(PORT);
+      
+      if (killed) {
+        console.log(`✅ Port ${PORT} freed, restarting server...`);
+        // Close the failed server and create a new one
+        server.close();
+        setTimeout(() => {
+          startServer();
+        }, 1000);
+      } else {
+        console.error(`\n⚠️ Could not free port ${PORT}`);
+        console.error(`\n💡 Solutions:`);
+        console.error(`   1. Close any other instances of this app`);
+        console.error(`   2. Close any other applications using port ${PORT}`);
+        console.error(`   3. Manually kill the process:`);
+        console.error(`      - Run: netstat -ano | findstr :${PORT}`);
+        console.error(`      - Find the PID and run: taskkill /F /PID <PID>`);
+        console.error(`   4. Restart your computer`);
+        process.exit(1);
+      }
     } else {
-      console.error(`\n⚠️ Could not free port ${PORT}`);
-      console.error(`\n💡 Solutions:`);
-      console.error(`   1. Close any other instances of this app`);
-      console.error(`   2. Close any other applications using port ${PORT}`);
-      console.error(`   3. Manually kill the process:`);
-      console.error(`      - Run: netstat -ano | findstr :${PORT}`);
-      console.error(`      - Find the PID and run: taskkill /F /PID <PID>`);
-      console.error(`   4. Restart your computer`);
+      console.error(`❌ Server error: ${err.message}`);
       process.exit(1);
     }
-  } else {
-    console.error(`❌ Server error: ${err.message}`);
-    process.exit(1);
-  }
-});
+  });
+
+  return server;
+}
+
+// Start the server
+startServer();
 
