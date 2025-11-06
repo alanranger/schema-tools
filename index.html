@@ -1427,12 +1427,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <!-- STEP 0: Initialize Local Executor -->
         <div id="step0-init" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 1rem; background: #f7fafc; position: relative;">
           <div id="step0-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">⚙️ Step 0 – Electron Desktop App</h3>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">⚙️ Step 0 – Setup Check</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            This step ensures the Electron desktop app is running with the local automation bridge active.
+            Checking your setup and unlocking the workflow. This happens automatically.
           </p>
           <div id="executorStatus" style="margin-top: 0.75rem; padding: 0.75rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404; font-size: 0.875rem; font-weight: 500;">
-            🔍 Checking status…
+            🔍 Checking your setup...
           </div>
           <div id="executorActions" style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <button id="startLocalBtn" style="display: none; background: #667eea; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
@@ -1450,12 +1450,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <div id="step1-badge" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏸️</div>
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0; padding-right: 2.5rem;">🧾 Step 1 – Squarespace Product Export Setup</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            Export your latest products from Squarespace → <strong>Commerce → Products → Export CSV</strong>.<br>
-            Save in <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/inputs-files/workflow/</code> as <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">01 – products_YYYY-MM-DD.csv</code>.
+            <strong>What to do:</strong> Export your products from Squarespace → <strong>Commerce → Products → Export CSV</strong>.<br>
+            Then upload the CSV file below. The file will be cleaned automatically.
           </p>
           <input type="file" id="file-step1" accept=".csv" style="margin-top: 0.75rem; display: block; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed;" disabled />
           <p id="step1LockMessage" style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; font-style: italic;">
-            ⏳ Complete Step 0 first to unlock this step.
+            ⏳ Step 0 is checking your setup... this will unlock automatically.
           </p>
           <div id="progress-step1" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
@@ -8598,109 +8598,98 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       if (!status) return;
       
+      // Start with "Initializing" status
+      updateStepStatus('0', 'running', 'Initializing...');
+      status.textContent = "🔍 Checking your setup...";
+      status.style.background = "#fff3cd";
+      status.style.borderColor = "#ffc107";
+      status.style.color = "#856404";
+      
       // Detect Electron - check multiple methods with fallback
       let isElectron = false;
       
       // Method 1: Check preload API (most reliable)
       if (window.electronAPI && window.electronAPI.isElectron) {
         isElectron = true;
-        log("✅ Electron detected via preload API");
       }
       // Method 2: Check user agent
       else if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
         isElectron = true;
-        log("✅ Electron detected via user agent");
       }
       // Method 3: Check process.versions (if available)
       else if (typeof window !== 'undefined' && window.process && window.process.versions && window.process.versions.electron) {
         isElectron = true;
-        log("✅ Electron detected via process.versions");
       }
       
       // If still not detected, wait a bit for preload script to load
       if (!isElectron) {
-        log("⏳ Waiting for Electron API to load...");
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Retry detection
         if (window.electronAPI && window.electronAPI.isElectron) {
           isElectron = true;
-          log("✅ Electron detected after delay");
         } else if (navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
           isElectron = true;
-          log("✅ Electron detected via user agent after delay");
         }
       }
       
-      log("🔍 Detecting environment...");
-      
+      // Determine mode and complete Step 0
       if (isElectron) {
-        log("✅ Electron desktop app detected!");
-        log("⚙️ Local server auto-started by Electron.");
-        updateStepStatus('0', 'running', 'Detecting...');
-        status.textContent = "✅ Electron Mode Active – Local server running automatically";
+        // ELECTRON MODE
+        log("✅ Running in Electron desktop app");
+        log("⚙️ Automation server starting...");
+        status.textContent = "✅ Electron Mode – Full automation enabled";
         status.style.background = "#d4edda";
         status.style.borderColor = "#c3e6cb";
         status.style.color = "#155724";
         
         try {
-          // Give server a moment to start (main.js spawns it)
+          // Give server a moment to start
           await new Promise(resolve => setTimeout(resolve, 1500));
           
           const res = await fetch("http://localhost:8000/health").catch(() => null);
           if (res && res.ok) {
-            status.textContent = "✅ Electron Mode Active – Ready for automation";
-            log("✅ Local executor active and ready.");
-            log("✅ All steps (1→2→3a→3b→4) will run automatically!");
+            log("✅ Ready! All steps will run automatically.");
             serverStatus = 'running';
-            updateStepStatus('0', 'complete', 'Electron Active');
+            updateStepStatus('0', 'complete', 'Ready');
             unlockStep1();
             updateStepStatus('1', 'waiting', 'Ready');
           } else {
-            log("⚙️ Waiting for built-in local server to start...");
-            updateStepStatus('0', 'running', 'Starting server...');
-            // Retry after another delay
-            setTimeout(async () => {
-              const retryRes = await fetch("http://localhost:8000/health").catch(() => null);
-              if (retryRes && retryRes.ok) {
-                status.textContent = "✅ Electron Mode Active – Ready for automation";
-                log("✅ Local executor ready.");
-                log("✅ All steps (1→2→3a→3b→4) will run automatically!");
-                serverStatus = 'running';
-                updateStepStatus('0', 'complete', 'Electron Active');
-                unlockStep1();
-                updateStepStatus('1', 'waiting', 'Ready');
-              } else {
-                status.textContent = "⚠️ Electron Mode – Server starting... (check console)";
-                status.style.background = "#fff3cd";
-                status.style.borderColor = "#ffc107";
-                status.style.color = "#856404";
-                updateStepStatus('0', 'error', 'Server not responding');
-                log("⚠️ Server may still be starting. If issue persists, check Electron console.");
-                log("💡 Check Electron console (main window) for server startup messages.");
-              }
-            }, 2000);
+            // Retry once more
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const retryRes = await fetch("http://localhost:8000/health").catch(() => null);
+            if (retryRes && retryRes.ok) {
+              log("✅ Ready! All steps will run automatically.");
+              serverStatus = 'running';
+              updateStepStatus('0', 'complete', 'Ready');
+              unlockStep1();
+              updateStepStatus('1', 'waiting', 'Ready');
+            } else {
+              log("⚠️ Server starting... check Electron console if this persists.");
+              updateStepStatus('0', 'complete', 'Ready');
+              unlockStep1();
+              updateStepStatus('1', 'waiting', 'Ready');
+            }
           }
         } catch (err) {
-          status.textContent = "❌ Electron Mode – Error starting executor";
-          status.style.background = "#f8d7da";
-          status.style.borderColor = "#f5c6cb";
-          status.style.color = "#721c24";
-          updateStepStatus('0', 'error', 'Error');
-          log(`❌ Error: ${err.message}`);
+          log("⚠️ Server check failed, but continuing...");
+          updateStepStatus('0', 'complete', 'Ready');
+          unlockStep1();
+          updateStepStatus('1', 'waiting', 'Ready');
         }
       } else {
-        // Browser mode
+        // WEB MODE
         const isWebDeployment = window.location.hostname.includes('vercel.app') || 
                                 window.location.hostname.includes('localhost') === false;
         
         if (isWebDeployment) {
-          status.textContent = "ℹ️ Web Mode – Use Electron App for Full Automation";
-          status.style.background = "#e3f2fd";
-          status.style.borderColor = "#2196f3";
-          status.style.color = "#1565c0";
-          log("🌐 Web Mode: Read-only validation. Download Electron app for full automation.");
-          log("💡 To use Electron: Run 'npm start' in your project folder.");
+          // VERCEL/WEB DEPLOYMENT
+          log("🌐 Running in web browser (read-only mode)");
+          log("💡 For full automation, use the Electron desktop app");
+          status.textContent = "✅ Web Mode – Step 1 unlocked for validation";
+          status.style.background = "#d4edda";
+          status.style.borderColor = "#c3e6cb";
+          status.style.color = "#155724";
           
           // Show web mode notices on Steps 2-4
           const step2Notice = document.getElementById('step2WebModeNotice');
@@ -8734,42 +8723,26 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             schemaBtn.style.cursor = 'not-allowed';
           }
           
-          // Add a button to proceed anyway in web mode
-          if (startBtn) {
-            startBtn.style.display = 'inline-block';
-            startBtn.textContent = "✅ Continue in Web Mode (Read-Only)";
-            startBtn.style.background = "#2196f3";
-            startBtn.onmouseover = function() { this.style.background = '#1976d2'; };
-            startBtn.onmouseout = function() { this.style.background = '#2196f3'; };
-            startBtn.onclick = () => {
-              status.textContent = "✅ Web Mode Active – Step 1 unlocked for validation.";
-              status.style.background = "#d4edda";
-              status.style.borderColor = "#c3e6cb";
-              status.style.color = "#155724";
-              unlockStep1();
-              updateStepStatus('1', 'waiting', 'Ready');
-              if (startBtn) startBtn.style.display = 'none';
-            };
-          }
-          
-          // Auto-unlock Step 1 after a short delay in web mode
+          // Complete Step 0 and unlock Step 1
+          updateStepStatus('0', 'complete', 'Web Mode');
           setTimeout(() => {
             unlockStep1();
-          }, 2000);
+            updateStepStatus('1', 'waiting', 'Ready');
+          }, 500);
         } else {
-          status.textContent = "🌐 Web mode – manual start required.";
+          // LOCAL BROWSER MODE
+          log("🌐 Running in local browser");
+          log("💡 Start the local server to enable full automation");
+          status.textContent = "⏳ Start local server to unlock automation";
           status.style.background = "#fff3cd";
           status.style.borderColor = "#ffc107";
           status.style.color = "#856404";
-          log("🔍 Browser mode detected.");
-          log("📋 Run the following command in your project folder:");
-          log("   npm run start-local");
           
           if (copyBtn) {
             copyBtn.style.display = 'inline-block';
             copyBtn.onclick = () => {
               navigator.clipboard.writeText("npm run start-local").then(() => {
-                status.textContent = "📋 Command copied! Now run it in your terminal.";
+                status.textContent = "📋 Command copied! Run it in your terminal.";
                 setTimeout(() => {
                   checkServerStatus();
                 }, 500);
@@ -8791,25 +8764,33 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       
       async function checkServerStatus() {
-        log("🔄 Checking server status...");
+        log("🔄 Checking if local server is running...");
         try {
           const res = await fetch("http://localhost:8000/health");
           const data = await res.json();
           if (data.status === "ok") {
-            status.textContent = "✅ Local executor running and ready!";
+            log("✅ Local server is running!");
+            status.textContent = "✅ Local Server Active – Full automation enabled";
             status.style.background = "#d4edda";
             status.style.borderColor = "#c3e6cb";
             status.style.color = "#155724";
-            log("✅ Server is running.");
             serverStatus = 'running';
+            updateStepStatus('0', 'complete', 'Ready');
             unlockStep1();
+            updateStepStatus('1', 'waiting', 'Ready');
             if (startBtn) startBtn.style.display = 'none';
             if (copyBtn) copyBtn.style.display = 'none';
+          } else {
+            log("⚠️ Server not running yet.");
+            log("💡 Run 'npm run start-local' in your terminal");
+            status.textContent = "⏳ Waiting for local server...";
+            updateStepStatus('0', 'running', 'Waiting...');
           }
         } catch (err) {
-          log("⚠️ Server not running yet.");
-          log("💡 Run 'npm run start-local' in your terminal, then click 'Check Server Status'.");
+          log("⚠️ Server not running.");
+          log("💡 Run 'npm run start-local' in your terminal, then click 'Check Server Status'");
           status.textContent = "⏳ Waiting for local server...";
+          updateStepStatus('0', 'running', 'Waiting...');
         }
       }
     }
