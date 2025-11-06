@@ -63,7 +63,11 @@ app.whenReady().then(async () => {
     return;
   }
   
-  localServer = spawn("node", [serverPath], {
+  // Ensure path is properly quoted for Windows paths with spaces
+  // Use absolute path and quote it for shell execution
+  const quotedServerPath = serverPath.includes(' ') ? `"${serverPath}"` : serverPath;
+  
+  localServer = spawn("node", [quotedServerPath], {
     stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
     shell: true,
     cwd: __dirname,
