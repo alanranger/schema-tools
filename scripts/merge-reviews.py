@@ -287,10 +287,65 @@ def merge_reviews():
     
     reviews['product_slug'] = reviews['product_name'].fillna('').apply(slugify)
     
+    # Drop any rows where product_name or product_slug is missing/blank
+    before_filter = len(reviews)
+    reviews = reviews.dropna(subset=['product_name', 'product_slug'])
+    reviews = reviews[reviews['product_name'].astype(str).str.strip() != '']
+    reviews = reviews[reviews['product_slug'].astype(str).str.strip() != '']
+    after_filter = len(reviews)
+    if before_filter > after_filter:
+        print(f"✅ Removed {before_filter - after_filter} reviews with missing product mapping")
+    
+    # Ensure author and reviewBody columns exist for deduplication
+    if 'author' not in reviews.columns:
+        reviews['author'] = reviews.get('reviewer', 'Anonymous')
+    if 'reviewBody' not in reviews.columns:
+        reviews['reviewBody'] = reviews.get('review', reviews.get('review_text', ''))
+    
+    # Ensure unique combinations of product_slug + author + reviewBody
+    before_dedup = len(reviews)
+    reviews = reviews.drop_duplicates(subset=['product_slug', 'author', 'reviewBody'], keep='first')
+    after_dedup = len(reviews)
+    if before_dedup > after_dedup:
+        print(f"✅ Removed {before_dedup - after_dedup} duplicate reviews (same product + author + text)")
+    
+    # Safety filter: only include rows where product_slug exists in cleaned product list
+    if products_path.exists():
+        try:
+            products_df_check = pd.read_excel(products_path, engine='openpyxl')
+            # Extract slugs from product URLs
+            valid_slugs = set()
+            if 'url' in products_df_check.columns:
+                for url in products_df_check['url'].dropna():
+                    try:
+                        url_str = str(url).strip().rstrip('/')
+                        slug = slugify(url_str.split('/')[-1])
+                        if slug:
+                            valid_slugs.add(slug)
+                    except:
+                        pass
+            
+            # Also add slugs from product names as fallback
+            if 'name' in products_df_check.columns:
+                for name in products_df_check['name'].dropna():
+                    slug = slugify(name)
+                    if slug:
+                        valid_slugs.add(slug)
+            
+            before_valid = len(reviews)
+            reviews = reviews[reviews['product_slug'].isin(valid_slugs)]
+            after_valid = len(reviews)
+            if before_valid > after_valid:
+                print(f"✅ Filtered to {after_valid} reviews mapped to valid products (removed {before_valid - after_valid} invalid mappings)")
+        except Exception as e:
+            print(f"⚠️ Could not validate against product list: {e}")
+            print("   Continuing without product validation...")
+    
     # Count matched reviews
     matched_count = reviews['product_slug'].astype(bool).sum()
+    unique_products = reviews['product_slug'].nunique()
     if matched_count > 0:
-        print(f"✅ Added product_slug column for {matched_count} reviews with product matches")
+        print(f"✅ Filtered merged reviews to {matched_count} unique reviews mapped to {unique_products} valid products")
     
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)

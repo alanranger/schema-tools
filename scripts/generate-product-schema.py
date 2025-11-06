@@ -64,12 +64,11 @@ LOCAL_BUSINESS = {
 def slugify(text):
     """Convert text to URL-friendly slug"""
     if not text:
-        return 'product'
-    # Convert to lowercase and replace spaces with hyphens
-    slug = re.sub(r'[^\w\s-]', '', str(text))
-    slug = re.sub(r'[-\s]+', '-', slug)
-    slug = slug.lower().strip('-')
-    return slug[:100]  # Limit length
+        return ''
+    import re
+    # More aggressive slugify - only alphanumeric and hyphens
+    slug = re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip())
+    return slug.strip('-')
 
 def get_breadcrumbs(product_name, product_url):
     """Generate breadcrumb list for product"""
@@ -505,10 +504,12 @@ def main():
     # Generate schemas
     schemas_data = []
     html_files = []
+    nan_count = 0
     
     for idx, row in df_products.iterrows():
         product_name = str(row.get('name', '')).strip()
-        if not product_name:
+        if not product_name or product_name.lower() == 'nan':
+            nan_count += 1
             continue
         
         # Get reviews for this product
@@ -518,7 +519,7 @@ def main():
         schema_graph = generate_product_schema_graph(row, product_reviews)
         
         # Create filename
-        product_slug = slugify(product_name)
+        product_slug = row.get('product_slug', slugify(product_name))
         html_filename = f"{product_slug}_schema_squarespace_ready.html"
         html_path = outputs_dir / html_filename
         
@@ -553,7 +554,31 @@ def main():
         else:
             print(f"⚠️ [{product_name}] schema generated (no reviews)")
     
+    # Post-generation validation
+    if nan_count > 0:
+        print(f"⚠️ {nan_count} product entries missing names (skipped).")
+    
+    # Clean up orphan "nan" HTML outputs
+    import os
+    removed_count = 0
+    if outputs_dir.exists():
+        for f in os.listdir(outputs_dir):
+            if 'nan' in f.lower() and f.endswith('.html'):
+                try:
+                    os.remove(outputs_dir / f)
+                    removed_count += 1
+                    print(f"🧹 Removed invalid schema file: {f}")
+                except Exception as e:
+                    pass
+    
+    if removed_count > 0:
+        print(f"✅ Cleaned up {removed_count} invalid schema files")
+    
     print(f"✅ Generated {len(html_files)} HTML files")
+    
+    # Post-generation summary
+    valid_products = len(df_products) - nan_count
+    print(f"✅ Final schema files generated: {valid_products}")
     
     # Save combined CSV
     schemas_df = pd.DataFrame(schemas_data)
