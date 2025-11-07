@@ -124,19 +124,30 @@ def match_via_text(text: str, aliases: dict, product_by_slug: dict, name_by_slug
     
     t = norm(text)
     
-    # Check aliases first
+    # Check aliases first (case-insensitive substring match)
     for key, slug in aliases.items():
-        if key in t and slug in product_by_slug:
+        if key.lower() in t.lower() and slug in product_by_slug:
             return slug
     
-    # Partial keyword match on product names
+    # Check for product name keywords in text (substring match)
+    if name_by_slug:
+        for slug, name in name_by_slug.items():
+            # Extract key words from product name (e.g., "BLUEBELL WOODLANDS" -> ["bluebell", "woodlands"])
+            name_words = norm(name).split()
+            # Check if any significant word from product name appears in review text
+            for word in name_words:
+                if len(word) > 4 and word.lower() in t.lower():  # Only check words longer than 4 chars
+                    if slug in product_by_slug:
+                        return slug
+    
+    # Fuzzy match on product names (lower threshold for better matching)
     if name_by_slug:
         best = max(
             ((slug, fuzzy(t, name_by_slug[slug])) for slug in name_by_slug),
             key=lambda x: x[1],
             default=(None, 0.0)
         )
-        return best[0] if best[1] >= 0.80 else None
+        return best[0] if best[1] >= 0.70 else None  # Lowered from 0.80 to 0.70
     
     return None
 
@@ -221,13 +232,25 @@ try:
         'batsford': 'batsford-arboretum-photography-workshops',
         'batsford arboretum': 'batsford-arboretum-photography-workshops',
         'lake district': 'lake-district-photography-workshop',
+        'lakes': 'lake-district-photography-workshop',
         'burnham on sea': 'long-exposure-photography-workshops-burnham',
         'hartland quay': 'landscape-photography-devon-hartland-quay',
+        'devon': 'landscape-photography-devon-hartland-quay',
         'lavender field': 'lavender-field-photography-workshop',
+        'lavender': 'lavender-field-photography-workshop',
         'fairy glen': 'long-exposure-photography-workshop-fairy-glen',
         'north yorkshire': 'north-yorkshire-landscape-photography',
+        'yorkshire': 'north-yorkshire-landscape-photography',
         'bluebell': 'bluebell-woodlands-photography-workshops',
+        'bluebells': 'bluebell-woodlands-photography-workshops',
         'chesterton windmill': 'photography-workshops-chesterton-windmill-warwickshire',
+        'dorset': 'dorset-landscape-photography-workshop',
+        'purbeck': 'dorset-landscape-photography-workshop',
+        'northumberland': 'coastal-northumberland-workshops',
+        'somerset': 'somerset-landscape-photography-workshops',
+        'garden photography': 'garden-photography-workshop',
+        'garden': 'garden-photography-workshop',
+        'sezincote': 'sezincote-garden-photography-workshop',
     }
     
     print(f"📋 Built product dictionary with {len(product_by_slug)} products")
@@ -485,8 +508,26 @@ if len(product_slugs) > 0:
                 matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
         elif source == 'Google':
             # Use text matching for Google reviews
+            # Combine review body and title for better matching
             review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
-            matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
+            review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "")
+            combined_text = f"{review_title} {review_text}".strip()
+            
+            # Try matching with combined text first
+            matched_slug = match_via_text(combined_text, ALIASES, product_by_slug, name_by_slug)
+            
+            # If no match and review text is empty, try matching against all products with lower threshold
+            # This handles Google reviews that mention products but don't have detailed text
+            if not matched_slug and not review_text.strip():
+                # Try fuzzy matching against product names with lower threshold
+                if name_by_slug:
+                    best = max(
+                        ((slug, fuzzy(combined_text, name_by_slug[slug])) for slug in name_by_slug),
+                        key=lambda x: x[1],
+                        default=(None, 0.0)
+                    )
+                    if best[1] >= 0.60:  # Lower threshold for empty reviews
+                        matched_slug = best[0]
         
         # Deduplication key
         reviewer = norm(str(row.get('reviewer', '') or row.get('author', '') or ''))
@@ -536,6 +577,15 @@ if len(product_slugs) > 0:
     matched_count = valid_reviews['product_slug'].astype(bool).sum()
     unique_products = valid_reviews['product_slug'].nunique()
     print(f"✅ Total matched: {matched_count} reviews to {unique_products} unique products")
+    
+    # Show breakdown by source
+    if 'source' in valid_reviews.columns:
+        google_matched = len(valid_reviews[(valid_reviews['source'] == 'Google') & valid_reviews['product_slug'].astype(bool)])
+        trustpilot_matched = len(valid_reviews[(valid_reviews['source'] == 'Trustpilot') & valid_reviews['product_slug'].astype(bool)])
+        google_total = len(valid_reviews[valid_reviews['source'] == 'Google'])
+        trustpilot_total = len(valid_reviews[valid_reviews['source'] == 'Trustpilot'])
+        print(f"   - Google: {google_matched} / {google_total} matched")
+        print(f"   - Trustpilot: {trustpilot_matched} / {trustpilot_total} matched")
     
     # Merge with product data to get product names (only for rows with slugs)
     if 'product_slug' in valid_reviews.columns and len(products_df) > 0:
