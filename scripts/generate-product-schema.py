@@ -433,17 +433,18 @@ def main():
     # Normalize product slugs (for display, but matching uses slug_matches)
     df_products['product_slug_normalized'] = df_products['product_slug'].fillna('').apply(lambda x: normalize_slug(str(x)))
     
-    # Ensure review slugs exist
+    # Ensure review slugs exist (trust the product_slug from Step 3b, don't re-normalize)
     if 'product_slug' not in reviews_df.columns:
         if 'product_name' in reviews_df.columns:
             reviews_df['product_slug'] = reviews_df['product_name'].fillna('').apply(slugify)
         else:
             reviews_df['product_slug'] = ''
     
-    reviews_df['product_slug'] = reviews_df['product_slug'].fillna('').apply(slugify)
+    # Don't re-normalize - trust the slugs from Step 3b
+    reviews_df['product_slug'] = reviews_df['product_slug'].fillna('').astype(str)
     
     # ============================================================
-    # Match Reviews to Products (with robust slug matching)
+    # Match Reviews to Products (trust Step 3b slugs, add fuzzy fallback)
     # ============================================================
     
     # Build product lookup: slug -> product info (including URL)
@@ -459,7 +460,7 @@ def main():
                 'name': name
             }
     
-    # Match reviews to products using slug_matches function
+    # Match reviews to products - trust Step 3b slugs, but add fuzzy fallback for variations
     matched_products = set()
     review_slug_to_product_slug = {}  # review slug -> product slug
     
@@ -471,49 +472,59 @@ def main():
         
         matched_product_slug = None
         
-        # Try to match against product slugs
-        for prod_slug, prod_info in product_lookup.items():
-            if slug_matches(review_slug, prod_slug, threshold=0.85):
-                matched_product_slug = prod_slug
-                break
-        
-        # If no match found, try matching against product URLs
-        if not matched_product_slug:
+        # Strategy 1: Exact match (trust Step 3b slug)
+        if review_slug in product_lookup:
+            matched_product_slug = review_slug
+        else:
+            # Strategy 2: Try matching against product slugs with fuzzy fallback
             for prod_slug, prod_info in product_lookup.items():
-                prod_url = str(prod_info.get('url', '')).strip()
-                if prod_url and slug_matches(review_slug, prod_url, threshold=0.85):
+                if slug_matches(review_slug, prod_slug, threshold=0.85):
                     matched_product_slug = prod_slug
                     break
+            
+            # Strategy 3: Try matching against product URLs if still no match
+            if not matched_product_slug:
+                for prod_slug, prod_info in product_lookup.items():
+                    prod_url = str(prod_info.get('url', '')).strip()
+                    if prod_url and slug_matches(review_slug, prod_url, threshold=0.85):
+                        matched_product_slug = prod_slug
+                        break
         
         if matched_product_slug:
             review_slug_to_product_slug[review_slug] = matched_product_slug
             matched_products.add(matched_product_slug)
     
-    # Update reviews_df with matched product slugs
+    # Update reviews_df with matched product slugs (only if fuzzy match found)
     if review_slug_to_product_slug:
         def update_review_slug(row):
             orig_slug = str(row.get('product_slug', '')).strip()
-            if orig_slug in review_slug_to_product_slug:
+            # Only update if it's a fuzzy match (not exact match)
+            if orig_slug in review_slug_to_product_slug and orig_slug not in product_lookup:
                 return review_slug_to_product_slug[orig_slug]
             return orig_slug
         
         reviews_df['product_slug'] = reviews_df.apply(update_review_slug, axis=1)
     
-    # Log matching results
-    matched_reviews_count = len([r for r in reviews_df.itertuples() if r.product_slug in matched_products])
-    unique_products_count = len(matched_products)
+    # Fix summary counter - count distinct product_slug values from reviews_df
+    distinct_slugs = reviews_df['product_slug'].dropna().unique()
+    distinct_slugs = [s for s in distinct_slugs if s and str(s).strip()]  # Remove empty strings
     
-    print(f"✅ Linked {matched_reviews_count} reviews across {unique_products_count} products (fuzzy normalized match)")
+    matched_reviews_count = len(reviews_df[reviews_df['product_slug'].isin(distinct_slugs)])
+    unique_products_count = len(distinct_slugs)
     
-    if matched_products:
+    print(f"✅ Linked {matched_reviews_count} reviews across {unique_products_count} products (trusting Step 3b slugs)")
+    
+    if distinct_slugs:
         print("🔍 Sample matched products:")
-        sample_products = list(matched_products)[:10]
-        for prod_slug in sample_products:
-            prod_info = product_lookup.get(prod_slug, {})
-            prod_name = prod_info.get('name', prod_slug)
-            # Count reviews for this product
-            review_count = len(reviews_df[reviews_df['product_slug'] == prod_slug])
-            print(f"   🔗 {prod_slug} → {review_count} reviews ({prod_name[:40]}...)")
+        for s in distinct_slugs[:10]:
+            count = len(reviews_df[reviews_df['product_slug'] == s])
+            product_info = None
+            for prod_slug, prod_info in product_lookup.items():
+                if slug_matches(s, prod_slug, threshold=0.85):
+                    product_info = prod_info
+                    break
+            prod_name = product_info.get('name', s) if product_info else s
+            print(f"   {s} → {count} reviews ({prod_name[:40]}...)")
     
     # ============================================================
     # Group Reviews and Generate Schemas
@@ -535,32 +546,36 @@ def main():
         
         product_slug = row.get('product_slug', slugify(product_name))
         
-        # Get reviews for this product using slug_matches for flexible matching
+        # Get reviews for this product - trust Step 3b slugs with fuzzy fallback
         product_reviews = []
         
-        # First try exact match via grouped_reviews
+        # First try exact match via grouped_reviews (trust Step 3b slug)
+        reviews_for_product = None
         if product_slug in grouped_reviews.groups:
-            group = grouped_reviews.get_group(product_slug)
+            reviews_for_product = grouped_reviews.get_group(product_slug)
         else:
-            # Try flexible matching: look for reviews that match this product's slug or URL
-            matching_reviews = []
-            product_url = str(row.get('url', '')).strip()
-            
-            for _, review_row in reviews_df.iterrows():
-                review_slug = str(review_row.get('product_slug', '')).strip()
-                if review_slug and slug_matches(review_slug, product_slug, threshold=0.85):
-                    matching_reviews.append(review_row)
-                elif product_url and slug_matches(review_slug, product_url, threshold=0.85):
-                    matching_reviews.append(review_row)
-            
-            if matching_reviews:
-                group = pd.DataFrame(matching_reviews)
-            else:
-                group = pd.DataFrame()
+            # Fuzzy fallback: handle slight slug variations
+            for s in grouped_reviews.groups:
+                if SequenceMatcher(None, product_slug, s).ratio() >= 0.85:
+                    reviews_for_product = grouped_reviews.get_group(s)
+                    break
         
-        # Limit to 25 reviews per product
-        if len(group) > 0:
-            group = group.head(25)
+        # If still no match, try matching against product URL
+        if reviews_for_product is None:
+            product_url = str(row.get('url', '')).strip()
+            if product_url:
+                for _, review_row in reviews_df.iterrows():
+                    review_slug = str(review_row.get('product_slug', '')).strip()
+                    if review_slug and slug_matches(review_slug, product_url, threshold=0.85):
+                        if reviews_for_product is None:
+                            reviews_for_product = pd.DataFrame([review_row])
+                        else:
+                            reviews_for_product = pd.concat([reviews_for_product, pd.DataFrame([review_row])], ignore_index=True)
+        
+        # Process reviews if found
+        if reviews_for_product is not None and len(reviews_for_product) > 0:
+            # Limit to 25 reviews per product
+            group = reviews_for_product.head(25)
             
             for _, review_row in group.iterrows():
                 rating_val = review_row.get('ratingvalue')
@@ -730,7 +745,15 @@ def main():
     print("📊 SCHEMA GENERATION SUMMARY")
     print("="*60)
     print(f"Total products: {valid_products}")
-    print(f"Products with reviews: {products_with_reviews_count}")
+    # Fix summary: count distinct product_slug values from reviews_df (≥4★)
+    distinct_slugs_with_reviews = reviews_df[
+        (reviews_df['product_slug'].notna()) & 
+        (reviews_df['product_slug'] != '') &
+        (reviews_df.get('ratingvalue', 0) >= 4)
+    ]['product_slug'].unique()
+    distinct_slugs_with_reviews = [s for s in distinct_slugs_with_reviews if s and str(s).strip()]
+    
+    print(f"Products with reviews: {len(distinct_slugs_with_reviews)}")
     print(f"Products without reviews: {products_without_reviews}")
     if latest_review_date:
         print(f"Latest review date: {latest_review_date}")

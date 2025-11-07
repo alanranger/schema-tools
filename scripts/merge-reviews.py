@@ -393,15 +393,39 @@ if len(product_slugs) > 0:
         source = row.get('source', '')
         existing_slug = row.get('product_slug', '') or ''
         
+        matched_slug = None
+        
         # Skip if already matched exactly
         if existing_slug and existing_slug in product_slugs:
             matched_slug = existing_slug
         elif source == 'Trustpilot':
-            # Try Tags column first
-            tags_value = row.get('tags', '') or row.get('Tags', '')
-            matched_slug = match_via_tags(tags_value, ALIASES, product_by_slug, name_by_slug) if tags_value else None
+            # Phase 0 – Trustpilot Reference Id direct match (highest priority)
+            ref_id = str(row.get("reference_id") or row.get("Reference Id") or "").strip()
+            if ref_id:
+                # Normalize: remove punctuation, spaces, and lowercase
+                norm_ref = re.sub(r"[^a-z0-9]+", "-", ref_id.lower()).strip("-")
+                
+                # Try exact match first
+                if norm_ref in product_by_slug:
+                    matched_slug = norm_ref
+                else:
+                    # Fuzzy fallback on Reference Id to product slugs
+                    best_match = None
+                    best_ratio = 0.0
+                    for ps in product_by_slug.keys():
+                        ratio = SequenceMatcher(None, norm_ref, ps).ratio()
+                        if ratio > best_ratio:
+                            best_ratio = ratio
+                            best_match = ps
+                    if best_ratio >= 0.85:
+                        matched_slug = best_match
             
-            # Fallback to existing logic if Tags didn't match
+            # Phase 1 – Try Tags column if Reference Id didn't match
+            if not matched_slug:
+                tags_value = row.get('tags', '') or row.get('Tags', '')
+                matched_slug = match_via_tags(tags_value, ALIASES, product_by_slug, name_by_slug) if tags_value else None
+            
+            # Phase 2 – Fallback to text matching if Tags didn't match
             if not matched_slug:
                 review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
                 matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
@@ -409,8 +433,6 @@ if len(product_slugs) > 0:
             # Use text matching for Google reviews
             review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
             matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
-        else:
-            matched_slug = None
         
         # Deduplication key
         reviewer = norm(str(row.get('reviewer', '') or row.get('author', '') or ''))
@@ -423,7 +445,7 @@ if len(product_slugs) > 0:
         
         seen.add(dedupe_key)
         
-        # Update product_slug
+        # Update product_slug (keep canonical slug, don't re-normalize)
         row['product_slug'] = matched_slug or ''
         if matched_slug:
             matched_count += 1
