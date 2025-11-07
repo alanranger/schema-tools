@@ -39,6 +39,14 @@ def slugify(text):
         return ''
     return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
 
+def norm(s: str) -> str:
+    """Normalize text for matching: lowercase, strip, normalize whitespace"""
+    return re.sub(r'\s+', ' ', (s or '')).strip().lower()
+
+def fuzzy(a: str, b: str) -> float:
+    """Calculate similarity ratio between two strings"""
+    return SequenceMatcher(None, norm(a), norm(b)).ratio()
+
 def clean_text_for_match(text):
     """Lowercase, remove punctuation, and simplify text for keyword matching."""
     if not isinstance(text, str):
@@ -68,88 +76,56 @@ def find_best_match(slug, product_slugs, threshold=70):
             best_match = ps
     return best_match if best_ratio >= (threshold / 100.0) else None
 
-def match_review_to_product(review_text, review_title, products_dict):
-    """
-    Match a review to a product using multiple strategies:
-    1. Exact slug match
-    2. Partial name match (substring)
-    3. Fuzzy token match (≥85% similarity)
-    
-    Args:
-        review_text: Review body text
-        review_title: Review title (if available)
-        products_dict: Dict mapping product_slug -> product_name
-    
-    Returns:
-        product_slug if match found, None otherwise
-    """
-    if not review_text and not review_title:
+def match_via_tags(tags_value: str):
+    """Match review to product using Trustpilot Tags column"""
+    if not tags_value or pd.isna(tags_value):
         return None
     
-    # Combine review text and title for matching
-    combined_text = f"{review_title or ''} {review_text or ''}".strip()
-    if not combined_text:
-        return None
-    
-    # Normalize text for matching
-    combined_text_lower = clean_text_for_match(combined_text)
-    
-    # Strategy 1: Exact slug match
-    for product_slug, product_name in products_dict.items():
-        if product_slug in combined_text_lower:
-            return product_slug
-    
-    # Strategy 2: Partial name match (substring in text)
-    for product_slug, product_name in products_dict.items():
-        if not product_name:
+    tags = re.split(r'[|;,/]+', str(tags_value))
+    for t in tags:
+        t_norm = norm(t)
+        if not t_norm:
             continue
         
-        product_name_lower = clean_text_for_match(str(product_name))
-        # Check if product name or key parts appear in review text
-        name_words = product_name_lower.split()
-        # Look for significant words (length > 4) from product name
-        significant_words = [w for w in name_words if len(w) > 4]
+        # Check aliases first
+        for key, slug in ALIASES.items():
+            if key in t_norm and slug in product_by_slug:
+                return slug
         
-        if significant_words:
-            # Check if any significant word appears in review text
-            if any(word in combined_text_lower for word in significant_words):
-                return product_slug
-        
-        # Also check if product name substring appears
-        if product_name_lower in combined_text_lower or combined_text_lower in product_name_lower:
-            return product_slug
+        # Fuzzy match to product names
+        if name_by_slug:
+            best = max(
+                ((slug, fuzzy(t_norm, name_by_slug[slug])) for slug in name_by_slug),
+                key=lambda x: x[1],
+                default=(None, 0.0)
+            )
+            if best[1] >= 0.85:
+                return best[0]
     
-    # Strategy 3: Keyword matching from slug
-    for product_slug, product_name in products_dict.items():
-        keywords = re.split(r"[-_]", product_slug)
-        # Look for keywords longer than 4 characters
-        significant_keywords = [k for k in keywords if len(k) > 4]
-        if significant_keywords and any(k in combined_text_lower for k in significant_keywords):
-            return product_slug
+    return None
+
+def match_via_text(text: str):
+    """Match Google review to product using text content"""
+    if not text:
+        return None
     
-    # Strategy 4: Fuzzy token match (≥85% similarity)
-    if FUZZYWUZZY_AVAILABLE:
-        best_match = None
-        best_score = 0
-        
-        for product_slug, product_name in products_dict.items():
-            if not product_name:
-                continue
-            
-            product_name_lower = clean_text_for_match(str(product_name))
-            
-            # Use partial_ratio for substring matching
-            score = fuzz.partial_ratio(product_name_lower, combined_text_lower)
-            if score > best_score:
-                best_score = score
-                best_match = product_slug
-        
-        if best_score >= 85:
-            return best_match
+    t = norm(text)
     
-    # Fallback: Use basic fuzzy matching
-    best_match = find_best_match(combined_text_lower, list(products_dict.keys()), threshold=85)
-    return best_match
+    # Check aliases first
+    for key, slug in ALIASES.items():
+        if key in t and slug in product_by_slug:
+            return slug
+    
+    # Partial keyword match on product names
+    if name_by_slug:
+        best = max(
+            ((slug, fuzzy(t, name_by_slug[slug])) for slug in name_by_slug),
+            key=lambda x: x[1],
+            default=(None, 0.0)
+        )
+        return best[0] if best[1] >= 0.80 else None
+    
+    return None
 
 def normalize_rating(rating):
     """Normalize rating to numeric value"""
@@ -216,10 +192,41 @@ try:
     products_df.loc[missing_slugs, 'product_slug'] = products_df.loc[missing_slugs, 'name'].fillna('').apply(slugify)
     product_slugs = products_df["product_slug"].dropna().tolist()
     print(f"✅ Loaded {len(products_df)} products for mapping")
+    
+    # Build product dictionaries
+    product_rows = products_df[['name', 'url', 'product_slug']].dropna(subset=['name', 'url'])
+    slug_from_url = lambda u: slugify(str(u).rstrip('/').split('/')[-1]) if pd.notna(u) else ''
+    product_rows['slug'] = product_rows['url'].apply(slug_from_url)
+    # Use product_slug if available, otherwise use slug from URL
+    product_rows['slug'] = product_rows['product_slug'].fillna(product_rows['slug'])
+    
+    product_by_slug = {row['slug']: row for _, row in product_rows.iterrows() if row['slug']}
+    name_by_slug = {row['slug']: str(row['name']) for _, row in product_rows.iterrows() if row['slug'] and pd.notna(row['name'])}
+    
+    # Location/venue aliases -> canonical product slug
+    ALIASES = {
+        'batsford': 'batsford-arboretum-photography-workshops',
+        'batsford arboretum': 'batsford-arboretum-photography-workshops',
+        'lake district': 'lake-district-photography-workshop',
+        'burnham on sea': 'long-exposure-photography-workshops-burnham',
+        'hartland quay': 'landscape-photography-devon-hartland-quay',
+        'lavender field': 'lavender-field-photography-workshop',
+        'fairy glen': 'long-exposure-photography-workshop-fairy-glen',
+        'north yorkshire': 'north-yorkshire-landscape-photography',
+        'bluebell': 'bluebell-woodlands-photography-workshops',
+        'chesterton windmill': 'photography-workshops-chesterton-windmill-warwickshire',
+    }
+    
+    print(f"📋 Built product dictionary with {len(product_by_slug)} products")
+    print(f"📋 Added {len(ALIASES)} location aliases")
+    
 except Exception as e:
     print(f"⚠️ Could not load products file: {e}")
     products_df = pd.DataFrame()
     product_slugs = []
+    product_by_slug = {}
+    name_by_slug = {}
+    ALIASES = {}
 
 # ============================================================
 # Load Review Sources
@@ -354,26 +361,16 @@ if len(product_slugs) > 0:
     print("🔗 Matching reviews to product slugs...")
     print(f"🧩 Product slugs loaded for matching: {len(product_slugs)}")
     
-    # Build products dictionary (slug -> name) for improved matching
-    products_dict = {}
-    if len(products_df) > 0:
-        for _, row in products_df.iterrows():
-            slug = row.get('product_slug', '')
-            name = row.get('name', '')
-            if slug:
-                products_dict[slug] = str(name) if pd.notna(name) else ''
-    print(f"📋 Built product dictionary with {len(products_dict)} products")
+    # Initialize product_slug column
+    valid_reviews["product_slug"] = ''
+    valid_reviews["product_name"] = ''
     
-    # Try to get product_name from reference_id or other columns
+    # Try to get product_name from reference_id or other columns first
     if 'reference_id' in valid_reviews.columns:
         valid_reviews["product_name"] = valid_reviews["reference_id"].fillna('')
+        valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
     elif 'product_name' in valid_reviews.columns:
-        pass  # Already exists
-    else:
-        valid_reviews["product_name"] = ''
-    
-    # Create slugs from product names (for Trustpilot reviews that have product names)
-    valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
+        valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
     
     # Check for exact matches first
     review_slugs_set = set(valid_reviews["product_slug"].dropna())
@@ -384,53 +381,77 @@ if len(product_slugs) > 0:
         print(f"✅ Found {len(exact_matches)} exact matches between reviews and products")
     
     # ============================================================
-    # Improved fuzzy matching for Google + Trustpilot reviews
+    # Improved matching using Tags (Trustpilot) and text (Google)
     # ============================================================
     
-    # For reviews without product_slug (especially Google reviews), match by review text
-    unmatched_reviews = valid_reviews[
-        (valid_reviews["product_slug"].isna()) | 
-        (valid_reviews["product_slug"] == '') |
-        (~valid_reviews["product_slug"].isin(product_slugs))
-    ].copy()
+    # Process reviews row by row with improved matching
+    matched_count = 0
+    seen = set()  # For deduplication
+    final_reviews = []
     
-    if len(unmatched_reviews) > 0:
-        print(f"🔍 Attempting improved keyword + fuzzy matching for {len(unmatched_reviews)} unmatched reviews...")
-        print("   Using strategies: exact slug → partial name → keyword → fuzzy (≥85%)")
+    for idx, row in valid_reviews.iterrows():
+        source = row.get('source', '')
+        existing_slug = row.get('product_slug', '') or ''
         
-        # Apply improved matching logic to review text and title
-        matched_products = []
-        for idx, row in unmatched_reviews.iterrows():
+        # Skip if already matched exactly
+        if existing_slug and existing_slug in product_slugs:
+            matched_slug = existing_slug
+        elif source == 'Trustpilot':
+            # Try Tags column first
+            tags_value = row.get('tags', '') or row.get('Tags', '')
+            matched_slug = match_via_tags(tags_value) if tags_value else None
+            
+            # Fallback to existing logic if Tags didn't match
+            if not matched_slug:
+                review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
+                matched_slug = match_via_text(review_text)
+        elif source == 'Google':
+            # Use text matching for Google reviews
             review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
-            review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "")
-            matched_slug = match_review_to_product(review_text, review_title, products_dict)
-            matched_products.append(matched_slug)
-        
-        # Update product_slug for unmatched reviews
-        valid_reviews.loc[unmatched_reviews.index, "product_slug"] = matched_products
-        
-        # Count successful matches
-        matched_count = sum(1 for p in matched_products if p is not None)
-        if matched_count > 0:
-            print(f"✅ Matched {matched_count} reviews to products using improved matching logic")
-            
-            # Show sample matches
-            sample_matches = []
-            for i, slug in enumerate(matched_products):
-                if slug:
-                    review_idx = unmatched_reviews.index[i]
-                    review_text_preview = str(valid_reviews.loc[review_idx, "reviewBody"])[:50]
-                    product_name = products_dict.get(slug, slug)
-                    sample_matches.append(f"   '{review_text_preview}...' → {slug} ({product_name[:30]}...)")
-                    if len(sample_matches) >= 5:
-                        break
-            
-            if sample_matches:
-                print("🔍 Sample matches (review text → product_slug):")
-                for match in sample_matches:
-                    print(match)
+            matched_slug = match_via_text(review_text)
         else:
-            print("⚠️ No matches found with improved logic. Check review text content.")
+            matched_slug = None
+        
+        # Deduplication key
+        reviewer = norm(str(row.get('reviewer', '') or row.get('author', '') or ''))
+        date_str = str(row.get('date', '') or row.get('created_at', '') or '')
+        review_text_norm = norm(str(row.get('reviewBody', '') or row.get('review_text', '') or ''))
+        dedupe_key = (source, reviewer, date_str, review_text_norm)
+        
+        if dedupe_key in seen:
+            continue
+        
+        seen.add(dedupe_key)
+        
+        # Update product_slug
+        row['product_slug'] = matched_slug or ''
+        if matched_slug:
+            matched_count += 1
+            # Get product name from dictionary
+            if matched_slug in name_by_slug:
+                row['product_name'] = name_by_slug[matched_slug]
+        
+        final_reviews.append(row)
+    
+    # Convert back to DataFrame
+    valid_reviews = pd.DataFrame(final_reviews)
+    
+    if matched_count > 0:
+        print(f"✅ Matched {matched_count} reviews to products using Tags + alias + text matching")
+        
+        # Show sample matches
+        sample_matches = []
+        matched_rows = valid_reviews[valid_reviews['product_slug'].astype(bool)]
+        for i, (_, row) in enumerate(matched_rows.head(5).iterrows()):
+            review_text_preview = str(row.get('reviewBody', ''))[:50]
+            slug = row.get('product_slug', '')
+            product_name = row.get('product_name', slug)
+            sample_matches.append(f"   '{review_text_preview}...' → {slug} ({product_name[:30]}...)")
+        
+        if sample_matches:
+            print("🔍 Sample matches (review → product_slug):")
+            for match in sample_matches:
+                print(match)
     
     # Count total matched reviews
     matched_count = valid_reviews['product_slug'].astype(bool).sum()
@@ -454,18 +475,8 @@ print()
 # Remove Duplicates, Sort and Save
 # ============================================================
 
-print("🔍 Removing duplicate reviews...")
-before_dedup = len(valid_reviews)
-# Deduplicate by reviewBody and product_slug (or just reviewBody if no product_slug)
-dedup_cols = ['reviewbody', 'product_slug'] if 'product_slug' in valid_reviews.columns else ['reviewbody']
-dedup_cols = [col for col in dedup_cols if col in valid_reviews.columns]
-if len(dedup_cols) > 0:
-    valid_reviews = valid_reviews.drop_duplicates(subset=dedup_cols, keep='first')
-after_dedup = len(valid_reviews)
-if before_dedup > after_dedup:
-    print(f"✅ Removed {before_dedup - after_dedup} duplicate review(s)")
-else:
-    print("✅ No duplicates found")
+# Deduplication already handled above with seen set
+print(f"✅ Deduplication complete: {len(valid_reviews)} unique reviews")
 print()
 
 # Sort by date (newest first)
