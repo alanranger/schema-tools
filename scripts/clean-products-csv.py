@@ -56,19 +56,36 @@ def normalize_price(price_str):
     except ValueError:
         return None
 
-def normalize_url(url):
-    """Ensure URL has https://www.alanranger.com prefix if missing"""
-    if pd.isna(url) or not url:
+def normalize_url(product_page, product_url):
+    """Build full URL from Product Page (parent category) and Product URL (slug)"""
+    # Handle Product Page (parent category slug)
+    if pd.isna(product_page) or not product_page:
+        product_page = ''
+    else:
+        product_page = str(product_page).strip()
+    
+    # Handle Product URL (product slug)
+    if pd.isna(product_url) or not product_url:
+        product_url = ''
+    else:
+        product_url = str(product_url).strip()
+    
+    # If Product URL already contains full URL, return as-is
+    if product_url.startswith('http://') or product_url.startswith('https://'):
+        return product_url
+    
+    # Remove leading/trailing slashes
+    product_page = product_page.strip('/')
+    product_url = product_url.strip('/')
+    
+    # Build full URL: https://www.alanranger.com/{Product Page}/{Product URL}
+    if product_page and product_url:
+        return f'https://www.alanranger.com/{product_page}/{product_url}'
+    elif product_url:
+        # Fallback: if no Product Page, just use Product URL
+        return f'https://www.alanranger.com/{product_url}'
+    else:
         return ''
-    url = str(url).strip()
-    if not url:
-        return ''
-    if url.startswith('http://') or url.startswith('https://'):
-        return url
-    # Remove leading slash if present
-    if url.startswith('/'):
-        url = url[1:]
-    return f'https://www.alanranger.com/{url}'
 
 def main():
     # Find the input CSV file
@@ -113,7 +130,8 @@ def main():
         name = str(row.get('Title', '')).strip() if pd.notna(row.get('Title')) else ''
         description = strip_html(row.get('Description', ''))
         image = extract_first_image(row.get('Hosted Image URLs', ''))
-        url = normalize_url(row.get('Product URL', ''))
+        # Build full URL from Product Page (parent category) + Product URL (slug)
+        url = normalize_url(row.get('Product Page', ''), row.get('Product URL', ''))
         price = normalize_price(row.get('Price', ''))
         category = str(row.get('Categories', '')).strip() if pd.notna(row.get('Categories')) else ''
         

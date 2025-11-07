@@ -136,7 +136,7 @@ def find_best_slug_match(review_slug, product_slugs):
     return best_match if best_ratio > 0.74 else None  # adjustable threshold
 
 def get_breadcrumbs(product_name, product_url):
-    """Generate breadcrumb list for product with normalized casing"""
+    """Generate breadcrumb list for product with normalized casing and correct parent category"""
     # Normalize breadcrumb name: ensure sentence case (not all caps) and use en dash (–) for dates
     breadcrumb_name = product_name.strip()
     
@@ -165,6 +165,47 @@ def get_breadcrumbs(product_name, product_url):
     # Also handle cases like "23-31 Oct 2026" or "23 - 31 Oct 2026"
     breadcrumb_name = re.sub(r'(\d+)\s*-\s*(\d+)\s+([A-Z][a-z]+\s+\d{4})', r'\1 – \2 \3', breadcrumb_name)
     
+    # Extract parent category from URL
+    # URL format: https://www.alanranger.com/{parent-category}/{product-slug}
+    parent_category_slug = None
+    parent_category_name = None
+    parent_category_url = None
+    
+    if product_url and isinstance(product_url, str):
+        # Remove protocol and domain
+        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+        path_parts = url_path.split('/')
+        
+        if len(path_parts) >= 2:
+            # First part is parent category slug
+            parent_category_slug = path_parts[0]
+        elif len(path_parts) == 1:
+            # Only one part - might be a direct product URL without parent category
+            # Check if it matches known parent categories
+            if path_parts[0] in ['photo-workshops-uk', 'photography-services-near-me']:
+                parent_category_slug = path_parts[0]
+    
+    # Map parent category slugs to display names and URLs
+    parent_category_map = {
+        'photo-workshops-uk': {
+            'name': 'Photo Workshops UK',
+            'url': 'https://www.alanranger.com/photo-workshops-uk'
+        },
+        'photography-services-near-me': {
+            'name': 'Photography Services Near Me',
+            'url': 'https://www.alanranger.com/photography-services-near-me'
+        }
+    }
+    
+    # Get parent category info
+    if parent_category_slug and parent_category_slug in parent_category_map:
+        parent_category_name = parent_category_map[parent_category_slug]['name']
+        parent_category_url = parent_category_map[parent_category_slug]['url']
+    else:
+        # Default fallback
+        parent_category_name = 'Photo Workshops UK'
+        parent_category_url = 'https://www.alanranger.com/photo-workshops-uk'
+    
     return {
         "@type": "BreadcrumbList",
         "itemListElement": [
@@ -177,8 +218,8 @@ def get_breadcrumbs(product_name, product_url):
             {
                 "@type": "ListItem",
                 "position": 2,
-                "name": "Photo Workshops UK",
-                "item": "https://www.alanranger.com/photo-workshops-uk"
+                "name": parent_category_name,  # Dynamic based on URL path
+                "item": parent_category_url
             },
             {
                 "@type": "ListItem",
@@ -343,12 +384,24 @@ def generate_product_schema_graph(product_row, reviews_list):
         breadcrumb_data = get_breadcrumbs(product_name, product_url)
     except Exception as e:
         print(f"⚠️ Error generating breadcrumbs for '{product_name}': {e}")
-        # Fallback to simple breadcrumb without normalization
+        # Fallback to simple breadcrumb - try to extract parent category from URL
+        parent_category_name = "Photo Workshops UK"
+        parent_category_url = "https://www.alanranger.com/photo-workshops-uk"
+        
+        if product_url and isinstance(product_url, str):
+            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+            path_parts = url_path.split('/')
+            if len(path_parts) >= 2:
+                parent_slug = path_parts[0]
+                if parent_slug == 'photography-services-near-me':
+                    parent_category_name = "Photography Services Near Me"
+                    parent_category_url = "https://www.alanranger.com/photography-services-near-me"
+        
         breadcrumb_data = {
             "@type": "BreadcrumbList",
             "itemListElement": [
                 {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.alanranger.com"},
-                {"@type": "ListItem", "position": 2, "name": "Photo Workshops UK", "item": "https://www.alanranger.com/photo-workshops-uk"},
+                {"@type": "ListItem", "position": 2, "name": parent_category_name, "item": parent_category_url},
                 {"@type": "ListItem", "position": 3, "name": product_name, "item": product_url}
             ]
         }
