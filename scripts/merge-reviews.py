@@ -548,8 +548,18 @@ if len(product_slugs) > 0:
             review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "")
             combined_text = f"{review_title} {review_text}".strip()
             
+            # Debug: Log Batsford-related reviews
+            if 'batsford' in combined_text.lower():
+                print(f"   🔍 Found Batsford mention: {combined_text[:100]}...")
+            
             # Try matching with combined text first
             matched_slug = match_via_text(combined_text, ALIASES, product_by_slug, name_by_slug)
+            
+            # Debug: Log if Batsford review matched
+            if 'batsford' in combined_text.lower() and matched_slug:
+                print(f"   ✅ Matched Batsford review to: {matched_slug}")
+            elif 'batsford' in combined_text.lower() and not matched_slug:
+                print(f"   ⚠️ Batsford review NOT matched (text: {combined_text[:80]}...)")
             
             # If no match and review text is empty, try matching against all products with lower threshold
             # This handles Google reviews that mention products but don't have detailed text
