@@ -128,9 +128,19 @@ def find_best_slug_match(review_slug, product_slugs):
 
 def get_breadcrumbs(product_name, product_url):
     """Generate breadcrumb list for product with normalized casing"""
-    # Ensure breadcrumb name matches product name exactly (proper case, not uppercase)
-    # Use the same value as the "name" field of the Product/Event object
+    # Normalize breadcrumb name: ensure sentence case (not all caps) and use en dash (–) for dates
     breadcrumb_name = product_name.strip()
+    
+    # Convert all-caps to sentence case (preserve existing sentence case)
+    if breadcrumb_name.isupper() and len(breadcrumb_name) > 3:
+        # Convert to title case, but preserve acronyms and special formatting
+        breadcrumb_name = breadcrumb_name.title()
+    
+    # Replace hyphens with en dashes in date ranges (e.g., "23-31 Oct" -> "23 – 31 Oct")
+    # Pattern: number-hyphen-number followed by month/year
+    breadcrumb_name = re.sub(r'(\d+)-(\d+)\s+([A-Z][a-z]+)', r'\1 – \2 \3', breadcrumb_name)
+    # Also handle cases like "23-31 Oct 2026"
+    breadcrumb_name = re.sub(r'(\d+)-(\d+)\s+([A-Z][a-z]+\s+\d{4})', r'\1 – \2 \3', breadcrumb_name)
     
     return {
         "@type": "BreadcrumbList",
@@ -150,7 +160,7 @@ def get_breadcrumbs(product_name, product_url):
             {
                 "@type": "ListItem",
                 "position": 3,
-                "name": breadcrumb_name,  # Matches product name exactly
+                "name": breadcrumb_name,  # Normalized: sentence case with en dash for dates
                 "item": product_url
             }
         ]
@@ -308,13 +318,12 @@ def generate_product_schema_graph(product_row, reviews_list):
     product_schema["eventStatus"] = "https://schema.org/EventScheduled"
     product_schema["eventAttendanceMode"] = "https://schema.org/OfflineEventAttendanceMode"
     
-    # Add event dates if available
+    # Add event dates if available (optional - only if both start and end dates are valid)
     start_date = None
     end_date = None
     
     # Check for date fields
     date_fields = ['date', 'event_date', 'start_date', 'end_date', 'workshop_date', 'event_start', 'event_end']
-    date_range_fields = ['date_range', 'event_dates']
     
     # Try to find start and end dates
     for field in ['start_date', 'event_start', 'startDate']:
@@ -350,19 +359,27 @@ def generate_product_schema_graph(product_row, reviews_list):
                 except:
                     pass
         
-        # Try parsing date range from description
+        # Try parsing date range from description (e.g., "23 – 31 Oct 2026")
         if (not start_date or not end_date) and product_description:
-            # Look for date patterns like "2025-03-15 to 2025-03-16" or "15 March 2025 - 16 March 2025"
+            # Look for date patterns like "2025-03-15 to 2025-03-16" or "23 – 31 Oct 2026"
             date_range_patterns = [
                 r'(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})',
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026"
                 r'(\d{1,2}\s+\w+\s+\d{4})\s*[-–]\s*(\d{1,2}\s+\w+\s+\d{4})',
             ]
             for pattern in date_range_patterns:
                 match = re.search(pattern, product_description, re.IGNORECASE)
                 if match:
                     try:
-                        date1 = pd.to_datetime(match.group(1), errors='coerce', dayfirst=True)
-                        date2 = pd.to_datetime(match.group(2), errors='coerce', dayfirst=True)
+                        if len(match.groups()) == 4:  # Pattern: "23 – 31 Oct 2026"
+                            day1, day2, month, year = match.groups()
+                            date1_str = f"{day1} {month} {year}"
+                            date2_str = f"{day2} {month} {year}"
+                            date1 = pd.to_datetime(date1_str, errors='coerce', dayfirst=True)
+                            date2 = pd.to_datetime(date2_str, errors='coerce', dayfirst=True)
+                        else:
+                            date1 = pd.to_datetime(match.group(1), errors='coerce', dayfirst=True)
+                            date2 = pd.to_datetime(match.group(2), errors='coerce', dayfirst=True)
                         if pd.notna(date1) and pd.notna(date2):
                             if not start_date:
                                 start_date = date1.strftime('%Y-%m-%d')
@@ -383,97 +400,6 @@ def generate_product_schema_graph(product_row, reviews_list):
         except:
             # Skip silently if dates are invalid
             pass
-    
-    # Add location block with real workshop venue info (not placeholders)
-    location_name = None
-    address_locality = None
-    address_region = None
-    postal_code = None
-    
-    # Check for dedicated location fields first
-    location_fields = ['location', 'venue', 'venue_name', 'workshop_location', 'event_location']
-    for field in location_fields:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            location_val = str(product_row.get(field, '')).strip()
-            if location_val and location_val.lower() not in ['all photography workshops', 'autumn', 'spring', 'summer', 'winter', 'tbc', 'tba', '']:
-                location_name = location_val
-                break
-    
-    # If no dedicated location field, try extracting from category or description
-    if not location_name:
-        if 'category' in product_row.index:
-            category = str(product_row.get('category', '')).strip()
-            if category:
-                # Extract location from category (e.g., "Batsford Arboretum, Gloucestershire")
-                parts = [p.strip() for p in category.split(',')]
-                if len(parts) > 0 and parts[0].lower() not in ['all photography workshops', 'autumn', 'spring', 'summer', 'winter']:
-                    location_name = parts[0]
-                if len(parts) > 1:
-                    address_region = parts[-1]
-        
-        # Try extracting from description if still no location
-        if not location_name and product_description:
-            # Look for common venue patterns in description
-            venue_patterns = [
-                r'at\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:in|near)',
-                r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:Arboretum|Gardens|Park|Hall|Castle|Manor)',
-            ]
-            for pattern in venue_patterns:
-                match = re.search(pattern, product_description)
-                if match:
-                    potential_venue = match.group(1).strip()
-                    if potential_venue.lower() not in ['all photography workshops', 'autumn', 'spring', 'summer', 'winter']:
-                        location_name = potential_venue
-                        break
-    
-    # Check for address fields
-    locality_fields = ['locality', 'town', 'city', 'address_locality', 'nearest_town']
-    region_fields = ['region', 'county', 'address_region']
-    postcode_fields = ['postcode', 'postal_code', 'zip']
-    
-    for field in locality_fields:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            val = str(product_row.get(field, '')).strip()
-            if val:
-                address_locality = val
-                break
-    
-    for field in region_fields:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            val = str(product_row.get(field, '')).strip()
-            if val:
-                address_region = val
-                break
-    
-    for field in postcode_fields:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            val = str(product_row.get(field, '')).strip()
-            if val:
-                postal_code = val
-                break
-    
-    # If we have valid location data (not placeholder), add location block
-    if location_name and location_name.lower() not in ['all photography workshops', 'autumn', 'spring', 'summer', 'winter', 'tbc', 'tba']:
-        location_block = {
-            "@type": "Place",
-            "name": location_name
-        }
-        
-        address_block = {
-            "@type": "PostalAddress",
-            "addressCountry": "GB"
-        }
-        
-        # Only include non-empty fields
-        if address_locality:
-            address_block["addressLocality"] = address_locality
-        if address_region:
-            address_block["addressRegion"] = address_region
-        if postal_code:
-            address_block["postalCode"] = postal_code
-        
-        location_block["address"] = address_block
-        product_schema["location"] = location_block
     
     # Build @graph structure - Keep only LocalBusiness (it inherits Organization properties)
     graph = [
@@ -741,7 +667,6 @@ def main():
     
     # Track validation statistics
     breadcrumbs_normalised_count = 0
-    location_enriched_count = 0
     event_dates_added_count = 0
     
     for idx, row in df_products.iterrows():
@@ -901,11 +826,7 @@ def main():
         schema_graph = generate_product_schema_graph(row, product_reviews)
         
         # Track validation statistics
-        breadcrumbs_normalised_count += 1  # All breadcrumbs use product name
-        
-        # Check if location was added
-        if 'location' in schema_graph.get('@graph', [{}])[-1]:
-            location_enriched_count += 1
+        breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
         
         # Check if event dates were added
         if 'startDate' in schema_graph.get('@graph', [{}])[-1] and 'endDate' in schema_graph.get('@graph', [{}])[-1]:
@@ -1103,9 +1024,9 @@ def main():
     print("\n[SchemaGenerator] Valid JSON-LD structure OK")
     print("[SchemaGenerator] SKU and brand added for all products")
     print("[SchemaGenerator] ReviewBody sanitized")
-    print(f"[SchemaGenerator] Breadcrumbs normalised ✓ ({breadcrumbs_normalised_count} products)")
-    print(f"[SchemaGenerator] Location enriched ✓ ({location_enriched_count} products)")
-    print(f"[SchemaGenerator] Event dates added ✓ ({event_dates_added_count} products)")
+    print("[SchemaGenerator] Location removed ✓")
+    print(f"[SchemaGenerator] Breadcrumb normalised ✓ ({breadcrumbs_normalised_count} products)")
+    print(f"[SchemaGenerator] Event dates checked ✓ ({event_dates_added_count} products with dates)")
     
     # Print match count for UI parsing (use actual products_with_reviews_count)
     print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
