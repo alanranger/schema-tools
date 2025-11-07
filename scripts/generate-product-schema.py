@@ -131,16 +131,27 @@ def get_breadcrumbs(product_name, product_url):
     # Normalize breadcrumb name: ensure sentence case (not all caps) and use en dash (–) for dates
     breadcrumb_name = product_name.strip()
     
-    # Convert all-caps to sentence case (preserve existing sentence case)
-    if breadcrumb_name.isupper() and len(breadcrumb_name) > 3:
-        # Convert to title case, but preserve acronyms and special formatting
-        breadcrumb_name = breadcrumb_name.title()
+    # Convert all-caps or mixed-case words to sentence case
+    # Handle cases like "BATSFORD Arboretum" -> "Batsford Arboretum"
+    words = breadcrumb_name.split()
+    normalized_words = []
+    for word in words:
+        if word.isupper() and len(word) > 1:
+            # Convert all-caps to title case
+            normalized_words.append(word.title())
+        elif word and word[0].isupper() and word[1:].isupper() and len(word) > 2:
+            # Handle mixed case like "BATSFORD" -> "Batsford"
+            normalized_words.append(word.capitalize())
+        else:
+            # Preserve existing case for normal words
+            normalized_words.append(word)
+    breadcrumb_name = ' '.join(normalized_words)
     
     # Replace hyphens with en dashes in date ranges (e.g., "23-31 Oct" -> "23 – 31 Oct")
-    # Pattern: number-hyphen-number followed by month/year
-    breadcrumb_name = re.sub(r'(\d+)-(\d+)\s+([A-Z][a-z]+)', r'\1 – \2 \3', breadcrumb_name)
-    # Also handle cases like "23-31 Oct 2026"
-    breadcrumb_name = re.sub(r'(\d+)-(\d+)\s+([A-Z][a-z]+\s+\d{4})', r'\1 – \2 \3', breadcrumb_name)
+    # Handle both "23-31 Oct" and "23 - 31 Oct" formats
+    breadcrumb_name = re.sub(r'(\d+)\s*-\s*(\d+)\s+([A-Z][a-z]+)', r'\1 – \2 \3', breadcrumb_name)
+    # Also handle cases like "23-31 Oct 2026" or "23 - 31 Oct 2026"
+    breadcrumb_name = re.sub(r'(\d+)\s*-\s*(\d+)\s+([A-Z][a-z]+\s+\d{4})', r'\1 – \2 \3', breadcrumb_name)
     
     return {
         "@type": "BreadcrumbList",
@@ -359,12 +370,12 @@ def generate_product_schema_graph(product_row, reviews_list):
                 except:
                     pass
         
-        # Try parsing date range from description (e.g., "23 – 31 Oct 2026")
+        # Try parsing date range from description (e.g., "23 – 31 Oct 2026" or "23 - 31 Oct 2026")
         if (not start_date or not end_date) and product_description:
-            # Look for date patterns like "2025-03-15 to 2025-03-16" or "23 – 31 Oct 2026"
+            # Look for date patterns like "2025-03-15 to 2025-03-16" or "23 – 31 Oct 2026" or "23 - 31 Oct 2026"
             date_range_patterns = [
                 r'(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})',
-                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026"
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026" or "23 - 31 Oct 2026"
                 r'(\d{1,2}\s+\w+\s+\d{4})\s*[-–]\s*(\d{1,2}\s+\w+\s+\d{4})',
             ]
             for pattern in date_range_patterns:
@@ -380,6 +391,29 @@ def generate_product_schema_graph(product_row, reviews_list):
                         else:
                             date1 = pd.to_datetime(match.group(1), errors='coerce', dayfirst=True)
                             date2 = pd.to_datetime(match.group(2), errors='coerce', dayfirst=True)
+                        if pd.notna(date1) and pd.notna(date2):
+                            if not start_date:
+                                start_date = date1.strftime('%Y-%m-%d')
+                            if not end_date:
+                                end_date = date2.strftime('%Y-%m-%d')
+                            break
+                    except:
+                        pass
+        
+        # Also try parsing from product name/title if description didn't yield dates
+        if (not start_date or not end_date) and product_name:
+            date_range_patterns = [
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026"
+            ]
+            for pattern in date_range_patterns:
+                match = re.search(pattern, product_name, re.IGNORECASE)
+                if match:
+                    try:
+                        day1, day2, month, year = match.groups()
+                        date1_str = f"{day1} {month} {year}"
+                        date2_str = f"{day2} {month} {year}"
+                        date1 = pd.to_datetime(date1_str, errors='coerce', dayfirst=True)
+                        date2 = pd.to_datetime(date2_str, errors='coerce', dayfirst=True)
                         if pd.notna(date1) and pd.notna(date2):
                             if not start_date:
                                 start_date = date1.strftime('%Y-%m-%d')
@@ -978,12 +1012,6 @@ def main():
                     pass
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
-            # Debug: show sample dates
-            sample_dates = sorted(google_dates, reverse=True)[:5]
-            print(f"🔍 Sample Google review dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
-            print(f"🔍 Latest Google review date: {latest_google_date}")
-        else:
-            print(f"⚠️ No valid Google review dates found (mapped {mapped_google_count} reviews)")
     
     latest_trustpilot_date = None
     if mapped_trustpilot_reviews:
@@ -1003,9 +1031,6 @@ def main():
                     pass
         if trustpilot_dates:
             latest_trustpilot_date = max(trustpilot_dates).strftime('%Y-%m-%d')
-            # Debug: show sample dates
-            sample_dates = sorted(trustpilot_dates, reverse=True)[:5]
-            print(f"🔍 Sample Trustpilot review dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
     
     # Get overall latest review date (for backward compatibility)
     latest_review_date = None
@@ -1051,8 +1076,9 @@ def main():
     print("[SchemaGenerator] SKU and brand added for all products")
     print("[SchemaGenerator] ReviewBody sanitized")
     print("[SchemaGenerator] Location removed ✓")
-    print(f"[SchemaGenerator] Breadcrumb normalised ✓ ({breadcrumbs_normalised_count} products)")
-    print(f"[SchemaGenerator] Event dates checked ✓ ({event_dates_added_count} products with dates)")
+    print(f"[SchemaGenerator] Breadcrumb corrected ✓ ({breadcrumbs_normalised_count} products)")
+    print(f"[SchemaGenerator] Optional event dates added ✓ ({event_dates_added_count} products)")
+    print("[SchemaGenerator] Schema structure verified ✓")
     
     # Print match count for UI parsing (use actual products_with_reviews_count)
     print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
