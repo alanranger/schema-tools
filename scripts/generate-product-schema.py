@@ -1084,12 +1084,20 @@ def main():
     if nan_count > 0:
         print(f"⚠️ {nan_count} product entries missing names (skipped).")
     
-    # Clean up orphan "nan" HTML outputs
+    # Clean up orphan "nan" HTML outputs (but not legitimate product names containing "nan")
     import os
     removed_count = 0
     if outputs_dir.exists():
         for f in os.listdir(outputs_dir):
-            if 'nan' in f.lower() and f.endswith('.html'):
+            # Only remove files that are exactly "nan" or have "-nan-" or "-nan." in the name
+            # This avoids false positives like "nant-mill" or "banana"
+            f_lower = f.lower()
+            if f.endswith('.html') and (
+                f_lower == 'nan_schema_squarespace_ready.html' or
+                f_lower.startswith('nan-') or  # "nan-" at start (not "nant-")
+                '-nan-' in f_lower or  # "-nan-" anywhere
+                f_lower.startswith('nan_schema')  # "nan_schema" at start
+            ):
                 try:
                     os.remove(outputs_dir / f)
                     removed_count += 1
