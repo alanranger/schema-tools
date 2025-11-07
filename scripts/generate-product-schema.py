@@ -765,8 +765,8 @@ def main():
     print("\n✅ Schema generation complete!")
     print("\n💡 Each HTML file is ready to copy-paste into Squarespace Code Blocks")
     
-    # Print match count for UI parsing
-    print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
+    # Print match count for UI parsing (use distinct slugs count)
+    print(f"\n📊 MATCH_COUNT: {len(distinct_slugs_with_reviews)}")
 
 if __name__ == '__main__':
     main()
