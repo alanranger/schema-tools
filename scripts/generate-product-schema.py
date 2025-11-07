@@ -821,6 +821,9 @@ def main():
             if is_batsford and reviews_for_product is None:
                 print(f"   ⚠️ No exact or fuzzy match found in grouped_reviews")
                 print(f"   Available review slugs: {list(grouped_reviews.groups.keys())[:10]}")
+        
+        # Process reviews if found
+        if reviews_for_product is not None and len(reviews_for_product) > 0:
             if is_batsford:
                 print(f"   📊 Processing {len(reviews_for_product)} reviews for Batsford")
             # Limit to 25 reviews per product
