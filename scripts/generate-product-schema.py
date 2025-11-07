@@ -1088,58 +1088,80 @@ def main():
         google_dates = []
         for r in mapped_google_reviews:
             date_val = r.get('date')
-            # If date object is None, try to parse the string date
-            if date_val is None or pd.isna(date_val):
-                date_str = r.get('review_date_str', '')
-                if date_str:
-                    try:
-                        parsed = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
-                        if pd.notna(parsed):
-                            google_dates.append(parsed)
-                    except:
-                        pass
-            else:
+            date_str = r.get('review_date_str', '')
+            
+            # Try to get a valid date from either the date object or string
+            parsed_date = None
+            
+            # First try the date object
+            if date_val is not None and pd.notna(date_val):
                 try:
-                    # Ensure it's a datetime object
                     if isinstance(date_val, pd.Timestamp):
-                        google_dates.append(date_val)
+                        parsed_date = date_val
                     else:
-                        parsed = pd.to_datetime(date_val, errors='coerce')
-                        if pd.notna(parsed):
-                            google_dates.append(parsed)
+                        parsed_date = pd.to_datetime(date_val, errors='coerce')
+                        if pd.isna(parsed_date):
+                            parsed_date = None
                 except:
-                    pass
+                    parsed_date = None
+            
+            # If date object failed, try parsing the string date
+            if parsed_date is None and date_str:
+                try:
+                    parsed_date = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                    if pd.isna(parsed_date):
+                        parsed_date = None
+                except:
+                    parsed_date = None
+            
+            # Only add valid dates (not today's date unless it's actually in the data)
+            if parsed_date is not None:
+                google_dates.append(parsed_date)
+        
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
+            # Debug: Print the actual latest date found
+            print(f"🔍 Latest Google review date calculated: {latest_google_date} (from {len(google_dates)} valid dates)")
     
     latest_trustpilot_date = None
     if mapped_trustpilot_reviews:
         trustpilot_dates = []
         for r in mapped_trustpilot_reviews:
             date_val = r.get('date')
-            # If date object is None, try to parse the string date
-            if date_val is None or pd.isna(date_val):
-                date_str = r.get('review_date_str', '')
-                if date_str:
-                    try:
-                        parsed = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
-                        if pd.notna(parsed):
-                            trustpilot_dates.append(parsed)
-                    except:
-                        pass
-            else:
+            date_str = r.get('review_date_str', '')
+            
+            # Try to get a valid date from either the date object or string
+            parsed_date = None
+            
+            # First try the date object
+            if date_val is not None and pd.notna(date_val):
                 try:
-                    # Ensure it's a datetime object
                     if isinstance(date_val, pd.Timestamp):
-                        trustpilot_dates.append(date_val)
+                        parsed_date = date_val
                     else:
-                        parsed = pd.to_datetime(date_val, errors='coerce')
-                        if pd.notna(parsed):
-                            trustpilot_dates.append(parsed)
+                        parsed_date = pd.to_datetime(date_val, errors='coerce')
+                        if pd.isna(parsed_date):
+                            parsed_date = None
                 except:
-                    pass
+                    parsed_date = None
+            
+            # If date object failed, try parsing the string date
+            if parsed_date is None and date_str:
+                try:
+                    parsed_date = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                    if pd.isna(parsed_date):
+                        parsed_date = None
+                except:
+                    parsed_date = None
+            
+            # Only add valid dates
+            if parsed_date is not None:
+                trustpilot_dates.append(parsed_date)
+        
         if trustpilot_dates:
             latest_trustpilot_date = max(trustpilot_dates).strftime('%Y-%m-%d')
+            # Debug: Print the actual latest date found
+            print(f"🔍 Latest Trustpilot review date calculated: {latest_trustpilot_date} (from {len(trustpilot_dates)} valid dates)")
     
     # Get overall latest review date (for backward compatibility)
     latest_review_date = None

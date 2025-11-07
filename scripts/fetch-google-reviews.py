@@ -241,27 +241,33 @@ def fetch_reviews(creds, location_id=None):
                                     rating = str(star_rating)
                                 
                                 comment = r.get("comment", "").replace("\n", " ").strip()
+                                
+                                # Try to get createTime first (original review date), fallback to updateTime
+                                create_time = r.get("createTime", "")
                                 update_time = r.get("updateTime", "")
+                                
+                                # Prefer createTime (original review date) over updateTime (last modification)
+                                time_to_use = create_time if create_time else update_time
                                 
                                 # Parse date if available
                                 date_str = ""
-                                if update_time:
+                                if time_to_use:
                                     try:
                                         # Google API returns ISO 8601 format (e.g., "2024-12-15T14:30:00Z")
-                                        dt = datetime.fromisoformat(update_time.replace('Z', '+00:00'))
+                                        dt = datetime.fromisoformat(time_to_use.replace('Z', '+00:00'))
                                         # Store as YYYY-MM-DD format for consistency
                                         date_str = dt.strftime('%Y-%m-%d')
                                     except Exception as e:
                                         # Fallback: try to extract date from string
                                         try:
                                             # Try parsing as ISO format
-                                            dt = pd.to_datetime(update_time, errors='coerce')
+                                            dt = pd.to_datetime(time_to_use, errors='coerce')
                                             if pd.notna(dt):
                                                 date_str = dt.strftime('%Y-%m-%d')
                                             else:
-                                                date_str = update_time[:10] if len(update_time) >= 10 else update_time
+                                                date_str = time_to_use[:10] if len(time_to_use) >= 10 else time_to_use
                                         except:
-                                            date_str = update_time[:10] if len(update_time) >= 10 else update_time
+                                            date_str = time_to_use[:10] if len(time_to_use) >= 10 else time_to_use
                                 
                                 reviews.append({
                                     "reviewer": reviewer,
