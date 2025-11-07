@@ -1088,7 +1088,17 @@ def main():
         google_dates = []
         for r in mapped_google_reviews:
             date_val = r.get('date')
-            if date_val is not None and pd.notna(date_val):
+            # If date object is None, try to parse the string date
+            if date_val is None or pd.isna(date_val):
+                date_str = r.get('review_date_str', '')
+                if date_str:
+                    try:
+                        parsed = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                        if pd.notna(parsed):
+                            google_dates.append(parsed)
+                    except:
+                        pass
+            else:
                 try:
                     # Ensure it's a datetime object
                     if isinstance(date_val, pd.Timestamp):
@@ -1107,7 +1117,17 @@ def main():
         trustpilot_dates = []
         for r in mapped_trustpilot_reviews:
             date_val = r.get('date')
-            if date_val is not None and pd.notna(date_val):
+            # If date object is None, try to parse the string date
+            if date_val is None or pd.isna(date_val):
+                date_str = r.get('review_date_str', '')
+                if date_str:
+                    try:
+                        parsed = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                        if pd.notna(parsed):
+                            trustpilot_dates.append(parsed)
+                    except:
+                        pass
+            else:
                 try:
                     # Ensure it's a datetime object
                     if isinstance(date_val, pd.Timestamp):
