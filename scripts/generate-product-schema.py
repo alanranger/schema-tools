@@ -953,17 +953,33 @@ def main():
                                         pass
                     
                     if 'google' in source_lower:
-                        mapped_google_reviews.append({
-                            'date': review_date_obj,
-                            'source': 'Google',
-                            'review_date_str': review_date  # Keep original string for debugging
-                        })
+                        # Only add to mapped_google_reviews if we have a valid date
+                        if review_date_obj is not None and pd.notna(review_date_obj):
+                            mapped_google_reviews.append({
+                                'date': review_date_obj,
+                                'source': 'Google',
+                                'review_date_str': review_date  # Keep original string for debugging
+                            })
+                        elif review_date:  # If we have a string date but couldn't parse it, still track it
+                            mapped_google_reviews.append({
+                                'date': None,
+                                'source': 'Google',
+                                'review_date_str': review_date  # Keep original string for debugging
+                            })
                     elif 'trustpilot' in source_lower:
-                        mapped_trustpilot_reviews.append({
-                            'date': review_date_obj,
-                            'source': 'Trustpilot',
-                            'review_date_str': review_date  # Keep original string for debugging
-                        })
+                        # Only add to mapped_trustpilot_reviews if we have a valid date
+                        if review_date_obj is not None and pd.notna(review_date_obj):
+                            mapped_trustpilot_reviews.append({
+                                'date': review_date_obj,
+                                'source': 'Trustpilot',
+                                'review_date_str': review_date  # Keep original string for debugging
+                            })
+                        elif review_date:  # If we have a string date but couldn't parse it, still track it
+                            mapped_trustpilot_reviews.append({
+                                'date': None,
+                                'source': 'Trustpilot',
+                                'review_date_str': review_date  # Keep original string for debugging
+                            })
         
         if len(product_reviews) > 0:
             products_with_reviews_count += 1
