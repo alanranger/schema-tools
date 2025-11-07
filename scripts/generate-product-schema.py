@@ -1116,12 +1116,19 @@ def main():
             
             # Only add valid dates (not today's date unless it's actually in the data)
             if parsed_date is not None:
-                google_dates.append(parsed_date)
+                # Safety check: Don't add dates that are in the future (beyond today)
+                today = pd.Timestamp.today().normalize()
+                if parsed_date <= today:
+                    google_dates.append(parsed_date)
+                else:
+                    print(f"⚠️ Skipping future date: {parsed_date.strftime('%Y-%m-%d')} (today is {today.strftime('%Y-%m-%d')})")
         
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
             # Debug: Print the actual latest date found
             print(f"🔍 Latest Google review date calculated: {latest_google_date} (from {len(google_dates)} valid dates)")
+        else:
+            print(f"⚠️ No valid Google review dates found in {len(mapped_google_reviews)} mapped reviews")
     
     latest_trustpilot_date = None
     if mapped_trustpilot_reviews:
