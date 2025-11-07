@@ -1020,15 +1020,18 @@ def main():
             if parsed_date is not None:
                 # Safety check: Don't add dates that are in the future (beyond today)
                 today = pd.Timestamp.today().normalize()
-                if parsed_date <= today:
-                    google_dates.append(parsed_date)
+                parsed_date_normalized = pd.Timestamp(parsed_date).normalize()
+                if parsed_date_normalized <= today:
+                    google_dates.append(parsed_date_normalized)
                 else:
-                    print(f"⚠️ Skipping future date: {parsed_date.strftime('%Y-%m-%d')} (today is {today.strftime('%Y-%m-%d')})")
+                    print(f"⚠️ Skipping future date: {parsed_date_normalized.strftime('%Y-%m-%d')} (today is {today.strftime('%Y-%m-%d')})")
         
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
-            # Debug: Print the actual latest date found
+            # Debug: Print the actual latest date found and sample dates
+            sample_dates = sorted(google_dates, reverse=True)[:5]
             print(f"🔍 Latest Google review date calculated: {latest_google_date} (from {len(google_dates)} valid dates)")
+            print(f"🔍 Sample Google dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
         else:
             print(f"⚠️ No valid Google review dates found in {len(mapped_google_reviews)} mapped reviews")
     
