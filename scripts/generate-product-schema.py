@@ -830,7 +830,15 @@ def main():
         
         # Process reviews if found
         if reviews_for_product is not None and len(reviews_for_product) > 0:
-            # Limit to 25 reviews per product
+            # Sort by date (newest first) before limiting to ensure we get the most recent reviews
+            if 'date' in reviews_for_product.columns:
+                # Convert dates to datetime for proper sorting
+                reviews_for_product = reviews_for_product.copy()
+                reviews_for_product['_sort_date'] = pd.to_datetime(reviews_for_product['date'], errors='coerce', dayfirst=True)
+                reviews_for_product = reviews_for_product.sort_values('_sort_date', ascending=False, na_position='last')
+                reviews_for_product = reviews_for_product.drop(columns=['_sort_date'])
+            
+            # Limit to 25 reviews per product (after sorting, so we get the newest 25)
             group = reviews_for_product.head(25)
             
             for _, review_row in group.iterrows():
