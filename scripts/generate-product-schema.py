@@ -981,6 +981,9 @@ def main():
             # Debug: show sample dates
             sample_dates = sorted(google_dates, reverse=True)[:5]
             print(f"🔍 Sample Google review dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
+            print(f"🔍 Latest Google review date: {latest_google_date}")
+        else:
+            print(f"⚠️ No valid Google review dates found (mapped {mapped_google_count} reviews)")
     
     latest_trustpilot_date = None
     if mapped_trustpilot_reviews:
