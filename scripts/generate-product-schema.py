@@ -790,8 +790,37 @@ def main():
                         else:
                             reviews_for_product = pd.concat([reviews_for_product, pd.DataFrame([review_row])], ignore_index=True)
         
-        # Process reviews if found
-        if reviews_for_product is not None and len(reviews_for_product) > 0:
+        product_slug = row.get('product_slug', slugify(product_name))
+        
+        # Debug: Check if this is Batsford product
+        is_batsford = 'batsford' in product_name.lower() or 'batsford' in str(product_slug).lower()
+        if is_batsford:
+            print(f"\n🔍 Processing Batsford product:")
+            print(f"   Product name: {product_name}")
+            print(f"   Product slug: {product_slug}")
+            print(f"   Product URL: {row.get('url', '')}")
+        
+        # Get reviews for this product - trust Step 3b slugs with fuzzy fallback
+        product_reviews = []
+        
+        # First try exact match via grouped_reviews (trust Step 3b slug)
+        reviews_for_product = None
+        if product_slug in grouped_reviews.groups:
+            reviews_for_product = grouped_reviews.get_group(product_slug)
+            if is_batsford:
+                print(f"   ✅ Exact match found: {len(reviews_for_product)} reviews")
+        else:
+            # Fuzzy fallback: handle slight slug variations
+            for s in grouped_reviews.groups:
+                if SequenceMatcher(None, product_slug, s).ratio() >= 0.85:
+                    reviews_for_product = grouped_reviews.get_group(s)
+                    if is_batsford:
+                        print(f"   ✅ Fuzzy match found: slug '{s}' → {len(reviews_for_product)} reviews")
+                    break
+            
+            if is_batsford and reviews_for_product is None:
+                print(f"   ⚠️ No exact or fuzzy match found in grouped_reviews")
+                print(f"   Available review slugs: {list(grouped_reviews.groups.keys())[:10]}")
             if is_batsford:
                 print(f"   📊 Processing {len(reviews_for_product)} reviews for Batsford")
             # Limit to 25 reviews per product
