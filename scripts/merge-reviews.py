@@ -413,14 +413,28 @@ if len(product_slugs) > 0:
             matched_slug = existing_slug
         elif source == 'Trustpilot':
             # Phase 0 – Trustpilot Reference Id direct match (highest priority)
-            # Check all possible column name variations
+            # Check all possible column name variations (check both row.index and valid_reviews.columns)
             ref_id = None
+            ref_col_found = None
+            
+            # First check row.index (for Series)
             for col_name in ["Reference Id", "reference_id", "ReferenceId", "referenceId", "ref_id", "Ref Id"]:
                 if col_name in row.index:
                     ref_val = row.get(col_name)
                     if ref_val and pd.notna(ref_val) and str(ref_val).strip():
                         ref_id = str(ref_val).strip()
+                        ref_col_found = col_name
                         break
+            
+            # If not found, check valid_reviews.columns (for DataFrame)
+            if not ref_id and len(valid_reviews) > 0:
+                for col_name in ["Reference Id", "reference_id", "ReferenceId", "referenceId", "ref_id", "Ref Id"]:
+                    if col_name in valid_reviews.columns:
+                        ref_val = row.get(col_name)
+                        if ref_val and pd.notna(ref_val) and str(ref_val).strip():
+                            ref_id = str(ref_val).strip()
+                            ref_col_found = col_name
+                            break
             
             if ref_id:
                 # Normalize Reference Id using consistent function
