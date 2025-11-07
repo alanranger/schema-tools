@@ -570,7 +570,7 @@ if len(product_slugs) > 0:
             if not matched_slug:
                 review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
                 matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
-        elif source == 'Google':
+        if not matched_slug and source == 'Google':
             # Use text matching for Google reviews
             # Combine review body and title for better matching
             # Check multiple column name variations
