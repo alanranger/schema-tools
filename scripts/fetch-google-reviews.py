@@ -246,6 +246,13 @@ def fetch_reviews(creds, location_id=None):
                                 create_time = r.get("createTime", "")
                                 update_time = r.get("updateTime", "")
                                 
+                                # Debug: Log available date fields for first review only
+                                if len(reviews) == 0:
+                                    print(f"   🔍 Sample review date fields:")
+                                    print(f"      createTime: {create_time}")
+                                    print(f"      updateTime: {update_time}")
+                                    print(f"      All review keys: {list(r.keys())}")
+                                
                                 # Prefer createTime (original review date) over updateTime (last modification)
                                 time_to_use = create_time if create_time else update_time
                                 
