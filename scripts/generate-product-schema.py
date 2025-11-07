@@ -252,12 +252,17 @@ def generate_product_schema_graph(product_row, reviews_list):
     
     # Build product schema
     product_schema = {
-        "@type": ["Product", "Event", "Course"],
+        "@type": ["Product", "Course"],
         "name": product_name,
         "sku": sku,
         "brand": {
             "@type": "Brand",
             "name": "Alan Ranger Photography"
+        },
+        "provider": {
+            "@type": "Organization",
+            "name": "Alan Ranger Photography",
+            "sameAs": "https://www.alanranger.com"
         }
     }
     
@@ -323,120 +328,6 @@ def generate_product_schema_graph(product_row, reviews_list):
         aggregate_rating = calculate_aggregate_rating(reviews_list)
         if aggregate_rating:
             product_schema["aggregateRating"] = aggregate_rating
-    
-    # Add performer and organizer
-    product_schema["performer"] = PERFORMER
-    product_schema["organizer"] = ORGANIZER
-    
-    # Event enrichment
-    product_schema["eventStatus"] = "https://schema.org/EventScheduled"
-    product_schema["eventAttendanceMode"] = "https://schema.org/OfflineEventAttendanceMode"
-    
-    # Add event dates if available (optional - only if both start and end dates are valid)
-    start_date = None
-    end_date = None
-    
-    # Check for date fields
-    date_fields = ['date', 'event_date', 'start_date', 'end_date', 'workshop_date', 'event_start', 'event_end']
-    
-    # Try to find start and end dates
-    for field in ['start_date', 'event_start', 'startDate']:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            try:
-                date_val = pd.to_datetime(product_row.get(field), errors='coerce')
-                if pd.notna(date_val):
-                    start_date = date_val.strftime('%Y-%m-%d')
-            except:
-                pass
-    
-    for field in ['end_date', 'event_end', 'endDate']:
-        if field in product_row.index and pd.notna(product_row.get(field)):
-            try:
-                date_val = pd.to_datetime(product_row.get(field), errors='coerce')
-                if pd.notna(date_val):
-                    end_date = date_val.strftime('%Y-%m-%d')
-            except:
-                pass
-    
-    # If no separate start/end fields, try parsing from single date field or description
-    if not start_date or not end_date:
-        for field in ['date', 'event_date', 'workshop_date']:
-            if field in product_row.index and pd.notna(product_row.get(field)):
-                try:
-                    date_val = pd.to_datetime(product_row.get(field), errors='coerce')
-                    if pd.notna(date_val):
-                        if not start_date:
-                            start_date = date_val.strftime('%Y-%m-%d')
-                        if not end_date:
-                            end_date = date_val.strftime('%Y-%m-%d')
-                        break
-                except:
-                    pass
-        
-        # Try parsing date range from description (e.g., "23 – 31 Oct 2026" or "23 - 31 Oct 2026")
-        if (not start_date or not end_date) and product_description:
-            # Look for date patterns like "2025-03-15 to 2025-03-16" or "23 – 31 Oct 2026" or "23 - 31 Oct 2026"
-            date_range_patterns = [
-                r'(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})',
-                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026" or "23 - 31 Oct 2026"
-                r'(\d{1,2}\s+\w+\s+\d{4})\s*[-–]\s*(\d{1,2}\s+\w+\s+\d{4})',
-            ]
-            for pattern in date_range_patterns:
-                match = re.search(pattern, product_description, re.IGNORECASE)
-                if match:
-                    try:
-                        if len(match.groups()) == 4:  # Pattern: "23 – 31 Oct 2026"
-                            day1, day2, month, year = match.groups()
-                            date1_str = f"{day1} {month} {year}"
-                            date2_str = f"{day2} {month} {year}"
-                            date1 = pd.to_datetime(date1_str, errors='coerce', dayfirst=True)
-                            date2 = pd.to_datetime(date2_str, errors='coerce', dayfirst=True)
-                        else:
-                            date1 = pd.to_datetime(match.group(1), errors='coerce', dayfirst=True)
-                            date2 = pd.to_datetime(match.group(2), errors='coerce', dayfirst=True)
-                        if pd.notna(date1) and pd.notna(date2):
-                            if not start_date:
-                                start_date = date1.strftime('%Y-%m-%d')
-                            if not end_date:
-                                end_date = date2.strftime('%Y-%m-%d')
-                            break
-                    except:
-                        pass
-        
-        # Also try parsing from product name/title if description didn't yield dates
-        if (not start_date or not end_date) and product_name:
-            date_range_patterns = [
-                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23 – 31 Oct 2026"
-            ]
-            for pattern in date_range_patterns:
-                match = re.search(pattern, product_name, re.IGNORECASE)
-                if match:
-                    try:
-                        day1, day2, month, year = match.groups()
-                        date1_str = f"{day1} {month} {year}"
-                        date2_str = f"{day2} {month} {year}"
-                        date1 = pd.to_datetime(date1_str, errors='coerce', dayfirst=True)
-                        date2 = pd.to_datetime(date2_str, errors='coerce', dayfirst=True)
-                        if pd.notna(date1) and pd.notna(date2):
-                            if not start_date:
-                                start_date = date1.strftime('%Y-%m-%d')
-                            if not end_date:
-                                end_date = date2.strftime('%Y-%m-%d')
-                            break
-                    except:
-                        pass
-    
-    # Only add dates if both are valid ISO format
-    if start_date and end_date:
-        try:
-            # Validate ISO format
-            pd.to_datetime(start_date)
-            pd.to_datetime(end_date)
-            product_schema["startDate"] = start_date
-            product_schema["endDate"] = end_date
-        except:
-            # Skip silently if dates are invalid
-            pass
     
     # Build @graph structure - Keep only LocalBusiness (it inherits Organization properties)
     try:
@@ -772,7 +663,6 @@ def main():
     
     # Track validation statistics
     breadcrumbs_normalised_count = 0
-    event_dates_added_count = 0
     
     for idx, row in df_products.iterrows():
         product_name = str(row.get('name', '')).strip()
@@ -989,10 +879,6 @@ def main():
         
         # Track validation statistics
         breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
-        
-        # Check if event dates were added
-        if 'startDate' in schema_graph.get('@graph', [{}])[-1] and 'endDate' in schema_graph.get('@graph', [{}])[-1]:
-            event_dates_added_count += 1
         
         # Validate JSON-LD structure
         try:
@@ -1229,9 +1115,9 @@ def main():
     print("\n[SchemaGenerator] Valid JSON-LD structure OK")
     print("[SchemaGenerator] SKU and brand added for all products")
     print("[SchemaGenerator] ReviewBody sanitized")
-    print("[SchemaGenerator] Location removed ✓")
+    print("[SchemaGenerator] Event fields removed ✓")
     print(f"[SchemaGenerator] Breadcrumb corrected ✓ ({breadcrumbs_normalised_count} products)")
-    print(f"[SchemaGenerator] Optional event dates added ✓ ({event_dates_added_count} products)")
+    print("[SchemaGenerator] Course provider added ✓")
     print("[SchemaGenerator] Schema structure verified ✓")
     
     # Print match count for UI parsing (use actual products_with_reviews_count)
