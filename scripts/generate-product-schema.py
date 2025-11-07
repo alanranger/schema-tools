@@ -290,48 +290,53 @@ def main():
         # Normalize column names
         reviews_df.columns = [c.strip().lower().replace(' ', '_') for c in reviews_df.columns]
         
-        # Drop completely blank rows
+        # ============================================================
+        # Sanitize Reviews
+        # ============================================================
+        
+        print("🔍 Columns detected in merged reviews file:", list(reviews_df.columns))
+        
+        # Drop fully blank rows
         reviews_df.dropna(how="all", inplace=True)
         
-        # Ensure ratingValue exists and is numeric
+        # --- Rating detection ---
         if "ratingvalue" not in reviews_df.columns:
-            print("⚠️ Missing ratingValue column, attempting fallback...")
-            for alt in ["stars", "rating", "review_rating", "star_rating"]:
+            for alt in ["stars", "rating", "review_rating", "score"]:
                 if alt in reviews_df.columns:
                     reviews_df["ratingvalue"] = reviews_df[alt]
+                    print(f"✅ Mapped '{alt}' → ratingValue")
                     break
         
-        if "ratingvalue" in reviews_df.columns:
-            reviews_df["ratingvalue"] = pd.to_numeric(reviews_df["ratingvalue"], errors="coerce")
-        else:
-            reviews_df["ratingvalue"] = None
-        
-        # Ensure reviewBody exists
+        # --- Review text detection ---
         if "reviewbody" not in reviews_df.columns:
-            for alt in ["review_body", "review", "review_text", "content", "comment", "text"]:
+            for alt in ["review_text", "content", "text", "body", "comment", "review"]:
                 if alt in reviews_df.columns:
                     reviews_df["reviewbody"] = reviews_df[alt]
+                    print(f"✅ Mapped '{alt}' → reviewBody")
                     break
         
+        # Create empty fallback if still missing
         if "reviewbody" not in reviews_df.columns:
             reviews_df["reviewbody"] = ""
+            print("⚠️  No review text column found; created empty reviewBody for compatibility")
         
-        # Parse dates safely (UK format support)
+        # Convert ratingValue to numeric
+        reviews_df["ratingvalue"] = pd.to_numeric(reviews_df.get("ratingvalue"), errors="coerce")
+        
+        # Parse dates safely
         if "date" in reviews_df.columns:
             reviews_df["date"] = pd.to_datetime(reviews_df["date"], errors="coerce", dayfirst=True)
         
-        # Drop rows without rating or review text
-        before_sanitize = len(reviews_df)
-        reviews_df = reviews_df.dropna(subset=["ratingvalue", "reviewbody"], how="any")
-        after_sanitize = len(reviews_df)
+        # Keep only rows with rating and non-empty text
+        reviews_df = reviews_df[
+            reviews_df["ratingvalue"].notna() &
+            (reviews_df["reviewbody"].astype(str).str.strip() != "")
+        ]
         
-        print(f"✅ Sanitized reviews dataset: {after_sanitize} valid reviews after cleanup")
-        if before_sanitize > after_sanitize:
-            print(f"   Removed {before_sanitize - after_sanitize} invalid rows")
-        
+        print(f"✅ Sanitized reviews dataset: {len(reviews_df)} valid reviews after cleanup")
         if len(reviews_df) == 0:
-            print("❌ No valid reviews remain after cleaning. Check CSV format.")
-            sys.exit(1)
+            print("⚠️  No valid reviews remain — check column headers in merged CSV.")
+            raise SystemExit("❌ No valid reviews remain after cleaning. Check CSV format.")
         
         # Filter to >= 4 stars
         reviews_df = reviews_df[reviews_df["ratingvalue"] >= 4].copy()
