@@ -15,6 +15,15 @@ from pathlib import Path
 import re
 from difflib import SequenceMatcher
 
+# Try to import fuzzywuzzy for better matching, fall back to SequenceMatcher if not available
+try:
+    from fuzzywuzzy import fuzz, process
+    FUZZYWUZZY_AVAILABLE = True
+except ImportError:
+    FUZZYWUZZY_AVAILABLE = False
+    print("⚠️  fuzzywuzzy not installed. Using basic fuzzy matching.")
+    print("   Install with: pip install fuzzywuzzy python-Levenshtein")
+
 # Fix Windows console encoding
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -30,16 +39,51 @@ def slugify(text):
         return ''
     return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
 
-def find_best_slug_match(review_text, product_slugs):
-    """Return the best fuzzy match for a review's related product text."""
+def clean_text_for_match(text):
+    """Lowercase, remove punctuation, and simplify text for keyword matching."""
+    if not isinstance(text, str):
+        return ""
+    text = re.sub(r"[^a-zA-Z0-9\s-]", "", text.lower())
+    return " ".join(text.split())
+
+def find_best_match(slug, product_slugs, threshold=70):
+    """Find closest product slug for a given review slug using fuzzy logic."""
+    if not isinstance(slug, str) or not slug.strip():
+        return None
+    
+    if FUZZYWUZZY_AVAILABLE:
+        try:
+            best_match, score = process.extractOne(slug, product_slugs, scorer=fuzz.token_set_ratio)
+            return best_match if score >= threshold else None
+        except Exception:
+            pass
+    
+    # Fallback to SequenceMatcher
     best_match = None
     best_ratio = 0.0
     for ps in product_slugs:
-        ratio = SequenceMatcher(None, review_text, ps).ratio()
+        ratio = SequenceMatcher(None, slug, ps).ratio()
         if ratio > best_ratio:
             best_ratio = ratio
             best_match = ps
-    return best_match if best_ratio > 0.74 else None  # threshold adjustable
+    return best_match if best_ratio >= (threshold / 100.0) else None
+
+def link_google_review(review_text, product_slugs):
+    """Try to link a Google review by keyword or fuzzy match in text content."""
+    if not isinstance(review_text, str) or not review_text.strip():
+        return None
+    
+    clean_text = clean_text_for_match(review_text)
+    
+    # Try direct keyword detection (e.g., 'batsford' in text)
+    for product in product_slugs:
+        keywords = re.split(r"[-_]", product)
+        if any(k in clean_text for k in keywords if len(k) > 4):  # skip very short words
+            return product
+    
+    # Fallback to fuzzy match
+    best_match = find_best_match(clean_text, product_slugs, threshold=60)
+    return best_match
 
 def normalize_rating(rating):
     """Normalize rating to numeric value"""
@@ -225,11 +269,12 @@ if removed_count > 0:
 print()
 
 # ============================================================
-# Match Reviews to Products
+# Match Reviews to Products (Improved Fuzzy Matching)
 # ============================================================
 
 if len(product_slugs) > 0:
     print("🔗 Matching reviews to product slugs...")
+    print(f"🧩 Product slugs loaded for matching: {len(product_slugs)}")
     
     # Try to get product_name from reference_id or other columns
     if 'reference_id' in valid_reviews.columns:
@@ -239,39 +284,70 @@ if len(product_slugs) > 0:
     else:
         valid_reviews["product_name"] = ''
     
-    # Create slugs from product names
+    # Create slugs from product names (for Trustpilot reviews that have product names)
     valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
     
-    # Check for exact matches
+    # Check for exact matches first
     review_slugs_set = set(valid_reviews["product_slug"].dropna())
     review_slugs_set = {s for s in review_slugs_set if s}  # Remove empty strings
     exact_matches = review_slugs_set & set(product_slugs)
     
-    if len(exact_matches) == 0:
-        print("⚠️ No exact matches found. Trying fuzzy mapping...")
-        corrected = {}
-        for rslug in review_slugs_set:
-            if rslug:  # Skip empty slugs
-                best = find_best_slug_match(rslug, product_slugs)
-                if best:
-                    corrected[rslug] = best
-        
-        if len(corrected) > 0:
-            valid_reviews["matched_slug"] = valid_reviews["product_slug"].map(corrected)
-            valid_reviews["product_slug"] = valid_reviews["matched_slug"].fillna(valid_reviews["product_slug"])
-            print(f"✅ Fuzzy-matched {len(corrected)} reviews to products")
-            print("🔍 Sample matches (review_slug → product_slug):")
-            for i, (rs, ps) in enumerate(list(corrected.items())[:10]):
-                print(f"   {rs} → {ps}")
-        else:
-            print("⚠️ No fuzzy matches found either. Reviews will have empty product_slug.")
-    else:
+    if len(exact_matches) > 0:
         print(f"✅ Found {len(exact_matches)} exact matches between reviews and products")
     
-    # Count matched reviews
+    # ============================================================
+    # Improved fuzzy matching for Google + Trustpilot reviews
+    # ============================================================
+    
+    # For reviews without product_slug (especially Google reviews), match by review text
+    unmatched_reviews = valid_reviews[
+        (valid_reviews["product_slug"].isna()) | 
+        (valid_reviews["product_slug"] == '') |
+        (~valid_reviews["product_slug"].isin(product_slugs))
+    ].copy()
+    
+    if len(unmatched_reviews) > 0:
+        print(f"🔍 Attempting keyword + fuzzy matching for {len(unmatched_reviews)} unmatched reviews...")
+        
+        # Apply improved matching logic to review text
+        matched_products = []
+        for idx, row in unmatched_reviews.iterrows():
+            review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
+            matched_slug = link_google_review(review_text, product_slugs)
+            matched_products.append(matched_slug)
+        
+        # Update product_slug for unmatched reviews
+        valid_reviews.loc[unmatched_reviews.index, "product_slug"] = matched_products
+        
+        # Count successful matches
+        matched_count = sum(1 for p in matched_products if p is not None)
+        if matched_count > 0:
+            print(f"✅ Matched {matched_count} reviews to products using keyword + fuzzy logic")
+            
+            # Show sample matches
+            sample_matches = []
+            for idx, slug in enumerate(matched_products[:10]):
+                if slug:
+                    review_idx = unmatched_reviews.index[idx]
+                    review_text_preview = str(valid_reviews.loc[review_idx, "reviewBody"])[:50]
+                    sample_matches.append(f"   '{review_text_preview}...' → {slug}")
+            
+            if sample_matches:
+                print("🔍 Sample matches (review text → product_slug):")
+                for match in sample_matches[:5]:
+                    print(match)
+    
+    # Count total matched reviews
     matched_count = valid_reviews['product_slug'].astype(bool).sum()
     unique_products = valid_reviews['product_slug'].nunique()
-    print(f"✅ Matched {matched_count} reviews to {unique_products} unique products")
+    print(f"✅ Total matched: {matched_count} reviews to {unique_products} unique products")
+    
+    # Merge with product data to get product names
+    if 'product_slug' in valid_reviews.columns and len(products_df) > 0:
+        # Create a mapping from product_slug to product_name
+        product_map = dict(zip(products_df['product_slug'], products_df['name']))
+        valid_reviews['product_name'] = valid_reviews['product_slug'].map(product_map).fillna(valid_reviews.get('product_name', ''))
+        print(f"✅ Linked {valid_reviews['product_name'].notna().sum()} reviews to product names")
 else:
     print("⚠️ No products available for matching. Reviews will have empty product_slug.")
     valid_reviews["product_slug"] = ''
