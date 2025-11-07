@@ -548,12 +548,24 @@ def main():
                     break
         
         # --- Review text detection ---
+        # Trustpilot reviews use 'review_content', Google reviews use 'reviewBody'
+        # Check both and merge them
         if "reviewbody" not in reviews_df.columns:
             for alt in ["review_text", "content", "text", "body", "comment", "review"]:
                 if alt in reviews_df.columns:
                     reviews_df["reviewbody"] = reviews_df[alt]
                     print(f"✅ Mapped '{alt}' → reviewBody")
                     break
+        
+        # If reviewbody exists but is empty, try review_content (Trustpilot)
+        if "reviewbody" in reviews_df.columns:
+            # Fill empty reviewbody with review_content where available
+            if "review_content" in reviews_df.columns:
+                mask = (reviews_df["reviewbody"].isna()) | (reviews_df["reviewbody"] == '') | (reviews_df["reviewbody"].astype(str).str.strip() == '')
+                reviews_df.loc[mask, "reviewbody"] = reviews_df.loc[mask, "review_content"].fillna('')
+                filled_count = mask.sum()
+                if filled_count > 0:
+                    print(f"✅ Filled {filled_count} empty reviewBody entries from review_content")
         
         # Create empty fallback if still missing
         if "reviewbody" not in reviews_df.columns:
@@ -825,8 +837,9 @@ def main():
                 rating_val = review_row.get('ratingvalue')
                 if rating_val and rating_val >= 4:
                     # Get review body from various possible column names
+                    # Check reviewbody first (Google), then review_content (Trustpilot), then other variations
                     review_body = ''
-                    for col in ['reviewbody', 'review_body', 'review', 'review_text', 'comment', 'content']:
+                    for col in ['reviewbody', 'review_content', 'review_body', 'review', 'review_text', 'comment', 'content']:
                         if col in review_row.index:
                             review_body = str(review_row.get(col, '')).strip()
                             if review_body and review_body.lower() not in ['nan', 'none', '']:
