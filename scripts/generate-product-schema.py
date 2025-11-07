@@ -608,25 +608,24 @@ def main():
     # Slugify Products and Reviews (with normalization)
     # ============================================================
     
-    # Create product slugs from URLs (matching merge-reviews.py)
+    # Create product slugs from URLs (matching merge-reviews.py EXACTLY)
     def get_slug_from_url(url):
-        """Extract and normalize slug from URL"""
+        """Extract and normalize slug from URL - MUST match merge-reviews.py logic"""
         if pd.isna(url) or not url:
             return ''
         try:
             url_str = str(url).strip().rstrip('/')
-            # Extract slug from URL
+            # Extract slug from URL (same as merge-reviews.py)
             slug = url_str.split('/')[-1]
-            # Normalize it
-            normalized = normalize_slug(slug)
-            # Apply slugify for consistency
-            return slugify(normalized) if normalized else slugify(slug)
+            # Apply slugify directly (matching merge-reviews.py line 213)
+            return slugify(slug) if slug else ''
         except:
             return ''
     
     if 'url' in df_products.columns:
-        df_products['product_slug'] = df_products['url'].apply(get_slug_from_url)
-        # Fill missing slugs with name-based slugs
+        # Match merge-reviews.py line 213 exactly
+        df_products['product_slug'] = df_products['url'].apply(lambda u: slugify(str(u).split("/")[-1]) if pd.notna(u) else '')
+        # Fill missing slugs with name-based slugs (matching merge-reviews.py line 216)
         missing_slugs = df_products['product_slug'].isna() | (df_products['product_slug'] == '')
         df_products.loc[missing_slugs, 'product_slug'] = df_products.loc[missing_slugs, 'name'].fillna('').apply(slugify)
     else:
@@ -735,12 +734,19 @@ def main():
     # Group strictly by product_slug from Step 3b (only non-empty slugs)
     grouped_reviews = reviews_df[reviews_df["product_slug"].notna() & (reviews_df["product_slug"] != "")].groupby("product_slug", dropna=True)
     
-    # Debug: Show Batsford review slugs
-    batsford_review_slugs = reviews_df[reviews_df["product_slug"].str.contains('batsford', case=False, na=False)]["product_slug"].unique()
-    if len(batsford_review_slugs) > 0:
-        print(f"\n🔍 Batsford review slugs found in merged CSV: {batsford_review_slugs.tolist()}")
-        batsford_review_count = len(reviews_df[reviews_df["product_slug"].str.contains('batsford', case=False, na=False)])
-        print(f"   Total Batsford reviews: {batsford_review_count}")
+    # Debug: Show summary of review slugs vs product slugs
+    print(f"\n📊 Review-Product Matching Summary:")
+    print(f"   Reviews with product_slug: {len(reviews_df[reviews_df['product_slug'].notna() & (reviews_df['product_slug'] != '')])}")
+    print(f"   Unique review slugs: {len(reviews_df['product_slug'].dropna().unique())}")
+    print(f"   Unique product slugs: {len(df_products['product_slug'].dropna().unique())}")
+    
+    # Show sample review slugs
+    sample_review_slugs = reviews_df['product_slug'].dropna().unique()[:10]
+    print(f"   Sample review slugs: {sample_review_slugs.tolist()}")
+    
+    # Show sample product slugs
+    sample_product_slugs = df_products['product_slug'].dropna().unique()[:10]
+    print(f"   Sample product slugs: {sample_product_slugs.tolist()}")
     
     schemas_data = []
     html_files = []
