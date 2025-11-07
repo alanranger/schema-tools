@@ -76,7 +76,7 @@ def find_best_match(slug, product_slugs, threshold=70):
             best_match = ps
     return best_match if best_ratio >= (threshold / 100.0) else None
 
-def match_via_tags(tags_value: str):
+def match_via_tags(tags_value: str, aliases: dict, product_by_slug: dict, name_by_slug: dict):
     """Match review to product using Trustpilot Tags column"""
     if not tags_value or pd.isna(tags_value):
         return None
@@ -88,7 +88,7 @@ def match_via_tags(tags_value: str):
             continue
         
         # Check aliases first
-        for key, slug in ALIASES.items():
+        for key, slug in aliases.items():
             if key in t_norm and slug in product_by_slug:
                 return slug
         
@@ -104,7 +104,7 @@ def match_via_tags(tags_value: str):
     
     return None
 
-def match_via_text(text: str):
+def match_via_text(text: str, aliases: dict, product_by_slug: dict, name_by_slug: dict):
     """Match Google review to product using text content"""
     if not text:
         return None
@@ -112,7 +112,7 @@ def match_via_text(text: str):
     t = norm(text)
     
     # Check aliases first
-    for key, slug in ALIASES.items():
+    for key, slug in aliases.items():
         if key in t and slug in product_by_slug:
             return slug
     
@@ -399,16 +399,16 @@ if len(product_slugs) > 0:
         elif source == 'Trustpilot':
             # Try Tags column first
             tags_value = row.get('tags', '') or row.get('Tags', '')
-            matched_slug = match_via_tags(tags_value) if tags_value else None
+            matched_slug = match_via_tags(tags_value, ALIASES, product_by_slug, name_by_slug) if tags_value else None
             
             # Fallback to existing logic if Tags didn't match
             if not matched_slug:
                 review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
-                matched_slug = match_via_text(review_text)
+                matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
         elif source == 'Google':
             # Use text matching for Google reviews
             review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
-            matched_slug = match_via_text(review_text)
+            matched_slug = match_via_text(review_text, ALIASES, product_by_slug, name_by_slug)
         else:
             matched_slug = None
         
