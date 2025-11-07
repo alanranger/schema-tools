@@ -746,16 +746,9 @@ def main():
     print("📊 SCHEMA GENERATION SUMMARY")
     print("="*60)
     print(f"Total products: {valid_products}")
-    # Fix summary: count distinct product_slug values from reviews_df (≥4★)
-    distinct_slugs_with_reviews = reviews_df[
-        (reviews_df['product_slug'].notna()) & 
-        (reviews_df['product_slug'] != '') &
-        (reviews_df.get('ratingvalue', 0) >= 4)
-    ]['product_slug'].unique()
-    distinct_slugs_with_reviews = [s for s in distinct_slugs_with_reviews if s and str(s).strip()]
-    
-    print(f"Products with reviews: {len(distinct_slugs_with_reviews)}")
-    print(f"Products without reviews: {products_without_reviews}")
+    # Count ALL products that have reviews (including fuzzy matches from Step 4)
+    print(f"Products with reviews: {products_with_reviews_count}")
+    print(f"Products without reviews: {valid_products - products_with_reviews_count}")
     if latest_review_date:
         print(f"Latest review date: {latest_review_date}")
     print(f"Google reviews: {google_count}")
@@ -766,8 +759,8 @@ def main():
     print("\n✅ Schema generation complete!")
     print("\n💡 Each HTML file is ready to copy-paste into Squarespace Code Blocks")
     
-    # Print match count for UI parsing (use distinct slugs count)
-    print(f"\n📊 MATCH_COUNT: {len(distinct_slugs_with_reviews)}")
+    # Print match count for UI parsing (use actual products_with_reviews_count)
+    print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
 
 if __name__ == '__main__':
     main()

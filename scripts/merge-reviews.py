@@ -254,8 +254,21 @@ google_df = pd.DataFrame()
 if trustpilot_path.exists():
     try:
         trustpilot_df = pd.read_csv(trustpilot_path, encoding="utf-8-sig")
+        # Store original column names before normalization
+        original_columns = trustpilot_df.columns.tolist()
         trustpilot_df.columns = [c.strip().lower().replace(' ', '_') for c in trustpilot_df.columns]
         print(f"✅ Loaded {len(trustpilot_df)} Trustpilot reviews")
+        # Debug: Check for Reference Id column
+        ref_id_cols = [c for c in original_columns if 'reference' in c.lower() and 'id' in c.lower()]
+        if ref_id_cols:
+            normalized_ref_col = ref_id_cols[0].strip().lower().replace(' ', '_')
+            print(f"📋 Found Reference Id column: '{ref_id_cols[0]}' → '{normalized_ref_col}'")
+            if normalized_ref_col in trustpilot_df.columns:
+                ref_id_count = trustpilot_df[normalized_ref_col].notna().sum()
+                print(f"   Reviews with Reference Id: {ref_id_count} / {len(trustpilot_df)}")
+                sample_ref_ids = trustpilot_df[normalized_ref_col].dropna().head(5).tolist()
+                if sample_ref_ids:
+                    print(f"   Sample Reference Ids: {sample_ref_ids}")
     except Exception as e:
         print(f"⚠️ Error loading Trustpilot reviews: {e}")
 else:
