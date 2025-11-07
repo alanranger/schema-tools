@@ -33,6 +33,19 @@ if sys.platform == 'win32':
 # Utility Functions
 # ============================================================
 
+def normalize_ref(text):
+    """Normalize Reference Id for consistent matching with product slugs"""
+    if not text or pd.isna(text):
+        return ""
+    text = str(text).lower().strip()
+    # Remove URL prefixes
+    text = re.sub(r"https?://(www\.)?alanranger\.com/", "", text)
+    # Normalize separators: replace all non-alphanumeric with hyphens
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    # Collapse multiple dashes
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")
+
 def slugify(text):
     """Standard slug generator for consistency between products and reviews."""
     if pd.isna(text) or not text:
@@ -400,24 +413,35 @@ if len(product_slugs) > 0:
             matched_slug = existing_slug
         elif source == 'Trustpilot':
             # Phase 0 – Trustpilot Reference Id direct match (highest priority)
-            ref_id = str(row.get("reference_id") or row.get("Reference Id") or "").strip()
+            # Check all possible column name variations
+            ref_id = None
+            for col_name in ["Reference Id", "reference_id", "ReferenceId", "referenceId", "ref_id", "Ref Id"]:
+                if col_name in row.index:
+                    ref_val = row.get(col_name)
+                    if ref_val and pd.notna(ref_val) and str(ref_val).strip():
+                        ref_id = str(ref_val).strip()
+                        break
+            
             if ref_id:
-                # Normalize: remove punctuation, spaces, and lowercase
-                norm_ref = re.sub(r"[^a-z0-9]+", "-", ref_id.lower()).strip("-")
+                # Normalize Reference Id using consistent function
+                norm_ref = normalize_ref(ref_id)
                 
-                # Try exact match first
-                if norm_ref in product_by_slug:
-                    matched_slug = norm_ref
+                # Normalize product slugs for comparison
+                normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
+                
+                # Try exact match first (normalized)
+                if norm_ref in normalized_product_slugs:
+                    matched_slug = normalized_product_slugs[norm_ref]
                 else:
-                    # Fuzzy fallback on Reference Id to product slugs
+                    # Fuzzy fallback: match normalized Reference Id to normalized product slugs
                     best_match = None
                     best_ratio = 0.0
-                    for ps in product_by_slug.keys():
-                        ratio = SequenceMatcher(None, norm_ref, ps).ratio()
+                    for norm_prod_slug, orig_prod_slug in normalized_product_slugs.items():
+                        ratio = SequenceMatcher(None, norm_ref, norm_prod_slug).ratio()
                         if ratio > best_ratio:
                             best_ratio = ratio
-                            best_match = ps
-                    if best_ratio >= 0.85:
+                            best_match = orig_prod_slug
+                    if best_ratio >= 0.80:  # Lower threshold for better matching
                         matched_slug = best_match
             
             # Phase 1 – Try Tags column if Reference Id didn't match
@@ -459,7 +483,7 @@ if len(product_slugs) > 0:
     valid_reviews = pd.DataFrame(final_reviews)
     
     if matched_count > 0:
-        print(f"✅ Matched {matched_count} reviews to products using Tags + alias + text matching")
+        print(f"✅ Matched {matched_count} reviews to products using Reference Id + Tags + alias + text matching")
         
         # Show sample matches
         sample_matches = []

@@ -530,7 +530,8 @@ def main():
     # Group Reviews and Generate Schemas
     # ============================================================
     
-    grouped_reviews = reviews_df.groupby('product_slug', dropna=True)
+    # Group strictly by product_slug from Step 3b (only non-empty slugs)
+    grouped_reviews = reviews_df[reviews_df["product_slug"].notna() & (reviews_df["product_slug"] != "")].groupby("product_slug", dropna=True)
     
     schemas_data = []
     html_files = []
