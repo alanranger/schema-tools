@@ -68,21 +68,87 @@ def find_best_match(slug, product_slugs, threshold=70):
             best_match = ps
     return best_match if best_ratio >= (threshold / 100.0) else None
 
-def link_google_review(review_text, product_slugs):
-    """Try to link a Google review by keyword or fuzzy match in text content."""
-    if not isinstance(review_text, str) or not review_text.strip():
+def match_review_to_product(review_text, review_title, products_dict):
+    """
+    Match a review to a product using multiple strategies:
+    1. Exact slug match
+    2. Partial name match (substring)
+    3. Fuzzy token match (≥85% similarity)
+    
+    Args:
+        review_text: Review body text
+        review_title: Review title (if available)
+        products_dict: Dict mapping product_slug -> product_name
+    
+    Returns:
+        product_slug if match found, None otherwise
+    """
+    if not review_text and not review_title:
         return None
     
-    clean_text = clean_text_for_match(review_text)
+    # Combine review text and title for matching
+    combined_text = f"{review_title or ''} {review_text or ''}".strip()
+    if not combined_text:
+        return None
     
-    # Try direct keyword detection (e.g., 'batsford' in text)
-    for product in product_slugs:
-        keywords = re.split(r"[-_]", product)
-        if any(k in clean_text for k in keywords if len(k) > 4):  # skip very short words
-            return product
+    # Normalize text for matching
+    combined_text_lower = clean_text_for_match(combined_text)
     
-    # Fallback to fuzzy match
-    best_match = find_best_match(clean_text, product_slugs, threshold=60)
+    # Strategy 1: Exact slug match
+    for product_slug, product_name in products_dict.items():
+        if product_slug in combined_text_lower:
+            return product_slug
+    
+    # Strategy 2: Partial name match (substring in text)
+    for product_slug, product_name in products_dict.items():
+        if not product_name:
+            continue
+        
+        product_name_lower = clean_text_for_match(str(product_name))
+        # Check if product name or key parts appear in review text
+        name_words = product_name_lower.split()
+        # Look for significant words (length > 4) from product name
+        significant_words = [w for w in name_words if len(w) > 4]
+        
+        if significant_words:
+            # Check if any significant word appears in review text
+            if any(word in combined_text_lower for word in significant_words):
+                return product_slug
+        
+        # Also check if product name substring appears
+        if product_name_lower in combined_text_lower or combined_text_lower in product_name_lower:
+            return product_slug
+    
+    # Strategy 3: Keyword matching from slug
+    for product_slug, product_name in products_dict.items():
+        keywords = re.split(r"[-_]", product_slug)
+        # Look for keywords longer than 4 characters
+        significant_keywords = [k for k in keywords if len(k) > 4]
+        if significant_keywords and any(k in combined_text_lower for k in significant_keywords):
+            return product_slug
+    
+    # Strategy 4: Fuzzy token match (≥85% similarity)
+    if FUZZYWUZZY_AVAILABLE:
+        best_match = None
+        best_score = 0
+        
+        for product_slug, product_name in products_dict.items():
+            if not product_name:
+                continue
+            
+            product_name_lower = clean_text_for_match(str(product_name))
+            
+            # Use partial_ratio for substring matching
+            score = fuzz.partial_ratio(product_name_lower, combined_text_lower)
+            if score > best_score:
+                best_score = score
+                best_match = product_slug
+        
+        if best_score >= 85:
+            return best_match
+    
+    # Fallback: Use basic fuzzy matching
+    best_match = find_best_match(combined_text_lower, list(products_dict.keys()), threshold=85)
     return best_match
 
 def normalize_rating(rating):
@@ -219,6 +285,18 @@ def clean_reviews(df, source):
     else:
         df['reviewBody'] = ''
     
+    # Normalize review title column (if available)
+    title_col = None
+    for col in ['title', 'review_title', 'headline', 'subject']:
+        if col in df.columns:
+            title_col = col
+            break
+    
+    if title_col:
+        df['reviewTitle'] = df[title_col].apply(clean_text)
+    else:
+        df['reviewTitle'] = ''
+    
     # Normalize author/reviewer column
     author_col = None
     for col in ['author', 'reviewer', 'reviewer_name', 'name', 'review_username']:
@@ -276,6 +354,16 @@ if len(product_slugs) > 0:
     print("🔗 Matching reviews to product slugs...")
     print(f"🧩 Product slugs loaded for matching: {len(product_slugs)}")
     
+    # Build products dictionary (slug -> name) for improved matching
+    products_dict = {}
+    if len(products_df) > 0:
+        for _, row in products_df.iterrows():
+            slug = row.get('product_slug', '')
+            name = row.get('name', '')
+            if slug:
+                products_dict[slug] = str(name) if pd.notna(name) else ''
+    print(f"📋 Built product dictionary with {len(products_dict)} products")
+    
     # Try to get product_name from reference_id or other columns
     if 'reference_id' in valid_reviews.columns:
         valid_reviews["product_name"] = valid_reviews["reference_id"].fillna('')
@@ -307,13 +395,15 @@ if len(product_slugs) > 0:
     ].copy()
     
     if len(unmatched_reviews) > 0:
-        print(f"🔍 Attempting keyword + fuzzy matching for {len(unmatched_reviews)} unmatched reviews...")
+        print(f"🔍 Attempting improved keyword + fuzzy matching for {len(unmatched_reviews)} unmatched reviews...")
+        print("   Using strategies: exact slug → partial name → keyword → fuzzy (≥85%)")
         
-        # Apply improved matching logic to review text
+        # Apply improved matching logic to review text and title
         matched_products = []
         for idx, row in unmatched_reviews.iterrows():
             review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
-            matched_slug = link_google_review(review_text, product_slugs)
+            review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "")
+            matched_slug = match_review_to_product(review_text, review_title, products_dict)
             matched_products.append(matched_slug)
         
         # Update product_slug for unmatched reviews
@@ -322,7 +412,7 @@ if len(product_slugs) > 0:
         # Count successful matches
         matched_count = sum(1 for p in matched_products if p is not None)
         if matched_count > 0:
-            print(f"✅ Matched {matched_count} reviews to products using keyword + fuzzy logic")
+            print(f"✅ Matched {matched_count} reviews to products using improved matching logic")
             
             # Show sample matches
             sample_matches = []
@@ -330,7 +420,8 @@ if len(product_slugs) > 0:
                 if slug:
                     review_idx = unmatched_reviews.index[i]
                     review_text_preview = str(valid_reviews.loc[review_idx, "reviewBody"])[:50]
-                    sample_matches.append(f"   '{review_text_preview}...' → {slug}")
+                    product_name = products_dict.get(slug, slug)
+                    sample_matches.append(f"   '{review_text_preview}...' → {slug} ({product_name[:30]}...)")
                     if len(sample_matches) >= 5:
                         break
             
@@ -338,6 +429,8 @@ if len(product_slugs) > 0:
                 print("🔍 Sample matches (review text → product_slug):")
                 for match in sample_matches:
                     print(match)
+        else:
+            print("⚠️ No matches found with improved logic. Check review text content.")
     
     # Count total matched reviews
     matched_count = valid_reviews['product_slug'].astype(bool).sum()

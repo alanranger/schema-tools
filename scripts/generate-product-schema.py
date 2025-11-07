@@ -207,7 +207,29 @@ def generate_product_schema_graph(product_row, reviews_list):
                 "price": f"{price_val:.2f}",
                 "priceCurrency": "GBP",
                 "availability": "https://schema.org/InStock",
-                "url": product_url
+                "url": product_url,
+                "shippingDetails": {
+                    "@type": "OfferShippingDetails",
+                    "doesNotShip": True,
+                    "shippingDestination": {
+                        "@type": "DefinedRegion",
+                        "addressCountry": "GB"
+                    },
+                    "shippingRate": {
+                        "@type": "MonetaryAmount",
+                        "value": 0.0,
+                        "currency": "GBP"
+                    }
+                },
+                "hasMerchantReturnPolicy": {
+                    "@type": "MerchantReturnPolicy",
+                    "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+                    "merchantReturnDays": 28,
+                    "returnMethod": "https://schema.org/ReturnByMail",
+                    "returnFees": "https://schema.org/FreeReturn",
+                    "applicableCountry": "GB",
+                    "refundType": "https://schema.org/FullRefund"
+                }
             }
         except (ValueError, TypeError):
             pass
