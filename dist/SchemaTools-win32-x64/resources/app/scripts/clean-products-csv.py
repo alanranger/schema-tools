@@ -14,6 +14,9 @@ import html
 from pathlib import Path
 import sys
 import os
+import urllib.request
+import urllib.error
+from urllib.parse import urlparse
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
@@ -56,8 +59,21 @@ def normalize_price(price_str):
     except ValueError:
         return None
 
-def normalize_url(product_page, product_url):
-    """Build full URL from Product Page (parent category) and Product URL (slug)"""
+def slugify(text):
+    """Convert text to URL-friendly slug"""
+    if not text:
+        return ''
+    # Convert to lowercase, replace spaces and special chars with hyphens
+    slug = re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip())
+    # Remove leading/trailing hyphens and multiple consecutive hyphens
+    slug = re.sub(r'-+', '-', slug).strip('-')
+    return slug
+
+def normalize_url(product_page, product_url, product_name=None):
+    """Build full URL from Product Page (parent category) and Product URL (slug)
+    
+    If Product URL is generic (like 'print', 'canvas'), generate unique slug from product name.
+    """
     # Handle Product Page (parent category slug)
     if pd.isna(product_page) or not product_page:
         product_page = ''
@@ -74,6 +90,13 @@ def normalize_url(product_page, product_url):
     if product_url.startswith('http://') or product_url.startswith('https://'):
         return product_url
     
+    # List of generic slugs that should be replaced with name-based slugs
+    generic_slugs = ['print', 'canvas', 'framed', 'unframed', 'mounted', 'service']
+    
+    # If Product URL is generic and we have a product name, generate slug from name
+    if product_url.lower() in generic_slugs and product_name:
+        product_url = slugify(product_name)
+    
     # Remove leading/trailing slashes
     product_page = product_page.strip('/')
     product_url = product_url.strip('/')
@@ -86,6 +109,29 @@ def normalize_url(product_page, product_url):
         return f'https://www.alanranger.com/{product_url}'
     else:
         return ''
+
+def validate_url(url, timeout=5):
+    """Check if URL returns 200 OK (not 404)"""
+    if not url or not url.startswith('http'):
+        return False, 'Invalid URL format'
+    
+    try:
+        req = urllib.request.Request(url, method='HEAD')
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            status_code = response.getcode()
+            if status_code == 200:
+                return True, 'OK'
+            else:
+                return False, f'HTTP {status_code}'
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return False, '404 Not Found'
+        return False, f'HTTP {e.code}'
+    except urllib.error.URLError as e:
+        return False, f'URL Error: {str(e)}'
+    except Exception as e:
+        return False, f'Error: {str(e)}'
 
 def main():
     # Find the input CSV file
@@ -124,6 +170,9 @@ def main():
     
     # Create cleaned DataFrame
     cleaned_data = []
+    url_errors = []
+    
+    print("\n🔍 Processing products and validating URLs...")
     
     for idx, row in df.iterrows():
         # Map columns
@@ -131,9 +180,21 @@ def main():
         description = strip_html(row.get('Description', ''))
         image = extract_first_image(row.get('Hosted Image URLs', ''))
         # Build full URL from Product Page (parent category) + Product URL (slug)
-        url = normalize_url(row.get('Product Page', ''), row.get('Product URL', ''))
+        # Pass product name to generate unique slugs for generic URLs
+        url = normalize_url(row.get('Product Page', ''), row.get('Product URL', ''), product_name=name)
         price = normalize_price(row.get('Price', ''))
         category = str(row.get('Categories', '')).strip() if pd.notna(row.get('Categories')) else ''
+        
+        # Validate URL
+        if url:
+            is_valid, error_msg = validate_url(url)
+            if not is_valid:
+                url_errors.append({
+                    'row': idx + 1,
+                    'name': name[:50],
+                    'url': url,
+                    'error': error_msg
+                })
         
         cleaned_data.append({
             'name': name,
@@ -143,6 +204,21 @@ def main():
             'price': price,
             'category': category
         })
+    
+    # Report URL errors
+    if url_errors:
+        print(f"\n⚠️  URL VALIDATION ERRORS ({len(url_errors)} found):")
+        print("="*60)
+        for error in url_errors[:20]:  # Show first 20 errors
+            print(f"Row {error['row']}: {error['name']}")
+            print(f"  URL: {error['url']}")
+            print(f"  Error: {error['error']}")
+            print()
+        if len(url_errors) > 20:
+            print(f"... and {len(url_errors) - 20} more errors")
+        print("="*60)
+    else:
+        print("✅ All URLs validated successfully")
     
     cleaned_df = pd.DataFrame(cleaned_data)
     
@@ -176,6 +252,11 @@ def main():
         print(f"  url: {row['url']}")
         print(f"  price: {row['price']}")
         print(f"  category: {row['category']}")
+    
+    # Show URL validation summary
+    if url_errors:
+        print(f"\n⚠️  URL Errors: {len(url_errors)} products have invalid URLs")
+        print("   Check the error list above for details")
     print("="*60)
     print(f"\n✅ Success! Cleaned file saved to: {output_file.absolute()}")
 
