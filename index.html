@@ -1631,8 +1631,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             <strong>What happens:</strong> Generates JSON-LD schema files from your merged review data.<br>
             <strong>When:</strong> Runs automatically after Step 3b completes.<br>
-            <strong>You don't need to do anything</strong> - just wait for it to finish. Your schema files will be ready!
+            <strong>What you need to do:</strong> Nothing - just wait for it to finish. Your schema files will be ready!
           </p>
+          <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
+            <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – combined_product_reviews.csv</code></li>
+            <li>Generates one HTML file per product with embedded reviews</li>
+            <li>Includes aggregate ratings and individual review data</li>
+            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/outputs/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
+          </ul>
           <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
             <small>Use Electron app or run locally.</small>
@@ -1644,7 +1650,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
           <p id="status-step4" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
-          <div id="step4MatchStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
+          <div id="step4MatchStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
             <strong>📊 Products Matched:</strong> <span id="step4MatchCount">0</span> products have reviews embedded in their schema
           </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
