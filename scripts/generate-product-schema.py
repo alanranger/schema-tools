@@ -806,18 +806,32 @@ def main():
                                 author = author_val
                                 break
                     
-                    # Get date
+                    # Get date - check multiple column name variations
                     review_date = ''
-                    if 'date' in review_row.index:
-                        date_val = review_row.get('date')
-                        if pd.notna(date_val):
-                            try:
-                                if isinstance(date_val, pd.Timestamp):
-                                    review_date = date_val.strftime('%Y-%m-%d')
-                                else:
-                                    review_date = str(date_val)[:10]
-                            except:
-                                pass
+                    date_columns = ['date', 'review_date', 'datepublished', 'date_published', 'created_at', 'timestamp']
+                    for col in date_columns:
+                        if col in review_row.index:
+                            date_val = review_row.get(col)
+                            if pd.notna(date_val):
+                                try:
+                                    # Try parsing as datetime first
+                                    if isinstance(date_val, pd.Timestamp):
+                                        review_date = date_val.strftime('%Y-%m-%d')
+                                    else:
+                                        # Try parsing string dates
+                                        parsed_date = pd.to_datetime(str(date_val), errors='coerce', dayfirst=True)
+                                        if pd.notna(parsed_date):
+                                            review_date = parsed_date.strftime('%Y-%m-%d')
+                                        else:
+                                            # Fallback: try extracting YYYY-MM-DD format
+                                            date_str = str(date_val).strip()
+                                            date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
+                                            if date_match:
+                                                review_date = date_match.group(1)
+                                except Exception as e:
+                                    pass
+                            if review_date:
+                                break
                     
                     # Get source
                     source = review_row.get('source', 'Google')
@@ -848,18 +862,36 @@ def main():
                     if review_date:
                         try:
                             review_date_obj = pd.to_datetime(review_date, errors='coerce')
+                            if pd.isna(review_date_obj):
+                                review_date_obj = None
                         except:
-                            pass
+                            review_date_obj = None
+                    else:
+                        # If review_date is empty, try to get date directly from review_row
+                        for col in date_columns:
+                            if col in review_row.index:
+                                date_val = review_row.get(col)
+                                if pd.notna(date_val):
+                                    try:
+                                        review_date_obj = pd.to_datetime(date_val, errors='coerce', dayfirst=True)
+                                        if pd.isna(review_date_obj):
+                                            review_date_obj = None
+                                        else:
+                                            break
+                                    except:
+                                        pass
                     
                     if 'google' in source_lower:
                         mapped_google_reviews.append({
                             'date': review_date_obj,
-                            'source': 'Google'
+                            'source': 'Google',
+                            'review_date_str': review_date  # Keep original string for debugging
                         })
                     elif 'trustpilot' in source_lower:
                         mapped_trustpilot_reviews.append({
                             'date': review_date_obj,
-                            'source': 'Trustpilot'
+                            'source': 'Trustpilot',
+                            'review_date_str': review_date  # Keep original string for debugging
                         })
         
         if len(product_reviews) > 0:
@@ -986,15 +1018,47 @@ def main():
     # Get latest review dates for mapped reviews
     latest_google_date = None
     if mapped_google_reviews:
-        google_dates = [r['date'] for r in mapped_google_reviews if r['date'] is not None and pd.notna(r['date'])]
+        google_dates = []
+        for r in mapped_google_reviews:
+            date_val = r.get('date')
+            if date_val is not None and pd.notna(date_val):
+                try:
+                    # Ensure it's a datetime object
+                    if isinstance(date_val, pd.Timestamp):
+                        google_dates.append(date_val)
+                    else:
+                        parsed = pd.to_datetime(date_val, errors='coerce')
+                        if pd.notna(parsed):
+                            google_dates.append(parsed)
+                except:
+                    pass
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
+            # Debug: show sample dates
+            sample_dates = sorted(google_dates, reverse=True)[:5]
+            print(f"🔍 Sample Google review dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
     
     latest_trustpilot_date = None
     if mapped_trustpilot_reviews:
-        trustpilot_dates = [r['date'] for r in mapped_trustpilot_reviews if r['date'] is not None and pd.notna(r['date'])]
+        trustpilot_dates = []
+        for r in mapped_trustpilot_reviews:
+            date_val = r.get('date')
+            if date_val is not None and pd.notna(date_val):
+                try:
+                    # Ensure it's a datetime object
+                    if isinstance(date_val, pd.Timestamp):
+                        trustpilot_dates.append(date_val)
+                    else:
+                        parsed = pd.to_datetime(date_val, errors='coerce')
+                        if pd.notna(parsed):
+                            trustpilot_dates.append(parsed)
+                except:
+                    pass
         if trustpilot_dates:
             latest_trustpilot_date = max(trustpilot_dates).strftime('%Y-%m-%d')
+            # Debug: show sample dates
+            sample_dates = sorted(trustpilot_dates, reverse=True)[:5]
+            print(f"🔍 Sample Trustpilot review dates: {[d.strftime('%Y-%m-%d') for d in sample_dates]}")
     
     # Get overall latest review date (for backward compatibility)
     latest_review_date = None
