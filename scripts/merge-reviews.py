@@ -326,15 +326,17 @@ if len(product_slugs) > 0:
             
             # Show sample matches
             sample_matches = []
-            for idx, slug in enumerate(matched_products[:10]):
+            for i, slug in enumerate(matched_products):
                 if slug:
-                    review_idx = unmatched_reviews.index[idx]
+                    review_idx = unmatched_reviews.index[i]
                     review_text_preview = str(valid_reviews.loc[review_idx, "reviewBody"])[:50]
                     sample_matches.append(f"   '{review_text_preview}...' → {slug}")
+                    if len(sample_matches) >= 5:
+                        break
             
             if sample_matches:
                 print("🔍 Sample matches (review text → product_slug):")
-                for match in sample_matches[:5]:
+                for match in sample_matches:
                     print(match)
     
     # Count total matched reviews
