@@ -118,36 +118,85 @@ def match_via_tags(tags_value: str, aliases: dict, product_by_slug: dict, name_b
     return None
 
 def match_via_text(text: str, aliases: dict, product_by_slug: dict, name_by_slug: dict):
-    """Match Google review to product using text content"""
+    """Match Google review to product using text content with improved keyword prioritization"""
     if not text:
         return None
     
     t = norm(text)
+    t_lower = t.lower()
     
     # Check aliases first (case-insensitive substring match)
     for key, slug in aliases.items():
-        if key.lower() in t.lower() and slug in product_by_slug:
+        if key.lower() in t_lower and slug in product_by_slug:
             return slug
     
-    # Check for product name keywords in text (substring match)
+    # Priority 1: Exact product name matches (highest priority)
+    # Check if review text contains the full product name or key distinguishing words
     if name_by_slug:
+        exact_matches = []
         for slug, name in name_by_slug.items():
-            # Extract key words from product name (e.g., "BLUEBELL WOODLANDS" -> ["bluebell", "woodlands"])
-            name_words = norm(name).split()
-            # Check if any significant word from product name appears in review text
-            for word in name_words:
-                if len(word) > 4 and word.lower() in t.lower():  # Only check words longer than 4 chars
-                    if slug in product_by_slug:
-                        return slug
+            name_lower = norm(name).lower()
+            name_words = name_lower.split()
+            
+            # Check for exact product name match (high priority)
+            if name_lower in t_lower:
+                exact_matches.append((slug, 100.0, name))
+            # Check for key distinguishing words (e.g., "beginners", "black and white", "lightroom")
+            # These are words that uniquely identify a product
+            elif len(name_words) > 0:
+                # Count how many significant words match
+                significant_words = [w for w in name_words if len(w) > 4]
+                if significant_words:
+                    matches = sum(1 for word in significant_words if word in t_lower)
+                    match_ratio = matches / len(significant_words)
+                    # Prioritize matches with unique keywords (e.g., "beginners", "lightroom", "black")
+                    unique_keywords = ['beginner', 'beginners', 'lightroom', 'black', 'white', 'portrait', 'macro', 'landscape']
+                    has_unique = any(kw in t_lower and kw in name_lower for kw in unique_keywords)
+                    if match_ratio >= 0.5 or has_unique:
+                        exact_matches.append((slug, match_ratio * 100 + (50 if has_unique else 0), name))
+        
+        # Return the best exact match (highest score)
+        if exact_matches:
+            best_exact = max(exact_matches, key=lambda x: x[1])
+            if best_exact[1] >= 50.0:  # At least 50% match or has unique keyword
+                return best_exact[0]
     
-    # Fuzzy match on product names (lower threshold for better matching)
+    # Priority 2: Keyword-based matching (check for specific product identifiers)
+    if name_by_slug:
+        keyword_matches = []
+        for slug, name in name_by_slug.items():
+            name_lower = norm(name).lower()
+            name_words = name_lower.split()
+            
+            # Extract unique identifying keywords from product name
+            unique_keywords = []
+            for word in name_words:
+                if len(word) > 4:
+                    # Check if this word is unique to this product (not in many other products)
+                    word_count = sum(1 for n in name_by_slug.values() if word in norm(n).lower())
+                    if word_count <= 3:  # Word appears in 3 or fewer products
+                        unique_keywords.append(word)
+            
+            # Check if review text contains these unique keywords
+            if unique_keywords:
+                matches = sum(1 for kw in unique_keywords if kw in t_lower)
+                if matches > 0:
+                    keyword_matches.append((slug, matches / len(unique_keywords), name))
+        
+        # Return best keyword match
+        if keyword_matches:
+            best_keyword = max(keyword_matches, key=lambda x: x[1])
+            if best_keyword[1] >= 0.5:  # At least 50% of unique keywords match
+                return best_keyword[0]
+    
+    # Priority 3: Fuzzy match on product names (fallback, higher threshold)
     if name_by_slug:
         best = max(
             ((slug, fuzzy(t, name_by_slug[slug])) for slug in name_by_slug),
             key=lambda x: x[1],
             default=(None, 0.0)
         )
-        return best[0] if best[1] >= 0.70 else None  # Lowered from 0.80 to 0.70
+        return best[0] if best[1] >= 0.80 else None  # Higher threshold for fuzzy matching (was 0.70)
     
     return None
 
