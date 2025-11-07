@@ -437,6 +437,8 @@ if len(product_slugs) > 0:
     matched_count = 0
     seen = set()  # For deduplication
     final_reviews = []
+    ref_id_matches = 0  # Track Reference Id matches
+    ref_id_total = 0  # Track total reviews with Reference Id
     
     for idx, row in valid_reviews.iterrows():
         source = row.get('source', '')
@@ -476,17 +478,48 @@ if len(product_slugs) > 0:
                             break
             
             if ref_id:
-                # Normalize Reference Id using consistent function
-                norm_ref = normalize_ref(ref_id)
+                ref_id_total += 1
+                # Reference Id is usually a product name/description, not a slug
+                # Try multiple matching strategies:
                 
-                # Normalize product slugs for comparison
-                normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
+                # Strategy 1: Match Reference Id directly against product names (loose keyword matching)
+                ref_id_lower = ref_id.lower().strip()
+                for slug, name in name_by_slug.items():
+                    name_lower = str(name).lower()
+                    # Check if Reference Id keywords appear in product name
+                    ref_words = [w for w in ref_id_lower.split() if len(w) > 3]  # Only significant words
+                    if ref_words:
+                        matches = sum(1 for word in ref_words if word in name_lower)
+                        if matches >= len(ref_words) * 0.5:  # At least 50% of keywords match
+                            matched_slug = slug
+                            ref_id_matches += 1
+                            break
                 
-                # Try exact match first (normalized)
-                if norm_ref in normalized_product_slugs:
-                    matched_slug = normalized_product_slugs[norm_ref]
-                else:
-                    # Fuzzy fallback: match normalized Reference Id to normalized product slugs
+                # Strategy 2: Normalize and match against product slugs (exact)
+                if not matched_slug:
+                    norm_ref = normalize_ref(ref_id)
+                    normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
+                    if norm_ref in normalized_product_slugs:
+                        matched_slug = normalized_product_slugs[norm_ref]
+                        ref_id_matches += 1
+                
+                # Strategy 3: Fuzzy match Reference Id against product names (lower threshold)
+                if not matched_slug and name_by_slug:
+                    best_match = None
+                    best_ratio = 0.0
+                    for slug, name in name_by_slug.items():
+                        ratio = fuzzy(ref_id, str(name))
+                        if ratio > best_ratio:
+                            best_ratio = ratio
+                            best_match = slug
+                    if best_ratio >= 0.65:  # Lowered from 0.80 to 0.65 for better matching
+                        matched_slug = best_match
+                        ref_id_matches += 1
+                
+                # Strategy 4: Fuzzy match normalized Reference Id against normalized product slugs
+                if not matched_slug:
+                    norm_ref = normalize_ref(ref_id)
+                    normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
                     best_match = None
                     best_ratio = 0.0
                     for norm_prod_slug, orig_prod_slug in normalized_product_slugs.items():
@@ -494,8 +527,9 @@ if len(product_slugs) > 0:
                         if ratio > best_ratio:
                             best_ratio = ratio
                             best_match = orig_prod_slug
-                    if best_ratio >= 0.80:  # Lower threshold for better matching
+                    if best_ratio >= 0.65:  # Lowered from 0.80 to 0.65
                         matched_slug = best_match
+                        ref_id_matches += 1
             
             # Phase 1 – Try Tags column if Reference Id didn't match
             if not matched_slug:
@@ -558,6 +592,10 @@ if len(product_slugs) > 0:
     
     if matched_count > 0:
         print(f"✅ Matched {matched_count} reviews to products using Reference Id + Tags + alias + text matching")
+        
+        # Show Reference Id matching stats
+        if ref_id_total > 0:
+            print(f"   📋 Reference Id matching: {ref_id_matches} / {ref_id_total} matched ({ref_id_matches/ref_id_total*100:.1f}%)")
         
         # Show sample matches
         sample_matches = []
