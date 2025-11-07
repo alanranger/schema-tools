@@ -535,11 +535,31 @@ def main():
         
         product_slug = row.get('product_slug', slugify(product_name))
         
-        # Get reviews for this product
+        # Get reviews for this product using slug_matches for flexible matching
         product_reviews = []
+        
+        # First try exact match via grouped_reviews
         if product_slug in grouped_reviews.groups:
             group = grouped_reviews.get_group(product_slug)
-            # Limit to 25 reviews per product
+        else:
+            # Try flexible matching: look for reviews that match this product's slug or URL
+            matching_reviews = []
+            product_url = str(row.get('url', '')).strip()
+            
+            for _, review_row in reviews_df.iterrows():
+                review_slug = str(review_row.get('product_slug', '')).strip()
+                if review_slug and slug_matches(review_slug, product_slug, threshold=0.85):
+                    matching_reviews.append(review_row)
+                elif product_url and slug_matches(review_slug, product_url, threshold=0.85):
+                    matching_reviews.append(review_row)
+            
+            if matching_reviews:
+                group = pd.DataFrame(matching_reviews)
+            else:
+                group = pd.DataFrame()
+        
+        # Limit to 25 reviews per product
+        if len(group) > 0:
             group = group.head(25)
             
             for _, review_row in group.iterrows():
