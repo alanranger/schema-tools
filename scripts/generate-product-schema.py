@@ -735,6 +735,13 @@ def main():
     # Group strictly by product_slug from Step 3b (only non-empty slugs)
     grouped_reviews = reviews_df[reviews_df["product_slug"].notna() & (reviews_df["product_slug"] != "")].groupby("product_slug", dropna=True)
     
+    # Debug: Show Batsford review slugs
+    batsford_review_slugs = reviews_df[reviews_df["product_slug"].str.contains('batsford', case=False, na=False)]["product_slug"].unique()
+    if len(batsford_review_slugs) > 0:
+        print(f"\n🔍 Batsford review slugs found in merged CSV: {batsford_review_slugs.tolist()}")
+        batsford_review_count = len(reviews_df[reviews_df["product_slug"].str.contains('batsford', case=False, na=False)])
+        print(f"   Total Batsford reviews: {batsford_review_count}")
+    
     schemas_data = []
     html_files = []
     nan_count = 0
