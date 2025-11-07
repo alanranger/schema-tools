@@ -337,7 +337,7 @@ def clean_reviews(df, source):
             break
     
     if review_col:
-        df['reviewBody'] = df[review_col].apply(clean_text)
+        df['reviewBody'] = df[review_col].fillna('').astype(str)
     else:
         df['reviewBody'] = ''
     
@@ -543,7 +543,8 @@ if len(product_slugs) > 0:
         elif source == 'Google':
             # Use text matching for Google reviews
             # Combine review body and title for better matching
-            review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "")
+            # Check multiple column name variations
+            review_text = str(row.get("reviewBody", "") or row.get("review", "") or row.get("review_text", "") or "")
             review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "")
             combined_text = f"{review_title} {review_text}".strip()
             
