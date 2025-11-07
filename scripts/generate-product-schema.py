@@ -792,6 +792,8 @@ def main():
         
         # Process reviews if found
         if reviews_for_product is not None and len(reviews_for_product) > 0:
+            if is_batsford:
+                print(f"   📊 Processing {len(reviews_for_product)} reviews for Batsford")
             # Limit to 25 reviews per product
             group = reviews_for_product.head(25)
             
