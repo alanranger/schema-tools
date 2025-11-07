@@ -483,15 +483,18 @@ if len(product_slugs) > 0:
         
         seen.add(dedupe_key)
         
+        # Create a copy of the row as a dict to preserve all fields
+        row_dict = row.to_dict()
+        
         # Update product_slug (keep canonical slug, don't re-normalize)
-        row['product_slug'] = matched_slug or ''
+        row_dict['product_slug'] = matched_slug or ''
         if matched_slug:
             matched_count += 1
             # Get product name from dictionary
             if matched_slug in name_by_slug:
-                row['product_name'] = name_by_slug[matched_slug]
+                row_dict['product_name'] = name_by_slug[matched_slug]
         
-        final_reviews.append(row)
+        final_reviews.append(row_dict)
     
     # Convert back to DataFrame
     valid_reviews = pd.DataFrame(final_reviews)
@@ -518,12 +521,14 @@ if len(product_slugs) > 0:
     unique_products = valid_reviews['product_slug'].nunique()
     print(f"✅ Total matched: {matched_count} reviews to {unique_products} unique products")
     
-    # Merge with product data to get product names
+    # Merge with product data to get product names (only for rows with slugs)
     if 'product_slug' in valid_reviews.columns and len(products_df) > 0:
         # Create a mapping from product_slug to product_name
         product_map = dict(zip(products_df['product_slug'], products_df['name']))
-        valid_reviews['product_name'] = valid_reviews['product_slug'].map(product_map).fillna(valid_reviews.get('product_name', ''))
-        print(f"✅ Linked {valid_reviews['product_name'].notna().sum()} reviews to product names")
+        # Only update product_name for rows that have a product_slug
+        mask = valid_reviews['product_slug'].astype(bool)
+        valid_reviews.loc[mask, 'product_name'] = valid_reviews.loc[mask, 'product_slug'].map(product_map).fillna(valid_reviews.loc[mask, 'product_name'])
+        print(f"✅ Linked {mask.sum()} reviews to product names")
 else:
     print("⚠️ No products available for matching. Reviews will have empty product_slug.")
     valid_reviews["product_slug"] = ''
