@@ -417,8 +417,11 @@ if len(product_slugs) > 0:
             ref_id = None
             ref_col_found = None
             
-            # First check row.index (for Series)
-            for col_name in ["Reference Id", "reference_id", "ReferenceId", "referenceId", "ref_id", "Ref Id"]:
+            # Check for Reference Id column (after normalization, it's "reference_id")
+            # Check both normalized and original column names
+            ref_col_names = ["reference_id", "referenceid", "ref_id", "Reference Id", "ReferenceId", "referenceId", "Ref Id"]
+            
+            for col_name in ref_col_names:
                 if col_name in row.index:
                     ref_val = row.get(col_name)
                     if ref_val and pd.notna(ref_val) and str(ref_val).strip():
@@ -426,9 +429,9 @@ if len(product_slugs) > 0:
                         ref_col_found = col_name
                         break
             
-            # If not found, check valid_reviews.columns (for DataFrame)
+            # If not found in row.index, check valid_reviews.columns
             if not ref_id and len(valid_reviews) > 0:
-                for col_name in ["Reference Id", "reference_id", "ReferenceId", "referenceId", "ref_id", "Ref Id"]:
+                for col_name in ref_col_names:
                     if col_name in valid_reviews.columns:
                         ref_val = row.get(col_name)
                         if ref_val and pd.notna(ref_val) and str(ref_val).strip():
