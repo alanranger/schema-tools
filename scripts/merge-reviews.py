@@ -415,9 +415,13 @@ if len(product_slugs) > 0:
     valid_reviews["product_name"] = ''
     
     # Try to get product_name from reference_id or other columns first
+    # IMPORTANT: Trustpilot Reference Id contains exact product names - preserve them!
     if 'reference_id' in valid_reviews.columns:
-        valid_reviews["product_name"] = valid_reviews["reference_id"].fillna('')
-        valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
+        # For Trustpilot, Reference Id IS the product name - use it directly
+        trustpilot_mask = valid_reviews['source'] == 'Trustpilot'
+        valid_reviews.loc[trustpilot_mask, "product_name"] = valid_reviews.loc[trustpilot_mask, "reference_id"].fillna('')
+        # Only create slug if product_name is set
+        valid_reviews.loc[trustpilot_mask, "product_slug"] = valid_reviews.loc[trustpilot_mask, "product_name"].fillna('').apply(lambda x: slugify(x) if x else '')
     elif 'product_name' in valid_reviews.columns:
         valid_reviews["product_slug"] = valid_reviews["product_name"].fillna('').apply(slugify)
     
@@ -446,10 +450,36 @@ if len(product_slugs) > 0:
         
         matched_slug = None
         
-        # Skip if already matched exactly
-        if existing_slug and existing_slug in product_slugs:
+        # For Trustpilot: If Reference Id matches an exact product name, use it (highest priority)
+        if source == 'Trustpilot':
+            ref_id = None
+            ref_col_names = ["reference_id", "referenceid", "ref_id", "Reference Id", "ReferenceId", "referenceId", "Ref Id"]
+            for col_name in ref_col_names:
+                if col_name in row.index:
+                    ref_val = row.get(col_name)
+                    if ref_val and pd.notna(ref_val) and str(ref_val).strip():
+                        ref_id = str(ref_val).strip()
+                        break
+            
+            # If Reference Id exists, try to match it directly to product names (exact match)
+            if ref_id:
+                ref_id_lower = ref_id.lower().strip()
+                # First try exact product name match
+                for slug, name in name_by_slug.items():
+                    if str(name).lower().strip() == ref_id_lower:
+                        matched_slug = slug
+                        ref_id_matches += 1
+                        break
+                
+                # If exact match failed but we have a slug from Reference Id, check if it's valid
+                if not matched_slug and existing_slug and existing_slug in product_slugs:
+                    matched_slug = existing_slug
+        
+        # Skip if already matched exactly (for Google or if Trustpilot Reference Id didn't match)
+        if not matched_slug and existing_slug and existing_slug in product_slugs:
             matched_slug = existing_slug
-        elif source == 'Trustpilot':
+        
+        if not matched_slug and source == 'Trustpilot':
             # Phase 0 – Trustpilot Reference Id direct match (highest priority)
             # Check all possible column name variations (check both row.index and valid_reviews.columns)
             ref_id = None

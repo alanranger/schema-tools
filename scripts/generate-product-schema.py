@@ -826,14 +826,19 @@ def main():
                 if rating_val and rating_val >= 4:
                     # Get review body from various possible column names
                     review_body = ''
-                    for col in ['reviewbody', 'review_body', 'review', 'review_text']:
+                    for col in ['reviewbody', 'review_body', 'review', 'review_text', 'comment', 'content']:
                         if col in review_row.index:
                             review_body = str(review_row.get(col, '')).strip()
-                            break
+                            if review_body and review_body.lower() not in ['nan', 'none', '']:
+                                break
                     
-                    # Replace "nan" or empty review texts with fallback message
+                    # Replace "nan" or empty review texts with source-specific fallback message
                     if not review_body or review_body.lower() == 'nan' or review_body == '':
-                        review_body = "Customer review available on Trustpilot"
+                        review_source = str(review_row.get('source', '')).strip()
+                        if 'google' in review_source.lower():
+                            review_body = "Customer review available on Google"
+                        else:
+                            review_body = "Customer review available on Trustpilot"
                     
                     # Get author
                     author = 'Anonymous'
