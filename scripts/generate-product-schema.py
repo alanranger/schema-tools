@@ -1037,8 +1037,9 @@ def main():
             print(f"\n⚠️ Generation stopped: Schema does not meet v6.1 baseline requirements")
             sys.exit(1)
         
-        # Create filename
-        html_filename = f"{product_slug}_schema_squarespace_ready.html"
+        # Create filename based on product name (not URL slug) for easier identification
+        product_name_slug = slugify(product_name)
+        html_filename = f"{product_name_slug}_schema_squarespace_ready.html"
         html_path = outputs_dir / html_filename
         
         # Write HTML file
