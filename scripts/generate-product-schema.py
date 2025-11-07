@@ -136,11 +136,14 @@ def get_breadcrumbs(product_name, product_url):
     words = breadcrumb_name.split()
     normalized_words = []
     for word in words:
+        if not word or not isinstance(word, str):
+            normalized_words.append(word)
+            continue
         if word.isupper() and len(word) > 1:
             # Convert all-caps to title case
             normalized_words.append(word.title())
-        elif word and word[0].isupper() and word[1:].isupper() and len(word) > 2:
-            # Handle mixed case like "BATSFORD" -> "Batsford"
+        elif len(word) > 2 and word[0].isupper() and word[1:].isupper():
+            # Handle mixed case like "BATSFORD" -> "Batsford" (first char upper, rest upper)
             normalized_words.append(word.capitalize())
         else:
             # Preserve existing case for normal words
@@ -436,9 +439,23 @@ def generate_product_schema_graph(product_row, reviews_list):
             pass
     
     # Build @graph structure - Keep only LocalBusiness (it inherits Organization properties)
+    try:
+        breadcrumb_data = get_breadcrumbs(product_name, product_url)
+    except Exception as e:
+        print(f"⚠️ Error generating breadcrumbs for '{product_name}': {e}")
+        # Fallback to simple breadcrumb without normalization
+        breadcrumb_data = {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.alanranger.com"},
+                {"@type": "ListItem", "position": 2, "name": "Photo Workshops UK", "item": "https://www.alanranger.com/photo-workshops-uk"},
+                {"@type": "ListItem", "position": 3, "name": product_name, "item": product_url}
+            ]
+        }
+    
     graph = [
         LOCAL_BUSINESS,
-        get_breadcrumbs(product_name, product_url),
+        breadcrumb_data,
         product_schema
     ]
     
@@ -457,12 +474,25 @@ def schema_to_html(schema_data):
     return f'<script type="application/ld+json">\n{json_str}\n</script>'
 
 def main():
+    # Suppress warnings to prevent false "exit code 1" errors in Electron
+    warnings.filterwarnings("ignore")
+    
+    print("="*60)
+    print("PRODUCT SCHEMA GENERATOR - Step 4")
+    print("="*60)
+    print()
+    
     # Use absolute paths based on script location
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
     workflow_dir = project_root / 'inputs-files' / 'workflow'
     outputs_dir = project_root / 'outputs'
     outputs_dir.mkdir(exist_ok=True)
+    
+    print(f"📂 Project root: {project_root}")
+    print(f"📂 Workflow directory: {workflow_dir}")
+    print(f"📂 Outputs directory: {outputs_dir}")
+    print()
     
     # Find input files
     products_file = workflow_dir / '02 – products_cleaned.xlsx'
