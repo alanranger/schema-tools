@@ -78,28 +78,42 @@ def slugify(text):
         return ''
     return re.sub(r'[^a-z0-9]+', '-', str(text).lower().strip()).strip('-')
 
-def normalize_slug(s):
-    """Normalize slug by cleaning URLs and standardizing format"""
-    if not isinstance(s, str):
+def normalize_slug(value):
+    """Robust slug normalization - handles URLs and common prefixes"""
+    if not isinstance(value, str):
         return ""
-    s = s.strip().lower()
-    # Remove common URL prefixes
-    s = s.replace("https://www.alanranger.com/", "")
-    s = s.replace("http://www.alanranger.com/", "")
-    s = s.replace("/photo-workshops-uk", "")
-    s = s.replace("/photo-workshops", "")
-    s = s.replace(".html", "")
-    # Standardize separators
-    s = s.replace("_", "-")
-    s = s.replace(" ", "-")
-    # Clean up
-    s = s.strip("-/")
-    return s
+    value = value.strip().lower()
+    # Remove URL prefixes
+    value = re.sub(r'https?://(www\.)?alanranger\.com/', '', value)
+    # Remove common photo-related prefixes
+    value = re.sub(r'photo(workshops|courses)[-/]?', '', value)
+    value = re.sub(r'photography[-/]', '', value)
+    # Normalize separators and clean
+    value = re.sub(r'[^a-z0-9-]+', '-', value)
+    value = re.sub(r'-+', '-', value)
+    return value.strip('-')
 
-def fuzzy_match(a, b, threshold=0.9):
-    """Check if two strings match with fuzzy similarity"""
+def slug_matches(review_slug, product_slug, threshold=0.85):
+    """Check if review slug matches product slug using multiple strategies"""
+    a = normalize_slug(review_slug)
+    b = normalize_slug(product_slug)
+    
     if not a or not b:
         return False
+    
+    # Strategy 1: Exact match
+    if a == b:
+        return True
+    
+    # Strategy 2: Startswith match
+    if a.startswith(b) or b.startswith(a):
+        return True
+    
+    # Strategy 3: Substring match
+    if a in b or b in a:
+        return True
+    
+    # Strategy 4: Fuzzy match
     return SequenceMatcher(None, a, b).ratio() >= threshold
 
 def find_best_slug_match(review_slug, product_slugs):
@@ -416,10 +430,10 @@ def main():
     else:
         df_products['product_slug'] = df_products['name'].fillna('').apply(slugify)
     
-    # Normalize product slugs
+    # Normalize product slugs (for display, but matching uses slug_matches)
     df_products['product_slug_normalized'] = df_products['product_slug'].fillna('').apply(lambda x: normalize_slug(str(x)))
     
-    # Ensure review slugs exist and normalize
+    # Ensure review slugs exist
     if 'product_slug' not in reviews_df.columns:
         if 'product_name' in reviews_df.columns:
             reviews_df['product_slug'] = reviews_df['product_name'].fillna('').apply(slugify)
@@ -427,76 +441,79 @@ def main():
             reviews_df['product_slug'] = ''
     
     reviews_df['product_slug'] = reviews_df['product_slug'].fillna('').apply(slugify)
-    reviews_df['product_slug_normalized'] = reviews_df['product_slug'].fillna('').apply(lambda x: normalize_slug(str(x)))
     
     # ============================================================
-    # Match Reviews to Products (with normalized slugs)
+    # Match Reviews to Products (with robust slug matching)
     # ============================================================
     
-    # Build normalized slug mappings
-    product_slug_map = {}  # normalized_slug -> original_slug
+    # Build product lookup: slug -> product info (including URL)
+    product_lookup = {}
     for _, row in df_products.iterrows():
-        orig_slug = row.get('product_slug', '')
-        norm_slug = row.get('product_slug_normalized', '')
-        if norm_slug:
-            product_slug_map[norm_slug] = orig_slug
+        slug = row.get('product_slug', '')
+        url = row.get('url', '')
+        name = row.get('name', '')
+        if slug:
+            product_lookup[slug] = {
+                'slug': slug,
+                'url': url,
+                'name': name
+            }
     
-    # Match reviews to products using normalized slugs
-    matched_reviews = []
-    review_slug_to_product_slug = {}  # review normalized slug -> product original slug
+    # Match reviews to products using slug_matches function
+    matched_products = set()
+    review_slug_to_product_slug = {}  # review slug -> product slug
     
     for _, review_row in reviews_df.iterrows():
-        review_slug_orig = str(review_row.get('product_slug', '')).strip()
-        review_slug_norm = str(review_row.get('product_slug_normalized', '')).strip()
+        review_slug = str(review_row.get('product_slug', '')).strip()
         
-        if not review_slug_norm:
+        if not review_slug:
             continue
         
         matched_product_slug = None
         
-        # Try to find matching product using normalized slugs
-        for prod_norm_slug, prod_orig_slug in product_slug_map.items():
-            # Strategy 1: Exact match
-            if review_slug_norm == prod_norm_slug:
-                matched_product_slug = prod_orig_slug
-                break
-            # Strategy 2: Startswith match
-            elif review_slug_norm.startswith(prod_norm_slug) or prod_norm_slug.startswith(review_slug_norm):
-                matched_product_slug = prod_orig_slug
-                break
-            # Strategy 3: Fuzzy match (≥90%)
-            elif fuzzy_match(review_slug_norm, prod_norm_slug, threshold=0.9):
-                matched_product_slug = prod_orig_slug
+        # Try to match against product slugs
+        for prod_slug, prod_info in product_lookup.items():
+            if slug_matches(review_slug, prod_slug, threshold=0.85):
+                matched_product_slug = prod_slug
                 break
         
+        # If no match found, try matching against product URLs
+        if not matched_product_slug:
+            for prod_slug, prod_info in product_lookup.items():
+                prod_url = str(prod_info.get('url', '')).strip()
+                if prod_url and slug_matches(review_slug, prod_url, threshold=0.85):
+                    matched_product_slug = prod_slug
+                    break
+        
         if matched_product_slug:
-            # Update review's product_slug to match product's original slug
-            review_row['product_slug'] = matched_product_slug
-            review_slug_to_product_slug[review_slug_norm] = matched_product_slug
-            matched_reviews.append(review_row)
+            review_slug_to_product_slug[review_slug] = matched_product_slug
+            matched_products.add(matched_product_slug)
     
-    # Update reviews_df with matched slugs
+    # Update reviews_df with matched product slugs
     if review_slug_to_product_slug:
         def update_review_slug(row):
-            norm_slug = str(row.get('product_slug_normalized', '')).strip()
-            if norm_slug in review_slug_to_product_slug:
-                return review_slug_to_product_slug[norm_slug]
-            return row.get('product_slug', '')
+            orig_slug = str(row.get('product_slug', '')).strip()
+            if orig_slug in review_slug_to_product_slug:
+                return review_slug_to_product_slug[orig_slug]
+            return orig_slug
         
         reviews_df['product_slug'] = reviews_df.apply(update_review_slug, axis=1)
     
     # Log matching results
-    matched_count = len(matched_reviews)
-    unique_products = len(set(r.get('product_slug', '') for r in matched_reviews if r.get('product_slug')))
-    print(f"✅ Linked {matched_count} reviews across {unique_products} products after normalization")
+    matched_reviews_count = len([r for r in reviews_df.itertuples() if r.product_slug in matched_products])
+    unique_products_count = len(matched_products)
     
-    if matched_reviews:
-        print("🔍 Sample matched reviews:")
-        for r in matched_reviews[:5]:
-            product_slug = r.get('product_slug', '')
-            author = r.get('author', r.get('reviewer', 'Anonymous'))
-            source = r.get('source', 'Unknown')
-            print(f"   🔗 {product_slug} → {author} ({source})")
+    print(f"✅ Linked {matched_reviews_count} reviews across {unique_products_count} products (fuzzy normalized match)")
+    
+    if matched_products:
+        print("🔍 Sample matched products:")
+        sample_products = list(matched_products)[:10]
+        for prod_slug in sample_products:
+            prod_info = product_lookup.get(prod_slug, {})
+            prod_name = prod_info.get('name', prod_slug)
+            # Count reviews for this product
+            review_count = len(reviews_df[reviews_df['product_slug'] == prod_slug])
+            print(f"   🔗 {prod_slug} → {review_count} reviews ({prod_name[:40]}...)")
     
     # ============================================================
     # Group Reviews and Generate Schemas
