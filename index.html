@@ -2622,6 +2622,36 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     summaryHtml += '</div>';
     
+    // Add Schema Generation Summary if Step 4 data is available
+    const step4 = steps[4];
+    if (step4 && (step4.totalProducts !== null || step4.matchCount !== null || step4.googleReviewsCount !== null)) {
+      summaryHtml += '<div style="background: #fff9e6; padding: 1rem; border-left: 4px solid #ff9800; border-radius: 4px; margin-bottom: 1rem;">';
+      summaryHtml += '<p style="margin: 0 0 0.75rem 0; font-weight: 600; color: #e65100; font-size: 1rem;">📊 Schema Generation Summary:</p>';
+      summaryHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem; color: #5d4037;">';
+      
+      if (step4.totalProducts !== null) {
+        summaryHtml += `<div><strong>Total products:</strong> ${step4.totalProducts}</div>`;
+      }
+      if (step4.matchCount !== null) {
+        summaryHtml += `<div><strong>Products with reviews:</strong> <span style="color: #27AE60; font-weight: 600;">${step4.matchCount}</span></div>`;
+      }
+      if (step4.productsWithoutReviews !== null) {
+        summaryHtml += `<div><strong>Products without reviews:</strong> ${step4.productsWithoutReviews}</div>`;
+      }
+      if (step4.latestReviewDate) {
+        summaryHtml += `<div><strong>Latest review date:</strong> ${step4.latestReviewDate}</div>`;
+      }
+      if (step4.googleReviewsCount !== null) {
+        summaryHtml += `<div><strong>Google reviews:</strong> ${step4.googleReviewsCount}</div>`;
+      }
+      if (step4.trustpilotReviewsCount !== null) {
+        summaryHtml += `<div><strong>Trustpilot reviews:</strong> ${step4.trustpilotReviewsCount}</div>`;
+      }
+      
+      summaryHtml += '</div>';
+      summaryHtml += '</div>';
+    }
+    
     summaryHtml += '<div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">';
     summaryHtml += '<p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;">💡 Next Steps:</p>';
     summaryHtml += '<ul style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
@@ -9807,6 +9837,12 @@ exit`;
         // Extract product count and match count for Step 4 from console output
         let productCount = null;
         let matchCount = null;
+        let totalProducts = null;
+        let productsWithoutReviews = null;
+        let latestReviewDate = null;
+        let googleReviewsCount = null;
+        let trustpilotReviewsCount = null;
+        
         if (stepId === 4 && consoleOutput) {
           const outputText = consoleOutput.textContent || '';
           // Look for patterns like "✅ Generated 206 HTML files" or "Total products: 206" or "✅ Loaded 206 products"
@@ -9831,6 +9867,37 @@ exit`;
             matchCount = parseInt(productsWithReviewsMatch[1]);
           } else if (matchedProductsMatch) {
             matchCount = parseInt(matchedProductsMatch[1]);
+          }
+          
+          // Extract full summary data from SCHEMA GENERATION SUMMARY section
+          // Use productCount as fallback for totalProducts if not found separately
+          if (productCount !== null) {
+            totalProducts = productCount;
+          } else {
+            const totalProductsMatch = outputText.match(/Total\s+products?:\s*(\d+)/i);
+            if (totalProductsMatch) {
+              totalProducts = parseInt(totalProductsMatch[1]);
+            }
+          }
+          
+          const productsWithoutReviewsMatch = outputText.match(/Products\s+without\s+reviews?:\s*(\d+)/i);
+          if (productsWithoutReviewsMatch) {
+            productsWithoutReviews = parseInt(productsWithoutReviewsMatch[1]);
+          }
+          
+          const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
+          if (latestReviewDateMatch) {
+            latestReviewDate = latestReviewDateMatch[1];
+          }
+          
+          const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)/i);
+          if (googleReviewsMatch) {
+            googleReviewsCount = parseInt(googleReviewsMatch[1]);
+          }
+          
+          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)/i);
+          if (trustpilotReviewsMatch) {
+            trustpilotReviewsCount = parseInt(trustpilotReviewsMatch[1]);
           }
         }
         
@@ -9877,7 +9944,12 @@ exit`;
               file: info.file,
               reviewCount: stepId === '3a' ? reviewCount : null,
               productCount: stepId === 4 ? productCount : null,
-              matchCount: stepId === 4 ? matchCount : null
+              matchCount: stepId === 4 ? matchCount : null,
+              totalProducts: stepId === 4 ? totalProducts : null,
+              productsWithoutReviews: stepId === 4 ? productsWithoutReviews : null,
+              latestReviewDate: stepId === 4 ? latestReviewDate : null,
+              googleReviewsCount: stepId === 4 ? googleReviewsCount : null,
+              trustpilotReviewsCount: stepId === 4 ? trustpilotReviewsCount : null
             };
             
             // Update Step 4 match status indicator
