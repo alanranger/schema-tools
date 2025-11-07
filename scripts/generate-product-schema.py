@@ -610,6 +610,10 @@ def main():
     products_with_reviews_count = 0
     summary_rows = []
     
+    # Track mapped reviews by source
+    mapped_google_reviews = []
+    mapped_trustpilot_reviews = []
+    
     for idx, row in df_products.iterrows():
         product_name = str(row.get('name', '')).strip()
         if not product_name or product_name.lower() == 'nan':
@@ -707,6 +711,26 @@ def main():
                         review_obj["publisher"] = {"@type": "Organization", "name": source}
                     
                     product_reviews.append(review_obj)
+                    
+                    # Track mapped reviews by source for statistics
+                    source_lower = str(source).lower() if source else ''
+                    review_date_obj = None
+                    if review_date:
+                        try:
+                            review_date_obj = pd.to_datetime(review_date, errors='coerce')
+                        except:
+                            pass
+                    
+                    if 'google' in source_lower:
+                        mapped_google_reviews.append({
+                            'date': review_date_obj,
+                            'source': 'Google'
+                        })
+                    elif 'trustpilot' in source_lower:
+                        mapped_trustpilot_reviews.append({
+                            'date': review_date_obj,
+                            'source': 'Trustpilot'
+                        })
         
         if len(product_reviews) > 0:
             products_with_reviews_count += 1
@@ -813,17 +837,37 @@ def main():
     # Summary
     products_without_reviews = valid_products - products_with_reviews_count
     
-    # Get latest review date if available
-    latest_review_date = None
-    if 'date' in reviews_df.columns:
-        dates = pd.to_datetime(reviews_df['date'], errors='coerce')
-        dates = dates.dropna()
-        if len(dates) > 0:
-            latest_review_date = dates.max().strftime('%Y-%m-%d')
+    # Calculate mapped review statistics
+    mapped_google_count = len(mapped_google_reviews)
+    mapped_trustpilot_count = len(mapped_trustpilot_reviews)
+    total_mapped_reviews = mapped_google_count + mapped_trustpilot_count
     
-    # Get source counts
-    google_count = len(reviews_df[reviews_df.get('source', '').str.contains('Google', case=False, na=False)])
-    trust_count = len(reviews_df[reviews_df.get('source', '').str.contains('Trustpilot', case=False, na=False)])
+    # Get latest review dates for mapped reviews
+    latest_google_date = None
+    if mapped_google_reviews:
+        google_dates = [r['date'] for r in mapped_google_reviews if r['date'] is not None and pd.notna(r['date'])]
+        if google_dates:
+            latest_google_date = max(google_dates).strftime('%Y-%m-%d')
+    
+    latest_trustpilot_date = None
+    if mapped_trustpilot_reviews:
+        trustpilot_dates = [r['date'] for r in mapped_trustpilot_reviews if r['date'] is not None and pd.notna(r['date'])]
+        if trustpilot_dates:
+            latest_trustpilot_date = max(trustpilot_dates).strftime('%Y-%m-%d')
+    
+    # Get overall latest review date (for backward compatibility)
+    latest_review_date = None
+    all_dates = []
+    if latest_google_date:
+        all_dates.append(pd.to_datetime(latest_google_date))
+    if latest_trustpilot_date:
+        all_dates.append(pd.to_datetime(latest_trustpilot_date))
+    if all_dates:
+        latest_review_date = max(all_dates).strftime('%Y-%m-%d')
+    
+    # Get total counts from merged CSV (for reference)
+    total_google_count = len(reviews_df[reviews_df.get('source', '').str.contains('Google', case=False, na=False)])
+    total_trustpilot_count = len(reviews_df[reviews_df.get('source', '').str.contains('Trustpilot', case=False, na=False)])
     
     print("\n" + "="*60)
     print("📊 SCHEMA GENERATION SUMMARY")
@@ -832,10 +876,18 @@ def main():
     # Count ALL products that have reviews (including fuzzy matches from Step 4)
     print(f"Products with reviews: {products_with_reviews_count}")
     print(f"Products without reviews: {valid_products - products_with_reviews_count}")
+    print("")
+    print("📊 Mapped Reviews:")
+    print(f"  Google reviews mapped: {mapped_google_count} (of {total_google_count} total)")
+    if latest_google_date:
+        print(f"  Latest Google review: {latest_google_date}")
+    print(f"  Trustpilot reviews mapped: {mapped_trustpilot_count} (of {total_trustpilot_count} total)")
+    if latest_trustpilot_date:
+        print(f"  Latest Trustpilot review: {latest_trustpilot_date}")
+    print(f"  Total mapped reviews: {total_mapped_reviews}")
     if latest_review_date:
-        print(f"Latest review date: {latest_review_date}")
-    print(f"Google reviews: {google_count}")
-    print(f"Trustpilot reviews: {trust_count}")
+        print(f"  Overall latest review: {latest_review_date}")
+    print("")
     print(f"HTML files saved to: {outputs_dir.absolute()}")
     print(f"Combined CSV saved to: {output_csv.absolute()}")
     print("="*60)

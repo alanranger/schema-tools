@@ -2624,30 +2624,71 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     // Add Schema Generation Summary if Step 4 data is available
     const step4 = steps[4];
-    if (step4 && (step4.totalProducts !== null || step4.matchCount !== null || step4.googleReviewsCount !== null)) {
+    if (step4 && (step4.totalProducts !== null || step4.matchCount !== null || step4.mappedGoogleCount !== null)) {
       summaryHtml += '<div style="background: #fff9e6; padding: 1rem; border-left: 4px solid #ff9800; border-radius: 4px; margin-bottom: 1rem;">';
       summaryHtml += '<p style="margin: 0 0 0.75rem 0; font-weight: 600; color: #e65100; font-size: 1rem;">📊 Schema Generation Summary:</p>';
-      summaryHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem; color: #5d4037;">';
+      summaryHtml += '<div style="font-size: 0.9rem; color: #5d4037;">';
       
+      // Product counts
+      summaryHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ffe0b2;">';
       if (step4.totalProducts !== null) {
-        summaryHtml += `<div><strong>Total products:</strong> ${step4.totalProducts}</div>`;
+        summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Total products:</strong> ${step4.totalProducts}</div>`;
       }
       if (step4.matchCount !== null) {
-        summaryHtml += `<div><strong>Products with reviews:</strong> <span style="color: #27AE60; font-weight: 600;">${step4.matchCount}</span></div>`;
+        summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Products with reviews:</strong> <span style="color: #27AE60; font-weight: 600;">${step4.matchCount}</span></div>`;
       }
       if (step4.productsWithoutReviews !== null) {
         summaryHtml += `<div><strong>Products without reviews:</strong> ${step4.productsWithoutReviews}</div>`;
       }
-      if (step4.latestReviewDate) {
-        summaryHtml += `<div><strong>Latest review date:</strong> ${step4.latestReviewDate}</div>`;
-      }
-      if (step4.googleReviewsCount !== null) {
-        summaryHtml += `<div><strong>Google reviews:</strong> ${step4.googleReviewsCount}</div>`;
-      }
-      if (step4.trustpilotReviewsCount !== null) {
-        summaryHtml += `<div><strong>Trustpilot reviews:</strong> ${step4.trustpilotReviewsCount}</div>`;
+      summaryHtml += '</div>';
+      
+      // Mapped reviews section
+      summaryHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ffe0b2;">';
+      summaryHtml += '<div style="font-weight: 600; margin-bottom: 0.5rem; color: #e65100;">📊 Mapped Reviews:</div>';
+      
+      // Google reviews
+      if (step4.mappedGoogleCount !== null) {
+        summaryHtml += `<div style="margin-bottom: 0.25rem;">`;
+        summaryHtml += `<strong>Google reviews mapped:</strong> <span style="color: #1976d2; font-weight: 600;">${step4.mappedGoogleCount}</span>`;
+        if (step4.googleReviewsCount !== null && step4.googleReviewsCount !== step4.mappedGoogleCount) {
+          summaryHtml += ` <span style="color: #757575; font-size: 0.85em;">(of ${step4.googleReviewsCount} total)</span>`;
+        }
+        summaryHtml += `</div>`;
+        if (step4.latestGoogleDate) {
+          summaryHtml += `<div style="margin-left: 1.5rem; margin-bottom: 0.25rem; color: #757575; font-size: 0.85em;">Latest: ${step4.latestGoogleDate}</div>`;
+        }
+      } else if (step4.googleReviewsCount !== null) {
+        // Fallback to old format
+        summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Google reviews:</strong> ${step4.googleReviewsCount}</div>`;
       }
       
+      // Trustpilot reviews
+      if (step4.mappedTrustpilotCount !== null) {
+        summaryHtml += `<div style="margin-bottom: 0.25rem;">`;
+        summaryHtml += `<strong>Trustpilot reviews mapped:</strong> <span style="color: #1976d2; font-weight: 600;">${step4.mappedTrustpilotCount}</span>`;
+        if (step4.trustpilotReviewsCount !== null && step4.trustpilotReviewsCount !== step4.mappedTrustpilotCount) {
+          summaryHtml += ` <span style="color: #757575; font-size: 0.85em;">(of ${step4.trustpilotReviewsCount} total)</span>`;
+        }
+        summaryHtml += `</div>`;
+        if (step4.latestTrustpilotDate) {
+          summaryHtml += `<div style="margin-left: 1.5rem; margin-bottom: 0.25rem; color: #757575; font-size: 0.85em;">Latest: ${step4.latestTrustpilotDate}</div>`;
+        }
+      } else if (step4.trustpilotReviewsCount !== null) {
+        // Fallback to old format
+        summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Trustpilot reviews:</strong> ${step4.trustpilotReviewsCount}</div>`;
+      }
+      
+      // Total mapped reviews
+      if (step4.totalMappedReviews !== null) {
+        summaryHtml += `<div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #ffe0b2;"><strong>Total mapped reviews:</strong> <span style="color: #27AE60; font-weight: 600;">${step4.totalMappedReviews}</span></div>`;
+      }
+      
+      // Overall latest review date (if available and different from individual dates)
+      if (step4.latestReviewDate && (!step4.latestGoogleDate || !step4.latestTrustpilotDate || step4.latestReviewDate !== step4.latestGoogleDate || step4.latestReviewDate !== step4.latestTrustpilotDate)) {
+        summaryHtml += `<div style="margin-top: 0.25rem; color: #757575; font-size: 0.85em;">Overall latest review: ${step4.latestReviewDate}</div>`;
+      }
+      
+      summaryHtml += '</div>';
       summaryHtml += '</div>';
       summaryHtml += '</div>';
     }
@@ -9885,19 +9926,38 @@ exit`;
             productsWithoutReviews = parseInt(productsWithoutReviewsMatch[1]);
           }
           
-          const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
-          if (latestReviewDateMatch) {
-            latestReviewDate = latestReviewDateMatch[1];
-          }
+          // Extract mapped review statistics (new format)
+          const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+          const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+          const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
           
+          const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
+          const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
+          const overallLatestDateMatch = outputText.match(/Overall\s+latest\s+review:\s*([\d-]+)/i);
+          
+          // Fallback to old format if new format not found
           const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)/i);
-          if (googleReviewsMatch) {
-            googleReviewsCount = parseInt(googleReviewsMatch[1]);
+          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)/i);
+          const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
+          
+          if (mappedGoogleMatch) {
+            googleReviewsCount = parseInt(mappedGoogleMatch[1]); // mapped count
+          } else if (googleReviewsMatch) {
+            googleReviewsCount = parseInt(googleReviewsMatch[1]); // total count (old format)
           }
           
-          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)/i);
-          if (trustpilotReviewsMatch) {
-            trustpilotReviewsCount = parseInt(trustpilotReviewsMatch[1]);
+          if (mappedTrustpilotMatch) {
+            trustpilotReviewsCount = parseInt(mappedTrustpilotMatch[1]); // mapped count
+          } else if (trustpilotReviewsMatch) {
+            trustpilotReviewsCount = parseInt(trustpilotReviewsMatch[1]); // total count (old format)
+          }
+          
+          if (latestGoogleDateMatch) {
+            latestReviewDate = latestGoogleDateMatch[1];
+          } else if (overallLatestDateMatch) {
+            latestReviewDate = overallLatestDateMatch[1];
+          } else if (latestReviewDateMatch) {
+            latestReviewDate = latestReviewDateMatch[1];
           }
         }
         
@@ -9938,6 +9998,38 @@ exit`;
             if (!window.completedSteps) {
               window.completedSteps = {};
             }
+            // Extract additional mapped review data for Step 4
+            let mappedGoogleCount = null;
+            let mappedTrustpilotCount = null;
+            let totalMappedReviews = null;
+            let latestGoogleDate = null;
+            let latestTrustpilotDate = null;
+            
+            if (stepId === 4 && consoleOutput) {
+              const outputText = consoleOutput.textContent || '';
+              const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+              const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+              const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
+              const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
+              const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
+              
+              if (mappedGoogleMatch) {
+                mappedGoogleCount = parseInt(mappedGoogleMatch[1]);
+              }
+              if (mappedTrustpilotMatch) {
+                mappedTrustpilotCount = parseInt(mappedTrustpilotMatch[1]);
+              }
+              if (totalMappedMatch) {
+                totalMappedReviews = parseInt(totalMappedMatch[1]);
+              }
+              if (latestGoogleDateMatch) {
+                latestGoogleDate = latestGoogleDateMatch[1];
+              }
+              if (latestTrustpilotDateMatch) {
+                latestTrustpilotDate = latestTrustpilotDateMatch[1];
+              }
+            }
+            
             window.completedSteps[stepId] = {
               name: info.name,
               message: info.message,
@@ -9949,7 +10041,12 @@ exit`;
               productsWithoutReviews: stepId === 4 ? productsWithoutReviews : null,
               latestReviewDate: stepId === 4 ? latestReviewDate : null,
               googleReviewsCount: stepId === 4 ? googleReviewsCount : null,
-              trustpilotReviewsCount: stepId === 4 ? trustpilotReviewsCount : null
+              trustpilotReviewsCount: stepId === 4 ? trustpilotReviewsCount : null,
+              mappedGoogleCount: stepId === 4 ? mappedGoogleCount : null,
+              mappedTrustpilotCount: stepId === 4 ? mappedTrustpilotCount : null,
+              totalMappedReviews: stepId === 4 ? totalMappedReviews : null,
+              latestGoogleDate: stepId === 4 ? latestGoogleDate : null,
+              latestTrustpilotDate: stepId === 4 ? latestTrustpilotDate : null
             };
             
             // Update Step 4 match status indicator
