@@ -731,9 +731,9 @@ def main():
                                 author = author_val
                                 break
                     
-                    # Get date - check multiple column name variations
+                    # Get date - check multiple column name variations and handle ISO timestamp format
                     review_date = ''
-                    date_columns = ['date', 'review_date', 'datepublished', 'date_published', 'created_at', 'timestamp']
+                    date_columns = ['date', 'review_date', 'datepublished', 'date_published', 'created_at', 'timestamp', 'updatetime', 'update_time']
                     for col in date_columns:
                         if col in review_row.index:
                             date_val = review_row.get(col)
@@ -743,16 +743,23 @@ def main():
                                     if isinstance(date_val, pd.Timestamp):
                                         review_date = date_val.strftime('%Y-%m-%d')
                                     else:
-                                        # Try parsing string dates
-                                        parsed_date = pd.to_datetime(str(date_val), errors='coerce', dayfirst=True)
-                                        if pd.notna(parsed_date):
-                                            review_date = parsed_date.strftime('%Y-%m-%d')
+                                        date_str = str(date_val).strip()
+                                        # Handle ISO timestamp format (e.g., "2024-12-15T14:30:00" or "2024-12-15T14:30:00Z")
+                                        if 'T' in date_str:
+                                            # Extract just the date part (YYYY-MM-DD)
+                                            review_date = date_str.split('T')[0]
+                                            # Validate it's a proper date
+                                            pd.to_datetime(review_date)
                                         else:
-                                            # Fallback: try extracting YYYY-MM-DD format
-                                            date_str = str(date_val).strip()
-                                            date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
-                                            if date_match:
-                                                review_date = date_match.group(1)
+                                            # Try parsing string dates
+                                            parsed_date = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                                            if pd.notna(parsed_date):
+                                                review_date = parsed_date.strftime('%Y-%m-%d')
+                                            else:
+                                                # Fallback: try extracting YYYY-MM-DD format
+                                                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
+                                                if date_match:
+                                                    review_date = date_match.group(1)
                                 except Exception as e:
                                     pass
                             if review_date:

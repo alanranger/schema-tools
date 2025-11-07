@@ -247,11 +247,21 @@ def fetch_reviews(creds, location_id=None):
                                 date_str = ""
                                 if update_time:
                                     try:
-                                        # Google API returns ISO 8601 format
+                                        # Google API returns ISO 8601 format (e.g., "2024-12-15T14:30:00Z")
                                         dt = datetime.fromisoformat(update_time.replace('Z', '+00:00'))
-                                        date_str = dt.strftime('%Y-%m-%dT%H:%M:%S')
-                                    except:
-                                        date_str = update_time
+                                        # Store as YYYY-MM-DD format for consistency
+                                        date_str = dt.strftime('%Y-%m-%d')
+                                    except Exception as e:
+                                        # Fallback: try to extract date from string
+                                        try:
+                                            # Try parsing as ISO format
+                                            dt = pd.to_datetime(update_time, errors='coerce')
+                                            if pd.notna(dt):
+                                                date_str = dt.strftime('%Y-%m-%d')
+                                            else:
+                                                date_str = update_time[:10] if len(update_time) >= 10 else update_time
+                                        except:
+                                            date_str = update_time[:10] if len(update_time) >= 10 else update_time
                                 
                                 reviews.append({
                                     "reviewer": reviewer,
