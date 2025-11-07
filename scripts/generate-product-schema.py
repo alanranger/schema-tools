@@ -499,9 +499,25 @@ def main():
         # Convert ratingValue to numeric
         reviews_df["ratingvalue"] = pd.to_numeric(reviews_df.get("ratingvalue"), errors="coerce")
         
-        # Parse dates safely
+        # Parse dates safely - handle ISO timestamp format
         if "date" in reviews_df.columns:
-            reviews_df["date"] = pd.to_datetime(reviews_df["date"], errors="coerce", dayfirst=True)
+            # Convert ISO timestamps to dates if needed
+            def parse_review_date(val):
+                if pd.isna(val):
+                    return None
+                val_str = str(val).strip()
+                # Handle ISO timestamp format (e.g., "2024-12-15T14:30:00")
+                if 'T' in val_str:
+                    # Extract just the date part
+                    date_part = val_str.split('T')[0]
+                    try:
+                        return pd.to_datetime(date_part, errors='coerce')
+                    except:
+                        return pd.to_datetime(val_str, errors='coerce', dayfirst=True)
+                else:
+                    return pd.to_datetime(val_str, errors='coerce', dayfirst=True)
+            
+            reviews_df["date"] = reviews_df["date"].apply(parse_review_date)
         
         # Keep only rows with rating and non-empty text
         reviews_df = reviews_df[
