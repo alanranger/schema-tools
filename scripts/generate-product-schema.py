@@ -828,8 +828,49 @@ def main():
                 print(f"   ⚠️ No exact or fuzzy match found in grouped_reviews")
                 print(f"   Available review slugs: {list(grouped_reviews.groups.keys())[:10]}")
         
-        # Process reviews if found
+    for idx, row in df_products.iterrows():
+        product_name = str(row.get('name', '')).strip()
+        if not product_name or product_name.lower() == 'nan':
+            nan_count += 1
+            continue
+        
+        product_slug = row.get('product_slug', slugify(product_name))
+        
+        # Debug: Check if this is Batsford product
+        is_batsford = 'batsford' in product_name.lower() or 'batsford' in str(product_slug).lower()
+        
+        # Get reviews for this product - trust Step 3b slugs with fuzzy fallback
+        product_reviews = []
+        
+        # First try exact match via grouped_reviews (trust Step 3b slug)
+        reviews_for_product = None
+        if product_slug in grouped_reviews.groups:
+            reviews_for_product = grouped_reviews.get_group(product_slug)
+        else:
+            # Fuzzy fallback: handle slight slug variations
+            for s in grouped_reviews.groups:
+                if SequenceMatcher(None, product_slug, s).ratio() >= 0.85:
+                    reviews_for_product = grouped_reviews.get_group(s)
+                    break
+        
+        # If still no match, try matching against product URL
+        if reviews_for_product is None:
+            product_url = str(row.get('url', '')).strip()
+            if product_url:
+                for _, review_row in reviews_df.iterrows():
+                    review_slug = str(review_row.get('product_slug', '')).strip()
+                    if review_slug and slug_matches(review_slug, product_url, threshold=0.85):
+                        if reviews_for_product is None:
+                            reviews_for_product = pd.DataFrame([review_row])
+                        else:
+                            reviews_for_product = pd.concat([reviews_for_product, pd.DataFrame([review_row])], ignore_index=True)
+        
+        # Debug logging for products with reviews
         if reviews_for_product is not None and len(reviews_for_product) > 0:
+            google_count = len(reviews_for_product[reviews_for_product.get('source', '').str.contains('Google', case=False, na=False)])
+            trustpilot_count = len(reviews_for_product[reviews_for_product.get('source', '').str.contains('Trustpilot', case=False, na=False)])
+            if google_count > 0 or trustpilot_count > 0:
+                print(f"   ✅ {product_name[:50]}... → {len(reviews_for_product)} reviews ({google_count} Google, {trustpilot_count} Trustpilot)")
             if is_batsford:
                 print(f"   📊 Processing {len(reviews_for_product)} reviews for Batsford")
             # Limit to 25 reviews per product
