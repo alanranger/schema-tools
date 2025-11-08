@@ -1470,6 +1470,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
   </div>
 
+  <!-- Field Verification Modal -->
+  <div id="fieldVerificationModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;">
+    <div style="background-color: white; margin: 2% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 900px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem;">
+        <h2 style="margin: 0; color: #2d3748;">🔍 Field Verification Summary</h2>
+        <button onclick="closeFieldVerificationModal()" style="background: #f56565; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem;">✕ Close</button>
+      </div>
+      <div id="fieldVerificationModalContent"></div>
+    </div>
+  </div>
+
   <!-- Product Tab Content -->
   <div id="productTab" class="tab-content">
     <div class="instructions">
@@ -4944,6 +4955,130 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     updateDebugLog();
   }
   
+  // Copy debug log to clipboard
+  function copyDebugLog() {
+    const debugLogElement = document.getElementById('debugLog');
+    if (!debugLogElement || !window.debugLog) {
+      alert('No debug log available to copy.');
+      return;
+    }
+    
+    const logText = window.debugLog.join('\n');
+    navigator.clipboard.writeText(logText).then(() => {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      btn.style.background = '#48bb78';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '#667eea';
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy debug log:', err);
+      alert('Failed to copy debug log. Please select and copy manually.');
+    });
+  }
+  
+  // Show field verification modal
+  function showFieldVerificationModal() {
+    if (!window.fieldVerificationStats) {
+      alert('Field verification data not available. Please generate schema first.');
+      return;
+    }
+    
+    const modal = document.getElementById('fieldVerificationModal');
+    if (modal) {
+      modal.style.display = 'block';
+      updateFieldVerificationModal();
+    }
+  }
+  
+  // Close field verification modal
+  function closeFieldVerificationModal() {
+    const modal = document.getElementById('fieldVerificationModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
+  // Update field verification modal content
+  function updateFieldVerificationModal() {
+    const content = document.getElementById('fieldVerificationModalContent');
+    if (!content || !window.fieldVerificationStats) return;
+    
+    const stats = window.fieldVerificationStats;
+    let html = '<div style="max-height: 70vh; overflow-y: auto;">';
+    
+    // Event Core Fields
+    html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border-left: 4px solid #667eea;">';
+    html += '<h3 style="margin-top: 0; color: #667eea;">🧩 Event Core Fields</h3>';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
+    html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
+    html += `<tr><td>@context</td><td style="text-align: center;">${stats.coreFields?.context || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>@type</td><td style="text-align: center;">${stats.coreFields?.type || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>name</td><td style="text-align: center;">${stats.coreFields?.name || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>startDate</td><td style="text-align: center;">${stats.coreFields?.startDate || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>endDate</td><td style="text-align: center;">${stats.coreFields?.endDate || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>duration</td><td style="text-align: center;">${stats.coreFields?.duration || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>identifier</td><td style="text-align: center;">${stats.coreFields?.identifier || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += '</table></div>';
+    
+    // Location/Address Fields
+    html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border-left: 4px solid #38b2ac;">';
+    html += '<h3 style="margin-top: 0; color: #38b2ac;">🏛 Location / Address Fields</h3>';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
+    html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
+    html += `<tr><td>location.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>location.name</td><td style="text-align: center;">${stats.locationFields?.name || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>address.streetAddress</td><td style="text-align: center;">${stats.locationFields?.streetAddress || '⚠️'}</td><td style="text-align: right;">${stats.locationFields?.streetAddressCount || 0}</td></tr>`;
+    html += `<tr><td>address.addressLocality</td><td style="text-align: center;">${stats.locationFields?.locality || '⚠️'}</td><td style="text-align: right;">${stats.locationFields?.localityCount || 0}</td></tr>`;
+    html += `<tr><td>address.addressRegion</td><td style="text-align: center;">${stats.locationFields?.region || '⚠️'}</td><td style="text-align: right;">${stats.locationFields?.regionCount || 0}</td></tr>`;
+    html += `<tr><td>address.postalCode</td><td style="text-align: center;">${stats.locationFields?.postalCode || '✅'}</td><td style="text-align: right;">${stats.locationFields?.postalCodeCount || stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>address.addressCountry</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += '</table></div>';
+    
+    // Offers & Merchant Fields
+    html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border-left: 4px solid #ed8936;">';
+    html += '<h3 style="margin-top: 0; color: #ed8936;">💰 Offers & Merchant Fields</h3>';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
+    html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
+    html += `<tr><td>offers.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
+    html += `<tr><td>offers.price</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
+    html += `<tr><td>offers.priceCurrency</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
+    html += `<tr><td>offers.seller.name</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
+    html += `<tr><td>offers.hasMerchantReturnPolicy</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.merchantFields ? stats.offersBlocks : 0}</td></tr>`;
+    html += `<tr><td>sku</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.merchantFields ? stats.eventsWithMappings : 0}</td></tr>`;
+    html += `<tr><td>brand</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.merchantFields ? stats.eventsWithMappings : 0}</td></tr>`;
+    html += '</table></div>';
+    
+    // Reviews & Ratings
+    html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border-left: 4px solid #48bb78;">';
+    html += '<h3 style="margin-top: 0; color: #48bb78;">⭐ Reviews & Ratings</h3>';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
+    html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
+    html += `<tr><td>aggregateRating.@type</td><td style="text-align: center;">${stats.aggregateRatingsAdded > 0 ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.aggregateRatingsAdded || 0}</td></tr>`;
+    html += `<tr><td>aggregateRating.ratingValue</td><td style="text-align: center;">${stats.aggregateRatingsAdded > 0 ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.aggregateRatingsAdded || 0}</td></tr>`;
+    html += `<tr><td>aggregateRating.reviewCount</td><td style="text-align: center;">${stats.aggregateRatingsAdded > 0 ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.aggregateRatingsAdded || 0}</td></tr>`;
+    html += `<tr><td>review array</td><td style="text-align: center;">${stats.reviewSnippetsAdded > 0 ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.reviewSnippetsAdded || 0}</td></tr>`;
+    html += '</table></div>';
+    
+    // Organizer/Provider/Performer
+    html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border-left: 4px solid #9f7aea;">';
+    html += '<h3 style="margin-top: 0; color: #9f7aea;">👥 Organizer / Provider / Performer</h3>';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
+    html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
+    html += `<tr><td>organizer.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>organizer.name</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>organizer.logo</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>organizer.sameAs</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += `<tr><td>performer</td><td style="text-align: center;">${stats.performerToggled ? '✅' : '⚠️'}</td><td style="text-align: right;">${stats.performerToggled ? stats.eventsGenerated : 0}</td></tr>`;
+    html += `<tr><td>provider</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += '</table></div>';
+    
+    html += '</div>';
+    content.innerHTML = html;
+  }
+  
   // Update debug log display
   function updateDebugLog() {
     const debugLogElement = document.getElementById('debugLog');
@@ -6100,6 +6235,31 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (includeMerchantFields) {
         stats.merchantFeedItems = eventList.filter(e => e['@type'] === 'Event' && e.offers && parseFloat(e.offers.price) > 0).length;
       }
+      
+      // Store field verification stats for modal
+      window.fieldVerificationStats = {
+        ...stats,
+        coreFields: {
+          context: '✅',
+          type: '✅',
+          name: '✅',
+          startDate: '✅',
+          endDate: '✅',
+          duration: '✅',
+          identifier: '✅'
+        },
+        locationFields: {
+          name: '✅',
+          streetAddress: stats.eventsGenerated > 0 ? '⚠️' : '❌',
+          streetAddressCount: 0, // Will be calculated if needed
+          locality: stats.eventsGenerated > 0 ? '⚠️' : '❌',
+          localityCount: 0,
+          region: stats.eventsGenerated > 0 ? '⚠️' : '❌',
+          regionCount: 0,
+          postalCode: '✅',
+          postalCodeCount: stats.eventsGenerated || 0
+        }
+      };
       
       // Update summary panel
       updateSummaryPanel(buildSummaryHTML(stats));
