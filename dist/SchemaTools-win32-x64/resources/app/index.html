@@ -4851,20 +4851,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   function detectEventSeries(events) {
     const grouped = {};
     
-    const keywords = [
-      "Bluebell Photography Workshop",
-      "Batsford Arboretum Autumn Photography Workshop",
-      "Camera Course for Beginners",
-      "Lightroom Photo Editing"
+    // Use flexible keyword patterns that match variations
+    const keywordPatterns = [
+      { pattern: /bluebell.*photography.*workshop/i, key: "bluebell photography workshop" },
+      { pattern: /batsford.*arboretum.*autumn.*photography.*workshop/i, key: "batsford arboretum autumn photography workshop" },
+      { pattern: /camera.*course.*for.*beginners|camera.*courses.*for.*beginners/i, key: "camera course for beginners" },
+      { pattern: /lightroom.*photo.*editing|lightroom.*classic.*photo.*editing/i, key: "lightroom photo editing" }
     ];
     
     for (const e of events) {
-      const title = e.name || e.Event_Title || "";
-      const keyMatch = keywords.find(k => title.includes(k));
-      if (keyMatch) {
-        const key = keyMatch.trim().toLowerCase();
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(e);
+      const title = (e.name || e.Event_Title || "").toLowerCase();
+      
+      // Try to match against patterns
+      for (const { pattern, key } of keywordPatterns) {
+        if (pattern.test(title)) {
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(e);
+          break; // Only match one pattern per event
+        }
       }
     }
     
@@ -5343,9 +5347,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     html += '<strong style="color: #38b2ac;">🧭 Structure</strong><br>';
     html += `Breadcrumb chains: ${stats.breadcrumbChains || 0}<br>`;
     html += `ItemList items: ${stats.itemListItems || 0}<br>`;
-    html += `EventSeries groups: ${stats.eventSeriesGroups || 0}`;
+    html += `EventSeries groups: ${stats.eventSeriesGroups || 0}<br>`;
     if (stats.eventSeriesCreated && stats.eventSeriesCreated > 0) {
-      html += `<br>🔁 EventSeries Created: ${stats.eventSeriesCreated}`;
+      html += `🔁 EventSeries Created: ${stats.eventSeriesCreated}<br>`;
+    }
+    if (stats.linkageStats && stats.linkageStats.seriesSubEventTotal > 0) {
+      html += `Total subEvent links: ${stats.linkageStats.seriesSubEventTotal}`;
     }
     html += '</div>';
     
@@ -6578,7 +6585,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     addDebugLog(`   Note: Using v4.2/v4.3 EventSeries system (keeps individual events + adds backlinks)`);
     
     // OLD GROUPING SYSTEM DISABLED - conflicts with v4.2/v4.3 EventSeries backlinking
-    if (false && groupRepeatingEvents && filtered.length > 1) {
+    // Skip the old grouping logic entirely - new system handles it below
+    if (false) {
       // Group events by base title (remove week numbers, dates, etc.)
       const eventGroups = {};
       filtered.forEach((event, idx) => {
