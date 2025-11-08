@@ -4790,7 +4790,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     return dict;
   }
 
-  // Build mappings dictionary: { event_url: product_url }
+  // Build mappings dictionary: { event_url: { product_url, sku, brand, price, availability } }
   function buildMappingsDict() {
     if (!mappingsData) return {};
     const dict = {};
@@ -4798,7 +4798,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const eventUrl = normalizeUrl(mapping.event_url || '');
       const productUrl = normalizeUrl(mapping.product_url || '');
       if (eventUrl && productUrl) {
-        dict[eventUrl] = productUrl;
+        // Extract SKU from product URL slug
+        const urlParts = productUrl.split('/');
+        const productSlug = urlParts[urlParts.length - 1] || '';
+        const sku = productSlug.toUpperCase().replace(/-/g, '-').replace(/[^A-Z0-9-]/g, '');
+        
+        dict[eventUrl] = {
+          product_url: productUrl,
+          sku: sku || null,
+          brand: {
+            "@type": "Brand",
+            "name": "Alan Ranger Photography"
+          },
+          price: mapping.price_gbp || mapping.json_price || null,
+          availability: mapping.availability || mapping.json_availability || "https://schema.org/InStock",
+          product_title: mapping.product_title || null
+        };
       }
     });
     return dict;
@@ -4927,6 +4942,57 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     return description.substring(0, maxLength - 3) + '...';
   }
 
+  // Validate Event schema structure
+  function validateEventSchema(schema) {
+    const errors = [];
+    const warnings = [];
+    
+    if (!schema || !schema['@graph']) {
+      return { isValid: false, message: 'Invalid schema structure: missing @graph', errors: ['Missing @graph'] };
+    }
+    
+    const graph = schema['@graph'] || [];
+    const events = graph.filter(item => item['@type'] === 'Event');
+    
+    if (events.length === 0) {
+      return { isValid: false, message: 'No Event schemas found', errors: ['No events in @graph'] };
+    }
+    
+    events.forEach((event, idx) => {
+      // Required fields for Event schema
+      const required = ['name', 'startDate', 'eventStatus', 'eventAttendanceMode'];
+      required.forEach(field => {
+        if (!event[field]) {
+          errors.push(`Event ${idx + 1}: Missing required field "${field}"`);
+        }
+      });
+      
+      // Validate dates
+      if (event.startDate && !/^\d{4}-\d{2}-\d{2}/.test(event.startDate)) {
+        warnings.push(`Event ${idx + 1}: startDate format may be invalid`);
+      }
+      
+      // Validate offers
+      if (event.offers) {
+        if (!event.offers.price || !event.offers.priceCurrency) {
+          warnings.push(`Event ${idx + 1}: Offers missing price or priceCurrency`);
+        }
+      }
+      
+      // Validate location
+      if (!event.location) {
+        warnings.push(`Event ${idx + 1}: Missing location`);
+      }
+    });
+    
+    const isValid = errors.length === 0;
+    const message = isValid 
+      ? `Schema.org compliant (${events.length} event${events.length !== 1 ? 's' : ''})`
+      : `${errors.length} error${errors.length !== 1 ? 's' : ''} found`;
+    
+    return { isValid, message, errors, warnings };
+  }
+
   async function generateEventSchema() {
     try {
       // Check if events are loaded
@@ -4965,9 +5031,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }))
     };
 
-    const eventList = filtered.map((event, index) => {
+    const eventSchemas = filtered.map((event, index) => {
       const eventUrl = normalizeUrl(event['Event_URL'] || '');
-      const productUrl = mappingsDict[eventUrl];
+      const mappingData = mappingsDict[eventUrl];
+      const productUrl = mappingData ? mappingData.product_url : null;
       const reviewData = productUrl ? reviewsDict[productUrl] : null;
       
       // Phase 1: Time & Address Logic
@@ -4998,6 +5065,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         };
       }
 
+      // Phase 3: Extract product data from mappings
+      const useMappingPrice = mappingData && mappingData.price;
+      const useMappingAvailability = mappingData && mappingData.availability;
+      
       // Build event schema
       const eventSchema = {
         "@type": "Event",
@@ -5026,9 +5097,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         },
         "offers": {
           "@type": "Offer",
-          "price": event['Price'] || "0.00",
+          "price": useMappingPrice ? mappingData.price.toString() : (event['Price'] || "0.00"),
           "priceCurrency": "GBP",
-          "availability": "https://schema.org/InStock",
+          "availability": useMappingAvailability ? mappingData.availability : "https://schema.org/InStock",
           "url": event['Event_URL'],
           "validFrom": validFrom,
           "seller": {
@@ -5045,6 +5116,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
       };
 
+      // Phase 3: Add SKU and brand from mappings
+      if (mappingData && mappingData.sku) {
+        eventSchema.sku = mappingData.sku;
+      }
+      if (mappingData && mappingData.brand) {
+        eventSchema.brand = mappingData.brand;
+      }
+
       // Phase 4: Review Enrichment
       if (reviewData && reviewData.reviewCount >= 3) {
         eventSchema.aggregateRating = {
@@ -5054,6 +5133,47 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           "bestRating": "5",
           "worstRating": "1"
         };
+        
+        // Add individual review snippets (top 3-5 reviews)
+        if (reviewsData && productUrl) {
+          const productReviews = reviewsData.filter(r => {
+            const rUrl = normalizeUrl(r.product_url || r.url || '');
+            return rUrl === productUrl;
+          }).filter(r => {
+            const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+            return rating >= 4 && rating <= 5;
+          }).sort((a, b) => {
+            // Sort by date (newest first) if available
+            const dateA = a.date || a.review_created_utc || '';
+            const dateB = b.date || b.review_created_utc || '';
+            return dateB.localeCompare(dateA);
+          }).slice(0, 5); // Top 5 reviews
+          
+          if (productReviews.length > 0) {
+            eventSchema.review = productReviews.map(r => {
+              const reviewText = r.reviewbody || r.review_content || r.review || '';
+              const reviewerName = r.reviewer || r.review_username || r.author || 'Anonymous';
+              const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 5);
+              const reviewDate = r.date || r.review_created_utc || '';
+              
+              return {
+                "@type": "Review",
+                "author": {
+                  "@type": "Person",
+                  "name": reviewerName
+                },
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": rating.toString(),
+                  "bestRating": "5",
+                  "worstRating": "1"
+                },
+                "reviewBody": reviewText,
+                "datePublished": reviewDate
+              };
+            }).filter(r => r.reviewBody && r.reviewBody.trim().length > 0);
+          }
+        }
       }
 
       // Add audience if detected
@@ -5066,12 +5186,59 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         eventSchema.keywords = keywords.join(', ');
       }
 
-      return eventSchema;
+      // Phase 5: Generate breadcrumbs
+      const eventName = event['Event_Title'] || 'Event';
+      const urlPath = eventUrl.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').trim('/');
+      const pathParts = urlPath.split('/').filter(Boolean);
+      
+      let parentCategoryName = "Photo Workshops UK";
+      let parentCategoryUrl = "https://www.alanranger.com/photo-workshops-uk";
+      
+      if (pathParts.length > 0) {
+        const parentSlug = pathParts[0];
+        if (parentSlug === 'beginners-photography-lessons') {
+          parentCategoryName = "Photography Services Near Me";
+          parentCategoryUrl = "https://www.alanranger.com/photography-services-near-me";
+        } else if (parentSlug === 'photographic-workshops-near-me' || parentSlug === 'photo-workshops-uk') {
+          parentCategoryName = "Photo Workshops UK";
+          parentCategoryUrl = "https://www.alanranger.com/photo-workshops-uk";
+        }
+      }
+      
+      const breadcrumb = {
+        "@type": "BreadcrumbList",
+        "@id": `${eventUrl}#breadcrumbs`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.alanranger.com"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": parentCategoryName,
+            "item": parentCategoryUrl
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": eventName,
+            "item": eventUrl
+          }
+        ]
+      };
+
+      return { eventSchema, breadcrumb };
     });
+
+    const eventList = eventSchemas.map(item => item.eventSchema);
+    const breadcrumbs = eventSchemas.map(item => item.breadcrumb);
 
     const fullSchema = {
       "@context": "https://schema.org",
-      "@graph": [itemList, ...eventList]
+      "@graph": [itemList, ...breadcrumbs, ...eventList]
     };
 
     const json = JSON.stringify(fullSchema, null, 2);
@@ -5080,17 +5247,37 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     scriptEl.textContent = json;
     
     // Phase 3: Prepend Schema Suppressor
-    const output = SCHEMA_SUPPRESSOR_BLOCK + scriptEl.outerHTML;
+    const output = SCHEMA_SUPPRESSOR_BLOCK + '\n' + scriptEl.outerHTML;
     
     // Set output - use textContent to preserve HTML structure
     const outputElement = document.getElementById('eventOutput');
-    if (outputElement) {
-      outputElement.textContent = output;
-      console.log('✅ Event schema generated:', filtered.length, 'events');
-      console.log('✅ Output length:', output.length, 'characters');
-    } else {
+    if (!outputElement) {
       console.error('❌ Output element not found');
       alert('Error: Output element not found. Please refresh the page.');
+      return;
+    }
+    
+    // Clear any previous content and set the new output
+    outputElement.textContent = '';
+    outputElement.textContent = output;
+    
+    console.log('✅ Event schema generated:', filtered.length, 'events');
+    console.log('✅ Output length:', output.length, 'characters');
+    
+    // Phase 5: Inline validation results
+    try {
+      const validationResults = validateEventSchema(fullSchema);
+      const validationStatus = validationResults.isValid ? '✅ Valid' : '❌ Invalid';
+      const validationMsg = `\n\n${validationStatus} - ${validationResults.message}`;
+      outputElement.textContent = output + validationMsg;
+      
+      if (!validationResults.isValid && validationResults.errors.length > 0) {
+        console.warn('⚠️ Schema validation issues:', validationResults.errors);
+      }
+    } catch (e) {
+      console.warn('⚠️ Validation check failed:', e);
+      // Keep the original output even if validation fails
+      outputElement.textContent = output;
     }
     } catch (error) {
       console.error('❌ Error generating event schema:', error);
