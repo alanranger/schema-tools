@@ -5069,7 +5069,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     // Phase 3: Prepend Schema Suppressor
     const output = SCHEMA_SUPPRESSOR_BLOCK + scriptEl.outerHTML;
-    document.getElementById('eventOutput').textContent = output;
+    
+    // Set output - use textContent to preserve HTML structure
+    const outputElement = document.getElementById('eventOutput');
+    if (outputElement) {
+      outputElement.textContent = output;
+      console.log('✅ Event schema generated and displayed');
+    } else {
+      console.error('❌ Output element not found');
+      alert('Error: Output element not found. Please refresh the page.');
+    }
   }
 
   // Product Schema Generation
