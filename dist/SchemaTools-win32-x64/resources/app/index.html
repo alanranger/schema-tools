@@ -1429,8 +1429,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
 
     <h3>Generated JSON-LD Schema:</h3>
-    <pre id="eventOutput"></pre>
-    <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
+    <div style="position: relative;">
+      <pre id="eventOutput"></pre>
+      <button onclick="copyToClipboard('eventOutput')" style="margin-top: 0.75rem; background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📋 Copy Schema to Clipboard</button>
+    </div>
     
     <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -1471,8 +1473,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   </div>
 
   <!-- Field Verification Modal -->
-  <div id="fieldVerificationModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;">
-    <div style="background-color: white; margin: 2% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 900px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  <div id="fieldVerificationModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;" onclick="if(event.target.id === 'fieldVerificationModal') closeFieldVerificationModal();">
+    <div style="background-color: white; margin: 2% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 900px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;" onclick="event.stopPropagation();">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem;">
         <h2 style="margin: 0; color: #2d3748;">🔍 Field Verification Summary</h2>
         <button onclick="closeFieldVerificationModal()" style="background: #f56565; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem;">✕ Close</button>
