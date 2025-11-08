@@ -6825,6 +6825,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     stats.superEventLinks = superEventLinks;
 
+    // Calculate linkage verification stats (v4.3)
+    const verify = {
+      eventId: 0,
+      superEventId: 0,
+      seriesId: 0,
+      seriesSubEventTotal: 0,
+      seriesWithScheduleRF: 0
+    };
+    
+    for (const node of outputJsonLd) {
+      if (node["@type"] === "Event") {
+        if (node["@id"]) verify.eventId++;
+        if (node.superEvent?.["@id"]) verify.superEventId++;
+      } else if (node["@type"] === "EventSeries") {
+        if (node["@id"]) verify.seriesId++;
+        if (Array.isArray(node.subEvent)) verify.seriesSubEventTotal += node.subEvent.length;
+        if (node.eventSchedule?.repeatFrequency) verify.seriesWithScheduleRF++;
+      }
+    }
+    
+    stats.linkageStats = verify;
+
     // Emit order: Events first, then EventSeries (v4.3)
     const outputJsonLd = [
       ...eventList,
