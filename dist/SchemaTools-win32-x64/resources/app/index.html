@@ -5421,7 +5421,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const eventsWithOffers = eventList.filter(e => e.offers && parseFloat(e.offers.price) > 0).length;
       
       const validationStatus = validationResults.isValid ? '✅ Valid' : '❌ Invalid';
-      const statsMsg = `\n\n📊 Generation Summary:\n` +
+      let statsMsg = `\n\n📊 Generation Summary:\n` +
         `   • ${filtered.length} event${filtered.length !== 1 ? 's' : ''} generated\n` +
         `   • ${eventsWithReviews} event${eventsWithReviews !== 1 ? 's' : ''} with reviews\n` +
         `   • ${eventsWithPerformer} event${eventsWithPerformer !== 1 ? 's' : ''} with performer\n` +
