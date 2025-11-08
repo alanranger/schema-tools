@@ -113,6 +113,7 @@ The `unified-schema-generator.html` tool provides three tabs in one interface:
 - Upload CSV file with product data
 - Automatically filter reviews (4+ stars only)
 - Generate Product schema blocks with reviews
+- ✅ **Schema Suppressor v1.3** - Automatically included in all generated HTML files to prevent duplicate Squarespace Product schemas
 - Copy to clipboard for Squarespace deployment
 
 ### Schema Validator Tab (NEW!)

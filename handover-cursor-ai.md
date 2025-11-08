@@ -8,6 +8,48 @@ This project builds browser-based tools to generate Google-compliant JSON-LD sch
 
 It supports batch generation from CSV inputs and is tailored for Squarespace manual injection.
 
+## Cursor Instruction — Standard Schema Injection Policy (v6.2)
+
+### Objective:
+Ensure every generated product HTML file includes, at the very top of the `<head>`, a self-contained Squarespace Product Schema Suppressor v1.3 block followed by the unified LocalBusiness → BreadcrumbList → Product/Course JSON-LD schema structure exactly as shown.
+
+### Implementation Requirements:
+
+1. **Insert the v1.3 suppressor `<script>` block before any JSON-LD in the HTML output.**
+2. **Keep it as a distinct block, separated by at least one line break, and do not merge it into the main schema script.**
+3. **Always preserve the header comment:**
+   ```html
+   <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+   ```
+   This acts as a unique marker for later updates or removals.
+4. **Ensure the main schema block immediately follows the suppressor block.**
+5. **Never minify or alter the suppressor script.**
+6. **Never inject duplicate copies — check for the marker before adding.**
+
+### Optional Diagnostic Check:
+
+After build, scan final HTML for:
+```bash
+grep -R "<!-- Squarespace Product Schema Suppressor v1.3" dist/
+```
+and ensure it appears exactly once per file.
+
+### Outcome:
+
+Each product page starts with:
+1. The suppressor block
+2. The unified JSON-LD schema block
+3. No duplicate Product schema detected in Google's Rich Results Test
+
+### Current Implementation:
+
+- **Location**: `partials/schema-suppressor-v1.3.html`
+- **Integration**: `scripts/generate-product-schema.py` → `schema_to_html()` function
+- **Caching**: Suppressor block loaded once at module level (not per product)
+- **Logging**: Shows "✅ Schema suppressor v1.3 loaded" once at start of Step 4
+
+---
+
 ## Current Tools
 
 ### ✅ `product-schema-generator-v4-alanranger-WORKFLOW-UPDATED.html`
@@ -73,10 +115,14 @@ It supports batch generation from CSV inputs and is tailored for Squarespace man
 - Packageable as `.exe` for Windows
 - Vercel build compatibility (skips Electron builds for web)
 
-🚧 **Next Phase - Events & Products Tabs:**
-- Complete Events tab functionality
-- Complete Products tab functionality
-- Ensure both tabs match the quality and features of the validation tab
+✅ **Product Schema Generator - COMPLETE (v1.5.3):**
+- Automated workflow (Steps 1 → 2 → 3a → 3b → 4)
+- URL validation with 404 checking
+- **Schema Suppressor v1.3** - Automatically included in all generated HTML files
+- Unique slug generation from product names
+- Correct breadcrumb generation from URL paths
+- v6.1 baseline schema structure (Product/Course only, no Event fields)
+- Comprehensive validation hooks
 
 ### 🗃️ Supabase Integration (COMPLETE)
 - **Table**: `schema_audit_logs` created and configured

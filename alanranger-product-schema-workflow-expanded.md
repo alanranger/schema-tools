@@ -42,7 +42,11 @@ This document outlines the complete workflow to create valid Product Schema for 
 
 - Generates valid Product schema block per row.
 - Includes all required attributes and optional ratings/reviews.
+- ✅ **Automatically includes Schema Suppressor v1.3** - removes duplicate Squarespace Product schemas
 - Output available in Excel or using HTML generator tool.
+- Each HTML file includes:
+  1. Schema Suppressor v1.3 block (at the top)
+  2. Unified JSON-LD schema block (LocalBusiness → BreadcrumbList → Product/Course)
 
 ---
 

@@ -2,6 +2,51 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## [1.5.3] - 2025-11-08
+
+### Product Schema Generator - Schema Suppressor v1.3 Integration
+
+#### Added
+- **Schema Suppressor v1.3 (Code-Block Safe)**:
+  - Automatically included in all generated HTML files
+  - Removes duplicate Squarespace Product schemas to prevent conflicts
+  - Uses MutationObserver to catch dynamically injected schemas
+  - Runs immediately, on DOMContentLoaded, after page load, and continuously via MutationObserver
+  - Detects Squarespace schemas by: length < 1500 chars, no aggregateRating/review, has offers/name, missing hasMerchantReturnPolicy
+- **Post-build Injector Script** (`scripts/inject-schema-suppressor.js`):
+  - Recursively injects suppressor block into HTML files
+  - Idempotent: checks for marker comment before injecting
+  - Supports custom directories (dist/, out/, outputs/)
+  - npm scripts: `postbuild:inject-suppressor` and `postbuild:inject-suppressor:out`
+- **Partial File** (`partials/schema-suppressor-v1.3.html`):
+  - Standalone suppressor block for easy updates/removal
+  - Marker comment: `<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->`
+
+#### Improved
+- **Step 4 Schema Generation**:
+  - Suppressor block automatically included in every generated HTML file
+  - Cached loading (only loads once, not per product)
+  - Logging shows suppressor status once at start
+- **URL Validation**:
+  - Step 2 now validates all URLs and fails if any return 404 errors
+  - Ensures schema URLs are correct before generation
+  - Reports invalid URLs with row numbers and error messages
+- **URL Path Generation**:
+  - Fixed URL construction to use full path from Product Page + Product URL columns
+  - Generates unique slugs from product names when Product URL is generic (print, canvas, etc.)
+  - Correct breadcrumb parent categories extracted from URL paths
+
+#### Fixed
+- **Error Detection**: Electron app now correctly handles URL validation warnings vs actual failures
+- **Filename Convention**: Output files now use product name slugs instead of URL slugs for easier identification
+- **Breadcrumb Generation**: Correctly extracts parent category from full URL paths
+
+#### Technical Details
+- Suppressor integrated into `schema_to_html()` function in `scripts/generate-product-schema.py`
+- Suppressor block cached at module level to prevent repeated loading
+- UI updated to document suppressor in Product Schema tab, Step 4 description, and Guide tab
+- Success messages include suppressor information
+
 ## [1.5.2] - 2024-11-05
 
 ### Electron Desktop App Enhancement
