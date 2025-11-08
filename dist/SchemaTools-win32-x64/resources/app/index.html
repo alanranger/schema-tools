@@ -5066,12 +5066,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const modal = document.getElementById('fieldVerificationModal');
     if (modal) {
       modal.style.display = 'none';
-      // Ensure copy button is visible after modal closes
+      // Ensure copy buttons are visible after modal closes
       const copyButton = document.getElementById('copySchemaButton');
+      const copyButtonTop = document.getElementById('copySchemaButtonTop');
       if (copyButton) {
-        copyButton.style.display = 'block';
+        copyButton.style.display = 'inline-block';
         copyButton.style.visibility = 'visible';
         copyButton.style.opacity = '1';
+      }
+      if (copyButtonTop) {
+        copyButtonTop.style.display = 'inline-block';
+        copyButtonTop.style.visibility = 'visible';
+        copyButtonTop.style.opacity = '1';
       }
     }
   }
