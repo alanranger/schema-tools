@@ -1433,12 +1433,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
     
     <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
-      <h4 style="margin-top: 0;">🔍 Debug Log:</h4>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h4 style="margin: 0;">🔍 Debug Log:</h4>
+        <button onclick="copyDebugLog()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+          📋 Copy Debug Log
+        </button>
+      </div>
       <pre id="debugLog" style="margin: 0; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word;"></pre>
     </div>
     
     <div id="summaryPanel" style="display:none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border: 1px solid #3182ce;">
-      <h4 style="margin-top: 0; color: #2c5282;">📊 Schema Generation Summary</h4>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h4 style="margin: 0; color: #2c5282;">📊 Schema Generation Summary</h4>
+        <button onclick="showFieldVerificationModal()" style="padding: 0.5rem 1rem; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+          🔍 View Field Verification
+        </button>
+      </div>
       <div id="summaryContent" style="font-size: 0.875rem; line-height: 1.6;"></div>
     </div>
     
