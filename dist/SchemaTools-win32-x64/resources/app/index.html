@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator v4 - Events & Products</title>
+  <title>Unified Schema Generator v3.5 - Events & Products</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -1301,8 +1301,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v4.0</span>
-    <span class="date">Event + Review Enhanced</span>
+    <span class="version">v3.5</span>
+    <span class="date">Unified Schema Generator – Pre-Sync Phase</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -4621,7 +4621,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     helpBlock.setAttribute('aria-expanded', helpBlock.classList.contains('expanded'));
   }
 
-  // Event Schema Generation v4 - Unified Schema Generator
+  // Event Schema Generation v3.5 - Unified Schema Generator
   let events = [];
   let reviewsData = null;
   let mappingsData = null;
@@ -5246,8 +5246,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     scriptEl.type = 'application/ld+json';
     scriptEl.textContent = json;
     
-    // Phase 3: Prepend Schema Suppressor
-    const output = SCHEMA_SUPPRESSOR_BLOCK + '\n' + scriptEl.outerHTML;
+    // Phase 4: Event Schema - NO Schema Suppressor (only for Product Schema)
+    const output = scriptEl.outerHTML;
     
     // Set output - use textContent to preserve HTML structure
     const outputElement = document.getElementById('eventOutput');
