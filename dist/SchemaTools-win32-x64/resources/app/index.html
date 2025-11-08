@@ -7298,8 +7298,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Minify JSON
       const minifiedJson = JSON.stringify(window.currentEventSchema);
       
-      // Create script tag
-      const scriptTag = `<script type="application/ld+json">\n${minifiedJson}\n</script>`;
+      // Create script tag (escape closing tag to prevent breaking JavaScript)
+      const scriptTag = `<script type="application/ld+json">\n${minifiedJson}\n<\/script>`;
       
       // Copy to clipboard
       navigator.clipboard.writeText(scriptTag).then(() => {
