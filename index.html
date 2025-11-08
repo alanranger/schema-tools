@@ -5343,9 +5343,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     html += '<strong style="color: #38b2ac;">🧭 Structure</strong><br>';
     html += `Breadcrumb chains: ${stats.breadcrumbChains || 0}<br>`;
     html += `ItemList items: ${stats.itemListItems || 0}<br>`;
-    html += `EventSeries groups: ${stats.eventSeriesGroups || 0}`;
+    html += `EventSeries groups: ${stats.eventSeriesGroups || 0}<br>`;
     if (stats.eventSeriesCreated && stats.eventSeriesCreated > 0) {
-      html += `<br>🔁 EventSeries Created: ${stats.eventSeriesCreated}`;
+      html += `🔁 EventSeries Created: ${stats.eventSeriesCreated}<br>`;
+    }
+    if (stats.linkageStats && stats.linkageStats.seriesSubEventTotal > 0) {
+      html += `Total subEvent links: ${stats.linkageStats.seriesSubEventTotal}`;
     }
     html += '</div>';
     
