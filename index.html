@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator v3.5 - Events & Products</title>
+  <title>Unified Schema Generator v4 - Smart Enriched SEO Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -1301,8 +1301,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v3.5</span>
-    <span class="date">Unified Schema Generator – Pre-Sync Phase</span>
+    <span class="version">v4</span>
+    <span class="date">Smart Enriched SEO Edition</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1316,17 +1316,18 @@
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content active">
     <div class="instructions">
-      <strong>📅 Event Schema Generator v3.5</strong><br>
+      <strong>📅 Event Schema Generator v4 - Smart Enriched SEO Edition</strong><br>
       1. Upload your event CSV file (exported from Squarespace Events).<br>
       2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>Start_Time</code>, <code>End_Date</code>, <code>End_Time</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Location_City_State_ZIP</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>, <code>Tags</code>, <code>Price</code>, <code>Published_Date</code>.<br>
-      3. Select a category filter (or "All Categories") to generate schema for specific event types.<br>
-      4. Click <b>Generate Event Schema</b> to create valid JSON-LD blocks.<br><br>
+      3. Configure enrichment options below.<br>
+      4. Select a category filter (or "All Categories") to generate schema for specific event types.<br>
+      5. Click <b>Generate Event Schema</b> to create valid JSON-LD blocks.<br><br>
       
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results.<br>
       ✅ Only published events with future start dates are included automatically.<br>
-      ✅ <strong>v3.5 Features:</strong> Time & duration calculation, virtual location detection, review enrichment, audience detection, SEO enhancements, breadcrumbs, and validation.<br>
-      ✅ Schema includes organizer, performer, location with parsed address, duration, and optional aggregateRating from product reviews.<br><br>
+      ✅ <strong>v4 Features:</strong> Enhanced address parsing, full organizer/provider blocks, SEO metadata, event scheduling, review enrichment, breadcrumbs, and comprehensive validation.<br>
+      ✅ Schema includes organizer, performer, location with parsed address, duration, aggregateRating, offers, and SEO enhancers.<br><br>
 
       <strong>📄 Data Workflow Summary:</strong><br>
       <pre>
@@ -1355,7 +1356,27 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <label for="eventCsvFile">Upload Event CSV File:</label>
     <input type="file" id="eventCsvFile" accept=".csv" aria-label="Event CSV file upload">
     
-    <div id="eventCategoryFilterContainer" style="display:none;">
+    <div id="eventOptionsContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <h4 style="margin-top: 0;">⚙️ Enrichment Options:</h4>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="includeReviews" checked style="margin-right: 0.5rem;">
+        <span>Include Reviews (from product mappings)</span>
+      </label>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="includePerformer" checked style="margin-right: 0.5rem;">
+        <span>Include Performer (Alan Ranger)</span>
+      </label>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="groupRepeatingEvents" style="margin-right: 0.5rem;">
+        <span>Group Repeating Events (EventSchedule)</span>
+      </label>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="includeMerchantFields" style="margin-right: 0.5rem;">
+        <span>Include Merchant Center Fields (Phase 6)</span>
+      </label>
+    </div>
+    
+    <div id="eventCategoryFilterContainer" style="display:none; margin-top: 1rem;">
       <p>Select category to generate schema for:</p>
       <select id="eventCategoryFilter" aria-label="Event category filter"></select>
       <button onclick="generateEventSchema()">Generate Event Schema</button>
@@ -4621,7 +4642,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     helpBlock.setAttribute('aria-expanded', helpBlock.classList.contains('expanded'));
   }
 
-  // Event Schema Generation v3.5 - Unified Schema Generator
+  // Event Schema Generation v4 - Smart Enriched SEO Edition
   let events = [];
   let reviewsData = null;
   let mappingsData = null;
@@ -4695,6 +4716,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         
         // Always show the container and button, even if no categories found
         document.getElementById('eventCategoryFilterContainer').style.display = 'block';
+        document.getElementById('eventOptionsContainer').style.display = 'block';
         console.log('✅ Category filter and Generate button displayed');
       },
       error: function(error) {
@@ -4819,7 +4841,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     return dict;
   }
 
-  // Parse address with improved logic
+  // Enhanced address parsing - v4 Smart Enriched
   function parseAddress(locationAddressRaw, locationCityStateZip) {
     const address = { "@type": "PostalAddress" };
     
@@ -4833,26 +4855,65 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     if (locationAddressRaw) fullAddress += locationAddressRaw + ', ';
     if (locationCityStateZip) fullAddress += locationCityStateZip;
     
+    // Clean up the address string
+    fullAddress = fullAddress.replace(/\s+/g, ' ').trim();
+    
+    // Split by comma and reverse (UK addresses: street, city, county, postcode, country)
     const parts = fullAddress.split(",").map(p => p.trim()).filter(Boolean).reverse();
-
+    
+    // UK postcode pattern: A1 1AA or A11 1AA or AA1 1AA or AA11 1AA
+    const ukPostcodePattern = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+    
+    // UK county/region patterns
+    const ukRegions = ['West Midlands', 'Warwickshire', 'Worcestershire', 'Gloucestershire', 'Herefordshire', 'Shropshire', 'Staffordshire', 'Derbyshire', 'Nottinghamshire', 'Leicestershire', 'Northamptonshire', 'Oxfordshire', 'Buckinghamshire', 'Berkshire', 'Hampshire', 'Surrey', 'Kent', 'Essex', 'Suffolk', 'Norfolk', 'Cambridgeshire', 'Lincolnshire', 'Yorkshire', 'Lancashire', 'Cheshire', 'Cumbria', 'Northumberland', 'Durham', 'North Yorkshire', 'South Yorkshire', 'West Yorkshire', 'East Yorkshire'];
+    
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
+      const partUpper = part.toUpperCase();
 
-      if (!address.addressCountry && /^(United Kingdom|UK)$/i.test(part)) {
+      // Country
+      if (!address.addressCountry && /^(United Kingdom|UK|England|Scotland|Wales|Northern Ireland)$/i.test(part)) {
         address.addressCountry = "GB";
-      } else if (!address.postalCode && /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(part)) {
-        address.postalCode = part.toUpperCase();
-      } else if (!address.addressRegion && !address.postalCode) {
-        address.addressRegion = part;
-      } else if (!address.addressLocality) {
+      }
+      // Postal code (most specific pattern)
+      else if (!address.postalCode && ukPostcodePattern.test(part)) {
+        address.postalCode = part.toUpperCase().replace(/\s+/g, ' ');
+      }
+      // Region/County (check against known UK regions)
+      else if (!address.addressRegion) {
+        const matchedRegion = ukRegions.find(r => partUpper.includes(r.toUpperCase()) || partUpper === r.toUpperCase());
+        if (matchedRegion) {
+          address.addressRegion = matchedRegion;
+        } else if (part.length > 3 && !address.postalCode && !ukPostcodePattern.test(part)) {
+          // Fallback: if it's not a postcode and not country, might be region
+          address.addressRegion = part;
+        }
+      }
+      // Locality (city/town)
+      else if (!address.addressLocality && part.length > 2) {
         address.addressLocality = part;
-      } else if (!address.streetAddress) {
+      }
+      // Street address (first remaining part)
+      else if (!address.streetAddress) {
         address.streetAddress = part;
       }
     }
-
-    if (!address.addressCountry) address.addressCountry = "GB";
-    return address;
+    
+    // Default country if not found
+    if (!address.addressCountry) {
+      address.addressCountry = "GB";
+    }
+    
+    // Only return fields that have values (omit empty fields)
+    const cleanAddress = {};
+    if (address["@type"]) cleanAddress["@type"] = address["@type"];
+    if (address.streetAddress) cleanAddress.streetAddress = address.streetAddress;
+    if (address.addressLocality) cleanAddress.addressLocality = address.addressLocality;
+    if (address.addressRegion) cleanAddress.addressRegion = address.addressRegion;
+    if (address.postalCode) cleanAddress.postalCode = address.postalCode;
+    if (address.addressCountry) cleanAddress.addressCountry = address.addressCountry;
+    
+    return cleanAddress;
   }
 
   // Combine date and time into ISO 8601 format
@@ -5004,6 +5065,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Load review data if available
       await loadReviewData();
       
+      // Get toggle options
+      const includeReviews = document.getElementById('includeReviews')?.checked !== false;
+      const includePerformer = document.getElementById('includePerformer')?.checked !== false;
+      const groupRepeatingEvents = document.getElementById('groupRepeatingEvents')?.checked === true;
+      const includeMerchantFields = document.getElementById('includeMerchantFields')?.checked === true;
+      
       const selectedCategory = document.getElementById('eventCategoryFilter').value;
       const today = new Date().toISOString().split('T')[0];
       const filtered = events.filter(e =>
@@ -5031,6 +5098,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }))
     };
 
+    // Enhanced organizer block with full address and sameAs
+    const organizerAddress = parseAddress("45 Hathaway Road", "Coventry, West Midlands, CV4 9HW");
+    const organizerBlock = {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "address": organizerAddress,
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphoto",
+        "https://www.facebook.com/alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger"
+      ]
+    };
+
     const eventSchemas = filtered.map((event, index) => {
       const eventUrl = normalizeUrl(event['Event_URL'] || '');
       const mappingData = mappingsDict[eventUrl];
@@ -5047,8 +5129,34 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Phase 2: Audience & SEO Enhancements
       const audience = detectAudience(event['Event_Title'], event['Excerpt'], event['Tags']);
       const keywords = extractKeywords(event['Tags']);
-      const description = trimDescription(event['Excerpt'] || event['Description']);
+      const description = trimDescription(event['Excerpt'] || event['Description'], 5000);
       const validFrom = event['Published_Date'] || event['Start_Date'];
+      
+      // Extract identifier (slug from URL)
+      const urlParts = eventUrl.split('/');
+      const identifier = urlParts[urlParts.length - 1] || '';
+      
+      // Build enhanced keywords array (combine tags, category, location, and topic words)
+      const category = (event['Category'] || event['category'] || '').split(',')[0].trim();
+      const locationName = event['Location_Business_Name'] || '';
+      const titleLower = (event['Event_Title'] || '').toLowerCase();
+      const topicKeywords = [];
+      if (titleLower.includes('photography')) topicKeywords.push('photography course', 'photography workshop');
+      if (titleLower.includes('lightroom')) topicKeywords.push('Lightroom', 'photo editing');
+      if (titleLower.includes('beginner')) topicKeywords.push('beginner photography', 'photography for beginners');
+      if (titleLower.includes('landscape')) topicKeywords.push('landscape photography');
+      if (titleLower.includes('portrait')) topicKeywords.push('portrait photography');
+      if (titleLower.includes('macro')) topicKeywords.push('macro photography');
+      const allKeywords = [...keywords, ...topicKeywords, category, locationName].filter(Boolean);
+      
+      // Generate "about" field (short phrase summarizing topic)
+      let about = '';
+      if (titleLower.includes('beginner')) about = 'Photography fundamentals and camera basics';
+      else if (titleLower.includes('lightroom')) about = 'Photo editing and post-processing';
+      else if (titleLower.includes('landscape')) about = 'Landscape photography techniques';
+      else if (titleLower.includes('portrait')) about = 'Portrait photography skills';
+      else if (titleLower.includes('macro')) about = 'Macro and close-up photography';
+      else about = 'Photography education and training';
       
       // Build location (virtual or physical)
       let location;
@@ -5068,12 +5176,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Phase 3: Extract product data from mappings
       const useMappingPrice = mappingData && mappingData.price;
       const useMappingAvailability = mappingData && mappingData.availability;
+      const eventPrice = useMappingPrice ? parseFloat(mappingData.price) : parseFloat(event['Price'] || 0);
       
-      // Build event schema
+      // Build event schema - v4 Smart Enriched
       const eventSchema = {
+        "@context": "https://schema.org",
         "@type": "Event",
-        "@id": `${event['Event_URL']}#event`,
+        "@id": `${eventUrl}#event`,
+        "identifier": identifier,
         "name": event['Event_Title'],
+        "description": description,
+        "url": eventUrl,
+        "image": event['Event_Image'],
+        "thumbnailUrl": event['Event_Image'],
         "startDate": startDate,
         "endDate": endDate,
         "duration": duration,
@@ -5081,51 +5196,67 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           ? "https://schema.org/OnlineEventAttendanceMode" 
           : "https://schema.org/OfflineEventAttendanceMode",
         "eventStatus": "https://schema.org/EventScheduled",
-        "image": event['Event_Image'],
-        "thumbnailUrl": event['Event_Image'],
+        "isAccessibleForFree": false,
         "inLanguage": "en-GB",
-        "organizer": {
-          "@type": "Organization",
-          "name": "Alan Ranger Photography",
-          "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
-          "url": "https://www.alanranger.com"
-        },
+        "organizer": organizerBlock,
         "location": location,
-        "performer": {
+        "about": about,
+        "keywords": allKeywords.join(', '),
+        "sameAs": [eventUrl, productUrl].filter(Boolean),
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": eventUrl
+        }
+      };
+      
+      // Add performer if enabled
+      if (includePerformer) {
+        eventSchema.performer = {
           "@type": "Person",
-          "name": "Alan Ranger"
-        },
-        "offers": {
+          "name": "Alan Ranger",
+          "sameAs": "https://www.alanranger.com/about-alan-ranger"
+        };
+      }
+      
+      // Add provider (same as organizer for courses)
+      if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson') || titleLower.includes('course')) {
+        eventSchema.provider = organizerBlock;
+      }
+      
+      // Build offers with enhanced merchant fields
+      if (eventPrice > 0) {
+        eventSchema.offers = {
           "@type": "Offer",
-          "price": useMappingPrice ? mappingData.price.toString() : (event['Price'] || "0.00"),
-          "priceCurrency": "GBP",
+          "price": eventPrice.toFixed(2),
+          "priceCurrency": event['Currency'] || "GBP",
           "availability": useMappingAvailability ? mappingData.availability : "https://schema.org/InStock",
-          "url": event['Event_URL'],
+          "url": eventUrl,
           "validFrom": validFrom,
           "seller": {
             "@type": "Organization",
             "name": "Alan Ranger Photography",
             "url": "https://www.alanranger.com"
           }
-        },
-        "description": description,
-        "url": event['Event_URL'],
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": event['Event_URL']
+        };
+        
+        // Add merchant return policy if merchant fields enabled
+        if (includeMerchantFields) {
+          eventSchema.offers.hasMerchantReturnPolicy = "https://www.alanranger.com/returns-policy";
         }
-      };
-
-      // Phase 3: Add SKU and brand from mappings
-      if (mappingData && mappingData.sku) {
-        eventSchema.sku = mappingData.sku;
       }
-      if (mappingData && mappingData.brand) {
-        eventSchema.brand = mappingData.brand;
+      
+      // Phase 3: Add SKU and brand from mappings (if merchant fields enabled)
+      if (includeMerchantFields) {
+        if (mappingData && mappingData.sku) {
+          eventSchema.sku = mappingData.sku;
+        }
+        if (mappingData && mappingData.brand) {
+          eventSchema.brand = mappingData.brand;
+        }
       }
 
-      // Phase 4: Review Enrichment
-      if (reviewData && reviewData.reviewCount >= 3) {
+      // Phase 4: Review Enrichment (if enabled)
+      if (includeReviews && reviewData && reviewData.reviewCount >= 3) {
         eventSchema.aggregateRating = {
           "@type": "AggregateRating",
           "ratingValue": reviewData.ratingValue.toString(),
@@ -5134,7 +5265,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           "worstRating": "1"
         };
         
-        // Add individual review snippets (top 3-5 reviews)
+        // Add individual review snippets (top 5 reviews, trimmed to 300 chars)
         if (reviewsData && productUrl) {
           const productReviews = reviewsData.filter(r => {
             const rUrl = normalizeUrl(r.product_url || r.url || '');
@@ -5151,7 +5282,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           
           if (productReviews.length > 0) {
             eventSchema.review = productReviews.map(r => {
-              const reviewText = r.reviewbody || r.review_content || r.review || '';
+              let reviewText = r.reviewbody || r.review_content || r.review || '';
+              // Trim to 300 chars for v4
+              if (reviewText.length > 300) {
+                reviewText = reviewText.substring(0, 297) + '...';
+              }
               const reviewerName = r.reviewer || r.review_username || r.author || 'Anonymous';
               const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 5);
               const reviewDate = r.date || r.review_created_utc || '';
@@ -5181,10 +5316,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         eventSchema.audience = audience;
       }
 
-      // Add keywords if present
-      if (keywords.length > 0) {
-        eventSchema.keywords = keywords.join(', ');
+      // SEO Metadata Enhancers
+      eventSchema.potentialAction = {
+        "@type": "RegisterAction",
+        "target": eventUrl
+      };
+      eventSchema.isFamilyFriendly = true;
+      if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson')) {
+        eventSchema.learningResourceType = "Course";
+        eventSchema.typicalAgeRange = "16-99";
+        const courseModes = [];
+        if (isVirtual) courseModes.push("Online");
+        else courseModes.push("InPerson");
+        eventSchema.courseMode = courseModes;
       }
+      eventSchema.subjectOf = {
+        "@type": "WebPage",
+        "url": eventUrl
+      };
 
       // Phase 5: Generate breadcrumbs
       const eventName = event['Event_Title'] || 'Event';
@@ -5264,12 +5413,26 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     console.log('✅ Event schema generated:', filtered.length, 'events');
     console.log('✅ Output length:', output.length, 'characters');
     
-    // Phase 5: Inline validation results
+    // Phase 5: Enhanced validation results with statistics
     try {
       const validationResults = validateEventSchema(fullSchema);
+      const eventsWithReviews = eventList.filter(e => e.aggregateRating).length;
+      const eventsWithPerformer = eventList.filter(e => e.performer).length;
+      const eventsWithOffers = eventList.filter(e => e.offers && parseFloat(e.offers.price) > 0).length;
+      
       const validationStatus = validationResults.isValid ? '✅ Valid' : '❌ Invalid';
-      const validationMsg = `\n\n${validationStatus} - ${validationResults.message}`;
-      outputElement.textContent = output + validationMsg;
+      const statsMsg = `\n\n📊 Generation Summary:\n` +
+        `   • ${filtered.length} event${filtered.length !== 1 ? 's' : ''} generated\n` +
+        `   • ${eventsWithReviews} event${eventsWithReviews !== 1 ? 's' : ''} with reviews\n` +
+        `   • ${eventsWithPerformer} event${eventsWithPerformer !== 1 ? 's' : ''} with performer\n` +
+        `   • ${eventsWithOffers} event${eventsWithOffers !== 1 ? 's' : ''} with offers\n` +
+        `\n${validationStatus} - ${validationResults.message}`;
+      
+      if (validationResults.warnings && validationResults.warnings.length > 0) {
+        statsMsg += `\n⚠️ Warnings: ${validationResults.warnings.length}`;
+      }
+      
+      outputElement.textContent = output + statsMsg;
       
       if (!validationResults.isValid && validationResults.errors.length > 0) {
         console.warn('⚠️ Schema validation issues:', validationResults.errors);
