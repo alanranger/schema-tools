@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator - Events & Products</title>
+  <title>Unified Schema Generator v4 - Events & Products</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -1301,7 +1301,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v1.5.3</span>
+    <span class="version">v4.0</span>
+    <span class="date">Event + Review Enhanced</span>
     <span class="date" id="version-date">Loading...</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
@@ -1316,16 +1317,17 @@
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content active">
     <div class="instructions">
-      <strong>📅 Event Schema Generator</strong><br>
+      <strong>📅 Event Schema Generator v4</strong><br>
       1. Upload your event CSV file (exported from Squarespace Events).<br>
-      2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>End_Date</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>.<br>
+      2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>Start_Time</code>, <code>End_Date</code>, <code>End_Time</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Location_City_State_ZIP</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>, <code>Tags</code>, <code>Price</code>, <code>Published_Date</code>.<br>
       3. Select a category filter (or "All Categories") to generate schema for specific event types.<br>
       4. Click <b>Generate Event Schema</b> to create valid JSON-LD blocks.<br><br>
       
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results.<br>
       ✅ Only published events with future start dates are included automatically.<br>
-      ✅ Schema includes organizer, performer, location with parsed address.<br><br>
+      ✅ <strong>v4 Features:</strong> Time & duration calculation, virtual location detection, review enrichment, audience detection, SEO enhancements, and automatic Schema Suppressor v1.3 inclusion.<br>
+      ✅ Schema includes organizer, performer, location with parsed address, duration, and optional aggregateRating from product reviews.<br><br>
 
       <strong>📄 Data Workflow Summary:</strong><br>
       <pre>
@@ -4620,8 +4622,43 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     helpBlock.setAttribute('aria-expanded', helpBlock.classList.contains('expanded'));
   }
 
-  // Event Schema Generation
+  // Event Schema Generation v4 - Unified Schema Generator
   let events = [];
+  let reviewsData = null;
+  let mappingsData = null;
+
+  // Schema Suppressor v1.3 block (Code-Block Safe)
+  const SCHEMA_SUPPRESSOR_BLOCK = `<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+`;
 
   document.getElementById('eventCsvFile').addEventListener('change', function(e) {
     Papa.parse(e.target.files[0], {
@@ -4647,14 +4684,121 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     });
   });
 
-  function parseAddress(locationAddressRaw) {
-    if (!locationAddressRaw || typeof locationAddressRaw !== "string") return {
-      "@type": "PostalAddress",
-      "addressCountry": "GB"
-    };
+  // Load reviews and mappings CSVs (optional, for review enrichment)
+  async function loadReviewData() {
+    try {
+      // Try to load reviews CSV
+      const reviewsResponse = await fetch('inputs-files/workflow/03 – combined_product_reviews.csv');
+      if (reviewsResponse.ok) {
+        const reviewsText = await reviewsResponse.text();
+        Papa.parse(reviewsText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            reviewsData = results.data;
+            console.log('✅ Loaded reviews data:', reviewsData.length, 'reviews');
+          }
+        });
+      }
+    } catch (e) {
+      console.log('ℹ️ Reviews CSV not found or not accessible (optional)');
+    }
 
-    const parts = locationAddressRaw.split(",").map(p => p.trim()).filter(Boolean).reverse();
+    try {
+      // Try to load mappings CSV
+      const mappingsResponse = await fetch('inputs-files/workflow/event-product-mappings-2025-10-07T13-27-14-346Z.csv');
+      if (mappingsResponse.ok) {
+        const mappingsText = await mappingsResponse.text();
+        Papa.parse(mappingsText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            mappingsData = results.data;
+            console.log('✅ Loaded mappings data:', mappingsData.length, 'mappings');
+          }
+        });
+      }
+    } catch (e) {
+      console.log('ℹ️ Mappings CSV not found or not accessible (optional)');
+    }
+  }
+
+  // Normalize URL for matching (lowercase, strip trailing /)
+  function normalizeUrl(url) {
+    if (!url) return '';
+    return url.toLowerCase().replace(/\/$/, '');
+  }
+
+  // Build reviews dictionary: { product_url: { ratingValue, reviewCount } }
+  function buildReviewsDict() {
+    if (!reviewsData) return {};
+    const dict = {};
+    const productReviews = {};
+    
+    reviewsData.forEach(review => {
+      const productUrl = normalizeUrl(review.product_url || review.url || '');
+      if (!productUrl) return;
+      
+      if (!productReviews[productUrl]) {
+        productReviews[productUrl] = [];
+      }
+      productReviews[productUrl].push(review);
+    });
+
+    // Aggregate reviews per product
+    Object.keys(productReviews).forEach(productUrl => {
+      const reviews = productReviews[productUrl];
+      const validReviews = reviews.filter(r => {
+        const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+        return rating >= 4 && rating <= 5;
+      });
+      
+      if (validReviews.length >= 3) {
+        const totalRating = validReviews.reduce((sum, r) => {
+          return sum + parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+        }, 0);
+        const avgRating = totalRating / validReviews.length;
+        const reviewCount = Math.min(validReviews.length, 999);
+        
+        dict[productUrl] = {
+          ratingValue: Math.round(avgRating * 10) / 10,
+          reviewCount: reviewCount
+        };
+      }
+    });
+    
+    return dict;
+  }
+
+  // Build mappings dictionary: { event_url: product_url }
+  function buildMappingsDict() {
+    if (!mappingsData) return {};
+    const dict = {};
+    mappingsData.forEach(mapping => {
+      const eventUrl = normalizeUrl(mapping.event_url || '');
+      const productUrl = normalizeUrl(mapping.product_url || '');
+      if (eventUrl && productUrl) {
+        dict[eventUrl] = productUrl;
+      }
+    });
+    return dict;
+  }
+
+  // Parse address with improved logic
+  function parseAddress(locationAddressRaw, locationCityStateZip) {
     const address = { "@type": "PostalAddress" };
+    
+    if (!locationAddressRaw && !locationCityStateZip) {
+      address.addressCountry = "GB";
+      return address;
+    }
+
+    // Combine both fields
+    let fullAddress = '';
+    if (locationAddressRaw) fullAddress += locationAddressRaw + ', ';
+    if (locationCityStateZip) fullAddress += locationCityStateZip;
+    
+    const parts = fullAddress.split(",").map(p => p.trim()).filter(Boolean).reverse();
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
@@ -4663,7 +4807,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         address.addressCountry = "GB";
       } else if (!address.postalCode && /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(part)) {
         address.postalCode = part.toUpperCase();
-      } else if (!address.addressRegion) {
+      } else if (!address.addressRegion && !address.postalCode) {
         address.addressRegion = part;
       } else if (!address.addressLocality) {
         address.addressLocality = part;
@@ -4676,7 +4820,97 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     return address;
   }
 
-  function generateEventSchema() {
+  // Combine date and time into ISO 8601 format
+  function combineDateTime(dateStr, timeStr) {
+    if (!dateStr) return null;
+    if (!timeStr) return dateStr; // Return date only if no time
+    
+    // Normalize time format (handle HH:MM:SS or HH:MM)
+    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!timeMatch) return dateStr;
+    
+    const hours = timeMatch[1].padStart(2, '0');
+    const minutes = timeMatch[2].padStart(2, '0');
+    const seconds = timeMatch[3] ? timeMatch[3].padStart(2, '0') : '00';
+    
+    return `${dateStr}T${hours}:${minutes}:${seconds}`;
+  }
+
+  // Compute duration in ISO 8601 format (PT120M default)
+  function computeDuration(startDate, endDate, startTime, endTime) {
+    if (!startDate || !endDate) return "PT120M";
+    
+    try {
+      const start = combineDateTime(startDate, startTime);
+      const end = combineDateTime(endDate, endTime);
+      
+      if (!start || !end) return "PT120M";
+      
+      const startDateObj = new Date(start);
+      const endDateObj = new Date(end);
+      const diffMs = endDateObj - startDateObj;
+      
+      if (diffMs <= 0) return "PT120M";
+      
+      const diffMins = Math.round(diffMs / (1000 * 60));
+      return `PT${diffMins}M`;
+    } catch (e) {
+      return "PT120M";
+    }
+  }
+
+  // Detect if location is virtual (Zoom/Online)
+  function isVirtualLocation(locationName, locationAddress) {
+    const virtualKeywords = ['zoom', 'online', 'virtual', 'webinar'];
+    const locationStr = (locationName || '').toLowerCase() + ' ' + (locationAddress || '').toLowerCase();
+    return virtualKeywords.some(keyword => locationStr.includes(keyword));
+  }
+
+  // Detect audience type from keywords
+  function detectAudience(eventTitle, description, tags) {
+    const text = ((eventTitle || '') + ' ' + (description || '') + ' ' + (tags || '')).toLowerCase();
+    
+    if (text.includes('beginner') || text.includes('beginners')) {
+      return {
+        "@type": "EducationalAudience",
+        "educationalRole": "student",
+        "audienceType": "Beginner"
+      };
+    }
+    if (text.includes('advanced') || text.includes('professional')) {
+      return {
+        "@type": "EducationalAudience",
+        "educationalRole": "student",
+        "audienceType": "Advanced"
+      };
+    }
+    if (text.includes('intermediate')) {
+      return {
+        "@type": "EducationalAudience",
+        "educationalRole": "student",
+        "audienceType": "Intermediate"
+      };
+    }
+    return null;
+  }
+
+  // Extract keywords from Tags
+  function extractKeywords(tags) {
+    if (!tags) return [];
+    return tags.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+  }
+
+  // Trim description if too long
+  function trimDescription(description, maxLength = 5000) {
+    if (!description) return '';
+    if (description.length <= maxLength) return description;
+    return description.substring(0, maxLength - 3) + '...';
+  }
+
+  async function generateEventSchema() {
+    // Load review data if available
+    await loadReviewData();
+    
     const selectedCategory = document.getElementById('eventCategoryFilter').value;
     const today = new Date().toISOString().split('T')[0];
     const filtered = events.filter(e =>
@@ -4684,6 +4918,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       e['Start_Date'] >= today &&
       e['Workflow_State'] === 'Published'
     );
+
+    // Build dictionaries for review enrichment
+    const reviewsDict = buildReviewsDict();
+    const mappingsDict = buildMappingsDict();
 
     const itemList = {
       "@type": "ItemList",
@@ -4695,40 +4933,109 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }))
     };
 
-    const eventList = filtered.map(event => ({
-      "@type": "Event",
-      "name": event['Event_Title'],
-      "startDate": event['Start_Date'],
-      "endDate": event['End_Date'],
-      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-      "eventStatus": "https://schema.org/EventScheduled",
-      "image": event['Event_Image'],
-      "organizer": {
-        "@type": "Organization",
-        "name": "Alan Ranger Photography",
-        "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
-        "url": "https://www.alanranger.com"
-      },
-      "location": {
-        "@type": "Place",
-        "name": event['Location_Business_Name'],
-        "address": parseAddress(event['Location_Address'])
-      },
-      "performer": {
-        "@type": "Person",
-        "name": "Alan Ranger"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0.00",
-        "priceCurrency": "GBP",
-        "availability": "https://schema.org/InStock",
+    const eventList = filtered.map((event, index) => {
+      const eventUrl = normalizeUrl(event['Event_URL'] || '');
+      const productUrl = mappingsDict[eventUrl];
+      const reviewData = productUrl ? reviewsDict[productUrl] : null;
+      
+      // Phase 1: Time & Address Logic
+      const startDate = combineDateTime(event['Start_Date'], event['Start_Time']);
+      const endDate = combineDateTime(event['End_Date'], event['End_Time']);
+      const duration = computeDuration(event['Start_Date'], event['End_Date'], event['Start_Time'], event['End_Time']);
+      const address = parseAddress(event['Location_Address'], event['Location_City_State_ZIP']);
+      const isVirtual = isVirtualLocation(event['Location_Business_Name'], event['Location_Address']);
+      
+      // Phase 2: Audience & SEO Enhancements
+      const audience = detectAudience(event['Event_Title'], event['Excerpt'], event['Tags']);
+      const keywords = extractKeywords(event['Tags']);
+      const description = trimDescription(event['Excerpt'] || event['Description']);
+      const validFrom = event['Published_Date'] || event['Start_Date'];
+      
+      // Build location (virtual or physical)
+      let location;
+      if (isVirtual) {
+        location = {
+          "@type": "VirtualLocation",
+          "url": event['Event_URL'] || "https://www.alanranger.com"
+        };
+      } else {
+        location = {
+          "@type": "Place",
+          "name": event['Location_Business_Name'] || "Alan Ranger Photography",
+          "address": address
+        };
+      }
+
+      // Build event schema
+      const eventSchema = {
+        "@type": "Event",
+        "@id": `${event['Event_URL']}#event`,
+        "name": event['Event_Title'],
+        "startDate": startDate,
+        "endDate": endDate,
+        "duration": duration,
+        "eventAttendanceMode": isVirtual 
+          ? "https://schema.org/OnlineEventAttendanceMode" 
+          : "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "image": event['Event_Image'],
+        "thumbnailUrl": event['Event_Image'],
+        "inLanguage": "en-GB",
+        "organizer": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography",
+          "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+          "url": "https://www.alanranger.com"
+        },
+        "location": location,
+        "performer": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": event['Price'] || "0.00",
+          "priceCurrency": "GBP",
+          "availability": "https://schema.org/InStock",
+          "url": event['Event_URL'],
+          "validFrom": validFrom,
+          "seller": {
+            "@type": "Organization",
+            "name": "Alan Ranger Photography",
+            "url": "https://www.alanranger.com"
+          }
+        },
+        "description": description,
         "url": event['Event_URL'],
-        "validFrom": event['Start_Date']
-      },
-      "description": event['Excerpt'],
-      "url": event['Event_URL']
-    }));
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": event['Event_URL']
+        }
+      };
+
+      // Phase 4: Review Enrichment
+      if (reviewData && reviewData.reviewCount >= 3) {
+        eventSchema.aggregateRating = {
+          "@type": "AggregateRating",
+          "ratingValue": reviewData.ratingValue.toString(),
+          "reviewCount": reviewData.reviewCount.toString(),
+          "bestRating": "5",
+          "worstRating": "1"
+        };
+      }
+
+      // Add audience if detected
+      if (audience) {
+        eventSchema.audience = audience;
+      }
+
+      // Add keywords if present
+      if (keywords.length > 0) {
+        eventSchema.keywords = keywords.join(', ');
+      }
+
+      return eventSchema;
+    });
 
     const fullSchema = {
       "@context": "https://schema.org",
@@ -4739,7 +5046,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const scriptEl = document.createElement('script');
     scriptEl.type = 'application/ld+json';
     scriptEl.textContent = json;
-    document.getElementById('eventOutput').textContent = scriptEl.outerHTML;
+    
+    // Phase 3: Prepend Schema Suppressor
+    const output = SCHEMA_SUPPRESSOR_BLOCK + scriptEl.outerHTML;
+    document.getElementById('eventOutput').textContent = output;
   }
 
   // Product Schema Generation
