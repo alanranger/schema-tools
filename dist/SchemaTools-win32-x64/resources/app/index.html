@@ -6825,6 +6825,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     stats.superEventLinks = superEventLinks;
 
+    // Emit order: Events first, then EventSeries (v4.3)
+    const outputJsonLd = [
+      ...eventList,
+      ...eventSeriesArray
+    ];
+
     // Calculate linkage verification stats (v4.3)
     const verify = {
       eventId: 0,
@@ -6846,12 +6852,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
     
     stats.linkageStats = verify;
-
-    // Emit order: Events first, then EventSeries (v4.3)
-    const outputJsonLd = [
-      ...eventList,
-      ...eventSeriesArray
-    ];
 
     const fullSchema = {
       "@context": "https://schema.org",
@@ -6946,8 +6946,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         statsMsg += `\n⚠️ Warnings: ${validationResults.warnings.length}`;
       }
       
-      // Final summary (v4.2)
-      addDebugLog(`\n✅ v4.2 Schema generation complete.`);
+      // Final summary (v4.3)
+      addDebugLog(`\n✅ v4.3 Schema generation complete.`);
       addDebugLog(`   Lessons: ${lessonsCount} valid / Workshops: ${workshopsCount} valid`);
       addDebugLog(`   Region coverage: ${regionCoverage}%`);
       if (stats.eventSeriesCreated && stats.eventSeriesCreated > 0) {
