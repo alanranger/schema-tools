@@ -1429,9 +1429,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
 
     <h3>Generated JSON-LD Schema:</h3>
-    <div style="position: relative; z-index: 1;">
+    <div id="eventOutputContainer" style="position: relative; z-index: 1;">
       <pre id="eventOutput" style="position: relative; z-index: 1;"></pre>
-      <button onclick="copyToClipboard('eventOutput')" style="margin-top: 0.75rem; background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; position: relative; z-index: 1;">📋 Copy Schema to Clipboard</button>
+      <button id="copySchemaButton" onclick="copyToClipboard('eventOutput')" style="margin-top: 0.75rem; background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; position: relative; z-index: 1; display: block; visibility: visible;">📋 Copy Schema to Clipboard</button>
     </div>
     
     <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
