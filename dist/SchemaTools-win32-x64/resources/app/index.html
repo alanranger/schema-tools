@@ -5998,6 +5998,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       ]
     };
 
+    // Track series membership for backlinking (v4.3)
+    const seriesMembership = new Map(); // eventId -> seriesId
+    
     const eventSchemas = filtered.map((event, index) => {
       const eventUrl = normalizeUrl(event['Event_URL'] || '');
       const mappingData = mappingsDict[eventUrl];
@@ -6006,6 +6009,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       // Assign stable @id to Event (v4.3)
       const eventId = eventIdFromUrl(eventUrl);
+      
+      // Check if this event belongs to a series (v4.3)
+      const title = event['Event_Title'] || "";
+      const keywords = [
+        "Bluebell Photography Workshop",
+        "Batsford Arboretum Autumn Photography Workshop"
+      ];
+      const keyMatch = keywords.find(k => title.includes(k));
+      if (keyMatch) {
+        const seriesId = seriesIdFromName(keyMatch.trim());
+        seriesMembership.set(eventId, seriesId);
+      }
       
       // Track statistics
       if (mappingData) stats.eventsWithMappings++;
