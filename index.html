@@ -1387,6 +1387,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <label for="eventCsvFile">Upload Event CSV File:</label>
     <input type="file" id="eventCsvFile" accept=".csv" aria-label="Event CSV file upload">
     
+    <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+      <h4 style="margin-top: 0; color: #856404;">📎 Optional Enrichment Files:</h4>
+      <label for="reviewsCsvFile" style="display: block; margin-bottom: 0.5rem;">
+        Reviews CSV (03 – combined_product_reviews.csv):
+        <input type="file" id="reviewsCsvFile" accept=".csv" style="margin-left: 0.5rem;">
+      </label>
+      <label for="mappingsCsvFile" style="display: block;">
+        Event-Product Mappings CSV (event-product-mappings-*.csv):
+        <input type="file" id="mappingsCsvFile" accept=".csv" style="margin-left: 0.5rem;">
+      </label>
+      <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #856404;">
+        ℹ️ These files are required for review enrichment and product mapping. Upload them to enable reviews and offers.
+      </p>
+    </div>
+    
     <div id="eventOptionsContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
       <h4 style="margin-top: 0;">⚙️ Enrichment Options:</h4>
       <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
@@ -1416,6 +1431,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <h3>Generated JSON-LD Schema:</h3>
     <pre id="eventOutput"></pre>
     <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
+    
+    <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
+      <h4 style="margin-top: 0;">🔍 Debug Log:</h4>
+      <pre id="debugLog" style="margin: 0; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word;"></pre>
+    </div>
     
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
       <button id="exportMerchantFeedBtn" onclick="exportMerchantFeed()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
@@ -4814,43 +4834,111 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     });
   });
 
-  // Load reviews and mappings CSVs (optional, for review enrichment)
+  // Load reviews and mappings CSVs from file inputs (optional, for review enrichment)
   async function loadReviewData() {
-    try {
-      // Try to load reviews CSV
-      const reviewsResponse = await fetch('inputs-files/workflow/03 – combined_product_reviews.csv');
-      if (reviewsResponse.ok) {
-        const reviewsText = await reviewsResponse.text();
-        Papa.parse(reviewsText, {
+    const debugLog = [];
+    debugLog.push('🔍 DEBUG: Starting review data loading...');
+    
+    // Load reviews CSV from file input
+    const reviewsFileInput = document.getElementById('reviewsCsvFile');
+    if (reviewsFileInput && reviewsFileInput.files && reviewsFileInput.files[0]) {
+      debugLog.push(`📄 Loading reviews CSV: ${reviewsFileInput.files[0].name}`);
+      try {
+        const file = reviewsFileInput.files[0];
+        const text = await file.text();
+        Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
           complete: function(results) {
             reviewsData = results.data;
-            console.log('✅ Loaded reviews data:', reviewsData.length, 'reviews');
+            debugLog.push(`✅ Loaded ${reviewsData.length} reviews from CSV`);
+            debugLog.push(`   Columns found: ${results.meta.fields ? results.meta.fields.join(', ') : 'unknown'}`);
+            if (reviewsData.length > 0) {
+              debugLog.push(`   Sample review keys: ${Object.keys(reviewsData[0]).join(', ')}`);
+            }
+            window.debugLog = window.debugLog || [];
+            window.debugLog.push(...debugLog);
+            updateDebugLog();
+          },
+          error: function(error) {
+            debugLog.push(`❌ Error parsing reviews CSV: ${error.message}`);
+            window.debugLog = window.debugLog || [];
+            window.debugLog.push(...debugLog);
+            updateDebugLog();
           }
         });
+      } catch (e) {
+        debugLog.push(`❌ Error reading reviews file: ${e.message}`);
+        window.debugLog = window.debugLog || [];
+        window.debugLog.push(...debugLog);
+        updateDebugLog();
       }
-    } catch (e) {
-      console.log('ℹ️ Reviews CSV not found or not accessible (optional)');
+    } else {
+      debugLog.push('⚠️ No reviews CSV file uploaded (optional)');
+      window.debugLog = window.debugLog || [];
+      window.debugLog.push(...debugLog);
+      updateDebugLog();
     }
 
-    try {
-      // Try to load mappings CSV
-      const mappingsResponse = await fetch('inputs-files/workflow/event-product-mappings-2025-10-07T13-27-14-346Z.csv');
-      if (mappingsResponse.ok) {
-        const mappingsText = await mappingsResponse.text();
-        Papa.parse(mappingsText, {
+    // Load mappings CSV from file input
+    const mappingsFileInput = document.getElementById('mappingsCsvFile');
+    if (mappingsFileInput && mappingsFileInput.files && mappingsFileInput.files[0]) {
+      debugLog.push(`📄 Loading mappings CSV: ${mappingsFileInput.files[0].name}`);
+      try {
+        const file = mappingsFileInput.files[0];
+        const text = await file.text();
+        Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
           complete: function(results) {
             mappingsData = results.data;
-            console.log('✅ Loaded mappings data:', mappingsData.length, 'mappings');
+            debugLog.push(`✅ Loaded ${mappingsData.length} mappings from CSV`);
+            debugLog.push(`   Columns found: ${results.meta.fields ? results.meta.fields.join(', ') : 'unknown'}`);
+            if (mappingsData.length > 0) {
+              debugLog.push(`   Sample mapping keys: ${Object.keys(mappingsData[0]).join(', ')}`);
+            }
+            window.debugLog = window.debugLog || [];
+            window.debugLog.push(...debugLog);
+            updateDebugLog();
+          },
+          error: function(error) {
+            debugLog.push(`❌ Error parsing mappings CSV: ${error.message}`);
+            window.debugLog = window.debugLog || [];
+            window.debugLog.push(...debugLog);
+            updateDebugLog();
           }
         });
+      } catch (e) {
+        debugLog.push(`❌ Error reading mappings file: ${e.message}`);
+        window.debugLog = window.debugLog || [];
+        window.debugLog.push(...debugLog);
+        updateDebugLog();
       }
-    } catch (e) {
-      console.log('ℹ️ Mappings CSV not found or not accessible (optional)');
+    } else {
+      debugLog.push('⚠️ No mappings CSV file uploaded (optional)');
+      window.debugLog = window.debugLog || [];
+      window.debugLog.push(...debugLog);
+      updateDebugLog();
     }
+  }
+  
+  // Update debug log display
+  function updateDebugLog() {
+    const debugLogElement = document.getElementById('debugLog');
+    const debugLogContainer = document.getElementById('debugLogContainer');
+    if (debugLogElement && window.debugLog) {
+      debugLogElement.textContent = window.debugLog.join('\n');
+      if (debugLogContainer) {
+        debugLogContainer.style.display = 'block';
+      }
+    }
+  }
+  
+  // Add debug log entry
+  function addDebugLog(message) {
+    window.debugLog = window.debugLog || [];
+    window.debugLog.push(message);
+    updateDebugLog();
   }
 
   // Normalize URL for matching (lowercase, strip trailing /)
@@ -4861,27 +4949,42 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   // Build reviews dictionary: { product_url: { ratingValue, reviewCount } }
   function buildReviewsDict() {
-    if (!reviewsData) return {};
+    addDebugLog('🔍 Building reviews dictionary...');
+    if (!reviewsData) {
+      addDebugLog('⚠️ No reviews data available');
+      return {};
+    }
+    addDebugLog(`📊 Processing ${reviewsData.length} reviews...`);
+    
     const dict = {};
     const productReviews = {};
     
-    reviewsData.forEach(review => {
+    reviewsData.forEach((review, idx) => {
       const productUrl = normalizeUrl(review.product_url || review.url || '');
-      if (!productUrl) return;
+      if (!productUrl) {
+        if (idx < 3) addDebugLog(`   Review ${idx + 1}: No product_url found (keys: ${Object.keys(review).join(', ')})`);
+        return;
+      }
       
       if (!productReviews[productUrl]) {
         productReviews[productUrl] = [];
       }
       productReviews[productUrl].push(review);
     });
-
+    
+    addDebugLog(`📦 Found ${Object.keys(productReviews).length} unique product URLs`);
+    
     // Aggregate reviews per product
-    Object.keys(productReviews).forEach(productUrl => {
+    Object.keys(productReviews).forEach((productUrl, idx) => {
       const reviews = productReviews[productUrl];
       const validReviews = reviews.filter(r => {
         const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
         return rating >= 4 && rating <= 5;
       });
+      
+      if (idx < 3) {
+        addDebugLog(`   Product ${idx + 1}: ${productUrl} - ${reviews.length} total reviews, ${validReviews.length} valid (≥4★)`);
+      }
       
       if (validReviews.length >= 3) {
         const totalRating = validReviews.reduce((sum, r) => {
@@ -4897,16 +5000,31 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
     });
     
+    addDebugLog(`✅ Reviews dictionary built: ${Object.keys(dict).length} products with valid reviews`);
     return dict;
   }
 
   // Build mappings dictionary: { event_url: { product_url, sku, brand, price, availability } }
   function buildMappingsDict() {
-    if (!mappingsData) return {};
+    addDebugLog('🔍 Building mappings dictionary...');
+    if (!mappingsData) {
+      addDebugLog('⚠️ No mappings data available');
+      return {};
+    }
+    addDebugLog(`📊 Processing ${mappingsData.length} mappings...`);
+    
     const dict = {};
-    mappingsData.forEach(mapping => {
+    let successCount = 0;
+    let failCount = 0;
+    
+    mappingsData.forEach((mapping, idx) => {
       const eventUrl = normalizeUrl(mapping.event_url || '');
       const productUrl = normalizeUrl(mapping.product_url || '');
+      
+      if (idx < 3) {
+        addDebugLog(`   Mapping ${idx + 1}: event_url="${eventUrl}", product_url="${productUrl}"`);
+      }
+      
       if (eventUrl && productUrl) {
         // Extract SKU from product URL slug
         const urlParts = productUrl.split('/');
@@ -4924,8 +5042,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           availability: mapping.availability || mapping.json_availability || "https://schema.org/InStock",
           product_title: mapping.product_title || null
         };
+        successCount++;
+      } else {
+        failCount++;
+        if (idx < 3) {
+          addDebugLog(`   ⚠️ Mapping ${idx + 1} skipped: missing event_url or product_url`);
+        }
       }
     });
+    
+    addDebugLog(`✅ Mappings dictionary built: ${successCount} successful, ${failCount} skipped`);
     return dict;
   }
 
@@ -5144,11 +5270,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   async function generateEventSchema() {
     try {
+      // Initialize debug log
+      window.debugLog = [];
+      addDebugLog('🚀 Starting event schema generation...');
+      
       // Check if events are loaded
       if (!events || events.length === 0) {
+        addDebugLog('❌ No events loaded');
         alert('Please upload a CSV file first.');
         return;
       }
+      
+      addDebugLog(`📋 Loaded ${events.length} events from CSV`);
       
       // Load review data if available
       await loadReviewData();
@@ -5159,6 +5292,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const groupRepeatingEvents = document.getElementById('groupRepeatingEvents')?.checked === true;
       const includeMerchantFields = document.getElementById('includeMerchantFields')?.checked === true;
       
+      addDebugLog(`⚙️ Toggle states: Reviews=${includeReviews}, Performer=${includePerformer}, GroupRepeating=${groupRepeatingEvents}, MerchantFields=${includeMerchantFields}`);
+      
       const selectedCategory = document.getElementById('eventCategoryFilter').value;
       const today = new Date().toISOString().split('T')[0];
       const filtered = events.filter(e =>
@@ -5167,7 +5302,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         e['Workflow_State'] === 'Published'
       );
       
+      addDebugLog(`🔍 Filtered to ${filtered.length} events (category: ${selectedCategory}, future dates only, published only)`);
+      
       if (filtered.length === 0) {
+        addDebugLog('❌ No events match criteria');
         alert('No events found matching the selected category and date criteria.');
         return;
       }
@@ -5175,6 +5313,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Build dictionaries for review enrichment
     const reviewsDict = buildReviewsDict();
     const mappingsDict = buildMappingsDict();
+    
+    addDebugLog(`📊 Reviews dict has ${Object.keys(reviewsDict).length} products`);
+    addDebugLog(`📊 Mappings dict has ${Object.keys(mappingsDict).length} event mappings`);
+    
+    // Show sample mappings
+    const sampleMappings = Object.keys(mappingsDict).slice(0, 3);
+    if (sampleMappings.length > 0) {
+      addDebugLog(`   Sample mappings:`);
+      sampleMappings.forEach(eventUrl => {
+        const mapping = mappingsDict[eventUrl];
+        addDebugLog(`     ${eventUrl} → ${mapping.product_url}`);
+      });
+    }
 
     const itemList = {
       "@type": "ItemList",
