@@ -4812,6 +4812,33 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
 `;
 
+  // Detect EventSeries groups for recurring workshops (v4.2)
+  function detectEventSeries(events) {
+    const grouped = {};
+    
+    const keywords = [
+      "Bluebell Photography Workshop",
+      "Batsford Arboretum Autumn Photography Workshop"
+    ];
+    
+    for (const e of events) {
+      const title = e.name || e.Event_Title || "";
+      const keyMatch = keywords.find(k => title.includes(k));
+      if (keyMatch) {
+        const key = keyMatch.trim().toLowerCase();
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(e);
+      }
+    }
+    
+    // Filter out groups with fewer than 2 events
+    Object.keys(grouped).forEach(k => {
+      if (grouped[k].length < 2) delete grouped[k];
+    });
+    
+    return grouped;
+  }
+
   // Detect CSV type (Lessons vs Workshops) - v4
   function detectCsvType(fileName, headers) {
     const fileNameLower = (fileName || '').toLowerCase();
