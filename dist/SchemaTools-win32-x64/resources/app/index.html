@@ -1497,7 +1497,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           📥 Export JSON File
         </button>
         <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
-          📋 Copy Squarespace Script Tag
+          📋 Copy Squarespace Script src Tag
         </button>
       </div>
     </div>
@@ -7153,7 +7153,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <span style="color: #075985; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
             <span style="color: #075985; font-size: 0.875rem;">✅ Validated: JSON.parse successful</span><br>
             <span style="color: #075985; font-size: 0.875rem;">📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified, ${sizeReduction}% reduction)</span><br>
-            <span style="color: #075985; font-size: 0.875rem;">📋 Script tag ready for Squarespace</span>
+            <span style="color: #075985; font-size: 0.875rem;">✅ Structure: @context=${schema['@context'] === 'https://schema.org' ? '✅' : '❌'}, @graph=${Array.isArray(schema['@graph']) ? '✅' : '❌'}</span><br>
+            <span style="color: #075985; font-size: 0.875rem;">📋 Script src tag ready for Squarespace</span>
           </div>
         `;
       }
@@ -7161,8 +7162,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       addDebugLog(`\n📦 Schema Export Ready:`);
       addDebugLog(`   File: ${fileName}`);
       addDebugLog(`   ✅ Validated: JSON.parse successful`);
-      addDebugLog(`   📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified)`);
-      addDebugLog(`   💡 Use export buttons below to download JSON or copy Squarespace script tag`);
+      
+      // Quality checks
+      const hasContext = schema['@context'] === 'https://schema.org';
+      const hasGraph = Array.isArray(schema['@graph']);
+      const fileSizeKB = minifiedJson.length / 1024;
+      const isValid = hasContext && hasGraph && fileSizeKB < 250;
+      
+      addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB (minified) ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
+      addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
+      addDebugLog(`   💡 Use export buttons below to download JSON or copy Squarespace script src tag`);
     } catch (error) {
       console.error('❌ Error preparing export:', error);
       addDebugLog(`\n📦 Schema Export:`);
@@ -7259,16 +7268,29 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ✅ Exported: ${fileName}`);
       addDebugLog(`   ✅ Validated: JSON.parse successful`);
+      
+      // Quality checks
+      const hasContext = window.currentEventSchema['@context'] === 'https://schema.org';
+      const hasGraph = Array.isArray(window.currentEventSchema['@graph']);
+      const fileSizeKB = minifiedJson.length / 1024;
+      const sizeCheck = fileSizeKB < 250 ? '✅' : '⚠️';
+      
       addDebugLog(`   ✅ Minified: ${jsonString.length} → ${minifiedJson.length} bytes (${Math.round((1 - minifiedJson.length/jsonString.length) * 100)}% reduction)`);
+      addDebugLog(`   📊 File size: ${fileSizeKB.toFixed(2)} KB ${sizeCheck} ${fileSizeKB < 250 ? '(under 250 KB limit)' : '(exceeds 250 KB - consider splitting)'}`);
+      addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
       
       // Update UI
       const exportContent = document.getElementById('schemaExportContent');
       if (exportContent) {
+        let statusColor = (hasContext && hasGraph && fileSizeKB < 250) ? '#10b981' : '#f59e0b';
+        let statusBg = (hasContext && hasGraph && fileSizeKB < 250) ? '#d1fae5' : '#fef3c7';
+        
         exportContent.innerHTML = `
-          <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981;">
-            <strong style="color: #065f46;">✅ Exported Successfully</strong><br>
-            <span style="color: #047857; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
-            <span style="color: #047857; font-size: 0.875rem;">Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified)</span>
+          <div style="background: ${statusBg}; padding: 0.75rem; border-radius: 6px; border-left: 3px solid ${statusColor}; margin-bottom: 0.75rem;">
+            <strong style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#065f46' : '#92400e'};">✅ Exported Successfully</strong><br>
+            <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
+            <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB (minified) ${sizeCheck}</span><br>
+            <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}</span>
           </div>
         `;
       }
@@ -7282,7 +7304,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
   }
 
-  // Copy Squarespace Script Tag (v4.4)
+  // Copy Squarespace Script Tag (v4.4) - External src version
   function copySquarespaceScript() {
     if (!window.currentEventSchema) {
       alert('Please generate event schema first.');
@@ -7293,36 +7315,72 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
                      csvType === 'lessons' ? 'lessons-schema.json' : 
                      'event-schema.json';
+    const schemaType = csvType === 'workshops' ? 'Workshops' : 
+                       csvType === 'lessons' ? 'Lessons' : 
+                       'Event';
 
     try {
-      // Minify JSON
+      // Validate JSON structure
+      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      const parsed = JSON.parse(jsonString);
+      
+      // Quality checks
+      const hasContext = parsed['@context'] === 'https://schema.org';
+      const hasGraph = Array.isArray(parsed['@graph']);
       const minifiedJson = JSON.stringify(window.currentEventSchema);
+      const fileSizeKB = minifiedJson.length / 1024;
+      const isValid = hasContext && hasGraph && fileSizeKB < 250;
       
-      // Create script tag (escape closing tag to prevent breaking JavaScript)
-      const scriptTag = `<script type="application/ld+json">\n${minifiedJson}\n<\/script>`;
+      // Generate external script src tag
+      const scriptSrcTag = `<!-- ${schemaType} Schema -->
+<script type="application/ld+json"
+        src="https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/<unique_id>/${fileName}">
+<\/script>`;
       
-      // Copy to clipboard
-      navigator.clipboard.writeText(scriptTag).then(() => {
+      // Also generate inline version as alternative
+      const inlineScriptTag = `<!-- ${schemaType} Schema (Inline) -->
+<script type="application/ld+json">
+${minifiedJson}
+<\/script>`;
+      
+      // Copy external src tag to clipboard
+      navigator.clipboard.writeText(scriptSrcTag).then(() => {
         // Update UI
         const exportContent = document.getElementById('schemaExportContent');
         if (exportContent) {
+          let statusColor = isValid ? '#10b981' : '#f59e0b';
+          let statusBg = isValid ? '#d1fae5' : '#fef3c7';
+          let statusText = isValid ? '✅ Ready for Production' : '⚠️ Review Required';
+          
           exportContent.innerHTML = `
-            <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981;">
-              <strong style="color: #065f46;">✅ Script Tag Copied!</strong><br>
-              <span style="color: #047857; font-size: 0.875rem;">Paste into Squarespace Code Block or Header Code Injection</span>
+            <div style="background: ${statusBg}; padding: 0.75rem; border-radius: 6px; border-left: 3px solid ${statusColor}; margin-bottom: 0.75rem;">
+              <strong style="color: ${isValid ? '#065f46' : '#92400e'};">${statusText}</strong><br>
+              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
+              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}</span><br>
+              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">Structure: ${hasContext ? '✅' : '❌'} @context, ${hasGraph ? '✅' : '❌'} @graph</span>
             </div>
-            <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f3f4f6; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto;">
-              <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${scriptTag.substring(0, 200)}...</pre>
+            <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto; margin-bottom: 0.75rem;">
+              <div style="color: #6b7280; margin-bottom: 0.5rem;">📋 External Script Tag (Copied):</div>
+              <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word; color: #374151;">${scriptSrcTag}</pre>
+              <div style="color: #6b7280; margin-top: 0.5rem; font-size: 0.7rem;">💡 Replace &lt;unique_id&gt; with Squarespace token after uploading ${fileName}</div>
+            </div>
+            <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto;">
+              <div style="color: #6b7280; margin-bottom: 0.5rem;">📋 Inline Script Tag (Alternative):</div>
+              <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word; color: #374151; max-height: 200px; overflow-y: auto;">${inlineScriptTag.substring(0, 500)}...</pre>
             </div>
           `;
         }
         
-        addDebugLog(`\n📋 Squarespace Script Tag:`);
+        addDebugLog(`\n📋 Squarespace Script Tag (External src):`);
         addDebugLog(`   ✅ Copied to clipboard`);
-        addDebugLog(`   📝 Length: ${scriptTag.length} characters`);
-        addDebugLog(`   💡 Paste into Squarespace Code Block or Header Code Injection`);
+        addDebugLog(`   📝 File: ${fileName}`);
+        addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
+        addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
+        addDebugLog(`   💡 Replace <unique_id> with Squarespace token after uploading file`);
+        addDebugLog(`\n   Script tag:`);
+        addDebugLog(`   ${scriptSrcTag.split('\n').join('\n   ')}`);
         
-        console.log('✅ Squarespace script tag copied to clipboard');
+        console.log('✅ Squarespace script src tag copied to clipboard');
       }).catch(err => {
         console.error('❌ Error copying to clipboard:', err);
         alert('Error copying to clipboard. Please copy manually from the output above.');
@@ -7330,6 +7388,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     } catch (error) {
       console.error('❌ Error generating script tag:', error);
       alert('Error generating script tag: ' + error.message);
+      addDebugLog(`\n📋 Squarespace Script Tag:`);
+      addDebugLog(`   ❌ Error: ${error.message}`);
     }
   }
 
