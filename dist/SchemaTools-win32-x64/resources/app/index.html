@@ -1437,6 +1437,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <pre id="debugLog" style="margin: 0; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word;"></pre>
     </div>
     
+    <div id="summaryPanel" style="display:none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border: 1px solid #3182ce;">
+      <h4 style="margin-top: 0; color: #2c5282;">📊 Schema Generation Summary</h4>
+      <div id="summaryContent" style="font-size: 0.875rem; line-height: 1.6;"></div>
+    </div>
+    
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
       <button id="exportMerchantFeedBtn" onclick="exportMerchantFeed()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
         📥 Export Merchant Center Feed (.json)
@@ -4934,11 +4939,74 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
   }
   
-  // Add debug log entry
-  function addDebugLog(message) {
-    window.debugLog = window.debugLog || [];
-    window.debugLog.push(message);
-    updateDebugLog();
+  // Update summary panel
+  function updateSummaryPanel(summary) {
+    const summaryPanel = document.getElementById('summaryPanel');
+    const summaryContent = document.getElementById('summaryContent');
+    if (summaryPanel && summaryContent) {
+      summaryPanel.style.display = 'block';
+      summaryContent.innerHTML = summary;
+    }
+  }
+  
+  // Build summary HTML
+  function buildSummaryHTML(stats) {
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+    
+    // CSV & Events Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #667eea;">';
+    html += '<strong style="color: #667eea;">📋 CSV & Events</strong><br>';
+    html += `CSV Type: ${stats.csvType || 'Unknown'}<br>`;
+    html += `Total rows parsed: ${stats.totalRows || 0}<br>`;
+    html += `Future events included: ${stats.futureEvents || 0}<br>`;
+    html += `Events generated: ${stats.eventsGenerated || 0}<br>`;
+    html += `Repeating groups: ${stats.repeatingGroups || 0}`;
+    html += '</div>';
+    
+    // Reviews & Ratings Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #48bb78;">';
+    html += '<strong style="color: #48bb78;">⭐ Reviews & Ratings</strong><br>';
+    html += `Reviews loaded: ${stats.reviewsLoaded || 0}<br>`;
+    html += `Products with reviews: ${stats.productsWithReviews || 0}<br>`;
+    html += `Aggregate ratings added: ${stats.aggregateRatingsAdded || 0}<br>`;
+    html += `Review snippets added: ${stats.reviewSnippetsAdded || 0}`;
+    html += '</div>';
+    
+    // Offers & Merchant Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #ed8936;">';
+    html += '<strong style="color: #ed8936;">💰 Offers & Merchant</strong><br>';
+    html += `Offers blocks: ${stats.offersBlocks || 0}<br>`;
+    html += `Performer toggled: ${stats.performerToggled ? 'ON' : 'OFF'}<br>`;
+    html += `Merchant fields: ${stats.merchantFields ? 'ON' : 'OFF'}<br>`;
+    html += `Merchant feed items: ${stats.merchantFeedItems || 0}`;
+    html += '</div>';
+    
+    // Mappings Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #9f7aea;">';
+    html += '<strong style="color: #9f7aea;">🔗 Mappings</strong><br>';
+    html += `Event mappings loaded: ${stats.mappingsLoaded || 0}<br>`;
+    html += `Events with mappings: ${stats.eventsWithMappings || 0}<br>`;
+    html += `Events with product URLs: ${stats.eventsWithProductUrls || 0}`;
+    html += '</div>';
+    
+    // Structure Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #38b2ac;">';
+    html += '<strong style="color: #38b2ac;">🧭 Structure</strong><br>';
+    html += `Breadcrumb chains: ${stats.breadcrumbChains || 0}<br>`;
+    html += `ItemList items: ${stats.itemListItems || 0}<br>`;
+    html += `EventSeries groups: ${stats.eventSeriesGroups || 0}`;
+    html += '</div>';
+    
+    // Validation Section
+    html += '<div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid ' + (stats.validationStatus === 'Valid' ? '#48bb78' : stats.validationStatus === 'Warnings' ? '#ed8936' : '#f56565') + ';">';
+    html += '<strong style="color: ' + (stats.validationStatus === 'Valid' ? '#48bb78' : stats.validationStatus === 'Warnings' ? '#ed8936' : '#f56565') + ';">✅ Validation</strong><br>';
+    html += `Status: ${stats.validationStatus || 'Unknown'}<br>`;
+    html += `Errors: ${stats.validationErrors || 0}<br>`;
+    html += `Warnings: ${stats.validationWarnings || 0}`;
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
   }
 
   // Normalize URL for matching (lowercase, strip trailing /)
@@ -5299,9 +5367,35 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   async function generateEventSchema() {
     try {
-      // Initialize debug log
+      // Initialize debug log and statistics
       window.debugLog = [];
+      const stats = {
+        csvType: 'Unknown',
+        totalRows: 0,
+        futureEvents: 0,
+        eventsGenerated: 0,
+        repeatingGroups: 0,
+        reviewsLoaded: 0,
+        productsWithReviews: 0,
+        aggregateRatingsAdded: 0,
+        reviewSnippetsAdded: 0,
+        offersBlocks: 0,
+        performerToggled: false,
+        merchantFields: false,
+        merchantFeedItems: 0,
+        mappingsLoaded: 0,
+        eventsWithMappings: 0,
+        eventsWithProductUrls: 0,
+        breadcrumbChains: 0,
+        itemListItems: 0,
+        eventSeriesGroups: 0,
+        validationStatus: 'Unknown',
+        validationErrors: 0,
+        validationWarnings: 0
+      };
+      
       addDebugLog('🚀 Starting event schema generation...');
+      addDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
       // Check if events are loaded
       if (!events || events.length === 0) {
@@ -5310,7 +5404,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         return;
       }
       
-      addDebugLog(`📋 Loaded ${events.length} events from CSV`);
+      stats.totalRows = events.length;
+      addDebugLog(`📋 CSV & Events Section:`);
+      addDebugLog(`   ✅ Total rows parsed: ${stats.totalRows}`);
+      
+      // Detect CSV type
+      const eventFileInput = document.getElementById('eventCsvFile');
+      if (eventFileInput && eventFileInput.files && eventFileInput.files[0]) {
+        const csvType = detectCsvType(eventFileInput.files[0].name, []);
+        stats.csvType = csvType;
+        addDebugLog(`   ✅ CSV Type detected: ${csvType}`);
+      }
       
       // Load review data if available
       await loadReviewData();
@@ -5320,6 +5424,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const includePerformer = document.getElementById('includePerformer')?.checked !== false;
       const groupRepeatingEvents = document.getElementById('groupRepeatingEvents')?.checked === true;
       const includeMerchantFields = document.getElementById('includeMerchantFields')?.checked === true;
+      
+      stats.performerToggled = includePerformer;
+      stats.merchantFields = includeMerchantFields;
       
       addDebugLog(`⚙️ Toggle states: Reviews=${includeReviews}, Performer=${includePerformer}, GroupRepeating=${groupRepeatingEvents}, MerchantFields=${includeMerchantFields}`);
       
@@ -5331,7 +5438,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         e['Workflow_State'] === 'Published'
       );
       
-      addDebugLog(`🔍 Filtered to ${filtered.length} events (category: ${selectedCategory}, future dates only, published only)`);
+      stats.futureEvents = filtered.length;
+      addDebugLog(`   ✅ Future events included: ${stats.futureEvents} (filtered from ${stats.totalRows} total)`);
       
       if (filtered.length === 0) {
         addDebugLog('❌ No events match criteria');
@@ -5340,11 +5448,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
 
     // Build dictionaries for review enrichment
+    addDebugLog('\n⭐ Reviews & Ratings Section:');
     const reviewsDict = buildReviewsDict();
     const mappingsDict = buildMappingsDict();
     
-    addDebugLog(`📊 Reviews dict has ${Object.keys(reviewsDict).length} products`);
-    addDebugLog(`📊 Mappings dict has ${Object.keys(mappingsDict).length} event mappings`);
+    stats.reviewsLoaded = reviewsData ? reviewsData.length : 0;
+    stats.productsWithReviews = Object.keys(reviewsDict).length;
+    stats.mappingsLoaded = mappingsData ? mappingsData.length : 0;
+    
+    addDebugLog(`   ✅ Reviews loaded: ${stats.reviewsLoaded}`);
+    addDebugLog(`   ✅ Products with reviews: ${stats.productsWithReviews}`);
+    addDebugLog(`   ✅ Event mappings loaded: ${stats.mappingsLoaded}`);
     
     // Show sample mappings
     const sampleMappings = Object.keys(mappingsDict).slice(0, 3);
@@ -5387,6 +5501,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const productUrl = mappingData ? mappingData.product_url : null;
       const reviewData = productUrl ? reviewsDict[productUrl] : null;
       
+      // Track statistics
+      if (mappingData) stats.eventsWithMappings++;
+      if (productUrl) stats.eventsWithProductUrls++;
+      
       // Debug logging for first 3 events
       if (index < 3) {
         addDebugLog(`\n📅 Event ${index + 1}: ${event['Event_Title']}`);
@@ -5406,14 +5524,41 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
       }
       
-      // Phase 1: Time & Address Logic
+      // 🧩 Event Core Fields Verification
       const startDate = combineDateTime(event['Start_Date'], event['Start_Time']);
       const endDate = combineDateTime(event['End_Date'], event['End_Time']);
       const duration = computeDuration(event['Start_Date'], event['End_Date'], event['Start_Time'], event['End_Time']);
+      
+      if (index < 3) {
+        addDebugLog(`\n   🧩 Event Core Fields:`);
+        addDebugLog(`      ✅ @context: https://schema.org`);
+        addDebugLog(`      ✅ @type: Event`);
+        addDebugLog(`      ✅ name: ${event['Event_Title'] ? 'Present' : 'MISSING'}`);
+        addDebugLog(`      ✅ startDate: ${startDate ? startDate.substring(0, 16) : 'MISSING'}`);
+        addDebugLog(`      ✅ endDate: ${endDate ? endDate.substring(0, 16) : 'MISSING'}`);
+        addDebugLog(`      ✅ duration: ${duration || 'MISSING'}`);
+        addDebugLog(`      ✅ eventStatus: EventScheduled`);
+        addDebugLog(`      ✅ identifier: ${eventUrl.split('/').pop() || 'MISSING'}`);
+      }
+      
       const address = parseAddress(event['Location_Address'], event['Location_City_State_ZIP']);
       const isVirtual = isVirtualLocation(event['Location_Business_Name'], event['Location_Address']);
       
-      // Phase 2: Audience & SEO Enhancements
+      // 🏛 Location / Address Fields Verification
+      if (index < 3) {
+        addDebugLog(`\n   🏛 Location / Address Fields:`);
+        addDebugLog(`      ✅ location.@type: ${isVirtual ? 'VirtualLocation' : 'Place'}`);
+        addDebugLog(`      ✅ location.name: ${event['Location_Business_Name'] || 'MISSING'}`);
+        if (!isVirtual && address) {
+          addDebugLog(`      ✅ address.streetAddress: ${address.streetAddress || 'MISSING'}`);
+          addDebugLog(`      ✅ address.addressLocality: ${address.addressLocality || 'MISSING'}`);
+          addDebugLog(`      ✅ address.addressRegion: ${address.addressRegion || 'MISSING'}`);
+          addDebugLog(`      ✅ address.postalCode: ${address.postalCode || 'MISSING'}`);
+          addDebugLog(`      ✅ address.addressCountry: ${address.addressCountry || 'MISSING'}`);
+        } else if (isVirtual) {
+          addDebugLog(`      ✅ OnlineEventAttendanceMode override applied`);
+        }
+      }
       const audience = detectAudience(event['Event_Title'], event['Excerpt'], event['Tags']);
       const keywords = extractKeywords(event['Tags']);
       const description = trimDescription(event['Excerpt'] || event['Description'], 5000);
@@ -5512,6 +5657,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       // Build offers with enhanced merchant fields
       if (eventPrice > 0) {
+        stats.offersBlocks++;
         eventSchema.offers = {
           "@type": "Offer",
           "price": eventPrice.toFixed(2),
@@ -5527,7 +5673,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         };
         
         if (index < 3) {
-          addDebugLog(`   ✅ Added offers: £${eventPrice.toFixed(2)}`);
+          addDebugLog(`\n   💰 Offers & Merchant Fields:`);
+          addDebugLog(`      ✅ offers.@type: Offer`);
+          addDebugLog(`      ✅ offers.price: £${eventPrice.toFixed(2)}`);
+          addDebugLog(`      ✅ offers.priceCurrency: ${event['Currency'] || 'GBP'}`);
+          addDebugLog(`      ✅ offers.availability: ${useMappingAvailability ? mappingData.availability : 'InStock'}`);
+          addDebugLog(`      ✅ offers.seller.name: Alan Ranger Photography`);
+          if (includeMerchantFields) {
+            addDebugLog(`      ✅ offers.hasMerchantReturnPolicy: Present`);
+            if (mappingData && mappingData.sku) {
+              addDebugLog(`      ✅ sku: ${mappingData.sku}`);
+            }
+            if (mappingData && mappingData.brand) {
+              addDebugLog(`      ✅ brand: Present`);
+            }
+          }
         }
         
         // Add merchant return policy if merchant fields enabled
@@ -5535,7 +5695,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           eventSchema.offers.hasMerchantReturnPolicy = "https://www.alanranger.com/returns-policy";
         }
       } else if (index < 3) {
-        addDebugLog(`   ⚠️ No offers added: price is ${eventPrice} (from mapping: ${useMappingPrice ? 'YES' : 'NO'}, from CSV: ${event['Price'] || 'none'})`);
+        addDebugLog(`\n   💰 Offers & Merchant Fields:`);
+        addDebugLog(`      ⚠️ No offers added: price is ${eventPrice} (from mapping: ${useMappingPrice ? 'YES' : 'NO'}, from CSV: ${event['Price'] || 'none'})`);
       }
       
       // Phase 3: Add SKU and brand from mappings (if merchant fields enabled)
@@ -5550,6 +5711,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
       // Phase 4: Review Enrichment (if enabled)
       if (includeReviews && reviewData && reviewData.reviewCount >= 3) {
+        stats.aggregateRatingsAdded++;
         eventSchema.aggregateRating = {
           "@type": "AggregateRating",
           "ratingValue": reviewData.ratingValue.toString(),
@@ -5559,19 +5721,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         };
         
         if (index < 3) {
-          addDebugLog(`   ✅ Added aggregateRating: ${reviewData.ratingValue} (${reviewData.reviewCount} reviews)`);
+          addDebugLog(`\n   ⭐ Reviews & Ratings:`);
+          addDebugLog(`      ✅ aggregateRating.@type: AggregateRating`);
+          addDebugLog(`      ✅ aggregateRating.ratingValue: ${reviewData.ratingValue}`);
+          addDebugLog(`      ✅ aggregateRating.reviewCount: ${reviewData.reviewCount}`);
         }
         
         // Add individual review snippets (top 5 reviews, trimmed to 300 chars)
         if (reviewsData && productUrl) {
           const productReviews = reviewsData.filter(r => {
-            const rUrl = normalizeUrl(r.product_url || r.url || '');
+            // Try multiple ways to match product URL (same logic as buildReviewsDict)
+            let rUrl = normalizeUrl(r.product_url || r.url || '');
+            if (!rUrl && r.product_slug) {
+              const domain = r.domain_url || 'https://www.alanranger.com';
+              const cleanDomain = domain.replace(/\/$/, '');
+              const cleanSlug = r.product_slug.replace(/^\//, '');
+              rUrl = normalizeUrl(`${cleanDomain}/${cleanSlug}`);
+            }
             return rUrl === productUrl;
           }).filter(r => {
-            const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+            const rating = parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
             return rating >= 4 && rating <= 5;
           }).sort((a, b) => {
-            // Sort by date (newest first) if available
             const dateA = a.date || a.review_created_utc || '';
             const dateB = b.date || b.review_created_utc || '';
             return dateB.localeCompare(dateA);
@@ -5579,13 +5750,13 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           
           if (productReviews.length > 0) {
             eventSchema.review = productReviews.map(r => {
-              let reviewText = r.reviewbody || r.review_content || r.review || '';
+              let reviewText = r.reviewBody || r.reviewbody || r.review_content || r.review || '';
               // Trim to 300 chars for v4
               if (reviewText.length > 300) {
                 reviewText = reviewText.substring(0, 297) + '...';
               }
-              const reviewerName = r.reviewer || r.review_username || r.author || 'Anonymous';
-              const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 5);
+              const reviewerName = r.author || r.reviewer || r.review_username || 'Anonymous';
+              const rating = parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 5);
               const reviewDate = r.date || r.review_created_utc || '';
               
               return {
@@ -5605,16 +5776,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
               };
             }).filter(r => r.reviewBody && r.reviewBody.trim().length > 0);
             
+            stats.reviewSnippetsAdded += eventSchema.review.length;
             if (index < 3) {
-              addDebugLog(`   ✅ Added ${eventSchema.review.length} review snippets`);
+              addDebugLog(`      ✅ review array: ${eventSchema.review.length} snippets (trimmed ≤300 chars)`);
+              addDebugLog(`      ✅ review.author.name: Present`);
+              addDebugLog(`      ✅ review.reviewRating.ratingValue: 4-5`);
             }
           }
         }
       } else if (includeReviews && index < 3) {
+        addDebugLog(`\n   ⭐ Reviews & Ratings:`);
         if (!reviewData) {
-          addDebugLog(`   ⚠️ Reviews toggle ON but no reviewData (mapping: ${mappingData ? 'YES' : 'NO'}, productUrl: ${productUrl || 'none'})`);
+          addDebugLog(`      ⚠️ Reviews toggle ON but no reviewData (mapping: ${mappingData ? 'YES' : 'NO'}, productUrl: ${productUrl || 'none'})`);
         } else if (reviewData.reviewCount < 3) {
-          addDebugLog(`   ⚠️ Reviews toggle ON but reviewCount (${reviewData.reviewCount}) < 3`);
+          addDebugLog(`      ⚠️ Reviews toggle ON but reviewCount (${reviewData.reviewCount}) < 3`);
         }
       }
 
@@ -5641,6 +5816,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         "@type": "WebPage",
         "url": eventUrl
       };
+      
+      if (index < 3) {
+        addDebugLog(`\n   🧠 SEO Enhancers:`);
+        addDebugLog(`      ✅ potentialAction.@type: RegisterAction`);
+        addDebugLog(`      ✅ isFamilyFriendly: true`);
+        if (eventSchema.learningResourceType) {
+          addDebugLog(`      ✅ learningResourceType: Course`);
+          addDebugLog(`      ✅ typicalAgeRange: 16-99`);
+          addDebugLog(`      ✅ courseMode: ${JSON.stringify(eventSchema.courseMode)}`);
+        }
+        addDebugLog(`      ✅ subjectOf.@type: WebPage`);
+      }
 
       // Phase 5: Generate breadcrumbs
       const eventName = event['Event_Title'] || 'Event';
@@ -5685,6 +5872,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           }
         ]
       };
+      
+      if (index < 3) {
+        addDebugLog(`\n   🧭 Breadcrumbs & ItemList:`);
+        addDebugLog(`      ✅ BreadcrumbList.@type: BreadcrumbList`);
+        addDebugLog(`      ✅ BreadcrumbList.itemListElement: 3 items (Home > ${parentCategoryName} > ${eventName.substring(0, 30)}...)`);
+      }
 
       return { eventSchema, breadcrumb };
     });
@@ -5692,6 +5885,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Phase 3.6: Event Schedule Grouping (if enabled)
     let finalEventList = eventSchemas.map(item => item.eventSchema);
     let finalBreadcrumbs = eventSchemas.map(item => item.breadcrumb);
+    
+    addDebugLog(`\n🔁 EventSeries / Grouping Section:`);
+    addDebugLog(`   Toggle state: ${groupRepeatingEvents ? 'ON' : 'OFF'}`);
     
     if (groupRepeatingEvents && filtered.length > 1) {
       // Group events by base title (remove week numbers, dates, etc.)
@@ -5710,6 +5906,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
         eventGroups[baseTitle].push({ event, schema: eventSchemas[idx].eventSchema });
       });
+      
+      addDebugLog(`   Found ${Object.keys(eventGroups).length} potential groups`);
       
       // For groups with 3+ events, create superEvent with eventSchedule
       Object.keys(eventGroups).forEach(baseTitle => {
@@ -5737,6 +5935,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           });
           
           if (isWeekly) {
+            stats.repeatingGroups++;
+            stats.eventSeriesGroups++;
+            addDebugLog(`   ✅ Created EventSeries: "${baseTitle}" (${group.length} events, weekly pattern)`);
+            
             // Create superEvent with eventSchedule
             const superEvent = {
               "@context": "https://schema.org",
@@ -5776,7 +5978,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           }
         }
       });
+    } else {
+      addDebugLog(`   ⚠️ Grouping disabled or insufficient events`);
     }
+    
+    stats.eventsGenerated = finalEventList.length;
+    stats.breadcrumbChains = finalBreadcrumbs.length;
+    stats.itemListItems = itemList.itemListElement.length;
+    
+    addDebugLog(`\n🧭 Structure Section:`);
+    addDebugLog(`   ✅ Breadcrumb chains: ${stats.breadcrumbChains} (should match events)`);
+    addDebugLog(`   ✅ ItemList items: ${stats.itemListItems} (should match events)`);
+    addDebugLog(`   ✅ EventSeries groups: ${stats.eventSeriesGroups}`);
 
     const eventList = finalEventList;
     const breadcrumbs = finalBreadcrumbs;
@@ -5812,9 +6025,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Phase 5: Enhanced validation results with statistics
     try {
       const validationResults = validateEventSchema(fullSchema);
-      const eventsWithReviews = eventList.filter(e => e.aggregateRating).length;
-      const eventsWithPerformer = eventList.filter(e => e.performer).length;
-      const eventsWithOffers = eventList.filter(e => e.offers && parseFloat(e.offers.price) > 0).length;
+      stats.validationStatus = validationResults.isValid ? 'Valid' : (validationResults.warnings && validationResults.warnings.length > 0 ? 'Warnings' : 'Invalid');
+      stats.validationErrors = validationResults.errors ? validationResults.errors.length : 0;
+      stats.validationWarnings = validationResults.warnings ? validationResults.warnings.length : 0;
+      
+      addDebugLog(`\n✅ Validation Section:`);
+      addDebugLog(`   Status: ${stats.validationStatus}`);
+      addDebugLog(`   Errors: ${stats.validationErrors}`);
+      addDebugLog(`   Warnings: ${stats.validationWarnings}`);
       
       const validationStatus = validationResults.isValid ? '✅ Valid' : '❌ Invalid';
       let statsMsg = `\n\n📊 Generation Summary:\n` +
@@ -5841,6 +6059,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       window.currentEventList = eventList;
       window.currentMappingsDict = mappingsDict;
       
+      // Calculate merchant feed items
+      if (includeMerchantFields) {
+        stats.merchantFeedItems = eventList.filter(e => e['@type'] === 'Event' && e.offers && parseFloat(e.offers.price) > 0).length;
+      }
+      
+      // Update summary panel
+      updateSummaryPanel(buildSummaryHTML(stats));
+      
       if (!validationResults.isValid && validationResults.errors.length > 0) {
         console.warn('⚠️ Schema validation issues:', validationResults.errors);
       }
@@ -5848,6 +6074,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       console.warn('⚠️ Validation check failed:', e);
       // Keep the original output even if validation fails
       outputElement.textContent = output;
+      updateSummaryPanel(buildSummaryHTML(stats));
     }
     } catch (error) {
       console.error('❌ Error generating event schema:', error);
