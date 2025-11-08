@@ -4960,9 +4960,26 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const productReviews = {};
     
     reviewsData.forEach((review, idx) => {
-      const productUrl = normalizeUrl(review.product_url || review.url || '');
+      // Try multiple ways to get product URL
+      let productUrl = normalizeUrl(review.product_url || review.url || '');
+      
+      // If no product_url, try to construct from product_slug + domain_url
+      if (!productUrl && review.product_slug) {
+        const domain = review.domain_url || 'https://www.alanranger.com';
+        // Remove trailing slash from domain and leading slash from slug
+        const cleanDomain = domain.replace(/\/$/, '');
+        const cleanSlug = review.product_slug.replace(/^\//, '');
+        productUrl = normalizeUrl(`${cleanDomain}/${cleanSlug}`);
+        
+        if (idx < 3) {
+          addDebugLog(`   Review ${idx + 1}: Constructed URL from slug: ${productUrl}`);
+        }
+      }
+      
       if (!productUrl) {
-        if (idx < 3) addDebugLog(`   Review ${idx + 1}: No product_url found (keys: ${Object.keys(review).join(', ')})`);
+        if (idx < 3) {
+          addDebugLog(`   Review ${idx + 1}: No product_url or product_slug found (keys: ${Object.keys(review).join(', ')})`);
+        }
         return;
       }
       
@@ -4978,7 +4995,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     Object.keys(productReviews).forEach((productUrl, idx) => {
       const reviews = productReviews[productUrl];
       const validReviews = reviews.filter(r => {
-        const rating = parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+        // Try multiple rating fields
+        const rating = parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
         return rating >= 4 && rating <= 5;
       });
       
@@ -4988,7 +5006,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       if (validReviews.length >= 3) {
         const totalRating = validReviews.reduce((sum, r) => {
-          return sum + parseFloat(r.ratingvalue || r.rating || r.review_stars || 0);
+          return sum + parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
         }, 0);
         const avgRating = totalRating / validReviews.length;
         const reviewCount = Math.min(validReviews.length, 999);
