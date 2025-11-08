@@ -6014,13 +6014,13 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       // Check if this event belongs to a series (v4.3)
       const title = event['Event_Title'] || "";
-      const keywords = [
+      const seriesKeywords = [
         "Bluebell Photography Workshop",
         "Batsford Arboretum Autumn Photography Workshop",
         "Camera Course for Beginners",
         "Lightroom Photo Editing"
       ];
-      const keyMatch = keywords.find(k => title.includes(k));
+      const keyMatch = seriesKeywords.find(k => title.includes(k));
       if (keyMatch) {
         const seriesId = seriesIdFromName(keyMatch.trim());
         seriesMembership.set(eventId, seriesId);
