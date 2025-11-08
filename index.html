@@ -1435,7 +1435,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <h4 style="margin: 0;">🔍 Debug Log:</h4>
-        <button onclick="copyDebugLog()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+        <button onclick="copyDebugLog(this)" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
           📋 Copy Debug Log
         </button>
       </div>
@@ -4978,27 +4978,70 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
   
   // Copy debug log to clipboard
-  function copyDebugLog() {
+  function copyDebugLog(btnElement) {
     const debugLogElement = document.getElementById('debugLog');
-    if (!debugLogElement || !window.debugLog) {
+    if (!debugLogElement || !window.debugLog || window.debugLog.length === 0) {
       alert('No debug log available to copy.');
       return;
     }
     
     const logText = window.debugLog.join('\n');
-    navigator.clipboard.writeText(logText).then(() => {
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = '✅ Copied!';
-      btn.style.background = '#48bb78';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.background = '#667eea';
-      }, 2000);
-    }).catch(err => {
-      console.error('Failed to copy debug log:', err);
-      alert('Failed to copy debug log. Please select and copy manually.');
-    });
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(logText).then(() => {
+        if (btnElement) {
+          const originalText = btnElement.textContent;
+          btnElement.textContent = '✅ Copied!';
+          btnElement.style.background = '#48bb78';
+          setTimeout(() => {
+            btnElement.textContent = originalText;
+            btnElement.style.background = '#667eea';
+          }, 2000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy debug log:', err);
+        // Fallback to textarea method
+        fallbackCopyToClipboard(logText, btnElement);
+      });
+    } else {
+      // Fallback for browsers without clipboard API
+      fallbackCopyToClipboard(logText, btnElement);
+    }
+  }
+  
+  // Fallback copy method using textarea
+  function fallbackCopyToClipboard(text, btnElement) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        if (btnElement) {
+          const originalText = btnElement.textContent;
+          btnElement.textContent = '✅ Copied!';
+          btnElement.style.background = '#48bb78';
+          setTimeout(() => {
+            btnElement.textContent = originalText;
+            btnElement.style.background = '#667eea';
+          }, 2000);
+        }
+      } else {
+        throw new Error('execCommand failed');
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      alert('Failed to copy debug log. Please select the debug log text and copy manually (Ctrl+C).');
+    } finally {
+      document.body.removeChild(textArea);
+    }
   }
   
   // Show field verification modal
