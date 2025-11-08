@@ -6225,7 +6225,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       
       // Add eventType and material (v4.1 SEO enrichment)
-      const csvType = detectCsvType(events, event);
+      // Determine event type from CSV type (already detected earlier)
+      const csvType = stats.csvType || 'unknown';
       eventSchema.eventType = csvType === "lessons" ? "Lesson" : "Workshop";
       eventSchema.material = "Digital Camera, Tripod, ND Filters";
       
@@ -6934,7 +6935,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           link: eventUrl,
           image_link: event.image || '',
           price: event.offers.price + ' ' + (event.offers.priceCurrency || 'GBP'),
-          availability: event.offers.availability === 'https://schema.org/InStock' ? 'in stock' : 'out of stock',
+          availability: (event.offers.availability === 'https://schema.org/InStock' || 
+                         event.offers.availability === 'InStock' || 
+                         String(event.offers.availability).toLowerCase() === 'in stock') 
+                         ? 'in stock' : 'out of stock',
           brand: 'Alan Ranger Photography'
         };
         
