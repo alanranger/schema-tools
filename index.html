@@ -5529,6 +5529,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           "worstRating": "1"
         };
         
+        if (index < 3) {
+          addDebugLog(`   ✅ Added aggregateRating: ${reviewData.ratingValue} (${reviewData.reviewCount} reviews)`);
+        }
+        
         // Add individual review snippets (top 5 reviews, trimmed to 300 chars)
         if (reviewsData && productUrl) {
           const productReviews = reviewsData.filter(r => {
@@ -5571,7 +5575,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 "datePublished": reviewDate
               };
             }).filter(r => r.reviewBody && r.reviewBody.trim().length > 0);
+            
+            if (index < 3) {
+              addDebugLog(`   ✅ Added ${eventSchema.review.length} review snippets`);
+            }
           }
+        }
+      } else if (includeReviews && index < 3) {
+        if (!reviewData) {
+          addDebugLog(`   ⚠️ Reviews toggle ON but no reviewData (mapping: ${mappingData ? 'YES' : 'NO'}, productUrl: ${productUrl || 'none'})`);
+        } else if (reviewData.reviewCount < 3) {
+          addDebugLog(`   ⚠️ Reviews toggle ON but reviewCount (${reviewData.reviewCount}) < 3`);
         }
       }
 
