@@ -6051,6 +6051,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       addDebugLog(`   Warnings: ${stats.validationWarnings}`);
       
       const validationStatus = validationResults.isValid ? '✅ Valid' : '❌ Invalid';
+      const eventsWithReviews = eventList.filter(e => e.aggregateRating).length;
+      const eventsWithPerformer = eventList.filter(e => e.performer).length;
+      const eventsWithOffers = eventList.filter(e => e.offers && parseFloat(e.offers.price) > 0).length;
+      
       let statsMsg = `\n\n📊 Generation Summary:\n` +
         `   • ${filtered.length} event${filtered.length !== 1 ? 's' : ''} generated\n` +
         `   • ${eventsWithReviews} event${eventsWithReviews !== 1 ? 's' : ''} with reviews\n` +
