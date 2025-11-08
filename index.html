@@ -3,10 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator v4 - Smart Enriched Schema Generator</title>
+  <title>Unified Schema Generator v4.1 - Smart Enriched Schema Generator (Location Intelligence Release)</title>
   <!--
-    CHANGELOG v4 Smart Enriched Schema Generator
-    ===========================================
+    CHANGELOG v4.1 Smart Enriched Schema Generator (Location Intelligence Release)
+    ==============================================================================
+    
+    Changes from v4:
+    - Added intelligent region + geo inference for workshops/lessons
+    - Added full PostalAddress reconstruction with region map matching
+    - Added availabilityStarts and itemCondition for Merchant Center
+    - Added performer.sameAs LinkedIn/YouTube links
+    - Added courseMode hybrid logic (InPerson/Online detection)
+    - Added location verification summary with coverage stats
+    - Added UI toggles for enrichment options (location enrichment, availabilityStarts)
+    - Enhanced eventType and material fields for SEO context
     
     Changes from v3.5:
     - Enhanced address parsing with full PostalAddress structure (streetAddress, addressLocality, addressRegion, postalCode, addressCountry)
@@ -1332,8 +1342,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v4</span>
-    <span class="date">Smart Enriched Schema Generator</span>
+    <span class="version">v4.1</span>
+    <span class="date">Smart Enriched Schema Generator — Location Intelligence Release</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1419,6 +1429,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
         <input type="checkbox" id="includeMerchantFields" style="margin-right: 0.5rem;">
         <span>Include Merchant Center Fields (Phase 6)</span>
+      </label>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="toggleLocationEnrichment" checked style="margin-right: 0.5rem;">
+        <span>Auto-Enrich Locations (Geo + Region Fallbacks)</span>
+      </label>
+      <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="toggleAvailabilityStarts" style="margin-right: 0.5rem;">
+        <span>Include AvailabilityStarts (Merchant+)</span>
       </label>
     </div>
     
@@ -4852,6 +4870,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         const includePerformer = localStorage.getItem('eventSchema.includePerformer');
         const groupRepeatingEvents = localStorage.getItem('eventSchema.groupRepeatingEvents');
         const includeMerchantFields = localStorage.getItem('eventSchema.includeMerchantFields');
+        const enrichLocations = localStorage.getItem('eventSchema.enrichLocations');
+        const includeAvailabilityStarts = localStorage.getItem('eventSchema.includeAvailabilityStarts');
         
         if (includeReviews !== null) document.getElementById('includeReviews').checked = includeReviews === 'true';
         if (includePerformer !== null) document.getElementById('includePerformer').checked = includePerformer === 'true';
@@ -4860,6 +4880,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           document.getElementById('includeMerchantFields').checked = includeMerchantFields === 'true';
           document.getElementById('merchantFeedContainer').style.display = includeMerchantFields === 'true' ? 'block' : 'none';
         }
+        if (enrichLocations !== null) document.getElementById('toggleLocationEnrichment').checked = enrichLocations === 'true';
+        if (includeAvailabilityStarts !== null) document.getElementById('toggleAvailabilityStarts').checked = includeAvailabilityStarts === 'true';
         
         // Save toggle states on change
         document.getElementById('includeReviews').addEventListener('change', function() {
@@ -4875,6 +4897,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           localStorage.setItem('eventSchema.includeMerchantFields', this.checked);
           document.getElementById('merchantFeedContainer').style.display = this.checked ? 'block' : 'none';
         });
+        document.getElementById('toggleLocationEnrichment').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.enrichLocations', this.checked);
+        });
+        document.getElementById('toggleAvailabilityStarts').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.includeAvailabilityStarts', this.checked);
+        });
         
         console.log('✅ Category filter and Generate button displayed');
       },
@@ -4888,7 +4916,6 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   // Load reviews and mappings CSVs from file inputs (optional, for review enrichment)
   async function loadReviewData() {
     const debugLog = [];
-    debugLog.push('🔍 DEBUG: Starting review data loading...');
     
     // Load reviews CSV from file input
     const reviewsFileInput = document.getElementById('reviewsCsvFile');
@@ -5433,6 +5460,83 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     return dict;
   }
 
+  // Parse location with intelligent region inference and geo coordinates (v4.1)
+  function parseLocation(locationAddress = '', locationName = '', eventTitle = '') {
+    const result = {
+      streetAddress: '',
+      addressLocality: '',
+      addressRegion: '',
+      postalCode: '',
+      addressCountry: 'GB',
+      geo: null,
+      regionMatched: false
+    };
+
+    const regionMap = {
+      "Wales": { region: "Wales", lat: 52.1307, lon: -3.7837 },
+      "Scotland": { region: "Scotland", lat: 56.4907, lon: -4.2026 },
+      "Cumbria": { region: "North West England", lat: 54.5772, lon: -2.7975 },
+      "Yorkshire": { region: "Yorkshire and the Humber", lat: 53.9586, lon: -1.0803 },
+      "Norfolk": { region: "East of England", lat: 52.6309, lon: 1.2974 },
+      "Devon": { region: "South West England", lat: 50.7156, lon: -3.5309 },
+      "Dorset": { region: "South West England", lat: 50.7090, lon: -2.0846 },
+      "Warwickshire": { region: "West Midlands", lat: 52.2819, lon: -1.5845 },
+      "Coventry": { region: "West Midlands", lat: 52.4068, lon: -1.5197 },
+      "Peak District": { region: "East Midlands", lat: 53.3430, lon: -1.7770 },
+      "Anglesey": { region: "Wales", lat: 53.2559, lon: -4.3424 },
+      "Lake District": { region: "North West England", lat: 54.4609, lon: -3.0886 },
+      "Gloucestershire": { region: "South West England", lat: 51.8642, lon: -2.2382 },
+      "Northumberland": { region: "North East England", lat: 55.2088, lon: -2.0783 },
+      "Somerset": { region: "South West England", lat: 51.1051, lon: -2.9262 },
+      "Exmoor": { region: "South West England", lat: 51.1314, lon: -3.6897 },
+      "Suffolk": { region: "East of England", lat: 52.1872, lon: 0.9708 },
+      "Dartmoor": { region: "South West England", lat: 50.5610, lon: -3.9336 },
+      "Snowdonia": { region: "Wales", lat: 52.8311, lon: -4.0840 },
+      "Gower": { region: "Wales", lat: 51.5694, lon: -4.1289 },
+      "Kerry": { region: "Ireland", lat: 52.1609, lon: -9.5250 },
+      "Shropshire": { region: "West Midlands", lat: 52.7073, lon: -2.7553 },
+      "Worcestershire": { region: "West Midlands", lat: 52.1920, lon: -2.2237 }
+    };
+
+    // Parse address parts
+    const parts = locationAddress.split(',').map(p => p.trim()).filter(Boolean);
+    for (const p of parts) {
+      // Match UK postcode pattern
+      if (/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b/i.test(p)) {
+        result.postalCode = p.toUpperCase().replace(/\s+/g, ' ');
+      } else if (!result.streetAddress && p) {
+        result.streetAddress = p;
+      } else if (!result.addressLocality && p && p !== result.streetAddress) {
+        result.addressLocality = p;
+      }
+    }
+
+    // Try to infer region and geo from keywords
+    for (const [key, val] of Object.entries(regionMap)) {
+      const searchText = `${locationAddress} ${locationName} ${eventTitle}`.toLowerCase();
+      if (searchText.includes(key.toLowerCase())) {
+        result.addressRegion = val.region;
+        result.geo = {
+          "@type": "GeoCoordinates",
+          "latitude": val.lat,
+          "longitude": val.lon
+        };
+        result.regionMatched = true;
+        break;
+      }
+    }
+
+    // Fallback: use location name or default
+    if (!result.addressLocality && locationName) {
+      result.addressLocality = locationName.split(' ')[0];
+    }
+    if (!result.addressRegion) {
+      result.addressRegion = "West Midlands"; // Default fallback
+    }
+
+    return result;
+  }
+
   // Enhanced address parsing - v4 Smart Enriched
   function parseAddress(locationAddressRaw, locationCityStateZip) {
     const address = { "@type": "PostalAddress" };
@@ -5737,11 +5841,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const includePerformer = document.getElementById('includePerformer')?.checked !== false;
       const groupRepeatingEvents = document.getElementById('groupRepeatingEvents')?.checked === true;
       const includeMerchantFields = document.getElementById('includeMerchantFields')?.checked === true;
+      const enrichLocations = document.getElementById('toggleLocationEnrichment')?.checked !== false;
+      const includeAvailabilityStarts = document.getElementById('toggleAvailabilityStarts')?.checked === true;
       
       stats.performerToggled = includePerformer;
       stats.merchantFields = includeMerchantFields;
+      stats.enrichLocations = enrichLocations;
       
-      addDebugLog(`⚙️ Toggle states: Reviews=${includeReviews}, Performer=${includePerformer}, GroupRepeating=${groupRepeatingEvents}, MerchantFields=${includeMerchantFields}`);
+      addDebugLog(`⚙️ Toggle states: Reviews=${includeReviews}, Performer=${includePerformer}, GroupRepeating=${groupRepeatingEvents}, MerchantFields=${includeMerchantFields}, EnrichLocations=${enrichLocations}, AvailabilityStarts=${includeAvailabilityStarts}`);
       
       const selectedCategory = document.getElementById('eventCategoryFilter').value;
       const today = new Date().toISOString().split('T')[0];
@@ -5863,15 +5970,50 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`      ✅ identifier: ${eventUrl.split('/').pop() || 'MISSING'}`);
       }
       
-      const address = parseAddress(event['Location_Address'], event['Location_City_State_ZIP']);
+      const address = enrichLocations 
+        ? parseLocation(event['Location_Address'], event['Location_Business_Name'], event['Event_Title'])
+        : parseAddress(event['Location_Address'], event['Location_City_State_ZIP']);
       const isVirtual = isVirtualLocation(event['Location_Business_Name'], event['Location_Address']);
       
       // Track address field statistics
       if (!isVirtual && address) {
-        if (address.streetAddress) stats.addressFieldsWithStreetAddress = (stats.addressFieldsWithStreetAddress || 0) + 1;
-        if (address.addressLocality) stats.addressFieldsWithLocality = (stats.addressFieldsWithLocality || 0) + 1;
-        if (address.addressRegion) stats.addressFieldsWithRegion = (stats.addressFieldsWithRegion || 0) + 1;
-        if (address.postalCode) stats.addressFieldsWithPostalCode = (stats.addressFieldsWithPostalCode || 0) + 1;
+        if (!stats.locationStats) {
+          stats.locationStats = {
+            streetAddress: { valid: 0, total: 0 },
+            addressLocality: { valid: 0, total: 0 },
+            addressRegion: { valid: 0, total: 0 },
+            postalCode: { valid: 0, total: 0 },
+            geoCoordinates: { valid: 0, total: 0 },
+            fallbackApplied: 0,
+            regionMapMatches: 0
+          };
+        }
+        stats.locationStats.total++;
+        if (address.streetAddress) {
+          stats.locationStats.streetAddress.valid++;
+          stats.addressFieldsWithStreetAddress = (stats.addressFieldsWithStreetAddress || 0) + 1;
+        }
+        if (address.addressLocality) {
+          stats.locationStats.addressLocality.valid++;
+          stats.addressFieldsWithLocality = (stats.addressFieldsWithLocality || 0) + 1;
+        }
+        if (address.addressRegion) {
+          stats.locationStats.addressRegion.valid++;
+          stats.addressFieldsWithRegion = (stats.addressFieldsWithRegion || 0) + 1;
+          if (enrichLocations && address.regionMatched) {
+            stats.locationStats.regionMapMatches++;
+          }
+        }
+        if (address.postalCode) {
+          stats.locationStats.postalCode.valid++;
+          stats.addressFieldsWithPostalCode = (stats.addressFieldsWithPostalCode || 0) + 1;
+        }
+        if (enrichLocations && address.geo) {
+          stats.locationStats.geoCoordinates.valid++;
+        }
+        if (!address.addressRegion || !address.addressLocality) {
+          stats.locationStats.fallbackApplied++;
+        }
       }
       
       // 🏛 Location / Address Fields Verification
@@ -5947,11 +6089,30 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           "url": event['Event_URL'] || "https://www.alanranger.com"
         };
       } else {
+        // Build PostalAddress object
+        const postalAddress = {
+          "@type": "PostalAddress",
+          "streetAddress": address.streetAddress || undefined,
+          "addressLocality": address.addressLocality || undefined,
+          "addressRegion": address.addressRegion || undefined,
+          "postalCode": address.postalCode || undefined,
+          "addressCountry": address.addressCountry || "GB"
+        };
+        // Remove undefined fields
+        Object.keys(postalAddress).forEach(key => {
+          if (postalAddress[key] === undefined) delete postalAddress[key];
+        });
+        
         location = {
           "@type": "Place",
           "name": event['Location_Business_Name'] || "Alan Ranger Photography",
-          "address": address
+          "address": postalAddress
         };
+        
+        // Add geo coordinates if available (v4.1)
+        if (enrichLocations && address.geo) {
+          location.geo = address.geo;
+        }
       }
 
       // Phase 3: Extract product data from mappings
@@ -5990,18 +6151,37 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
       };
       
-      // Add performer if enabled
+      // Add performer if enabled (v4.1: enhanced with LinkedIn/YouTube)
       if (includePerformer) {
         eventSchema.performer = {
           "@type": "Person",
           "name": "Alan Ranger",
-          "sameAs": "https://www.alanranger.com/about-alan-ranger"
+          "sameAs": [
+            "https://www.linkedin.com/in/alanranger",
+            "https://www.youtube.com/@alanrangerphotography",
+            "https://www.alanranger.com/about-alan-ranger"
+          ]
         };
       }
       
       // Add provider (same as organizer for courses)
       if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson') || titleLower.includes('course')) {
         eventSchema.provider = organizerBlock;
+      }
+      
+      // Add eventType and material (v4.1 SEO enrichment)
+      const csvType = detectCsvType(events, event);
+      eventSchema.eventType = csvType === "lessons" ? "Lesson" : "Workshop";
+      eventSchema.material = "Digital Camera, Tripod, ND Filters";
+      
+      // Update courseMode logic (v4.1: hybrid-aware)
+      const eventAttendanceMode = eventSchema.eventAttendanceMode;
+      if (eventAttendanceMode.includes("Online") && eventAttendanceMode.includes("Offline")) {
+        eventSchema.courseMode = ["InPerson", "Online"];
+      } else if (eventAttendanceMode.includes("Online")) {
+        eventSchema.courseMode = ["Online"];
+      } else {
+        eventSchema.courseMode = ["InPerson"];
       }
       
       // Build offers with enhanced merchant fields
@@ -6020,6 +6200,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             "url": "https://www.alanranger.com"
           }
         };
+        
+        // Add availabilityStarts and itemCondition (v4.1)
+        if (includeAvailabilityStarts && event['Start_Date']) {
+          try {
+            eventSchema.offers.availabilityStarts = new Date(event['Start_Date']).toISOString();
+          } catch (e) {
+            console.warn('Failed to parse Start_Date for availabilityStarts:', e);
+          }
+        }
+        if (includeMerchantFields) {
+          eventSchema.offers.itemCondition = "https://schema.org/NewCondition";
+        }
+        
+        // Ensure price is valid
+        if (!eventSchema.offers.price || parseFloat(eventSchema.offers.price) <= 0) {
+          eventSchema.offers.price = "0.00";
+          console.warn(`⚠️ Missing price for ${event['Event_Title']}`);
+        }
         
         if (index < 3) {
           addDebugLog(`\n   💰 Offers & Merchant Fields:`);
@@ -6376,6 +6574,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     addDebugLog(`   ✅ Breadcrumb chains: ${stats.breadcrumbChains} (should match events)`);
     addDebugLog(`   ✅ ItemList items: ${stats.itemListItems} (should match events)`);
     addDebugLog(`   ✅ EventSeries groups: ${stats.eventSeriesGroups}`);
+    
+    // Location Verification Summary (v4.1)
+    if (stats.locationStats && stats.locationStats.total > 0) {
+      addDebugLog(`\n🏠 Location Verification:`);
+      const loc = stats.locationStats;
+      addDebugLog(`   streetAddress: ✅ ${loc.streetAddress.valid}/${loc.total}`);
+      addDebugLog(`   addressLocality: ✅ ${loc.addressLocality.valid}/${loc.total}`);
+      addDebugLog(`   addressRegion: ✅ ${loc.addressRegion.valid}/${loc.total}`);
+      addDebugLog(`   postalCode: ✅ ${loc.postalCode.valid}/${loc.total}`);
+      addDebugLog(`   geoCoordinates: ✅ ${loc.geoCoordinates.valid}/${loc.total}`);
+      addDebugLog(`   fallbackApplied: ${loc.fallbackApplied}`);
+      addDebugLog(`   regionMap matches: ${loc.regionMapMatches}`);
+    }
 
     const eventList = finalEventList;
     const breadcrumbs = finalBreadcrumbs;
@@ -6439,12 +6650,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const eventsWithPerformer = eventList.filter(e => e.performer).length;
       const eventsWithOffers = eventList.filter(e => e.offers && parseFloat(e.offers.price) > 0).length;
       
+      // Count lessons vs workshops (v4.1)
+      const lessonsCount = eventList.filter(e => e.eventType === "Lesson").length;
+      const workshopsCount = eventList.filter(e => e.eventType === "Workshop").length;
+      
+      // Calculate region coverage (v4.1)
+      const regionCoverage = stats.locationStats && stats.locationStats.total > 0
+        ? Math.round((stats.locationStats.addressRegion.valid / stats.locationStats.total) * 100)
+        : 100;
+      
       let statsMsg = `\n\n📊 Generation Summary:\n` +
         `   • ${filtered.length} event${filtered.length !== 1 ? 's' : ''} generated\n` +
+        `   • Lessons: ${lessonsCount} valid / Workshops: ${workshopsCount} valid\n` +
         `   • ${eventsWithReviews} event${eventsWithReviews !== 1 ? 's' : ''} with reviews\n` +
         `   • ${eventsWithPerformer} event${eventsWithPerformer !== 1 ? 's' : ''} with performer\n` +
         `   • ${eventsWithOffers} event${eventsWithOffers !== 1 ? 's' : ''} with offers\n` +
+        `   • Region coverage: ${regionCoverage}%\n` +
         `\n${validationStatus} - ${validationResults.message}`;
+      
+      // Add location enrichment status (v4.1)
+      if (enrichLocations) {
+        statsMsg += `\n📍 Location Enrichment Active — Regions and Geo auto-filled via keyword inference.`;
+      }
       
       if (validationResults.warnings && validationResults.warnings.length > 0) {
         statsMsg += `\n⚠️ Warnings: ${validationResults.warnings.length}`;
