@@ -1,0 +1,68 @@
+<!-- Squarespace Product Schema Suppressor v1.3 -->
+<script>
+(function() {
+  'use strict';
+  
+  // Squarespace Product Schema Suppressor v1.3
+  // Removes duplicate Product/Course schemas injected by Squarespace
+  // This ensures only our custom schema is used
+  
+  function removeDuplicateProductSchemas() {
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    let foundCustomSchema = false;
+    const toRemove = [];
+    
+    scripts.forEach((script, index) => {
+      try {
+        const json = JSON.parse(script.textContent || script.innerHTML);
+        const types = Array.isArray(json['@type']) ? json['@type'] : [json['@type']];
+        
+        // Check if this is a Product or Course schema
+        const isProductSchema = types.some(t => t === 'Product' || t === 'Course');
+        
+        if (isProductSchema) {
+          // Check if this is our custom schema (has @graph or specific markers)
+          const isCustomSchema = json['@graph'] || 
+                                 (json['@id'] && json['@id'].includes('#schema')) ||
+                                 (json.sku && json.sku.length > 20);
+          
+          if (isCustomSchema) {
+            foundCustomSchema = true;
+          } else {
+            // This is likely Squarespace's auto-generated schema - mark for removal
+            toRemove.push(script);
+          }
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    });
+    
+    // Only remove Squarespace schemas if we found our custom schema
+    if (foundCustomSchema && toRemove.length > 0) {
+      toRemove.forEach(script => {
+        script.remove();
+      });
+      console.log(`[Schema Suppressor v1.3] Removed ${toRemove.length} duplicate Product/Course schema(s)`);
+    }
+  }
+  
+  // Run immediately
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', removeDuplicateProductSchemas);
+  } else {
+    removeDuplicateProductSchemas();
+  }
+  
+  // Also run after a short delay to catch dynamically injected schemas
+  setTimeout(removeDuplicateProductSchemas, 1000);
+  
+  // Run after Squarespace hydration (if applicable)
+  if (window.Squarespace && window.Squarespace.onInitialize) {
+    window.Squarespace.onInitialize(function() {
+      setTimeout(removeDuplicateProductSchemas, 500);
+    });
+  }
+})();
+</script>
+

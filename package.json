@@ -9,7 +9,9 @@
     "start-local": "node scripts/local-server.js",
     "build:desktop": "node scripts/build-desktop.js",
     "build:web": "echo \"Skipping Electron build for web deployment\"",
-    "build": "node -e \"if (process.env.VERCEL || process.env.CI) { console.log('Skipping Electron build for web deployment'); process.exit(0); } else { require('child_process').execSync('npm run build:desktop', {stdio:'inherit'}); }\""
+    "build": "node -e \"if (process.env.VERCEL || process.env.CI) { console.log('Skipping Electron build for web deployment'); process.exit(0); } else { require('child_process').execSync('npm run build:desktop', {stdio:'inherit'}); }\"",
+    "postbuild:inject-suppressor": "node scripts/inject-schema-suppressor.js dist",
+    "postbuild:inject-suppressor:out": "node scripts/inject-schema-suppressor.js out"
   },
   "keywords": [
     "schema",
