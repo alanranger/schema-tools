@@ -6589,6 +6589,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     // OLD GROUPING SYSTEM DISABLED - conflicts with v4.2/v4.3 EventSeries backlinking
     // Skip the old grouping logic entirely - new system handles it below
+    // (Old code removed - EventSeries detection happens later in the flow)
     if (false) {
       // Group events by base title (remove week numbers, dates, etc.)
       const eventGroups = {};
@@ -6709,18 +6710,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           addDebugLog(`   ⚠️ Skipped group "${groupKey.split('|')[0]}": only ${group.length} event(s), need 2+`);
         }
       });
-    } else {
-      addDebugLog(`   ⚠️ Grouping disabled or insufficient events`);
     }
+    // Note: Old grouping system disabled - EventSeries detection happens later
     
     stats.eventsGenerated = finalEventList.length;
     stats.breadcrumbChains = finalBreadcrumbs.length;
     stats.itemListItems = itemList.itemListElement.length;
-    
-    addDebugLog(`\n🧭 Structure Section:`);
-    addDebugLog(`   ✅ Breadcrumb chains: ${stats.breadcrumbChains} (should match events)`);
-    addDebugLog(`   ✅ ItemList items: ${stats.itemListItems} (should match events)`);
-    addDebugLog(`   ✅ EventSeries groups: ${stats.eventSeriesGroups}`);
     
     // Location Verification Summary (v4.1)
     if (stats.locationStats && stats.locationStats.total > 0) {
@@ -6854,10 +6849,16 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
     
     stats.eventSeriesCreated = eventSeriesArray.length;
-    stats.eventSeriesGroups = (stats.eventSeriesGroups || 0) + Object.keys(seriesGroups).length;
+    stats.eventSeriesGroups = Object.keys(seriesGroups).length;
     stats.eventSeriesNames = Object.keys(seriesGroups).map(k => k.charAt(0).toUpperCase() + k.slice(1));
     
-    // Add superEvent backlinks to Events (v4.3) - MUST be done before debug logging
+    // Log Structure Section now that EventSeries stats are updated
+    addDebugLog(`\n🧭 Structure Section:`);
+    addDebugLog(`   ✅ Breadcrumb chains: ${stats.breadcrumbChains} (should match events)`);
+    addDebugLog(`   ✅ ItemList items: ${stats.itemListItems} (should match events)`);
+    addDebugLog(`   ✅ EventSeries groups: ${stats.eventSeriesGroups}`);
+    
+    // Add superEvent backlinks to Events (v4.3)
     // Build seriesMembership from detected groups to ensure consistency
     const seriesMembershipFromGroups = new Map();
     for (const [groupName, groupEvents] of Object.entries(seriesGroups)) {
