@@ -6398,6 +6398,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     outputElement.textContent = '';
     outputElement.textContent = output;
     
+    // Ensure copy button is visible after generation
+    const copyButton = document.getElementById('copySchemaButton');
+    if (copyButton) {
+      copyButton.style.display = 'inline-block';
+      copyButton.style.visibility = 'visible';
+      copyButton.style.opacity = '1';
+    }
+    
     console.log('✅ Event schema generated:', filtered.length, 'events');
     console.log('✅ Output length:', output.length, 'characters');
     
