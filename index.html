@@ -4928,16 +4928,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 
   async function generateEventSchema() {
-    // Load review data if available
-    await loadReviewData();
-    
-    const selectedCategory = document.getElementById('eventCategoryFilter').value;
-    const today = new Date().toISOString().split('T')[0];
-    const filtered = events.filter(e =>
-      (selectedCategory === "__ALL__" || (e['Category'] || '').split(',')[0].trim() === selectedCategory) &&
-      e['Start_Date'] >= today &&
-      e['Workflow_State'] === 'Published'
-    );
+    try {
+      // Check if events are loaded
+      if (!events || events.length === 0) {
+        alert('Please upload a CSV file first.');
+        return;
+      }
+      
+      // Load review data if available
+      await loadReviewData();
+      
+      const selectedCategory = document.getElementById('eventCategoryFilter').value;
+      const today = new Date().toISOString().split('T')[0];
+      const filtered = events.filter(e =>
+        (selectedCategory === "__ALL__" || (e['Category'] || e['category'] || e['CATEGORY'] || '').split(',')[0].trim() === selectedCategory) &&
+        e['Start_Date'] >= today &&
+        e['Workflow_State'] === 'Published'
+      );
+      
+      if (filtered.length === 0) {
+        alert('No events found matching the selected category and date criteria.');
+        return;
+      }
 
     // Build dictionaries for review enrichment
     const reviewsDict = buildReviewsDict();
@@ -5074,10 +5086,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const outputElement = document.getElementById('eventOutput');
     if (outputElement) {
       outputElement.textContent = output;
-      console.log('✅ Event schema generated and displayed');
+      console.log('✅ Event schema generated:', filtered.length, 'events');
+      console.log('✅ Output length:', output.length, 'characters');
     } else {
       console.error('❌ Output element not found');
       alert('Error: Output element not found. Please refresh the page.');
+    }
+    } catch (error) {
+      console.error('❌ Error generating event schema:', error);
+      alert('Error generating schema: ' + error.message + '\n\nPlease check the browser console for details.');
+      const outputElement = document.getElementById('eventOutput');
+      if (outputElement) {
+        outputElement.textContent = 'Error: ' + error.message;
+      }
     }
   }
 
