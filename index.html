@@ -1429,9 +1429,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
 
     <h3>Generated JSON-LD Schema:</h3>
-    <div id="eventOutputContainer" style="position: relative; z-index: 1;">
-      <pre id="eventOutput" style="position: relative; z-index: 1;"></pre>
-      <button id="copySchemaButton" onclick="copyToClipboard('eventOutput')" style="margin-top: 0.75rem; background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; position: relative; z-index: 1; display: block; visibility: visible;">📋 Copy Schema to Clipboard</button>
+    <div id="eventOutputContainer" style="position: relative; z-index: 1; margin-bottom: 1rem;">
+      <pre id="eventOutput" style="position: relative; z-index: 1; max-height: 600px; overflow-y: auto; margin-bottom: 0.75rem;"></pre>
+      <button id="copySchemaButton" onclick="copyToClipboard('eventOutput')" style="margin-top: 0; background: #667eea; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; position: relative; z-index: 10; display: inline-block; visibility: visible; opacity: 1;">📋 Copy Schema to Clipboard</button>
     </div>
     
     <div id="debugLogContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto;">
@@ -6242,25 +6242,39 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const eventGroups = {};
       filtered.forEach((event, idx) => {
         const title = event['Event_Title'] || '';
-        // Remove patterns like "Week 1 of 3", "Session 1", dates, etc.
-        const baseTitle = title
+        // Enhanced title normalization: remove week numbers, session numbers, dates, and common variations
+        let baseTitle = title
           .replace(/\s*-\s*Week\s+\d+\s+of\s+\d+/i, '')
+          .replace(/\s*-\s*Week\s+\d+/i, '')
           .replace(/\s*-\s*Session\s+\d+/i, '')
-          .replace(/\s*-\s*\d+\s+Jan|\d+\s+Feb|\d+\s+Mar|\d+\s+Apr|\d+\s+May|\d+\s+Jun|\d+\s+Jul|\d+\s+Aug|\d+\s+Sep|\d+\s+Oct|\d+\s+Nov|\d+\s+Dec/i, '')
+          .replace(/\s*-\s*\d+\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*/i, '')
+          .replace(/\s*-\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/g, '') // Remove dates like 01/15/2026
+          .replace(/\s*\(.*?\)/g, '') // Remove parenthetical content
+          .replace(/\s*\d+\s+Weekly\s+Evening\s+Classes?/i, '')
+          .replace(/\s*\d+\s+Week\s+Course/i, '')
+          .replace(/\s*3\s+Weekly/i, '')
           .trim();
         
-        if (!eventGroups[baseTitle]) {
-          eventGroups[baseTitle] = [];
+        // Also try grouping by location if titles are very similar
+        const location = event['Location_Business_Name'] || '';
+        const groupKey = `${baseTitle}|${location}`;
+        
+        if (!eventGroups[groupKey]) {
+          eventGroups[groupKey] = [];
         }
-        eventGroups[baseTitle].push({ event, schema: eventSchemas[idx].eventSchema });
+        eventGroups[groupKey].push({ event, schema: eventSchemas[idx].eventSchema, baseTitle });
       });
       
       addDebugLog(`   Found ${Object.keys(eventGroups).length} potential groups`);
+      Object.keys(eventGroups).forEach(key => {
+        const group = eventGroups[key];
+        addDebugLog(`   Group "${key.split('|')[0]}": ${group.length} events`);
+      });
       
-      // For groups with 3+ events, create superEvent with eventSchedule
-      Object.keys(eventGroups).forEach(baseTitle => {
-        const group = eventGroups[baseTitle];
-        if (group.length >= 3) {
+      // For groups with 2+ events, create superEvent with eventSchedule
+      Object.keys(eventGroups).forEach(groupKey => {
+        const group = eventGroups[groupKey];
+        if (group.length >= 2) {
           // Sort by start date
           group.sort((a, b) => {
             const dateA = a.event['Start_Date'] || '';
@@ -6273,26 +6287,39 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           const firstStart = combineDateTime(firstEvent.event['Start_Date'], firstEvent.event['Start_Time']);
           const lastEnd = combineDateTime(lastEvent.event['End_Date'], lastEvent.event['End_Time']);
           
-          // Check if events are weekly (7 days apart)
-          const isWeekly = group.length >= 2 && group.every((evt, i) => {
-            if (i === 0) return true;
+          // Calculate date differences between consecutive events
+          const dateDiffs = [];
+          for (let i = 1; i < group.length; i++) {
             const prevDate = new Date(group[i-1].event['Start_Date']);
-            const currDate = new Date(evt.event['Start_Date']);
+            const currDate = new Date(group[i].event['Start_Date']);
             const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
-            return diffDays >= 6 && diffDays <= 8; // Allow 6-8 days for weekly
-          });
+            dateDiffs.push(diffDays);
+          }
           
-          if (isWeekly) {
+          // Check if events are weekly (6-8 days apart)
+          const isWeekly = dateDiffs.length > 0 && dateDiffs.every(diff => diff >= 6 && diff <= 8);
+          
+          // Check if events are monthly (25-35 days apart, for 1-2 times per month)
+          const isMonthly = dateDiffs.length > 0 && dateDiffs.every(diff => diff >= 25 && diff <= 35);
+          
+          // Check if events are roughly monthly but irregular (14-45 days apart)
+          const isIrregularMonthly = dateDiffs.length > 0 && dateDiffs.every(diff => diff >= 14 && diff <= 45);
+          
+          if (isWeekly || isMonthly || isIrregularMonthly) {
+            const pattern = isWeekly ? 'weekly' : (isMonthly ? 'monthly' : 'irregular monthly');
+            const repeatFreq = isWeekly ? 'P1W' : 'P1M';
+            
             stats.repeatingGroups++;
             stats.eventSeriesGroups++;
-            addDebugLog(`   ✅ Created EventSeries: "${baseTitle}" (${group.length} events, weekly pattern)`);
+            addDebugLog(`   ✅ Created EventSeries: "${group[0].baseTitle}" (${group.length} events, ${pattern} pattern)`);
+            addDebugLog(`      Date differences: ${dateDiffs.join(', ')} days`);
             
             // Create superEvent with eventSchedule
             const superEvent = {
               "@context": "https://schema.org",
               "@type": "EventSeries",
               "@id": `${firstEvent.schema.url}#superEvent`,
-              "name": baseTitle,
+              "name": group[0].baseTitle,
               "description": firstEvent.schema.description,
               "startDate": firstStart,
               "endDate": lastEnd,
@@ -6300,7 +6327,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                 "@type": "Schedule",
                 "startDate": firstStart,
                 "endDate": lastEnd,
-                "repeatFrequency": "P1W",
+                "repeatFrequency": repeatFreq,
                 "scheduleTimezone": "Europe/London"
               },
               "organizer": organizerBlock,
@@ -6323,7 +6350,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             });
             finalEventList = finalEventList.filter(e => e !== null);
             finalEventList.unshift(superEvent);
+          } else {
+            addDebugLog(`   ⚠️ Skipped group "${group[0].baseTitle}": ${group.length} events, but date pattern doesn't match (diffs: ${dateDiffs.join(', ')} days)`);
           }
+        } else {
+          addDebugLog(`   ⚠️ Skipped group "${groupKey.split('|')[0]}": only ${group.length} event(s), need 2+`);
         }
       });
     } else {
