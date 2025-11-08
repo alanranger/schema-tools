@@ -551,9 +551,15 @@ def validate_schema_structure(schema_data, product_name):
     
     return len(errors) == 0, errors
 
-def schema_to_html(schema_data):
-    """Convert schema JSON to Squarespace-ready HTML with suppressor block"""
-    # Load suppressor block from partials directory
+# Load suppressor block once at module level (not per product)
+_suppressor_block_cache = None
+
+def load_suppressor_block():
+    """Load suppressor block once and cache it"""
+    global _suppressor_block_cache
+    if _suppressor_block_cache is not None:
+        return _suppressor_block_cache
+    
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
     suppressor_path = project_root / 'partials' / 'schema-suppressor-v1.3.html'
@@ -572,6 +578,14 @@ def schema_to_html(schema_data):
     else:
         print(f"⚠️  Warning: Schema suppressor file not found at {suppressor_path}")
         print(f"   Continuing without suppressor block")
+    
+    _suppressor_block_cache = suppressor_block
+    return suppressor_block
+
+def schema_to_html(schema_data):
+    """Convert schema JSON to Squarespace-ready HTML with suppressor block"""
+    # Load suppressor block (cached, only loads once)
+    suppressor_block = load_suppressor_block()
     
     # Generate schema script tag
     json_str = json.dumps(schema_data, indent=2, ensure_ascii=False)
