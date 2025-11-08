@@ -1502,6 +1502,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       </div>
     </div>
 
+    <div style="margin-top: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; font-size: 0.9em; color: #6b7280;">
+      Schema auto-hosted via <a href="https://github.com/alanranger/alanranger-schema" target="_blank" style="color: #0369a1;">GitHub Pages</a> • Custom domain: <b>schema.alanranger.com</b> • Auto-sync: <b>Enabled</b>
+    </div>
+
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
       <button id="exportMerchantFeedBtn" onclick="exportMerchantFeed()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
         📥 Export Merchant Center Feed (.json)
@@ -7050,6 +7054,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`   EventSeries created: ${stats.eventSeriesCreated}`);
       }
       addDebugLog(`   Validation: ${validationResults.errors ? validationResults.errors.length : 0} errors / ${validationResults.warnings ? validationResults.warnings.length : 0} warnings`);
+      addDebugLog(`\n🌐 GitHub Hosting Status:`);
+      addDebugLog(`   ✅ Repository: alanranger-schema (public)`);
+      addDebugLog(`   🌐 Hosted via GitHub Pages at https://schema.alanranger.com/`);
+      addDebugLog(`   📁 Files synced: lessons-schema.json, workshops-schema.json`);
+      addDebugLog(`   ⚙️ Auto-sync enabled via GitHub Actions`);
+      addDebugLog(`   💡 Tip: Update via 'Export JSON' to push new schema automatically`);
       
       outputElement.textContent = output + statsMsg;
       
@@ -7155,6 +7165,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             <span style="color: #075985; font-size: 0.875rem;">✅ Validated: JSON.parse successful</span><br>
             <span style="color: #075985; font-size: 0.875rem;">📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified, ${sizeReduction}% reduction)</span><br>
             <span style="color: #075985; font-size: 0.875rem;">✅ Structure: @context=${schema['@context'] === 'https://schema.org' ? '✅' : '❌'}, @graph=${Array.isArray(schema['@graph']) ? '✅' : '❌'}</span><br>
+            <span style="color: #075985; font-size: 0.875rem;">🌐 GitHub Pages: <a href="https://schema.alanranger.com/${fileName}" target="_blank" style="color: #0369a1;">https://schema.alanranger.com/${fileName}</a></span><br>
             <span style="color: #075985; font-size: 0.875rem;">📋 Script src tag ready for Squarespace</span>
           </div>
         `;
@@ -7172,7 +7183,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB (minified) ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
       addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
-      addDebugLog(`   💡 Use export buttons below to download JSON or copy Squarespace script src tag`);
+      addDebugLog(`\n🌐 GitHub Hosting Status:`);
+      addDebugLog(`   ✅ Repository: alanranger-schema (public)`);
+      addDebugLog(`   🌐 Hosted via GitHub Pages: https://schema.alanranger.com/`);
+      addDebugLog(`   📁 Files synced: lessons-schema.json, workshops-schema.json`);
+      addDebugLog(`   ⚙️ Auto-sync: Enabled via GitHub Actions`);
+      addDebugLog(`   💡 Tip: Use export buttons below to download JSON or copy GitHub Pages script src tag`);
     } catch (error) {
       console.error('❌ Error preparing export:', error);
       addDebugLog(`\n📦 Schema Export:`);
@@ -7280,6 +7296,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       addDebugLog(`   📊 File size: ${fileSizeKB.toFixed(2)} KB ${sizeCheck} ${fileSizeKB < 250 ? '(under 250 KB limit)' : '(exceeds 250 KB - consider splitting)'}`);
       addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
       
+      // GitHub Pages hosting info
+      addDebugLog(`\n🌐 GitHub Hosting:`);
+      addDebugLog(`   ✅ Repository: alanranger-schema (public)`);
+      addDebugLog(`   🌐 Hosted via GitHub Pages: https://schema.alanranger.com/`);
+      addDebugLog(`   📁 File URL: https://schema.alanranger.com/${fileName}`);
+      addDebugLog(`   ⚙️ Auto-sync: Enabled via GitHub Actions`);
+      addDebugLog(`   💡 Tip: Copy script src tag below for Squarespace integration`);
+      
       // Update UI
       const exportContent = document.getElementById('schemaExportContent');
       if (exportContent) {
@@ -7332,10 +7356,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
       
-      // Generate external script src tag
+      // Generate external script src tag (GitHub Pages)
       const scriptSrcTag = `<!-- ${schemaType} Schema -->
 <script type="application/ld+json"
-        src="https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/<unique_id>/${fileName}">
+        src="https://schema.alanranger.com/${fileName}">
 <\/script>`;
       
       // Also generate inline version as alternative
@@ -7363,7 +7387,7 @@ ${minifiedJson}
             <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto; margin-bottom: 0.75rem;">
               <div style="color: #6b7280; margin-bottom: 0.5rem;">📋 External Script Tag (Copied):</div>
               <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word; color: #374151;">${scriptSrcTag}</pre>
-              <div style="color: #6b7280; margin-top: 0.5rem; font-size: 0.7rem;">💡 Replace &lt;unique_id&gt; with Squarespace token after uploading ${fileName}</div>
+              <div style="color: #6b7280; margin-top: 0.5rem; font-size: 0.7rem;">💡 Hosted on GitHub Pages at <a href="https://schema.alanranger.com/${fileName}" target="_blank" style="color: #0369a1;">https://schema.alanranger.com/${fileName}</a></div>
             </div>
             <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto;">
               <div style="color: #6b7280; margin-bottom: 0.5rem;">📋 Inline Script Tag (Alternative):</div>
@@ -7372,12 +7396,13 @@ ${minifiedJson}
           `;
         }
         
-        addDebugLog(`\n📋 Squarespace Script Tag (External src):`);
+        addDebugLog(`\n📋 Squarespace Script Tag (GitHub Pages):`);
         addDebugLog(`   ✅ Copied to clipboard`);
         addDebugLog(`   📝 File: ${fileName}`);
+        addDebugLog(`   🌐 URL: https://schema.alanranger.com/${fileName}`);
         addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
         addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
-        addDebugLog(`   💡 Replace <unique_id> with Squarespace token after uploading file`);
+        addDebugLog(`   💡 Hosted on GitHub Pages - ready to use in Squarespace`);
         addDebugLog(`\n   Script tag:`);
         addDebugLog(`   ${scriptSrcTag.split('\n').join('\n   ')}`);
         

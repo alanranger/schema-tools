@@ -1,0 +1,38 @@
+name: Update Schema Files
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public/*.json'
+  watch:
+    types: [started]
+
+jobs:
+  update-schema:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Setup Git
+        run: |
+          git config user.name "alanranger-bot"
+          git config user.email "bot@alanranger.com"
+      
+      - name: Check for changes
+        id: check
+        run: |
+          git diff --exit-code public/*.json || echo "changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit & Push updates
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git add public/*.json
+          git commit -m "Auto-update schema JSON files from generator [skip ci]" || exit 0
+          git push
+
