@@ -6026,18 +6026,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       // Assign stable @id to Event (v4.3)
       const eventId = eventIdFromUrl(eventUrl);
       
-      // Check if this event belongs to a series (v4.3)
-      const title = event['Event_Title'] || "";
-      const seriesKeywords = [
-        "Bluebell Photography Workshop",
-        "Batsford Arboretum Autumn Photography Workshop",
-        "Camera Course for Beginners",
-        "Lightroom Photo Editing"
+      // Check if this event belongs to a series (v4.3) - use same patterns as detectEventSeries
+      const title = (event['Event_Title'] || "").toLowerCase();
+      const keywordPatterns = [
+        { pattern: /bluebell.*photography.*workshop/i, key: "bluebell photography workshop" },
+        { pattern: /batsford.*arboretum.*autumn.*photography.*workshop/i, key: "batsford arboretum autumn photography workshop" },
+        { pattern: /camera.*course.*for.*beginners|camera.*courses.*for.*beginners/i, key: "camera course for beginners" },
+        { pattern: /lightroom.*photo.*editing|lightroom.*classic.*photo.*editing/i, key: "lightroom photo editing" }
       ];
-      const keyMatch = seriesKeywords.find(k => title.includes(k));
-      if (keyMatch) {
-        const seriesId = seriesIdFromName(keyMatch.trim());
-        seriesMembership.set(eventId, seriesId);
+      
+      for (const { pattern, key } of keywordPatterns) {
+        if (pattern.test(title)) {
+          const seriesId = seriesIdFromName(key);
+          seriesMembership.set(eventId, seriesId);
+          break; // Only match one pattern per event
+        }
       }
       
       // Track statistics
@@ -6736,8 +6739,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const breadcrumbs = finalBreadcrumbs;
     
     // Detect and create EventSeries for recurring workshops (v4.2 + v4.3 backlinks)
+    addDebugLog(`\n🔁 EventSeries Detection (v4.2/v4.3):`);
+    addDebugLog(`   Checking ${eventList.length} events for series patterns...`);
+    
     const seriesGroups = detectEventSeries(eventList);
     const eventSeriesArray = [];
+    
+    if (Object.keys(seriesGroups).length === 0) {
+      addDebugLog(`   ⚠️ No EventSeries groups detected (check keyword patterns match event titles)`);
+      // Debug: show sample event titles
+      if (eventList.length > 0) {
+        addDebugLog(`   Sample event titles: ${eventList.slice(0, 3).map(e => e.name || e.Event_Title || 'N/A').join(', ')}`);
+      }
+    } else {
+      addDebugLog(`   ✅ Found ${Object.keys(seriesGroups).length} EventSeries group(s)`);
+      Object.entries(seriesGroups).forEach(([k, v]) => {
+        addDebugLog(`   • ${k}: ${v.length} events`);
+      });
+    }
     
     for (const [groupName, groupEvents] of Object.entries(seriesGroups)) {
       // Sort events by start date
@@ -6839,13 +6858,33 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     stats.eventSeriesNames = Object.keys(seriesGroups).map(k => k.charAt(0).toUpperCase() + k.slice(1));
     
     // Add superEvent backlinks to Events (v4.3) - MUST be done before debug logging
+    // Build seriesMembership from detected groups to ensure consistency
+    const seriesMembershipFromGroups = new Map();
+    for (const [groupName, groupEvents] of Object.entries(seriesGroups)) {
+      const seriesId = seriesIdFromName(groupName);
+      for (const event of groupEvents) {
+        const eventId = event["@id"] || eventIdFromUrl(event.url);
+        if (eventId) {
+          seriesMembershipFromGroups.set(eventId, seriesId);
+        }
+      }
+    }
+    
+    // Merge with pre-populated seriesMembership (for backwards compatibility)
+    seriesMembershipFromGroups.forEach((sid, eid) => {
+      seriesMembership.set(eid, sid);
+    });
+    
     let superEventLinks = 0;
     for (const e of eventList) {
       // Skip if this is already an EventSeries (shouldn't happen, but safety check)
       if (e["@type"] === "EventSeries") continue;
       
       const eid = e["@id"];
-      if (!eid) continue;
+      if (!eid) {
+        addDebugLog(`   ⚠️ Event missing @id: ${e.name || 'Unknown'}`);
+        continue;
+      }
       
       const sid = seriesMembership.get(eid);
       if (!sid) continue;
