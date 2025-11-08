@@ -6677,6 +6677,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         statsMsg += `\n⚠️ Warnings: ${validationResults.warnings.length}`;
       }
       
+      // Final summary (v4.1)
+      addDebugLog(`\n✅ v4.1 Schema generation complete.`);
+      addDebugLog(`   Lessons: ${lessonsCount} valid / Workshops: ${workshopsCount} valid`);
+      addDebugLog(`   Region coverage: ${regionCoverage}%`);
+      addDebugLog(`   Validation: ${validationResults.errors ? validationResults.errors.length : 0} errors / ${validationResults.warnings ? validationResults.warnings.length : 0} warnings`);
+      
       outputElement.textContent = output + statsMsg;
       
       // Show/hide merchant feed button based on toggle
