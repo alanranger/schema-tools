@@ -4818,7 +4818,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   const obs = new MutationObserver(removeSquarespaceProduct);
   obs.observe(document.documentElement, { childList: true, subtree: true });
 })();
-<` + `/script>
+<\/script>
 
 `;
 
@@ -5305,7 +5305,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     html += `Total rows parsed: ${stats.totalRows || 0}<br>`;
     html += `Future events included: ${stats.futureEvents || 0}<br>`;
     html += `Events generated: ${stats.eventsGenerated || 0}<br>`;
-    html += `Repeating groups: ${stats.repeatingGroups || 0}`;
+    html += `Repeating groups: ${stats.eventSeriesGroups || 0}<br>`;
+    html += `EventSeries created: ${stats.eventSeriesCreated || 0}<br>`;
+    if (stats.superEventLinks && stats.superEventLinks > 0) {
+      html += `Events with superEvent: ${stats.superEventLinks}`;
+    }
     html += '</div>';
     
     // Reviews & Ratings Section
@@ -6563,14 +6567,18 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       return { eventSchema, breadcrumb };
     });
     
-    // Phase 3.6: Event Schedule Grouping (if enabled)
+    // Phase 3.6: Event Schedule Grouping (DISABLED - using v4.2/v4.3 EventSeries system instead)
+    // The old grouping system replaced individual events with EventSeries, which conflicts
+    // with the new v4.2/v4.3 system that keeps individual events and adds superEvent backlinks.
     let finalEventList = eventSchemas.map(item => item.eventSchema);
     let finalBreadcrumbs = eventSchemas.map(item => item.breadcrumb);
     
     addDebugLog(`\n🔁 EventSeries / Grouping Section:`);
     addDebugLog(`   Toggle state: ${groupRepeatingEvents ? 'ON' : 'OFF'}`);
+    addDebugLog(`   Note: Using v4.2/v4.3 EventSeries system (keeps individual events + adds backlinks)`);
     
-    if (groupRepeatingEvents && filtered.length > 1) {
+    // OLD GROUPING SYSTEM DISABLED - conflicts with v4.2/v4.3 EventSeries backlinking
+    if (false && groupRepeatingEvents && filtered.length > 1) {
       // Group events by base title (remove week numbers, dates, etc.)
       const eventGroups = {};
       filtered.forEach((event, idx) => {
@@ -6825,7 +6833,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Add superEvent backlinks to Events (v4.3) - MUST be done before debug logging
     let superEventLinks = 0;
     for (const e of eventList) {
+      // Skip if this is already an EventSeries (shouldn't happen, but safety check)
+      if (e["@type"] === "EventSeries") continue;
+      
       const eid = e["@id"];
+      if (!eid) continue;
+      
       const sid = seriesMembership.get(eid);
       if (!sid) continue;
       
