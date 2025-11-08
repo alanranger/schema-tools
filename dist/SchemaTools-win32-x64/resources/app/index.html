@@ -1303,7 +1303,6 @@
   <div class="version-badge">
     <span class="version">v4.0</span>
     <span class="date">Event + Review Enhanced</span>
-    <span class="date" id="version-date">Loading...</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -4661,14 +4660,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 `;
 
   document.getElementById('eventCsvFile').addEventListener('change', function(e) {
+    if (!e.target.files || !e.target.files[0]) {
+      console.error('No file selected');
+      return;
+    }
+    
     Papa.parse(e.target.files[0], {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
+        if (!results.data || results.data.length === 0) {
+          alert('CSV file is empty or could not be parsed. Please check the file format.');
+          return;
+        }
+        
         events = results.data;
+        console.log('✅ Loaded', events.length, 'events from CSV');
         
         const categories = [...new Set(
-          events.map(e => (e['Category'] || '').split(',')[0].trim()).filter(Boolean)
+          events.map(e => {
+            const cat = e['Category'] || e['category'] || e['CATEGORY'] || '';
+            return cat.split(',')[0].trim();
+          }).filter(Boolean)
         )];
         
         const filterSelect = document.getElementById('eventCategoryFilter');
@@ -4679,7 +4692,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           opt.textContent = c;
           filterSelect.appendChild(opt);
         });
+        
+        // Always show the container and button, even if no categories found
         document.getElementById('eventCategoryFilterContainer').style.display = 'block';
+        console.log('✅ Category filter and Generate button displayed');
+      },
+      error: function(error) {
+        console.error('Error parsing CSV:', error);
+        alert('Error parsing CSV file: ' + (error.message || 'Unknown error') + '\n\nPlease check that the file is a valid CSV.');
       }
     });
   });
