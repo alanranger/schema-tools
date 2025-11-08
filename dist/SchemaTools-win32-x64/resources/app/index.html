@@ -12174,3 +12174,701 @@ exit`;
             if (line.trim()) {
               log(line + '\n');
               
+              // Extract exit code if present FIRST (most reliable indicator)
+              const exitMatch = line.match(/exit code (\d+)/i);
+              if (exitMatch) {
+                exitCode = parseInt(exitMatch[1]);
+                // Only set hasError if exit code is non-zero
+                if (exitCode !== 0) {
+                  hasError = true;
+                }
+              }
+              
+              // Check for error indicators
+              if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
+                  line.includes('exit code 1') || line.includes('exit code 2') || 
+                  line.includes('Error:') || line.includes('ERROR:') ||
+                  line.includes('FAILED:')) {
+                hasError = true;
+              }
+              
+              // Update progress based on keywords
+              if (line.includes('✅') || line.includes('complete') || line.includes('Success')) {
+                if (progressBar && !hasError) {
+                  progressBar.style.width = '90%';
+                  progressBar.style.background = '#27AE60'; // Green when complete
+                }
+              }
+            }
+          }
+        }
+        
+        // Process remaining buffer
+        if (buffer.trim()) {
+          log(buffer + '\n');
+          // Check buffer for errors too
+          if (buffer.includes('❌') || buffer.includes('failed') || buffer.includes('exit code 1') || buffer.includes('FAILED:')) {
+            hasError = true;
+          }
+        }
+        
+        // If we detected an error or exit code is non-zero, throw it
+        if (hasError || (exitCode !== null && exitCode !== 0)) {
+          throw new Error(`Task failed with exit code ${exitCode || 1}. Check console output above for details.`);
+        }
+        
+        // Complete progress
+        if (progressBar) {
+          progressBar.style.width = '100%';
+          progressBar.style.background = '#27AE60'; // Green for complete
+        }
+        
+        // Mark step as complete FIRST
+        markComplete(stepId, statusMessage.replace('🔄 ', '✅ ').replace('🧹 ', '✅ ').replace('⚙️ ', '✅ '));
+        
+        // Extract review count for Step 3a from console output
+        let reviewCount = null;
+        if (stepId === '3a' && consoleOutput) {
+          const outputText = consoleOutput.textContent || '';
+          // Look for patterns like "✅ Fetched 217 reviews" or "📊 Total reviews: 217"
+          const fetchedMatch = outputText.match(/✅\s*Fetched\s+(\d+)\s+reviews?/i);
+          const totalMatch = outputText.match(/📊\s*Total\s+reviews?:\s*(\d+)/i);
+          if (fetchedMatch) {
+            reviewCount = parseInt(fetchedMatch[1]);
+          } else if (totalMatch) {
+            reviewCount = parseInt(totalMatch[1]);
+          }
+        }
+        
+        // Extract product count and match count for Step 4 from console output
+        let productCount = null;
+        let matchCount = null;
+        let totalProducts = null;
+        let productsWithoutReviews = null;
+        let latestReviewDate = null;
+        let googleReviewsCount = null;
+        let trustpilotReviewsCount = null;
+        
+        if (stepId === 4 && consoleOutput) {
+          const outputText = consoleOutput.textContent || '';
+          // Look for patterns like "✅ Generated 206 HTML files" or "Total products: 206" or "✅ Loaded 206 products"
+          const generatedMatch = outputText.match(/✅\s*Generated\s+(\d+)\s+HTML\s+files?/i);
+          const totalMatch = outputText.match(/Total\s+products?:\s*(\d+)/i);
+          const loadedMatch = outputText.match(/✅\s*Loaded\s+(\d+)\s+products?/i);
+          if (generatedMatch) {
+            productCount = parseInt(generatedMatch[1]);
+          } else if (totalMatch) {
+            productCount = parseInt(totalMatch[1]);
+          } else if (loadedMatch) {
+            productCount = parseInt(loadedMatch[1]);
+          }
+          
+          // Check if schema suppressor was loaded
+          const suppressorLoaded = outputText.includes('Schema suppressor v1.3 loaded');
+          if (suppressorLoaded) {
+            // This will be visible in the console output automatically
+          }
+          
+          // Extract match count (products with reviews)
+          const matchCountMatch = outputText.match(/📊\s*MATCH_COUNT:\s*(\d+)/i);
+          const productsWithReviewsMatch = outputText.match(/Products\s+with\s+reviews?:\s*(\d+)/i);
+          const matchedProductsMatch = outputText.match(/(\d+)\s+products?\s+matched\s+with\s+reviews?/i);
+          if (matchCountMatch) {
+            matchCount = parseInt(matchCountMatch[1]);
+          } else if (productsWithReviewsMatch) {
+            matchCount = parseInt(productsWithReviewsMatch[1]);
+          } else if (matchedProductsMatch) {
+            matchCount = parseInt(matchedProductsMatch[1]);
+          }
+          
+          // Extract full summary data from SCHEMA GENERATION SUMMARY section
+          // Use productCount as fallback for totalProducts if not found separately
+          if (productCount !== null) {
+            totalProducts = productCount;
+          } else {
+            const totalProductsMatch = outputText.match(/Total\s+products?:\s*(\d+)/i);
+            if (totalProductsMatch) {
+              totalProducts = parseInt(totalProductsMatch[1]);
+            }
+          }
+          
+          const productsWithoutReviewsMatch = outputText.match(/Products\s+without\s+reviews?:\s*(\d+)/i);
+          if (productsWithoutReviewsMatch) {
+            productsWithoutReviews = parseInt(productsWithoutReviewsMatch[1]);
+          }
+          
+          // Extract mapped review statistics (new format)
+          const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+          const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+          const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
+          
+          const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
+          const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
+          const overallLatestDateMatch = outputText.match(/Overall\s+latest\s+review:\s*([\d-]+)/i);
+          
+          // Fallback to old format if new format not found
+          const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)/i);
+          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)/i);
+          const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
+          
+          if (mappedGoogleMatch) {
+            googleReviewsCount = parseInt(mappedGoogleMatch[1]); // mapped count
+          } else if (googleReviewsMatch) {
+            googleReviewsCount = parseInt(googleReviewsMatch[1]); // total count (old format)
+          }
+          
+          if (mappedTrustpilotMatch) {
+            trustpilotReviewsCount = parseInt(mappedTrustpilotMatch[1]); // mapped count
+          } else if (trustpilotReviewsMatch) {
+            trustpilotReviewsCount = parseInt(trustpilotReviewsMatch[1]); // total count (old format)
+          }
+          
+          if (latestGoogleDateMatch) {
+            latestReviewDate = latestGoogleDateMatch[1];
+          } else if (overallLatestDateMatch) {
+            latestReviewDate = overallLatestDateMatch[1];
+          } else if (latestReviewDateMatch) {
+            latestReviewDate = latestReviewDateMatch[1];
+          }
+        }
+        
+        // Show success modal based on step
+        const stepInfo = {
+          2: { name: 'Clean and Normalize CSV', message: 'Product data has been cleaned and normalized. Invalid rows removed, columns standardized.', nextStep: 'Step 3a will start automatically to fetch Google reviews.', file: 'inputs-files/workflow/02 – products_cleaned.xlsx' },
+          '3a': { 
+            name: 'Fetch Google Reviews', 
+            message: reviewCount 
+              ? `Successfully fetched ${reviewCount} Google My Business reviews. Reviews have been saved to CSV.`
+              : 'Successfully fetched Google My Business reviews. Reviews have been saved to CSV.',
+            nextStep: 'Step 3b will start automatically to merge reviews.', 
+            file: 'inputs-files/workflow/03b – google_reviews.csv' 
+          },
+          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Step 4 will start automatically to generate product schema.', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
+          4: { 
+            name: 'Generate Product Schema', 
+            message: productCount 
+              ? `Successfully generated schema files for ${productCount} products. Each HTML file includes Schema Suppressor v1.3 to prevent duplicate Squarespace schemas.`
+              : 'Product schema files have been generated successfully. Each HTML file includes Schema Suppressor v1.3 to prevent duplicate Squarespace schemas.',
+            nextStep: null, 
+            file: 'outputs/ folder (JSON/HTML) and inputs-files/workflow/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv' 
+          }
+        };
+        
+        const info = stepInfo[stepId];
+        if (info) {
+          setTimeout(() => {
+            showStepSuccessModal(
+              stepId,
+              info.name,
+              info.message,
+              info.nextStep,
+              info.file
+            );
+            
+            // Track step completion for final summary
+            if (!window.completedSteps) {
+              window.completedSteps = {};
+            }
+            // Extract additional mapped review data for Step 4
+            let mappedGoogleCount = null;
+            let mappedTrustpilotCount = null;
+            let totalMappedReviews = null;
+            let latestGoogleDate = null;
+            let latestTrustpilotDate = null;
+            
+            if (stepId === 4 && consoleOutput) {
+              const outputText = consoleOutput.textContent || '';
+              const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+              const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+              const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
+              const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
+              const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
+              
+              if (mappedGoogleMatch) {
+                mappedGoogleCount = parseInt(mappedGoogleMatch[1]);
+              }
+              if (mappedTrustpilotMatch) {
+                mappedTrustpilotCount = parseInt(mappedTrustpilotMatch[1]);
+              }
+              if (totalMappedMatch) {
+                totalMappedReviews = parseInt(totalMappedMatch[1]);
+              }
+              if (latestGoogleDateMatch) {
+                latestGoogleDate = latestGoogleDateMatch[1];
+              }
+              if (latestTrustpilotDateMatch) {
+                latestTrustpilotDate = latestTrustpilotDateMatch[1];
+              }
+            }
+            
+            window.completedSteps[stepId] = {
+              name: info.name,
+              message: info.message,
+              file: info.file,
+              reviewCount: stepId === '3a' ? reviewCount : null,
+              productCount: stepId === 4 ? productCount : null,
+              matchCount: stepId === 4 ? matchCount : null,
+              totalProducts: stepId === 4 ? totalProducts : null,
+              productsWithoutReviews: stepId === 4 ? productsWithoutReviews : null,
+              latestReviewDate: stepId === 4 ? latestReviewDate : null,
+              googleReviewsCount: stepId === 4 ? googleReviewsCount : null,
+              trustpilotReviewsCount: stepId === 4 ? trustpilotReviewsCount : null,
+              mappedGoogleCount: stepId === 4 ? mappedGoogleCount : null,
+              mappedTrustpilotCount: stepId === 4 ? mappedTrustpilotCount : null,
+              totalMappedReviews: stepId === 4 ? totalMappedReviews : null,
+              latestGoogleDate: stepId === 4 ? latestGoogleDate : null,
+              latestTrustpilotDate: stepId === 4 ? latestTrustpilotDate : null
+            };
+            
+            // Update Step 4 match status indicator
+            if (stepId === 4 && matchCount !== null) {
+              const matchStatusDiv = document.getElementById('step4MatchStatus');
+              const matchCountSpan = document.getElementById('step4MatchCount');
+              if (matchStatusDiv && matchCountSpan) {
+                matchCountSpan.textContent = matchCount;
+                matchStatusDiv.style.display = 'block';
+              }
+            }
+            
+            // If Step 4 completed, show final summary modal
+            if (stepId === 4) {
+              setTimeout(() => {
+                showFinalCompletionModal();
+              }, 1500);
+            }
+          }, 500);
+        }
+        
+        if (onComplete) {
+          onComplete();
+        }
+        
+      } catch (err) {
+        const errorMsg = err.message || 'Unknown error';
+        log(`\n❌ Task '${task}' failed!\n`);
+        log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        log(`Error: ${errorMsg}\n`);
+        log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        
+        // Provide specific help based on error type
+        if (errorMsg.includes('Cannot connect') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+          log(`\n💡 Server Connection Issue:\n`);
+          if (isElectronMode) {
+            log(`   • The local server may not have started properly\n`);
+            log(`   • Check the Electron console window for server errors\n`);
+            log(`   • Try closing and reopening the app\n`);
+            log(`   • Ensure Python 3.10+ is installed\n`);
+          } else {
+            log(`   • Make sure the local server is running\n`);
+            log(`   • Run: npm run start-local\n`);
+            log(`   • Wait for: "⚡ Local executor running at http://localhost:${serverPort}"\n`);
+            log(`   • Then refresh this page and try again\n`);
+          }
+        } else if (errorMsg.includes('timeout') || errorMsg.includes('aborted')) {
+          log(`\n💡 Task Timeout:\n`);
+          log(`   • The task took too long to complete\n`);
+          log(`   • Check if Python scripts are running correctly\n`);
+          log(`   • Verify input files exist in inputs-files/workflow/\n`);
+        } else {
+          log(`\n💡 Troubleshooting:\n`);
+          if (isElectronMode && window.electronAPI && window.electronAPI.openDevTools) {
+            const consoleBtn = document.createElement('button');
+            consoleBtn.textContent = '🔍 Open Developer Console (Ctrl+Shift+I)';
+            consoleBtn.style.cssText = 'margin: 8px 0; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;';
+            consoleBtn.onclick = async () => {
+              try {
+                await window.electronAPI.openDevTools();
+                log("✅ Developer Console opened! Check the Console tab for detailed error messages.");
+              } catch (e) {
+                log("⚠️ Could not open console automatically. Press Ctrl+Shift+I to open it manually.");
+              }
+            };
+            if (consoleOutput) {
+              consoleOutput.appendChild(consoleBtn);
+            }
+            log(`   • Click the button above to open Developer Console\n`);
+          } else {
+            log(`   • Press Ctrl+Shift+I to open Developer Console for detailed error messages\n`);
+          }
+          log(`   • Verify Python 3.10+ is installed\n`);
+          log(`   • Ensure input files are in the correct location\n`);
+          if (!isElectronMode) {
+            log(`   • Make sure local server is running: npm run start-local\n`);
+          }
+        }
+        
+        if (progressBar) {
+          progressBar.style.background = '#dc3545'; // Red on error
+          progressBar.style.width = '0%';
+        }
+        
+        // Update status text
+        const statusText = document.getElementById(`status-step${stepId}`);
+        if (statusText) {
+          statusText.textContent = `❌ Failed: ${errorMsg.substring(0, 60)}...`;
+          statusText.style.color = '#dc3545';
+          statusText.style.fontWeight = '600';
+        }
+        
+        // Update dashboard
+        updateStepStatus(String(stepId), 'error', 'Failed');
+        
+        // Show error in a prominent way
+        const stepContainer = document.getElementById(`step${stepId}-container`) || 
+                             document.querySelector(`[id*="step${stepId}"]`);
+        if (stepContainer) {
+          stepContainer.style.borderColor = '#dc3545';
+          stepContainer.style.borderWidth = '2px';
+        }
+        
+        // Show error modal
+        const stepNames = {
+          2: 'Clean and Normalize CSV',
+          '3a': 'Fetch Google Reviews',
+          '3b': 'Merge Reviews',
+          4: 'Generate Product Schema'
+        };
+        
+        let troubleshootingSteps = [];
+        if (errorMsg.includes('Cannot connect') || errorMsg.includes('Failed to fetch')) {
+          if (isElectronMode) {
+            troubleshootingSteps = [
+              'Close and reopen the Electron app',
+              'Check that Python 3.10+ is installed',
+              'Ensure no antivirus is blocking local connections',
+              'Open Developer Console (Ctrl+Shift+I) for detailed errors'
+            ];
+          } else {
+            troubleshootingSteps = [
+              'Make sure the local server is running',
+              'Run: npm run start-local in your terminal',
+              'Wait for the server to start, then refresh this page'
+            ];
+          }
+        } else {
+          troubleshootingSteps = [
+            'Check the console output above for detailed error messages',
+            'Verify all required input files exist',
+            'Ensure Python 3.10+ is installed',
+            'Check that you have write permissions to the output folder'
+          ];
+        }
+        
+        setTimeout(() => {
+          showStepErrorModal(
+            stepId,
+            stepNames[stepId] || `Step ${stepId}`,
+            errorMsg,
+            troubleshootingSteps
+          );
+        }, 500);
+        
+        // Hide server status warning if it exists
+        const warning = document.getElementById('serverStatusWarning');
+        if (warning) {
+          warning.style.display = 'block';
+        }
+        
+        // Re-throw for Step 2's catch block to handle Electron-specific messaging
+        throw err;
+      }
+    }
+
+    // Step 1: File upload detection and auto-trigger Step 2
+    document.getElementById('file-step1')?.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        const fileName = e.target.files[0].name;
+        if (fileName.includes('01') && (fileName.includes('products') || fileName.includes('product'))) {
+          updateStatus(1, 'Uploading raw CSV...', 40);
+          setTimeout(() => {
+            markComplete(1, 'Step 1 complete – raw file ready');
+            updateStepStatus('1', 'complete', 'Complete');
+            // Auto-trigger Step 2 cleaning
+            setTimeout(() => {
+              autoCleanProducts();
+            }, 800);
+          }, 1200);
+        }
+      }
+    });
+
+    // Step 2: Auto-clean products (triggered automatically after Step 1)
+    async function autoCleanProducts() {
+      // Always show UI elements for feedback
+      const consoleOutput = document.getElementById('cleanConsoleOutput');
+      const progressBar = document.querySelector('#progress-step2');
+      const progressBarFill = document.querySelector('#progress-step2 .progress-bar');
+      const statusText = document.getElementById('status-step2');
+      
+      // Show console and progress bar immediately
+      if (consoleOutput) {
+        consoleOutput.style.display = 'block';
+        consoleOutput.textContent = '🔄 Checking local server status...\n';
+      }
+      if (progressBar) {
+        progressBar.style.display = 'block';
+      }
+      if (progressBarFill) {
+        progressBarFill.style.width = '10%';
+        progressBarFill.style.background = '#E57200';
+      }
+      if (statusText) {
+        statusText.textContent = '🔄 Checking server...';
+        statusText.style.color = '#4a5568';
+      }
+      
+      // Check server status first (skip alert in Electron mode or web deployment)
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning && !isElectronMode) {
+        // Check if running on Vercel/web (don't show blocking alert)
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          // On web deployment, show clear message and update dashboard
+          if (consoleOutput) {
+            consoleOutput.textContent = 'ℹ️ Web Mode Detected\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            consoleOutput.textContent += 'Step 2 cannot run automatically in web browser mode.\n';
+            consoleOutput.textContent += '\nWhy?\n';
+            consoleOutput.textContent += '• Browsers cannot access local files for security reasons\n';
+            consoleOutput.textContent += '• Step 2 needs to run Python scripts on your computer\n';
+            consoleOutput.textContent += '\nSolution:\n';
+            consoleOutput.textContent += '• Use the Electron desktop app for full automation\n';
+            consoleOutput.textContent += '• Or run locally: npm run start-local\n';
+            consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+          }
+          if (progressBarFill) {
+            progressBarFill.style.width = '0%';
+            progressBarFill.style.background = '#e2e8f0';
+          }
+          if (statusText) {
+            statusText.textContent = '⏸️ Step 2 requires Electron app or local server (not available in web browser)';
+            statusText.style.color = '#667eea';
+            statusText.style.fontWeight = '500';
+          }
+          // Update dashboard status
+          updateStepStatus('2', 'waiting', 'Web Mode');
+          // Show instructions box
+          const instructionsBox = document.getElementById('localServerInstructions');
+          if (instructionsBox) {
+            instructionsBox.style.display = 'block';
+          }
+          return;
+        }
+        
+        // Local browser mode: show warning and instructions
+        if (consoleOutput) {
+          consoleOutput.textContent = '⚠️ Local Server Not Running\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+          consoleOutput.textContent += 'To run Step 2 automatically:\n';
+          consoleOutput.textContent += '   1. Open your terminal in the project folder\n';
+          consoleOutput.textContent += '   2. Run: npm run start-local\n';
+          consoleOutput.textContent += `   3. Wait for: "⚡ Local executor running at http://localhost:${serverPort}"\n`;
+          consoleOutput.textContent += '   4. Refresh this page\n';
+          consoleOutput.textContent += '   5. Upload the file again\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        }
+        if (progressBarFill) {
+          progressBarFill.style.width = '0%';
+          progressBarFill.style.background = '#ffc107';
+        }
+        if (statusText) {
+          statusText.textContent = '⚠️ Local server required - run "npm run start-local" first';
+          statusText.style.color = '#856404';
+        }
+        // Show instructions box
+        const instructionsBox = document.getElementById('localServerInstructions');
+        if (instructionsBox) {
+          instructionsBox.style.display = 'block';
+        }
+        
+        // Only show alert in local browser mode (not on web)
+        if (!isWebDeployment) {
+          alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        }
+        return;
+      }
+      
+      // Hide server warning if visible
+      const warning = document.getElementById('serverStatusWarning');
+      if (warning) warning.style.display = 'none';
+      
+      // Server is running - proceed with task
+      try {
+        await runLocalTask('clean', 2, '🧹 Cleaning product data...', () => {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+          const timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+          if (consoleOutput) {
+            consoleOutput.textContent += `\n🕓 Cleaned on ${dateStr} @ ${timeStr}\n`;
+            consoleOutput.textContent += '\n💡 Next step: Proceed to Step 3a - Fetch Google Reviews\n';
+          }
+          
+          // Auto-chain to Step 3a
+          chainNextStep(runGoogleReviewsFetcher, 2000);
+        });
+      } catch (error) {
+        // Enhanced error handling for Electron mode
+        if (isElectronMode) {
+          const errorMessage = `❌ Step 2 Failed: Local automation server did not start properly.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nPossible fixes:\n\n1️⃣ Close and reopen the app\n2️⃣ Check that Python 3.10+ is installed\n3️⃣ Ensure no antivirus is blocking local connections\n4️⃣ Open Developer Console (button below) to see detailed error messages\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nError details: ${error.message}`;
+          
+          if (consoleOutput) {
+            consoleOutput.textContent = errorMessage;
+            consoleOutput.style.display = 'block';
+            
+            // Add button to open DevTools
+            if (window.electronAPI && window.electronAPI.openDevTools) {
+              const consoleBtn = document.createElement('button');
+              consoleBtn.textContent = '🔍 Open Developer Console (Ctrl+Shift+I)';
+              consoleBtn.style.cssText = 'margin: 12px 0; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600; display: block;';
+              consoleBtn.onclick = async () => {
+                try {
+                  await window.electronAPI.openDevTools();
+                  const successMsg = document.createElement('div');
+                  successMsg.textContent = '✅ Developer Console opened! Check the Console tab for detailed error messages.';
+                  successMsg.style.cssText = 'margin-top: 8px; padding: 8px; background: #d4edda; color: #155724; border-radius: 4px;';
+                  consoleOutput.appendChild(successMsg);
+                  setTimeout(() => successMsg.remove(), 5000);
+                } catch (e) {
+                  const errorMsg = document.createElement('div');
+                  errorMsg.textContent = '⚠️ Could not open console automatically. Press Ctrl+Shift+I to open it manually.';
+                  errorMsg.style.cssText = 'margin-top: 8px; padding: 8px; background: #fff3cd; color: #856404; border-radius: 4px;';
+                  consoleOutput.appendChild(errorMsg);
+                  setTimeout(() => errorMsg.remove(), 5000);
+                }
+              };
+              consoleOutput.appendChild(consoleBtn);
+            }
+          }
+          if (statusText) {
+            statusText.textContent = '❌ Step 2 failed - Local server error';
+            statusText.style.color = '#dc3545';
+            statusText.style.fontWeight = '600';
+          }
+          if (progressBarFill) {
+            progressBarFill.style.width = '0%';
+            progressBarFill.style.background = '#dc3545';
+          }
+          updateStepStatus('2', 'error', 'Server Error');
+          
+          // Show error in a prominent way
+          const step2Container = document.getElementById('step2-container') || document.querySelector('[id*="step2"]');
+          if (step2Container) {
+            step2Container.style.borderColor = '#dc3545';
+            step2Container.style.borderWidth = '2px';
+          }
+        } else {
+          // Re-throw for non-Electron mode to use existing error handling
+          throw error;
+        }
+      }
+    }
+
+    // Step 2: File upload detection (legacy - for manual uploads)
+    document.getElementById('file-step2')?.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        const fileName = e.target.files[0].name;
+        if (fileName.includes('02') || fileName.includes('products_cleaned')) {
+          updateStatus(2, 'Uploading cleaned file...', 40);
+          setTimeout(() => markComplete(2, 'Step 2 complete – cleaned file ready'), 1200);
+        }
+      }
+    });
+    // Step 3a: Google Reviews Fetcher
+    async function runGoogleReviewsFetcher() {
+      // Check server status first (skip alert in Electron mode or web deployment)
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning && !isElectronMode) {
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          const consoleOutput = document.getElementById('googleConsoleOutput');
+          if (consoleOutput) {
+            consoleOutput.style.display = 'block';
+            consoleOutput.textContent = 'ℹ️ Web Mode: Requires Electron app for automation.\n';
+          }
+          return;
+        }
+        
+        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        return;
+      }
+      
+      await runLocalTask('fetch', '3a', '🔄 Fetching Google reviews...', () => {
+        const consoleOutput = document.getElementById('googleConsoleOutput');
+        if (consoleOutput) {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(' ', '-');
+          consoleOutput.textContent += `\n📊 Total reviews: Check file\n`;
+          consoleOutput.textContent += `📅 Date: ${dateStr}\n`;
+          consoleOutput.textContent += `📁 File: 03b – google_reviews.csv\n`;
+          consoleOutput.textContent += `💡 Next: Merge with Trustpilot reviews in Step 3b\n`;
+        }
+        
+        // Auto-chain to Step 3b
+        chainNextStep(runMergeReviews, 2000);
+      });
+    }
+
+    // Step 3b: Merge Reviews
+    async function runMergeReviews() {
+      // Check server status first (skip alert in Electron mode or web deployment)
+      const isRunning = await ensureLocalExecutorRunning();
+      if (!isRunning && !isElectronMode) {
+        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('localhost') === false;
+        
+        if (isWebDeployment) {
+          const consoleOutput = document.getElementById('mergeConsoleOutput');
+          if (consoleOutput) {
+            consoleOutput.style.display = 'block';
+            consoleOutput.textContent = 'ℹ️ Web Mode: Requires Electron app for automation.\n';
+          }
+          return;
+        }
+        
+        alert('Local server is not running. Please run "npm run start-local" in your terminal first.');
+        return;
+      }
+      
+      await runLocalTask('merge', '3b', '🔄 Merging Trustpilot + Google reviews...', () => {
+        const consoleOutput = document.getElementById('mergeConsoleOutput');
+        if (consoleOutput) {
+          consoleOutput.textContent += '\n📊 Merge Summary:\n';
+          consoleOutput.textContent += '   - Trustpilot + Google reviews combined\n';
+          consoleOutput.textContent += '   - Low ratings filtered out\n';
+          consoleOutput.textContent += '   - Reviews mapped to products\n';
+          consoleOutput.textContent += '   - Duplicates removed\n';
+          consoleOutput.textContent += '\n💡 Step 4 will start automatically in 2 seconds...\n';
+        }
+        
+        // Auto-chain to Step 4
+        chainNextStep(generateProductSchema, 2000);
+      });
+    }
+
+    // Step 3: File upload detection (for Step 3c)
+    document.getElementById('file-step3')?.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        const fileName = e.target.files[0].name;
+        // Also sync with hidden productCsvFile for backward compatibility
+        const hiddenInput = document.getElementById('productCsvFile');
+        if (hiddenInput) {
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(e.target.files[0]);
+          hiddenInput.files = dataTransfer.files;
+        }
+        
+        if (fileName.includes('03') || fileName.includes('products_with_review_data_final')) {
+          updateStatus(3, 'Uploading merged dataset...', 40);
+          setTimeout(() => markComplete(3, 'Step 3c complete – merged dataset ready'), 1200);
+        }
+      }
+    });
+
+  </script>
+
+</body>
+</html>
