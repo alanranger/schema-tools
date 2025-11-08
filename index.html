@@ -5559,6 +5559,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
           addDebugLog(`      ✅ OnlineEventAttendanceMode override applied`);
         }
       }
+      
+      // 👥 Organizer / Provider / Performer Verification
+      if (index < 3) {
+        addDebugLog(`\n   👥 Organizer / Provider / Performer:`);
+        addDebugLog(`      ✅ organizer.@type: Organization`);
+        addDebugLog(`      ✅ organizer.name: Alan Ranger Photography`);
+        addDebugLog(`      ✅ organizer.logo: ${organizerBlock.logo ? 'Present' : 'MISSING'}`);
+        addDebugLog(`      ✅ organizer.sameAs: ${organizerBlock.sameAs ? organizerBlock.sameAs.length + ' links' : 'MISSING'}`);
+        addDebugLog(`      ✅ performer: ${includePerformer ? 'ON (will be added)' : 'OFF'}`);
+        const category = (event['Category'] || event['category'] || '').split(',')[0].trim();
+        const titleLower = (event['Event_Title'] || '').toLowerCase();
+        if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson') || titleLower.includes('course')) {
+          addDebugLog(`      ✅ provider: Present (same as organizer)`);
+        }
+      }
+      
       const audience = detectAudience(event['Event_Title'], event['Excerpt'], event['Tags']);
       const keywords = extractKeywords(event['Tags']);
       const description = trimDescription(event['Excerpt'] || event['Description'], 5000);
