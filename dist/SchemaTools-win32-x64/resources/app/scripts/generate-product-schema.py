@@ -552,9 +552,32 @@ def validate_schema_structure(schema_data, product_name):
     return len(errors) == 0, errors
 
 def schema_to_html(schema_data):
-    """Convert schema JSON to Squarespace-ready HTML"""
+    """Convert schema JSON to Squarespace-ready HTML with suppressor block"""
+    # Load suppressor block from partials directory
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    suppressor_path = project_root / 'partials' / 'schema-suppressor-v1.3.html'
+    
+    suppressor_block = ''
+    if suppressor_path.exists():
+        try:
+            suppressor_block = suppressor_path.read_text(encoding='utf-8').strip()
+            # Ensure it ends with a newline
+            if suppressor_block and not suppressor_block.endswith('\n'):
+                suppressor_block += '\n'
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load schema suppressor block: {e}")
+            print(f"   Continuing without suppressor block")
+    
+    # Generate schema script tag
     json_str = json.dumps(schema_data, indent=2, ensure_ascii=False)
-    return f'<script type="application/ld+json">\n{json_str}\n</script>'
+    schema_script = f'<script type="application/ld+json">\n{json_str}\n</script>'
+    
+    # Combine suppressor block + schema script
+    if suppressor_block:
+        return suppressor_block + '\n' + schema_script
+    else:
+        return schema_script
 
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
