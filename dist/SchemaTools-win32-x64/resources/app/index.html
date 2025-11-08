@@ -4995,7 +4995,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     Object.keys(productReviews).forEach((productUrl, idx) => {
       const reviews = productReviews[productUrl];
       const validReviews = reviews.filter(r => {
-        // Try multiple rating fields
+        // Try multiple rating fields (note: CSV has ratingValue with capital V)
         const rating = parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
         return rating >= 4 && rating <= 5;
       });
@@ -5019,6 +5019,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     });
     
     addDebugLog(`✅ Reviews dictionary built: ${Object.keys(dict).length} products with valid reviews`);
+    
+    // Show sample product URLs that have reviews
+    const sampleProducts = Object.keys(dict).slice(0, 3);
+    if (sampleProducts.length > 0) {
+      addDebugLog(`   Sample products with reviews:`);
+      sampleProducts.forEach(url => {
+        const data = dict[url];
+        addDebugLog(`     ${url} → Rating: ${data.ratingValue}, Count: ${data.reviewCount}`);
+      });
+    }
+    
     return dict;
   }
 
