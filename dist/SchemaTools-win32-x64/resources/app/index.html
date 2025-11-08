@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator v4 - Smart Enriched SEO Edition</title>
+  <title>Unified Schema Generator v4 - Smart Enriched Schema Generator</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -1302,7 +1302,7 @@
 <div class="container">
   <div class="version-badge">
     <span class="version">v4</span>
-    <span class="date">Smart Enriched SEO Edition</span>
+    <span class="date">Smart Enriched Schema Generator</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -1316,7 +1316,7 @@
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content active">
     <div class="instructions">
-      <strong>📅 Event Schema Generator v4 - Smart Enriched SEO Edition</strong><br>
+      <strong>📅 Event Schema Generator v4 - Smart Enriched Schema Generator</strong><br>
       1. Upload your event CSV file (exported from Squarespace Events).<br>
       2. Ensure it includes these fields: <code>Event_Title</code>, <code>Start_Date</code>, <code>Start_Time</code>, <code>End_Date</code>, <code>End_Time</code>, <code>Event_URL</code>, <code>Event_Image</code>, <code>Location_Business_Name</code>, <code>Location_Address</code>, <code>Location_City_State_ZIP</code>, <code>Excerpt</code>, <code>Category</code>, <code>Workflow_State</code>, <code>Tags</code>, <code>Price</code>, <code>Published_Date</code>.<br>
       3. Configure enrichment options below.<br>
@@ -1385,6 +1385,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <h3>Generated JSON-LD Schema:</h3>
     <pre id="eventOutput"></pre>
     <button onclick="copyToClipboard('eventOutput')">Copy to Clipboard</button>
+    
+    <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
+      <button id="exportMerchantFeedBtn" onclick="exportMerchantFeed()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        📥 Export Merchant Center Feed (.json)
+      </button>
+    </div>
 
     <div class="test-url-section">
       <h4>Test Generated Schema:</h4>
@@ -4642,7 +4648,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     helpBlock.setAttribute('aria-expanded', helpBlock.classList.contains('expanded'));
   }
 
-  // Event Schema Generation v4 - Smart Enriched SEO Edition
+  // Event Schema Generation v4 - Smart Enriched Schema Generator
   let events = [];
   let reviewsData = null;
   let mappingsData = null;
@@ -4738,6 +4744,36 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         // Always show the container and button, even if no categories found
         document.getElementById('eventCategoryFilterContainer').style.display = 'block';
         document.getElementById('eventOptionsContainer').style.display = 'block';
+        
+        // Load toggle states from localStorage
+        const includeReviews = localStorage.getItem('eventSchema.includeReviews');
+        const includePerformer = localStorage.getItem('eventSchema.includePerformer');
+        const groupRepeatingEvents = localStorage.getItem('eventSchema.groupRepeatingEvents');
+        const includeMerchantFields = localStorage.getItem('eventSchema.includeMerchantFields');
+        
+        if (includeReviews !== null) document.getElementById('includeReviews').checked = includeReviews === 'true';
+        if (includePerformer !== null) document.getElementById('includePerformer').checked = includePerformer === 'true';
+        if (groupRepeatingEvents !== null) document.getElementById('groupRepeatingEvents').checked = groupRepeatingEvents === 'true';
+        if (includeMerchantFields !== null) {
+          document.getElementById('includeMerchantFields').checked = includeMerchantFields === 'true';
+          document.getElementById('merchantFeedContainer').style.display = includeMerchantFields === 'true' ? 'block' : 'none';
+        }
+        
+        // Save toggle states on change
+        document.getElementById('includeReviews').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.includeReviews', this.checked);
+        });
+        document.getElementById('includePerformer').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.includePerformer', this.checked);
+        });
+        document.getElementById('groupRepeatingEvents').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.groupRepeatingEvents', this.checked);
+        });
+        document.getElementById('includeMerchantFields').addEventListener('change', function() {
+          localStorage.setItem('eventSchema.includeMerchantFields', this.checked);
+          document.getElementById('merchantFeedContainer').style.display = this.checked ? 'block' : 'none';
+        });
+        
         console.log('✅ Category filter and Generate button displayed');
       },
       error: function(error) {
@@ -5454,7 +5490,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             // Create superEvent with eventSchedule
             const superEvent = {
               "@context": "https://schema.org",
-              "@type": "Event",
+              "@type": "EventSeries",
               "@id": `${firstEvent.schema.url}#superEvent`,
               "name": baseTitle,
               "description": firstEvent.schema.description,
@@ -5544,6 +5580,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       outputElement.textContent = output + statsMsg;
       
+      // Show/hide merchant feed button based on toggle
+      const merchantFeedContainer = document.getElementById('merchantFeedContainer');
+      if (merchantFeedContainer) {
+        merchantFeedContainer.style.display = includeMerchantFields ? 'block' : 'none';
+      }
+      
+      // Store current schema for export
+      window.currentEventSchema = fullSchema;
+      window.currentEventList = eventList;
+      window.currentMappingsDict = mappingsDict;
+      
       if (!validationResults.isValid && validationResults.errors.length > 0) {
         console.warn('⚠️ Schema validation issues:', validationResults.errors);
       }
@@ -5560,6 +5607,57 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         outputElement.textContent = 'Error: ' + error.message;
       }
     }
+  }
+
+  // Export Merchant Center Feed (Phase 6)
+  function exportMerchantFeed() {
+    if (!window.currentEventList || !window.currentMappingsDict) {
+      alert('Please generate event schema first.');
+      return;
+    }
+    
+    const feed = [];
+    window.currentEventList.forEach(event => {
+      if (event['@type'] === 'Event' && event.offers && parseFloat(event.offers.price) > 0) {
+        const eventUrl = event.url || '';
+        const mappingData = window.currentMappingsDict[normalizeUrl(eventUrl)];
+        
+        const feedItem = {
+          id: event.identifier || eventUrl.split('/').pop() || '',
+          title: event.name || '',
+          description: event.description || '',
+          link: eventUrl,
+          image_link: event.image || '',
+          price: event.offers.price + ' ' + (event.offers.priceCurrency || 'GBP'),
+          availability: event.offers.availability === 'https://schema.org/InStock' ? 'in stock' : 'out of stock',
+          brand: 'Alan Ranger Photography'
+        };
+        
+        if (mappingData && mappingData.sku) {
+          feedItem.gtin = mappingData.sku; // Using gtin field for SKU
+        }
+        
+        feed.push(feedItem);
+      }
+    });
+    
+    if (feed.length === 0) {
+      alert('No events with valid offers found for feed export.');
+      return;
+    }
+    
+    const feedJson = JSON.stringify(feed, null, 2);
+    const blob = new Blob([feedJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `merchant-center-feed-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('✅ Merchant Center feed exported:', feed.length, 'items');
   }
 
   // Product Schema Generation
