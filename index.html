@@ -7131,7 +7131,45 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       outputElement.textContent = 'Error: ' + error.message;
     }
   }
-}
+  }
+
+  // Prepare Schema Export UI (v4.4)
+  function prepareSchemaExport(schema, csvType, stats) {
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+    
+    try {
+      // Validate JSON
+      const jsonString = JSON.stringify(schema, null, 2);
+      JSON.parse(jsonString);
+      const minifiedJson = JSON.stringify(schema);
+      const sizeReduction = Math.round((1 - minifiedJson.length/jsonString.length) * 100);
+      
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        exportContent.innerHTML = `
+          <div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #0ea5e9;">
+            <strong style="color: #0369a1;">📦 Export Ready</strong><br>
+            <span style="color: #075985; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
+            <span style="color: #075985; font-size: 0.875rem;">✅ Validated: JSON.parse successful</span><br>
+            <span style="color: #075985; font-size: 0.875rem;">📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified, ${sizeReduction}% reduction)</span><br>
+            <span style="color: #075985; font-size: 0.875rem;">📋 Script tag ready for Squarespace</span>
+          </div>
+        `;
+      }
+      
+      addDebugLog(`\n📦 Schema Export Ready:`);
+      addDebugLog(`   File: ${fileName}`);
+      addDebugLog(`   ✅ Validated: JSON.parse successful`);
+      addDebugLog(`   📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified)`);
+      addDebugLog(`   💡 Use export buttons below to download JSON or copy Squarespace script tag`);
+    } catch (error) {
+      console.error('❌ Error preparing export:', error);
+      addDebugLog(`\n📦 Schema Export:`);
+      addDebugLog(`   ❌ Validation error: ${error.message}`);
+    }
+  }
 
 // Export Merchant Center Feed (Phase 6)
   function exportMerchantFeed() {
