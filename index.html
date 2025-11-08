@@ -4,6 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Unified Schema Generator v4 - Smart Enriched Schema Generator</title>
+  <!--
+    CHANGELOG v4 Smart Enriched Schema Generator
+    ===========================================
+    
+    Changes from v3.5:
+    - Enhanced address parsing with full PostalAddress structure (streetAddress, addressLocality, addressRegion, postalCode, addressCountry)
+    - Added toggle options: Include Reviews, Include Performer, Group Repeating Events, Include Merchant Center Fields
+    - localStorage persistence for toggle states
+    - Enhanced organizer/provider blocks with full address and sameAs (Instagram, Facebook, LinkedIn)
+    - Enhanced performer block with sameAs link
+    - Enhanced offers with hasMerchantReturnPolicy (when merchant fields enabled)
+    - Review injection: top 5 reviews trimmed to 300 chars (toggleable)
+    - Event schedule grouping: detects repeating weekly events and creates EventSeries with eventSchedule
+    - SEO metadata enhancers: potentialAction, isFamilyFriendly, learningResourceType, typicalAgeRange, courseMode, subjectOf
+    - Enhanced keywords: combines tags + category + location + topic words
+    - "about" field: auto-generated topic summary
+    - identifier field: slug from URL
+    - sameAs array: event URL + product URL
+    - CSV type detection: auto-detects Lessons vs Workshops
+    - Enhanced validation summary with statistics (events with reviews, performer, offers)
+    - Merchant Center feed export (Phase 6): JSON feed download when toggle enabled
+    - Timezone: scheduleTimezone set to "Europe/London" for eventSchedule
+    - EventSeries type for superEvent (not Event)
+    
+    Technical improvements:
+    - All processing remains client-side (no server/API calls)
+    - Schema Suppressor v1.3 only in Product Schema tab (removed from Event Schema)
+    - Empty/invalid fields are omitted (not emitted as empty strings)
+    - Past events automatically skipped
+    - Offers only included when price > 0
+  -->
   <style>
     * { box-sizing: border-box; }
     body {
