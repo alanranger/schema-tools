@@ -9821,20 +9821,12 @@ exit`;
                 }
               }
               
-              // Check for error indicators (but ignore URL validation warnings)
-              // URL validation warnings contain "Error:" but are informational, not failures
-              const isUrlValidationWarning = line.includes('URL VALIDATION ERRORS') || 
-                                             line.includes('URL Errors:') ||
-                                             (line.includes('Error:') && (line.includes('404 Not Found') || line.includes('URL Error')));
-              
-              if (!isUrlValidationWarning) {
-                if (line.includes('❌') || 
-                    (line.includes('failed') && !line.includes('URL')) || 
-                    (line.includes('Failed') && !line.includes('URL')) || 
-                    line.includes('exit code 1') || line.includes('exit code 2') || 
-                    (line.includes('Error:') && !line.includes('404') && !line.includes('URL Error'))) {
-                  hasError = true;
-                }
+              // Check for error indicators
+              if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
+                  line.includes('exit code 1') || line.includes('exit code 2') || 
+                  line.includes('Error:') || line.includes('ERROR:') ||
+                  line.includes('FAILED:')) {
+                hasError = true;
               }
               
               // Update progress based on keywords
@@ -9851,23 +9843,16 @@ exit`;
         // Process remaining buffer
         if (buffer.trim()) {
           log(buffer + '\n');
-          // Check buffer for errors too (but ignore URL validation warnings)
-          const isUrlValidationWarning = buffer.includes('URL VALIDATION ERRORS') || 
-                                         buffer.includes('URL Errors:');
-          if (!isUrlValidationWarning) {
-            if (buffer.includes('❌') || 
-                (buffer.includes('failed') && !buffer.includes('URL')) || 
-                buffer.includes('exit code 1')) {
-              hasError = true;
-            }
+          // Check buffer for errors too
+          if (buffer.includes('❌') || buffer.includes('failed') || buffer.includes('exit code 1') || buffer.includes('FAILED:')) {
+            hasError = true;
           }
         }
         
-        // Only throw error if exit code is non-zero (URL validation warnings are OK)
-        if (exitCode !== null && exitCode !== 0) {
-          throw new Error(`Task failed with exit code ${exitCode}. Check console output above for details.`);
+        // If we detected an error or exit code is non-zero, throw it
+        if (hasError || (exitCode !== null && exitCode !== 0)) {
+          throw new Error(`Task failed with exit code ${exitCode || 1}. Check console output above for details.`);
         }
-        // Don't throw on hasError alone - exit code is the definitive indicator
         
         // Complete progress
         if (progressBar) {

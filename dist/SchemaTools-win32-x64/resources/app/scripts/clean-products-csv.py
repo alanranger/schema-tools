@@ -205,7 +205,7 @@ def main():
             'category': category
         })
     
-    # Report URL errors
+    # Report URL errors and exit with error code if any found
     if url_errors:
         print(f"\n⚠️  URL VALIDATION ERRORS ({len(url_errors)} found):")
         print("="*60)
@@ -217,6 +217,10 @@ def main():
         if len(url_errors) > 20:
             print(f"... and {len(url_errors) - 20} more errors")
         print("="*60)
+        print(f"\n❌ FAILED: {len(url_errors)} products have invalid URLs")
+        print("   Please fix the URLs in the source CSV and try again.")
+        print("   The cleaned file was saved but contains invalid URLs.")
+        sys.exit(1)  # Exit with error code to fail the task
     else:
         print("✅ All URLs validated successfully")
     
