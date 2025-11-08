@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Schema Generator v4.1 - Smart Enriched Schema Generator (Location Intelligence Release)</title>
+  <title>Unified Schema Generator v4.2 - Smart Enriched Schema Generator (EventSeries Optimization)</title>
   <!--
-    CHANGELOG v4.1 Smart Enriched Schema Generator (Location Intelligence Release)
-    ==============================================================================
+    CHANGELOG v4.2 Smart Enriched Schema Generator (EventSeries Optimization)
+    =========================================================================
+    
+    Changes from v4.1:
+    - Added detectEventSeries() for repeat workshop patterns
+    - Groups multi-instance Bluebell & Batsford workshops into EventSeries
+    - Adds eventSchedule + subjectOf ItemList linkage
+    - Includes grouping summary in console + UI
     
     Changes from v4:
     - Added intelligent region + geo inference for workshops/lessons
@@ -1342,8 +1348,8 @@
 
 <div class="container">
   <div class="version-badge">
-    <span class="version">v4.1</span>
-    <span class="date">Smart Enriched Schema Generator — Location Intelligence Release</span>
+    <span class="version">v4.2</span>
+    <span class="date">Smart Enriched Schema Generator — EventSeries Optimization</span>
   </div>
   <h1>Unified Schema Generator - Events & Products</h1>
 
@@ -6590,10 +6596,101 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     const eventList = finalEventList;
     const breadcrumbs = finalBreadcrumbs;
+    
+    // Detect and create EventSeries for recurring workshops (v4.2)
+    const seriesGroups = detectEventSeries(eventList);
+    const eventSeriesArray = [];
+    
+    for (const [groupName, groupEvents] of Object.entries(seriesGroups)) {
+      // Sort events by start date
+      groupEvents.sort((a, b) => {
+        const dateA = a.startDate || '';
+        const dateB = b.startDate || '';
+        return dateA.localeCompare(dateB);
+      });
+      
+      const sample = groupEvents[0];
+      const firstEvent = groupEvents[0];
+      const lastEvent = groupEvents[groupEvents.length - 1];
+      
+      const eventSchedule = {
+        "@type": "Schedule",
+        "repeatFrequency": "P1Y",
+        "startDate": firstEvent.startDate,
+        "endDate": lastEvent.endDate,
+        "scheduleTimezone": "Europe/London"
+      };
+      
+      // Build keywords array from event titles and regions
+      const keywords = [];
+      groupEvents.forEach(e => {
+        if (e.name) keywords.push(e.name);
+        if (e.location && e.location.address && e.location.address.addressRegion) {
+          keywords.push(e.location.address.addressRegion);
+        }
+      });
+      const uniqueKeywords = [...new Set(keywords)].join(', ');
+      
+      const eventSeries = {
+        "@context": "https://schema.org",
+        "@type": "EventSeries",
+        "@id": `${sample.url || 'https://www.alanranger.com'}#EventSeries-${groupName.replace(/\s+/g, '-')}`,
+        "name": groupName.charAt(0).toUpperCase() + groupName.slice(1) + " (Annual Series)",
+        "description": sample.description || `${groupName} — recurring annual workshops.`,
+        "eventAttendanceMode": sample.eventAttendanceMode,
+        "eventStatus": "https://schema.org/EventScheduled",
+        "location": sample.location,
+        "organizer": sample.organizer,
+        "eventSchedule": eventSchedule,
+        "keywords": uniqueKeywords,
+        "subjectOf": {
+          "@type": "ItemList",
+          "numberOfItems": groupEvents.length,
+          "itemListElement": groupEvents.map((e, i) => ({
+            "@type": "ListItem",
+            "position": i + 1,
+            "url": e.url,
+            "name": e.name
+          }))
+        }
+      };
+      
+      // Add performer if present in sample
+      if (sample.performer) {
+        eventSeries.performer = sample.performer;
+      }
+      
+      // Add provider if present in sample
+      if (sample.provider) {
+        eventSeries.provider = sample.provider;
+      }
+      
+      // Add about field
+      eventSeries.about = {
+        "@type": "Thing",
+        "name": groupName,
+        "url": sample.url
+      };
+      
+      eventSeriesArray.push(eventSeries);
+    }
+    
+    // Add EventSeries grouping summary to debug log (v4.2)
+    if (Object.keys(seriesGroups).length > 0) {
+      addDebugLog(`\n🔁 EventSeries Grouping Summary:`);
+      addDebugLog(`   Detected series groups: ${Object.keys(seriesGroups).length}`);
+      Object.entries(seriesGroups).forEach(([k, v]) => {
+        addDebugLog(`   • ${k}: ${v.length} events`);
+      });
+      addDebugLog(`   EventSeries objects generated: ${eventSeriesArray.length}`);
+    }
+    
+    stats.eventSeriesCreated = eventSeriesArray.length;
+    stats.eventSeriesGroups = (stats.eventSeriesGroups || 0) + Object.keys(seriesGroups).length;
 
     const fullSchema = {
       "@context": "https://schema.org",
-      "@graph": [itemList, ...breadcrumbs, ...eventList]
+      "@graph": [itemList, ...breadcrumbs, ...eventList, ...eventSeriesArray]
     };
 
     const json = JSON.stringify(fullSchema, null, 2);
@@ -6676,6 +6773,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (validationResults.warnings && validationResults.warnings.length > 0) {
         statsMsg += `\n⚠️ Warnings: ${validationResults.warnings.length}`;
       }
+      
+      // Final summary (v4.1)
+      addDebugLog(`\n✅ v4.1 Schema generation complete.`);
+      addDebugLog(`   Lessons: ${lessonsCount} valid / Workshops: ${workshopsCount} valid`);
+      addDebugLog(`   Region coverage: ${regionCoverage}%`);
+      addDebugLog(`   Validation: ${validationResults.errors ? validationResults.errors.length : 0} errors / ${validationResults.warnings ? validationResults.warnings.length : 0} warnings`);
       
       outputElement.textContent = output + statsMsg;
       
