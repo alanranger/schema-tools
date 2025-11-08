@@ -150,8 +150,9 @@ def match_via_text(text: str, aliases: dict, product_by_slug: dict, name_by_slug
                     matches = sum(1 for word in significant_words if word in t_lower)
                     match_ratio = matches / len(significant_words)
                     # Prioritize matches with unique keywords (e.g., "beginners", "lightroom", "black")
-                    unique_keywords = ['beginner', 'beginners', 'lightroom', 'black', 'white', 'portrait', 'macro', 'landscape']
-                    has_unique = any(kw in t_lower and kw in name_lower for kw in unique_keywords)
+                    # Include "marco" as typo variant of "macro"
+                    unique_keywords = ['beginner', 'beginners', 'lightroom', 'black', 'white', 'portrait', 'macro', 'marco', 'landscape']
+                    has_unique = any(kw in t_lower and (kw in name_lower or (kw == 'marco' and 'macro' in name_lower)) for kw in unique_keywords)
                     if match_ratio >= 0.5 or has_unique:
                         exact_matches.append((slug, match_ratio * 100 + (50 if has_unique else 0), name))
         
@@ -300,6 +301,8 @@ try:
         'garden photography': 'garden-photography-workshop',
         'garden': 'garden-photography-workshop',
         'sezincote': 'sezincote-garden-photography-workshop',
+        'marco': 'macro-photography-workshops-warwickshire',  # Typo alias: "Marco" -> "Macro"
+        'marco photography': 'macro-photography-workshops-warwickshire',
     }
     
     print(f"📋 Built product dictionary with {len(product_by_slug)} products")
