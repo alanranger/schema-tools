@@ -6736,8 +6736,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const breadcrumbs = finalBreadcrumbs;
     
     // Detect and create EventSeries for recurring workshops (v4.2 + v4.3 backlinks)
+    addDebugLog(`\n🔁 EventSeries Detection (v4.2/v4.3):`);
+    addDebugLog(`   Checking ${eventList.length} events for series patterns...`);
+    
     const seriesGroups = detectEventSeries(eventList);
     const eventSeriesArray = [];
+    
+    if (Object.keys(seriesGroups).length === 0) {
+      addDebugLog(`   ⚠️ No EventSeries groups detected (check keyword patterns match event titles)`);
+      // Debug: show sample event titles
+      if (eventList.length > 0) {
+        addDebugLog(`   Sample event titles: ${eventList.slice(0, 3).map(e => e.name || e.Event_Title || 'N/A').join(', ')}`);
+      }
+    } else {
+      addDebugLog(`   ✅ Found ${Object.keys(seriesGroups).length} EventSeries group(s)`);
+      Object.entries(seriesGroups).forEach(([k, v]) => {
+        addDebugLog(`   • ${k}: ${v.length} events`);
+      });
+    }
     
     for (const [groupName, groupEvents] of Object.entries(seriesGroups)) {
       // Sort events by start date
