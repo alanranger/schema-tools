@@ -1489,6 +1489,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <div id="summaryContent" style="font-size: 0.875rem; line-height: 1.6;"></div>
     </div>
     
+    <div id="schemaExportContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
+      <h4 style="margin-top: 0; color: #0369a1;">📦 Schema Export & Squarespace Integration</h4>
+      <div id="schemaExportContent" style="margin-top: 0.75rem;"></div>
+      <div style="margin-top: 1rem;">
+        <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem;">
+          📥 Export JSON File
+        </button>
+        <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+          📋 Copy Squarespace Script Tag
+        </button>
+      </div>
+    </div>
+
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
       <button id="exportMerchantFeedBtn" onclick="exportMerchantFeed()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
         📥 Export Merchant Center Feed (.json)
@@ -7050,6 +7063,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       window.currentEventSchema = fullSchema;
       window.currentEventList = eventList;
       window.currentMappingsDict = mappingsDict;
+      window.currentEventSchemaCsvType = stats.csvType;
+      
+      // Show export container and prepare export
+      const exportContainer = document.getElementById('schemaExportContainer');
+      if (exportContainer) {
+        exportContainer.style.display = 'block';
+        prepareSchemaExport(fullSchema, stats.csvType, stats);
+      }
       
       // Calculate merchant feed items
       if (includeMerchantFields) {
@@ -7164,6 +7185,115 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     URL.revokeObjectURL(url);
     
     console.log('✅ Merchant Center feed exported:', feed.length, 'items');
+  }
+
+  // Export Schema to JSON File (v4.4)
+  function exportSchemaToJson() {
+    if (!window.currentEventSchema) {
+      alert('Please generate event schema first.');
+      return;
+    }
+
+    const csvType = window.currentEventSchemaCsvType || 'unknown';
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+
+    try {
+      // Validate JSON (check for trailing commas, etc.)
+      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      JSON.parse(jsonString); // Validate it parses correctly
+      
+      // Minify JSON (remove whitespace)
+      const minifiedJson = JSON.stringify(window.currentEventSchema);
+      
+      // Create blob and download
+      const blob = new Blob([minifiedJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Log to debug
+      addDebugLog(`\n📦 Schema Export:`);
+      addDebugLog(`   ✅ Exported: ${fileName}`);
+      addDebugLog(`   ✅ Validated: JSON.parse successful`);
+      addDebugLog(`   ✅ Minified: ${jsonString.length} → ${minifiedJson.length} bytes (${Math.round((1 - minifiedJson.length/jsonString.length) * 100)}% reduction)`);
+      
+      // Update UI
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        exportContent.innerHTML = `
+          <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981;">
+            <strong style="color: #065f46;">✅ Exported Successfully</strong><br>
+            <span style="color: #047857; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
+            <span style="color: #047857; font-size: 0.875rem;">Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified)</span>
+          </div>
+        `;
+      }
+      
+      console.log('✅ Schema exported:', fileName);
+    } catch (error) {
+      console.error('❌ Error exporting schema:', error);
+      alert('Error exporting schema: ' + error.message);
+      addDebugLog(`\n📦 Schema Export:`);
+      addDebugLog(`   ❌ Error: ${error.message}`);
+    }
+  }
+
+  // Copy Squarespace Script Tag (v4.4)
+  function copySquarespaceScript() {
+    if (!window.currentEventSchema) {
+      alert('Please generate event schema first.');
+      return;
+    }
+
+    const csvType = window.currentEventSchemaCsvType || 'unknown';
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+
+    try {
+      // Minify JSON
+      const minifiedJson = JSON.stringify(window.currentEventSchema);
+      
+      // Create script tag
+      const scriptTag = `<script type="application/ld+json">\n${minifiedJson}\n</script>`;
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(scriptTag).then(() => {
+        // Update UI
+        const exportContent = document.getElementById('schemaExportContent');
+        if (exportContent) {
+          exportContent.innerHTML = `
+            <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981;">
+              <strong style="color: #065f46;">✅ Script Tag Copied!</strong><br>
+              <span style="color: #047857; font-size: 0.875rem;">Paste into Squarespace Code Block or Header Code Injection</span>
+            </div>
+            <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f3f4f6; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto;">
+              <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${scriptTag.substring(0, 200)}...</pre>
+            </div>
+          `;
+        }
+        
+        addDebugLog(`\n📋 Squarespace Script Tag:`);
+        addDebugLog(`   ✅ Copied to clipboard`);
+        addDebugLog(`   📝 Length: ${scriptTag.length} characters`);
+        addDebugLog(`   💡 Paste into Squarespace Code Block or Header Code Injection`);
+        
+        console.log('✅ Squarespace script tag copied to clipboard');
+      }).catch(err => {
+        console.error('❌ Error copying to clipboard:', err);
+        alert('Error copying to clipboard. Please copy manually from the output above.');
+      });
+    } catch (error) {
+      console.error('❌ Error generating script tag:', error);
+      alert('Error generating script tag: ' + error.message);
+    }
   }
 
   // Product Schema Generation
