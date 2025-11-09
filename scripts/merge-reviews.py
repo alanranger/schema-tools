@@ -578,6 +578,8 @@ if len(product_slugs) > 0:
                 # Clean special characters for matching
                 ref_id_clean = re.sub(r'[^\w\s-]', '', ref_id_lower)
                 ref_id_normalized = re.sub(r'\s+', ' ', ref_id_clean)  # Normalize whitespace
+                
+                # Try exact substring match first
                 for slug, name in name_by_slug.items():
                     name_lower = str(name).lower().strip()
                     name_normalized = re.sub(r'\s+', ' ', name_lower)
@@ -588,6 +590,23 @@ if len(product_slugs) > 0:
                         matched_slug = slug
                         ref_id_matches += 1
                         break
+                
+                # If no exact match, try partial match (remove common suffixes/prefixes)
+                if not matched_slug:
+                    # Remove common suffixes like " - Monthly", " - 2hrs", dates, etc.
+                    ref_id_base = re.sub(r'\s*-\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', ref_id_normalized, flags=re.IGNORECASE)
+                    ref_id_base = ref_id_base.strip()
+                    
+                    for slug, name in name_by_slug.items():
+                        name_lower = str(name).lower().strip()
+                        name_base = re.sub(r'\s*-\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', name_lower, flags=re.IGNORECASE)
+                        name_base = name_base.strip()
+                        
+                        # Check if base Reference Id matches base product name
+                        if ref_id_base in name_base or name_base in ref_id_base:
+                            matched_slug = slug
+                            ref_id_matches += 1
+                            break
                 
                 # Strategy 1b: Check aliases (including cleaned Reference Id)
                 if not matched_slug:
@@ -636,6 +655,13 @@ if len(product_slugs) > 0:
                     # Special handling for "beginners" - only include if it's part of "beginners photography course"
                     if 'beginners photography course' in ref_id_lower or 'beginners photography classes' in ref_id_lower:
                         ref_words.append('beginners-course-phrase')
+                    elif 'beginners photography' in ref_id_lower:
+                        # Also match "Beginners Photography Classes" to "Beginners Photography Course"
+                        ref_words.append('beginners-photography')
+                    
+                    # Handle "Get Off Auto" vs "3 Weekly Evening Classes" - both are beginners courses
+                    if 'get off auto' in ref_id_lower or 'beginners photography classes' in ref_id_lower:
+                        ref_words.append('beginners-classes')
                     
                     if ref_words:  # Only proceed if we have distinguishing words
                         best_match = None
@@ -653,6 +679,14 @@ if len(product_slugs) > 0:
                                     # Don't count this as a match for beginners-course-phrase - it's a different course type
                                     # But don't set matches to 0 - let other words still count
                                     pass
+                            
+                            # Special check for "beginners-photography" and "beginners-classes"
+                            if 'beginners-photography' in ref_words:
+                                if 'beginners photography' in name_lower:
+                                    matches += 1
+                            if 'beginners-classes' in ref_words:
+                                if 'beginners photography classes' in name_lower or 'beginners photography course' in name_lower:
+                                    matches += 1
                             
                             # Require at least 70% of key words to match (more lenient than 100%)
                             if matches > 0 and matches >= (len(ref_words) * 0.7):
