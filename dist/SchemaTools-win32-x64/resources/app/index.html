@@ -7380,7 +7380,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     console.log('✅ Merchant Center feed exported:', feed.length, 'items');
   }
 
-  // Export Schema to JSON File (v4.4)
+  // Export Schema to JSON File (v4.4) - Safe minification with validation and fallback
   function exportSchemaToJson() {
     if (!window.currentEventSchema) {
       alert('Please generate event schema first.');
@@ -7393,14 +7393,28 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                      'event-schema.json';
 
     try {
-      // Validate JSON (check for trailing commas, etc.)
+      // Step 1: Validate JSON structure (check for trailing commas, etc.)
       const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
       JSON.parse(jsonString); // Validate it parses correctly
       
-      // Minify JSON (remove whitespace)
-      const minifiedJson = JSON.stringify(window.currentEventSchema);
+      // Step 2: Safe minification using JSON.stringify (lossless, no regex)
+      let minifiedJson;
+      let minificationSuccess = false;
+      let minificationWarning = '';
       
-      // Create blob and download
+      try {
+        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0); // Safe minify, no regex
+        JSON.parse(minifiedJson); // Validate minified version parses correctly
+        minificationSuccess = true;
+      } catch (minifyError) {
+        // Fallback: use unminified version if minification fails
+        console.warn('⚠️ Minify validation failed. Saving unminified version instead:', minifyError);
+        minifiedJson = jsonString;
+        minificationSuccess = false;
+        minificationWarning = '⚠️ Minification failed - saved unminified version';
+      }
+      
+      // Step 3: Create blob and download
       const blob = new Blob([minifiedJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -7411,7 +7425,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Log to debug
+      // Step 4: Log to debug
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ✅ Exported: ${fileName}`);
       addDebugLog(`   ✅ Validated: JSON.parse successful`);
@@ -7422,7 +7436,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const fileSizeKB = minifiedJson.length / 1024;
       const sizeCheck = fileSizeKB < 250 ? '✅' : '⚠️';
       
-      addDebugLog(`   ✅ Minified: ${jsonString.length} → ${minifiedJson.length} bytes (${Math.round((1 - minifiedJson.length/jsonString.length) * 100)}% reduction)`);
+      if (minificationSuccess) {
+        addDebugLog(`   ✅ Minified: ${jsonString.length} → ${minifiedJson.length} bytes (${Math.round((1 - minifiedJson.length/jsonString.length) * 100)}% reduction)`);
+      } else {
+        addDebugLog(`   ${minificationWarning}`);
+      }
       addDebugLog(`   📊 File size: ${fileSizeKB.toFixed(2)} KB ${sizeCheck} ${fileSizeKB < 250 ? '(under 250 KB limit)' : '(exceeds 250 KB - consider splitting)'}`);
       addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
       
@@ -7439,23 +7457,25 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       if (exportContent) {
         let statusColor = (hasContext && hasGraph && fileSizeKB < 250) ? '#10b981' : '#f59e0b';
         let statusBg = (hasContext && hasGraph && fileSizeKB < 250) ? '#d1fae5' : '#fef3c7';
+        const warningBadge = minificationWarning ? `<span style="color: #f59e0b; font-size: 0.875rem;">${minificationWarning}</span><br>` : '';
         
         exportContent.innerHTML = `
           <div style="background: ${statusBg}; padding: 0.75rem; border-radius: 6px; border-left: 3px solid ${statusColor}; margin-bottom: 0.75rem;">
             <strong style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#065f46' : '#92400e'};">✅ Exported Successfully</strong><br>
+            ${warningBadge}
             <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
-            <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB (minified) ${sizeCheck}</span><br>
+            <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB ${minificationSuccess ? '(minified)' : '(unminified)'} ${sizeCheck}</span><br>
             <span style="color: ${(hasContext && hasGraph && fileSizeKB < 250) ? '#047857' : '#78350f'}; font-size: 0.875rem;">Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}</span>
           </div>
         `;
       }
       
-      console.log('✅ Schema exported:', fileName);
+      console.log('✅ Schema exported:', fileName, minificationSuccess ? '(minified)' : '(unminified - minification failed)');
     } catch (error) {
       console.error('❌ Error exporting schema:', error);
-      alert('Error exporting schema: ' + error.message);
+      alert('Error exporting schema: ' + error.message + '\n\nPlease check the browser console for details.');
       addDebugLog(`\n📦 Schema Export:`);
-      addDebugLog(`   ❌ Error: ${error.message}`);
+      addDebugLog(`   ❌ Export error: ${error.message}`);
     }
   }
 
