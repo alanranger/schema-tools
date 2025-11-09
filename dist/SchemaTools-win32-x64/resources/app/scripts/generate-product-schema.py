@@ -31,7 +31,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 import sys
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from urllib.parse import urlparse
 from collections import defaultdict
 
@@ -72,6 +72,8 @@ LOCAL_BUSINESS = {
     "name": "Alan Ranger Photography",
     "url": "https://www.alanranger.com",
     "logo": ORGANIZER["logo"],
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+    "priceRange": "£50–£500",
     "email": ORGANIZER["email"],
     "telephone": ORGANIZER["telephone"],
     "address": ORGANIZER["address"]
@@ -302,12 +304,19 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     product_image = str(product_row.get('image', '')).strip()
     
     # Use SKU from input file if available, otherwise generate from product name + year
-    sku = str(product_row.get('sku', '')).strip() if pd.notna(product_row.get('sku')) else ''
-    if not sku or sku.lower() == 'nan':
-        # Fallback: Generate SKU from product name + year
+    # Never use title or description as fallback for SKU
+    sku = ''
+    if pd.notna(product_row.get('sku')):
+        sku_val = str(product_row.get('sku', '')).strip()
+        if sku_val and sku_val.lower() not in ['nan', 'none', '']:
+            sku = sku_val[:40]  # Truncate to 40 chars for Merchant Center compliance
+    
+    # Only generate SKU if no valid SKU found (never use title/description)
+    if not sku:
+        # Fallback: Generate SKU from product name + year (only if SKU column is missing)
         product_slug = slugify(product_name)
         current_year = date.today().year
-        sku = f"{product_slug.upper()}-{current_year}"
+        sku = f"{product_slug.upper()}-{current_year}"[:40]  # Truncate to 40 chars
     
     # Build product schema
     product_schema = {
@@ -353,6 +362,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 except:
                     pass
             
+            # Calculate priceValidUntil (1 year from today)
+            price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+            
             product_schema["offers"] = {
                 "@type": "Offer",
                 "price": f"{price_val:.2f}",
@@ -360,6 +372,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 "availability": "https://schema.org/InStock",
                 "url": product_url,
                 "validFrom": valid_from,
+                "priceValidUntil": price_valid_until,
                 "shippingDetails": {
                     "@type": "OfferShippingDetails",
                     "doesNotShip": "http://schema.org/True",

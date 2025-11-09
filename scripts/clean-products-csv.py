@@ -195,13 +195,23 @@ def main():
         category = str(row.get('Categories', '')).strip() if pd.notna(row.get('Categories')) else ''
         
         # Extract SKU if available (try multiple column name variations)
+        # Priority: SKU column → Product ID → Variant ID (never use Title or Description)
         sku = ''
-        for sku_col in ['SKU', 'Sku', 'sku', 'Product SKU', 'Product ID']:
+        for sku_col in ['SKU', 'Sku', 'sku', 'Product SKU']:
             if sku_col in row.index and pd.notna(row.get(sku_col)):
                 sku_val = str(row.get(sku_col)).strip()
-                if sku_val and sku_val.lower() != 'nan':
-                    sku = sku_val
+                if sku_val and sku_val.lower() not in ['nan', 'none', '']:
+                    sku = sku_val[:40]  # Truncate to 40 chars for Merchant Center compliance
                     break
+        
+        # Fallback to Product ID or Variant ID if SKU column not found (but never Title/Description)
+        if not sku:
+            for fallback_col in ['Product ID', 'Variant ID']:
+                if fallback_col in row.index and pd.notna(row.get(fallback_col)):
+                    fallback_val = str(row.get(fallback_col)).strip()
+                    if fallback_val and fallback_val.lower() not in ['nan', 'none', '']:
+                        sku = fallback_val[:40]  # Truncate to 40 chars
+                        break
         
         # Validate URL
         if url:
