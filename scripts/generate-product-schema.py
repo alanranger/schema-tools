@@ -794,30 +794,50 @@ def validate_schema_structure(schema_data, product_name):
         errors.append(f"@graph must contain at least 3 objects (LocalBusiness, BreadcrumbList, Product/Course)")
         return False, errors
     
-    # Find Product/Course object (should be last in graph)
+    # Find Product/Course/Event object (should be last in graph)
     product_schema = None
     for obj in graph:
         obj_type = obj.get('@type', [])
-        if isinstance(obj_type, list) and 'Product' in obj_type and 'Course' in obj_type:
+        if isinstance(obj_type, list):
+            if 'Product' in obj_type:
+                product_schema = obj
+                break
+        elif obj_type == 'Product':
             product_schema = obj
             break
     
     if not product_schema:
-        errors.append("Missing Product/Course object in @graph")
+        errors.append("Missing Product/Course/Event object in @graph")
         return False, errors
     
-    # Validate Product/Course required keys
+    # Validate @type - accept Product, Product+Course, or Product+Event
+    obj_type = product_schema.get('@type', [])
+    if isinstance(obj_type, list):
+        if 'Product' not in obj_type:
+            errors.append(f"Product @type must include 'Product', got: {obj_type}")
+        # Accept Product, Product+Course, or Product+Event
+        valid_types = [['Product'], ['Product', 'Course'], ['Product', 'Event']]
+        if obj_type not in valid_types:
+            errors.append(f"Product @type must be one of {valid_types}, got: {obj_type}")
+    elif obj_type != 'Product':
+        errors.append(f"Product @type must be 'Product' or a list containing 'Product', got: {obj_type}")
+    
+    # Validate required fields based on schema type
     required_keys = {
         'name': 'string',
         'sku': 'string',
         'brand': 'dict',
-        'provider': 'dict',
         'description': 'string',
         'image': 'string',
         'url': 'string',
         'offers': 'dict',
         '@id': 'string'
     }
+    
+    # Provider is required for Course and Event types
+    if isinstance(obj_type, list):
+        if 'Course' in obj_type or 'Event' in obj_type:
+            required_keys['provider'] = 'dict'
     
     for key, expected_type in required_keys.items():
         if key not in product_schema:
@@ -831,20 +851,30 @@ def validate_schema_structure(schema_data, product_name):
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
-    # Validate @type
-    obj_type = product_schema.get('@type', [])
-    if not isinstance(obj_type, list) or set(obj_type) != {'Product', 'Course'}:
-        errors.append(f"Product @type must be exactly ['Product', 'Course'], got: {obj_type}")
+    # Event-specific validation
+    if isinstance(obj_type, list) and 'Event' in obj_type:
+        event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+        for field in event_fields:
+            if field not in product_schema:
+                errors.append(f"Missing Event field: {field}")
+    
+    # Ensure no Event fields are present for Product-only schemas
+    if isinstance(obj_type, list) and 'Event' not in obj_type:
+        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+        for key in forbidden_keys:
+            if key in product_schema:
+                errors.append(f"Forbidden Event field found in non-Event schema: {key}")
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
     if not isinstance(brand, dict) or brand.get('@type') != 'Brand' or 'name' not in brand:
         errors.append("Product 'brand' must be a Brand object with 'name'")
     
-    # Validate provider structure
-    provider = product_schema.get('provider', {})
-    if not isinstance(provider, dict) or provider.get('@type') != 'Organization' or 'name' not in provider or 'sameAs' not in provider:
-        errors.append("Product 'provider' must be an Organization object with 'name' and 'sameAs'")
+    # Validate provider structure (only if present)
+    if 'provider' in product_schema:
+        provider = product_schema.get('provider', {})
+        if not isinstance(provider, dict) or provider.get('@type') != 'Organization' or 'name' not in provider or 'sameAs' not in provider:
+            errors.append("Product 'provider' must be an Organization object with 'name' and 'sameAs'")
     
     # Validate offers structure (can be object or array for multiple variants)
     offers = product_schema.get('offers', {})
