@@ -303,6 +303,17 @@ try:
         'sezincote': 'sezincote-garden-photography-workshop',
         'marco': 'macro-photography-workshops-warwickshire',  # Typo alias: "Marco" -> "Macro"
         'marco photography': 'macro-photography-workshops-warwickshire',
+        # Product name variations
+        'fireworks photo workshop': 'fireworks-photography-workshop-kenilworth',
+        'fireworks photography workshop': 'fireworks-photography-workshop-kenilworth',
+        'quarterly pick n mix': 'quarterly-pick-n-mix-subscription',
+        'premium photography academy': 'premium-photography-academy-membership',
+        'framed fine art prints': 'framed-fine-art-photography-prints',
+        'glencoe': 'landscape-photography-workshop-glencoe',
+        'anglesey': 'landscape-photography-workshops-anglesey',
+        'gower': 'gower-landscape-photography-wales',
+        'dartmoor': 'dartmoor-photography-landscape-workshop',
+        'kerry': 'ireland-photography-workshops-dingle',
     }
     
     print(f"📋 Built product dictionary with {len(product_by_slug)} products")
@@ -562,6 +573,17 @@ if len(product_slugs) > 0:
                     ref_words = [w for w in ref_id_lower.split() 
                                 if len(w) > 4 and w not in generic_words]
                     
+                    # Also check for location names (even if shorter)
+                    location_words = ['glencoe', 'anglesey', 'gower', 'yorkshire', 'dales', 'devon', 'peak', 
+                                     'district', 'lake', 'batsford', 'arboretum', 'urban', 'architecture', 
+                                     'coventry', 'kenilworth', 'ireland', 'kerry', 'dartmoor', 'norfolk', 
+                                     'suffolk', 'northumberland', 'wales']
+                    ref_words.extend([w for w in ref_id_lower.split() if w in location_words])
+                    
+                    # Check for product type words
+                    product_type_words = ['framed', 'unframed', 'lightroom', 'beginners']
+                    ref_words.extend([w for w in ref_id_lower.split() if w in product_type_words])
+                    
                     if ref_words:  # Only proceed if we have distinguishing words
                         best_match = None
                         best_score = 0
@@ -624,37 +646,94 @@ if len(product_slugs) > 0:
                     ref_id_lower = ref_id.lower()
                     matched_name = name_by_slug.get(matched_slug, '').lower()
                     
+                    # Clean special characters from Reference Id
+                    ref_id_clean = re.sub(r'[^\w\s-]', '', ref_id_lower)
+                    
                     # Extract location/keywords from Reference Id
                     ref_locations = []
                     ref_keywords = []
-                    if 'urban' in ref_id_lower and 'architecture' in ref_id_lower:
+                    ref_product_types = []
+                    
+                    # Location detection
+                    location_pairs = [
+                        ('urban', 'architecture'), ('batsford', 'arboretum'), ('peak', 'district'),
+                        ('lake', 'district'), ('yorkshire', 'dales'), ('glencoe',),
+                        ('anglesey',), ('gower',), ('dartmoor',), ('kerry',), ('devon',)
+                    ]
+                    
+                    for loc_pair in location_pairs:
+                        if all(loc in ref_id_clean for loc in loc_pair):
+                            ref_locations.append('-'.join(loc_pair))
+                    
+                    # Product type detection
+                    if 'urban' in ref_id_clean and 'architecture' in ref_id_clean:
                         ref_keywords.append('urban-architecture')
-                    if 'batsford' in ref_id_lower or 'arboretum' in ref_id_lower:
-                        ref_locations.append('batsford')
-                    if 'peak' in ref_id_lower and 'district' in ref_id_lower:
-                        ref_locations.append('peak-district')
-                    if 'lake' in ref_id_lower and 'district' in ref_id_lower:
-                        ref_locations.append('lake-district')
-                    if 'yorkshire' in ref_id_lower and 'dales' in ref_id_lower:
-                        ref_locations.append('yorkshire-dales')
+                    if 'beginners photography course' in ref_id_clean or 'beginners photography classes' in ref_id_clean:
+                        ref_product_types.append('beginners-course')
+                    if 'lightroom' in ref_id_clean:
+                        ref_product_types.append('lightroom-course')
+                    if 'framed' in ref_id_clean and 'fine art' in ref_id_clean:
+                        ref_product_types.append('framed-prints')
+                    if 'unframed' in ref_id_clean and 'fine art' in ref_id_clean:
+                        ref_product_types.append('unframed-prints')
                     
                     # Check for conflicts
                     conflict = False
-                    if 'urban-architecture' in ref_keywords:
-                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                    
+                    # Location conflicts
+                    matched_locations = []
+                    for loc_pair in location_pairs:
+                        if all(loc in matched_name for loc in loc_pair):
+                            matched_locations.append('-'.join(loc_pair))
+                    
+                    if ref_locations and matched_locations:
+                        # If Reference Id has a specific location, matched product must have same location
+                        if set(ref_locations) != set(matched_locations):
+                            # Special cases: Glencoe ≠ Anglesey, Gower ≠ Sunflower, etc.
+                            if 'glencoe' in ref_id_clean and 'anglesey' in matched_name:
+                                conflict = True
+                            elif 'anglesey' in ref_id_clean and 'glencoe' in matched_name:
+                                conflict = True
+                            elif 'gower' in ref_id_clean and 'sunflower' in matched_name:
+                                conflict = True
+                            elif 'kerry' in ref_id_clean and 'french riviera' in matched_name:
+                                conflict = True
+                            elif 'dartmoor' in ref_id_clean and 'sunflower' in matched_name:
+                                conflict = True
+                    
+                    # Product type conflicts
+                    if 'beginners-course' in ref_product_types:
+                        if 'lightroom' in matched_name and 'beginners' not in matched_name:
                             conflict = True
-                    if 'batsford' in ref_locations:
-                        if 'urban' in matched_name and 'architecture' in matched_name:
+                    if 'lightroom-course' in ref_product_types:
+                        if 'beginners photography course' in matched_name or 'beginners photography classes' in matched_name:
                             conflict = True
-                    if 'peak-district' in ref_locations:
-                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                    if 'framed-prints' in ref_product_types:
+                        if 'unframed' in matched_name:
                             conflict = True
-                    if 'lake-district' in ref_locations:
-                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                    if 'unframed-prints' in ref_product_types:
+                        if 'framed' in matched_name and 'unframed' not in matched_name:
                             conflict = True
-                    if 'yorkshire-dales' in ref_locations:
-                        if 'devon' in matched_name:
-                            conflict = True
+                    
+                    # Prevent matching to invalid products
+                    if matched_name == 'nan' or matched_name == '' or 'nan' in matched_slug.lower():
+                        conflict = True
+                    
+                    # Prevent matching based on review content (e.g., "Sunflower" review matching "Sunflower Shoot")
+                    # If Reference Id doesn't mention the matched product's key identifier, it's likely wrong
+                    if matched_slug:
+                        matched_keywords = matched_name.split()
+                        matched_keywords = [w for w in matched_keywords if len(w) > 4 and w not in ['photography', 'workshop', 'workshops', 'course', 'courses']]
+                        if matched_keywords:
+                            # Check if any key identifier from matched product appears in Reference Id
+                            has_keyword_match = any(kw in ref_id_clean for kw in matched_keywords)
+                            # If matched product has unique identifier (like "Sunflower") but Reference Id doesn't mention it
+                            if not has_keyword_match and len(matched_keywords) > 0:
+                                # Check if review content mentions it (false positive from text matching)
+                                review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "").lower()
+                                if any(kw in review_text for kw in matched_keywords) and not any(kw in ref_id_clean for kw in matched_keywords):
+                                    # This is likely a false match from review content
+                                    conflict = True
                     
                     if conflict:
                         # Reject the match - it's clearly wrong
