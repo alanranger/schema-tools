@@ -174,9 +174,18 @@ def main():
     
     print("\n🔍 Processing products and validating URLs...")
     
+    skipped_variants = 0
+    
     for idx, row in df.iterrows():
         # Map columns
         name = str(row.get('Title', '')).strip() if pd.notna(row.get('Title')) else ''
+        
+        # Skip variant rows (rows with empty or missing Title)
+        # These are price variants that don't have their own product page
+        if not name or name.lower() == 'nan':
+            skipped_variants += 1
+            continue
+        
         description = strip_html(row.get('Description', ''))
         image = extract_first_image(row.get('Hosted Image URLs', ''))
         # Build full URL from Product Page (parent category) + Product URL (slug)
@@ -204,6 +213,9 @@ def main():
             'price': price,
             'category': category
         })
+    
+    if skipped_variants > 0:
+        print(f"✅ Skipped {skipped_variants} variant rows (empty Title)")
     
     # Report URL errors and exit with error code if any found
     if url_errors:
