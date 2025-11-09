@@ -1364,13 +1364,15 @@ def main():
             
             # Only add valid dates (not today's date unless it's actually in the data)
             if parsed_date is not None:
-                # Safety check: Don't add dates that are in the future (beyond today)
+                # Don't filter out future dates - they might be valid (e.g., reviews posted on Nov 8, 2025)
+                # Only skip if date is clearly invalid (more than 1 year in future)
                 today = pd.Timestamp.today().normalize()
                 parsed_date_normalized = pd.Timestamp(parsed_date).normalize()
-                if parsed_date_normalized <= today:
+                days_ahead = (parsed_date_normalized - today).days
+                if days_ahead <= 365:  # Allow dates up to 1 year in future (handles timezone differences)
                     google_dates.append(parsed_date_normalized)
                 else:
-                    print(f"⚠️ Skipping future date: {parsed_date_normalized.strftime('%Y-%m-%d')} (today is {today.strftime('%Y-%m-%d')})")
+                    print(f"⚠️ Skipping invalid future date: {parsed_date_normalized.strftime('%Y-%m-%d')} (more than 1 year ahead)")
         
         if google_dates:
             latest_google_date = max(google_dates).strftime('%Y-%m-%d')
@@ -1443,16 +1445,25 @@ def main():
     print(f"Products with reviews: {products_with_reviews_count}")
     print(f"Products without reviews: {valid_products - products_with_reviews_count}")
     print("")
-    print("📊 Mapped Reviews:")
-    print(f"  Google reviews mapped: {mapped_google_count} (of {total_google_count} total)")
+    print("📊 Mapped Reviews (all reviews matched to products, before 25-review cap):")
+    print(f"  Google reviews mapped: {mapped_google_count} (from {total_google_count} available in merged file)")
     if latest_google_date:
         print(f"  Latest Google review: {latest_google_date}")
-    print(f"  Trustpilot reviews mapped: {mapped_trustpilot_count} (of {total_trustpilot_count} total)")
+    print(f"  Trustpilot reviews mapped: {mapped_trustpilot_count} (from {total_trustpilot_count} available in merged file)")
     if latest_trustpilot_date:
         print(f"  Latest Trustpilot review: {latest_trustpilot_date}")
     print(f"  Total mapped reviews: {total_mapped_reviews}")
     if latest_review_date:
         print(f"  Overall latest review: {latest_review_date}")
+    print("")
+    print("📦 Reviews Included in Schema (capped at 25 per product):")
+    print(f"  Google reviews included: {included_google_count}")
+    print(f"  Trustpilot reviews included: {included_trustpilot_count}")
+    print(f"  Total included: {total_included_reviews}")
+    if total_excluded_reviews > 0:
+        print(f"  Reviews excluded due to 25-review cap: {total_excluded_reviews}")
+    if newest_review_date_included:
+        print(f"  Newest review date included: {newest_review_date_included}")
     print("")
     print(f"HTML files saved to: {outputs_dir.absolute()}")
     print(f"Combined CSV saved to: {output_csv.absolute()}")
