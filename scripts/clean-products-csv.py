@@ -201,6 +201,10 @@ def detect_schema_type(product_name, product_url, events_df):
     """
     Detect schema type by matching product to events CSV files.
     Returns: 'event', 'course', or 'product'
+    
+    Logic:
+    - Only returns 'event' or 'course' if product STRONGLY matches an event/lesson with dates
+    - Defaults to 'product' if no match found or matched event has no dates
     """
     if events_df is None or len(events_df) == 0:
         return 'product'  # Default if no events loaded
@@ -210,27 +214,50 @@ def detect_schema_type(product_name, product_url, events_df):
     if product_url:
         product_url_slug = product_url.split('/')[-1].strip().lower()
     
-    # Try to match by URL slug first (most reliable)
+    # Try to match by URL slug first (most reliable - exact match)
     matched_event = None
     for _, event_row in events_df.iterrows():
         event_url = str(event_row.get('Event_URL', '')).strip()
         event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
         
-        # Match by URL slug
+        # Match by URL slug (exact match required)
         if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
-            matched_event = event_row
-            break
+            # CRITICAL: Only consider it a match if the event has dates
+            if 'Start_Date' in event_row.index and pd.notna(event_row.get('Start_Date')):
+                start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
+                if pd.notna(start_date):
+                    matched_event = event_row
+                    break
     
-    # If no URL match, try fuzzy match by Event_Title
+    # If no URL match, try STRICT fuzzy match by Event_Title
+    # This should be very strict - only match if titles are very similar
     if matched_event is None:
         for _, event_row in events_df.iterrows():
+            # CRITICAL: Only consider events with dates
+            if 'Start_Date' not in event_row.index or pd.isna(event_row.get('Start_Date')):
+                continue
+            
+            start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
+            if pd.isna(start_date):
+                continue
+            
             event_title = str(event_row.get('Event_Title', '')).lower()
             
-            # Check if key words match (at least 2 significant words)
+            # Very strict matching: require at least 3 significant words to match
+            # AND product name must contain most of the event title words
             if event_title and product_name_lower:
                 event_words = [w for w in event_title.split() if len(w) > 4]
+                product_words = [w for w in product_name_lower.split() if len(w) > 4]
+                
+                if len(event_words) < 2:
+                    continue  # Skip if event title is too short
+                
+                # Count matches
                 matches = sum(1 for word in event_words if word in product_name_lower)
-                if matches >= 2:  # At least 2 significant words match
+                
+                # Require at least 3 matches OR at least 60% of event words match
+                match_ratio = matches / len(event_words) if event_words else 0
+                if matches >= 3 or match_ratio >= 0.6:
                     matched_event = event_row
                     break
     
@@ -242,10 +269,10 @@ def detect_schema_type(product_name, product_url, events_df):
         elif 'photography-services-near-me' in event_url or 'beginners-photography-lessons' in event_url or 'lessons' in event_url.lower():
             return 'course'  # Product + Course
         else:
-            # Default to event if we can't determine (workshops are more common)
-            return 'event'
+            # If we can't determine, default to product (safer)
+            return 'product'
     
-    # If no match found, return 'product' (Product only)
+    # If no match found OR matched event has no dates, return 'product' (Product only)
     return 'product'
 
 def main():
