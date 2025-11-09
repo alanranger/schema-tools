@@ -593,13 +593,22 @@ if len(product_slugs) > 0:
                 
                 # If no exact match, try partial match (remove common suffixes/prefixes)
                 if not matched_slug:
-                    # Remove common suffixes like " - Monthly", " - 2hrs", dates, etc.
-                    ref_id_base = re.sub(r'\s*-\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', ref_id_normalized, flags=re.IGNORECASE)
+                    # Remove common suffixes like " - Monthly", " - 2hrs", dates, " - Get Off Auto", " | 3 Weekly Evening Classes", etc.
+                    # More aggressive suffix removal - remove ALL occurrences, not just at the end
+                    ref_id_base = ref_id_normalized
+                    # Remove location suffixes first
+                    ref_id_base = re.sub(r'\s*[-|]\s*(coventry|warwickshire|worcestershire|gloucestershire)\s*[-|]?', '', ref_id_base, flags=re.IGNORECASE)
+                    # Remove other suffixes
+                    ref_id_base = re.sub(r'\s*[-|]\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|get off auto|\d+\s*weekly\s*evening\s*classes?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', ref_id_base, flags=re.IGNORECASE)
                     ref_id_base = ref_id_base.strip()
                     
                     for slug, name in name_by_slug.items():
                         name_lower = str(name).lower().strip()
-                        name_base = re.sub(r'\s*-\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', name_lower, flags=re.IGNORECASE)
+                        name_base = name_lower
+                        # Remove location suffixes
+                        name_base = re.sub(r'\s*[-|]\s*(coventry|warwickshire|worcestershire|gloucestershire)\s*[-|]?', '', name_base, flags=re.IGNORECASE)
+                        # Remove other suffixes
+                        name_base = re.sub(r'\s*[-|]\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|get off auto|\d+\s*weekly\s*evening\s*classes?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', name_base, flags=re.IGNORECASE)
                         name_base = name_base.strip()
                         
                         # Check if base Reference Id matches base product name
@@ -607,6 +616,25 @@ if len(product_slugs) > 0:
                             matched_slug = slug
                             ref_id_matches += 1
                             break
+                    
+                    # Special case: "Beginners Photography Classes" should match "Beginners Photography Course"
+                    if not matched_slug:
+                        ref_id_normalized_classes = ref_id_normalized.replace('classes', 'course').replace('class', 'course')
+                        # Also remove suffixes from the classes->course version
+                        ref_id_normalized_classes = re.sub(r'\s*[-|]\s*(coventry|warwickshire|worcestershire|gloucestershire|get off auto|\d+\s*weekly\s*evening\s*classes?)\s*[-|]?', '', ref_id_normalized_classes, flags=re.IGNORECASE)
+                        ref_id_normalized_classes = ref_id_normalized_classes.strip()
+                        
+                        for slug, name in name_by_slug.items():
+                            name_lower = str(name).lower().strip()
+                            name_normalized = re.sub(r'\s+', ' ', name_lower)
+                            # Remove suffixes from product name too
+                            name_normalized = re.sub(r'\s*[-|]\s*(monthly|2hrs?|weekly|daily|hourly|hrs?|hours?|days?|weeks?|months?|years?|\d+\s*weekly\s*evening\s*classes?|\d+\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).*|\d{1,2}\s*(st|nd|rd|th).*)$', '', name_normalized, flags=re.IGNORECASE)
+                            name_normalized = name_normalized.strip()
+                            
+                            if ref_id_normalized_classes in name_normalized or name_normalized in ref_id_normalized_classes:
+                                matched_slug = slug
+                                ref_id_matches += 1
+                                break
                 
                 # Strategy 1b: Check aliases (including cleaned Reference Id)
                 if not matched_slug:
