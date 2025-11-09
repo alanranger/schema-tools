@@ -1172,12 +1172,6 @@ def main():
                             newest_review_date_included = review_date_obj
                     
                     if 'google' in source_lower:
-                        # Track all Google reviews mapped (total)
-                        mapped_google_reviews.append({
-                            'date': review_date_obj,
-                            'source': 'Google',
-                            'review_date_str': review_date
-                        })
                         # Track Google reviews included in schema (capped at 25 per product)
                         included_google_reviews.append({
                             'date': review_date_obj,
@@ -1185,12 +1179,6 @@ def main():
                             'review_date_str': review_date
                         })
                     elif 'trustpilot' in source_lower:
-                        # Track all Trustpilot reviews mapped (total)
-                        mapped_trustpilot_reviews.append({
-                            'date': review_date_obj,
-                            'source': 'Trustpilot',
-                            'review_date_str': review_date
-                        })
                         # Track Trustpilot reviews included in schema (capped at 25 per product)
                         included_trustpilot_reviews.append({
                             'date': review_date_obj,
@@ -1329,6 +1317,28 @@ def main():
     mapped_google_count = len(mapped_google_reviews)
     mapped_trustpilot_count = len(mapped_trustpilot_reviews)
     total_mapped_reviews = mapped_google_count + mapped_trustpilot_count
+    
+    # Calculate included review statistics (after 25-review cap)
+    included_google_count = len(included_google_reviews)
+    included_trustpilot_count = len(included_trustpilot_reviews)
+    total_included_reviews = included_google_count + included_trustpilot_count
+    
+    # Get newest review date included in schema
+    newest_review_date_included = None
+    for r in included_google_reviews + included_trustpilot_reviews:
+        date_val = r.get('date')
+        if date_val is not None and pd.notna(date_val):
+            try:
+                if isinstance(date_val, pd.Timestamp):
+                    parsed_date = date_val
+                else:
+                    parsed_date = pd.to_datetime(date_val, errors='coerce')
+                    if pd.isna(parsed_date):
+                        continue
+                if newest_review_date_included is None or parsed_date > newest_review_date_included:
+                    newest_review_date_included = parsed_date
+            except:
+                continue
     
     # Get latest review dates for mapped reviews
     latest_google_date = None
