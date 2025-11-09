@@ -980,6 +980,40 @@ def main():
             # Limit to 25 reviews per product for schema optimization (Google best practice)
             # But we'll track total counts separately for accurate statistics
             total_reviews_for_product = len(reviews_for_product)
+            
+            # Track ALL reviews mapped (before cap) for accurate statistics
+            for _, review_row_all in reviews_for_product.iterrows():
+                rating_val_all = review_row_all.get('ratingvalue')
+                if rating_val_all and rating_val_all >= 4:
+                    source_all = review_row_all.get('source', 'Google')
+                    source_lower_all = str(source_all).lower() if source_all else ''
+                    
+                    # Get date for tracking
+                    review_date_obj_all = None
+                    if 'date_parsed' in review_row_all.index:
+                        date_val_all = review_row_all.get('date_parsed')
+                        if pd.notna(date_val_all):
+                            try:
+                                review_date_obj_all = pd.to_datetime(date_val_all, errors='coerce')
+                                if pd.isna(review_date_obj_all):
+                                    review_date_obj_all = None
+                            except:
+                                review_date_obj_all = None
+                    
+                    if 'google' in source_lower_all:
+                        mapped_google_reviews.append({
+                            'date': review_date_obj_all,
+                            'source': 'Google',
+                            'review_date_str': ''
+                        })
+                    elif 'trustpilot' in source_lower_all:
+                        mapped_trustpilot_reviews.append({
+                            'date': review_date_obj_all,
+                            'source': 'Trustpilot',
+                            'review_date_str': ''
+                        })
+            
+            # Now apply cap for schema inclusion
             group = reviews_for_product.head(25)
             excluded_count = max(0, total_reviews_for_product - 25)
             total_excluded_reviews += excluded_count
