@@ -1496,8 +1496,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       <!-- GitHub Hosting Verification Panel -->
       <div id="githubHostingVerification" style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
         <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #1f2937;">🔍 GitHub Schema Hosting Verification</h4>
-        <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 4px; border-left: 3px solid #0369a1;">
+          <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location:</strong></p>
+          <p style="margin: 0; font-size: 0.8rem; color: #1e3a8a; font-family: monospace; word-break: break-all;">
+            G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema\public
+          </p>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
+            Save <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">lessons-schema.json</code> and <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
+          </p>
+        </div>
+        <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-right: 0.5rem;">
           🚀 Ping GitHub
+        </button>
+        <button id="exportToGitHubFolderBtn" onclick="exportUnminifiedToGitHubFolder()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+          📥 Export Unminified JSON to GitHub Folder
         </button>
         <div id="pingResults" style="margin-top: 10px; font-family: monospace; font-size: 0.875rem; color: #374151; line-height: 1.6;"></div>
         <div id="schemaLinks" style="margin-top: 15px; display: none;">
@@ -7652,6 +7664,91 @@ ${minifiedJson}
       console.error('❌ Error generating script tag:', error);
       alert('Error generating script tag: ' + error.message);
       addDebugLog(`\n📋 Squarespace Script Tag:`);
+      addDebugLog(`   ❌ Error: ${error.message}`);
+    }
+  }
+
+  // Export Unminified JSON to GitHub Folder
+  async function exportUnminifiedToGitHubFolder() {
+    if (!window.currentEventSchema) {
+      alert('Please generate event schema first.');
+      return;
+    }
+
+    const csvType = window.currentEventSchemaCsvType || 'unknown';
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+
+    try {
+      // Generate unminified JSON (with indentation)
+      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+      
+      const githubFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema\\public';
+      
+      // Check if we're in Electron mode (can write directly to file system)
+      if (typeof window.require !== 'undefined' || typeof require !== 'undefined') {
+        try {
+          const fs = typeof window.require !== 'undefined' ? window.require('fs') : require('fs');
+          const path = typeof window.require !== 'undefined' ? window.require('path') : require('path');
+          
+          // Ensure directory exists
+          const publicDir = path.join(githubFolderPath);
+          if (!fs.existsSync(publicDir)) {
+            fs.mkdirSync(publicDir, { recursive: true });
+          }
+          
+          // Write file directly
+          const filePath = path.join(publicDir, fileName);
+          fs.writeFileSync(filePath, jsonString, 'utf-8');
+          
+          // Open folder in file explorer
+          const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+          shell.showItemInFolder(filePath);
+          
+          addDebugLog(`\n📥 Export to GitHub Folder:`);
+          addDebugLog(`   ✅ Saved: ${filePath}`);
+          addDebugLog(`   📁 Folder opened in Explorer`);
+          
+          alert(`✅ Successfully saved ${fileName} to GitHub folder!\n\nFolder opened in Explorer.`);
+          return;
+        } catch (electronError) {
+          console.warn('Electron file system access failed, falling back to download:', electronError);
+        }
+      }
+      
+      // Fallback: Download file and open folder
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Try to open folder (Windows)
+      try {
+        // Use PowerShell to open folder
+        const openFolderScript = `powershell -Command "Start-Process explorer.exe -ArgumentList '${githubFolderPath.replace(/'/g, "''")}'"`;
+        // Note: This won't work in browser, but we can show instructions
+        alert(`✅ File downloaded!\n\nPlease save it to:\n${githubFolderPath}\n\nFile name: ${fileName}`);
+      } catch (e) {
+        alert(`✅ File downloaded!\n\nPlease save it to:\n${githubFolderPath}\n\nFile name: ${fileName}`);
+      }
+      
+      addDebugLog(`\n📥 Export to GitHub Folder:`);
+      addDebugLog(`   ✅ Downloaded: ${fileName}`);
+      addDebugLog(`   📁 Save location: ${githubFolderPath}`);
+      
+    } catch (error) {
+      console.error('❌ Error exporting to GitHub folder:', error);
+      alert('Error exporting to GitHub folder: ' + error.message);
+      addDebugLog(`\n📥 Export to GitHub Folder:`);
       addDebugLog(`   ❌ Error: ${error.message}`);
     }
   }
