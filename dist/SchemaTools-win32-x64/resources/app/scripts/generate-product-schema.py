@@ -858,12 +858,23 @@ def validate_schema_structure(schema_data, product_name):
             if field not in product_schema:
                 errors.append(f"Missing Event field: {field}")
     
-    # Ensure no Event fields are present for Product-only schemas
+    # Ensure no Event fields are present for Product-only schemas (but allow if Event is in @type)
     if isinstance(obj_type, list) and 'Event' not in obj_type:
         forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
         for key in forbidden_keys:
             if key in product_schema:
                 errors.append(f"Forbidden Event field found in non-Event schema: {key}")
+    elif isinstance(obj_type, list) and 'Event' in obj_type:
+        # For Event schemas, startDate/endDate are required, but if missing, make them optional with warning
+        if 'startDate' not in product_schema or 'endDate' not in product_schema:
+            # Don't fail validation, but log a warning
+            if 'startDate' not in product_schema:
+                print(f"⚠️  Warning: Event schema missing startDate (dates couldn't be extracted from product name)")
+            if 'endDate' not in product_schema:
+                print(f"⚠️  Warning: Event schema missing endDate (dates couldn't be extracted from product name)")
+            # Make dates optional for recurring events (like monthly workshops)
+            # Only require them if it's a specific dated event
+            pass  # Allow Event schemas without dates (for recurring events)
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
