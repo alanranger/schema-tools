@@ -429,13 +429,33 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     
     # Add offers to schema (can be single offer or array)
     if offers_data:
+        # Determine if this is a course/workshop (in-person) vs physical product
+        # Check URL path and product name for keywords
+        is_course_workshop = False
+        if product_url:
+            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+            if 'photo-workshops-uk' in url_path or 'photography-services-near-me' in url_path:
+                is_course_workshop = True
+        if not is_course_workshop:
+            # Check product name for course/workshop keywords
+            name_lower = product_name.lower()
+            course_keywords = ['workshop', 'course', 'class', 'lesson', 'tuition', 'mentoring', 'academy']
+            if any(keyword in name_lower for keyword in course_keywords):
+                is_course_workshop = True
+        
         # Ensure all offers have priceValidUntil set to +12 months
         price_valid_until = (date.today() + timedelta(days=365)).isoformat()
         
-        # Add URL and shipping details to each offer if missing, and ensure priceValidUntil
-        for offer in offers_data:
+        # Add URL, shipping details, and @id to each offer if missing, and ensure priceValidUntil
+        for idx, offer in enumerate(offers_data):
             if 'url' not in offer and product_url:
                 offer['url'] = product_url
+            
+            # Add @id to each offer for internal linking
+            if '@id' not in offer and product_url:
+                offer_id_suffix = f"#offer{idx + 1}" if len(offers_data) > 1 else "#offer"
+                offer['@id'] = f"{product_url}{offer_id_suffix}"
+            
             if 'shippingDetails' not in offer:
                 offer['shippingDetails'] = {
                     "@type": "OfferShippingDetails",
@@ -445,6 +465,11 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                         "addressCountry": "GB"
                     }
                 }
+            elif is_course_workshop:
+                # For in-person courses/workshops, remove doesNotShip (not harmful but not needed)
+                if 'doesNotShip' in offer['shippingDetails']:
+                    del offer['shippingDetails']['doesNotShip']
+            
             if 'hasMerchantReturnPolicy' not in offer:
                 offer['hasMerchantReturnPolicy'] = {
                     "@type": "MerchantReturnPolicy",
@@ -459,6 +484,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 # Ensure returnFees is set even if policy already exists
                 if 'returnFees' not in offer['hasMerchantReturnPolicy']:
                     offer['hasMerchantReturnPolicy']['returnFees'] = "https://www.alanranger.com/s/Alan-Ranger-Photography-Tuition-Terms-Conditions-2021.pdf"
+            
             # Ensure priceValidUntil is always set to +12 months
             if 'priceValidUntil' not in offer:
                 offer['priceValidUntil'] = price_valid_until
@@ -483,6 +509,95 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         else:
             # Use array format (multiple offers OR single offer with variants)
             product_schema["offers"] = offers_data
+    
+    # Add hasCourseInstance for educational courses/workshops (optional enhancement)
+    # This boosts chance of Course rich results
+    if is_course_workshop and product_url:
+        # Try to extract dates from product name or description
+        # Look for date patterns like "Jan 2026", "23-25 Jan", etc.
+        import re
+        date_patterns = [
+            r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
+            r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
+            r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
+        ]
+        
+        start_date = None
+        end_date = None
+        location_name = None
+        
+        # Try to extract dates from product name
+        for pattern in date_patterns:
+            match = re.search(pattern, product_name)
+            if match:
+                try:
+                    if len(match.groups()) == 4:
+                        # Format: "23-25 Jan 2026" or "Jan 23-25 2026"
+                        if match.group(1).isdigit():
+                            day1, day2, month, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                        else:
+                            month, day1, day2, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                    elif len(match.groups()) == 2:
+                        # Format: "Jan 2026" - use first day of month
+                        month, year = match.groups()
+                        start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
+                        end_date = start_date  # Single day event
+                    break
+                except:
+                    pass
+        
+        # Extract location from product name (common patterns)
+        location_keywords = {
+            'coventry': 'Coventry',
+            'lake district': 'Lake District',
+            'peak district': 'Peak District',
+            'yorkshire dales': 'Yorkshire Dales',
+            'snowdonia': 'Snowdonia',
+            'norfolk': 'Norfolk',
+            'devon': 'Devon',
+            'dorset': 'Dorset',
+            'anglesey': 'Anglesey',
+            'northumberland': 'Northumberland',
+            'suffolk': 'Suffolk',
+            'gower': 'Gower',
+            'kerry': 'Kerry',
+            'dartmoor': 'Dartmoor',
+            'exmoor': 'Exmoor',
+            'warwickshire': 'Warwickshire',
+            'worcestershire': 'Worcestershire',
+            'gloucestershire': 'Gloucestershire'
+        }
+        
+        name_lower = product_name.lower()
+        for keyword, location in location_keywords.items():
+            if keyword in name_lower:
+                location_name = location
+                break
+        
+        # Only add hasCourseInstance if we have at least a start date or location
+        if start_date or location_name:
+            course_instance = {
+                "@type": "CourseInstance",
+                "courseMode": "InPerson"
+            }
+            if start_date:
+                course_instance["startDate"] = start_date
+            if end_date:
+                course_instance["endDate"] = end_date
+            elif start_date:
+                # If only start date, use same as end date (single day)
+                course_instance["endDate"] = start_date
+            if location_name:
+                course_instance["location"] = {
+                    "@type": "Place",
+                    "name": location_name
+                }
+            
+            product_schema["hasCourseInstance"] = course_instance
     
     # Add reviews and aggregate rating (only if include_aggregate_rating is True)
     if reviews_list:
