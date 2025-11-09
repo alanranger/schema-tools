@@ -7459,7 +7459,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     }
   }
 
-  // Copy Squarespace Script Tag (v4.4) - External src version
+  // Copy Squarespace Script Tag (v4.4) - External src version with safe minification
   function copySquarespaceScript() {
     if (!window.currentEventSchema) {
       alert('Please generate event schema first.');
@@ -7475,44 +7475,58 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                        'Event';
 
     try {
-      // Validate JSON structure
+      // Step 1: Validate JSON structure
       const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
       const parsed = JSON.parse(jsonString);
-      
-      // Quality checks
+
       const hasContext = parsed['@context'] === 'https://schema.org';
       const hasGraph = Array.isArray(parsed['@graph']);
-      const minifiedJson = JSON.stringify(window.currentEventSchema);
+      
+      // Step 2: Safe minification with validation and fallback
+      let minifiedJson;
+      let minificationSuccess = false;
+      let minificationWarning = '';
+      
+      try {
+        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0); // Safe minify, no regex
+        JSON.parse(minifiedJson); // Validate minified version parses correctly
+        minificationSuccess = true;
+      } catch (minifyError) {
+        // Fallback: use unminified version if minification fails
+        console.warn('⚠️ Minify validation failed. Using unminified version for script tag:', minifyError);
+        minifiedJson = jsonString;
+        minificationSuccess = false;
+        minificationWarning = '⚠️ Minification failed - using unminified version';
+      }
+      
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
-      
-      // Generate external script src tag (GitHub Pages)
+
       const scriptSrcTag = `<!-- ${schemaType} Schema -->
 <script type="application/ld+json"
         src="https://schema.alanranger.com/${fileName}">
 <\/script>`;
-      
-      // Also generate inline version as alternative
+
       const inlineScriptTag = `<!-- ${schemaType} Schema (Inline) -->
 <script type="application/ld+json">
 ${minifiedJson}
 <\/script>`;
-      
-      // Copy external src tag to clipboard
+
       navigator.clipboard.writeText(scriptSrcTag).then(() => {
-        // Update UI
         const exportContent = document.getElementById('schemaExportContent');
         if (exportContent) {
           let statusColor = isValid ? '#10b981' : '#f59e0b';
           let statusBg = isValid ? '#d1fae5' : '#fef3c7';
           let statusText = isValid ? '✅ Ready for Production' : '⚠️ Review Required';
-          
+          const warningBadge = minificationWarning ? `<div style="color: #f59e0b; font-size: 0.875rem; margin-bottom: 0.5rem;">${minificationWarning}</div>` : '';
+
           exportContent.innerHTML = `
             <div style="background: ${statusBg}; padding: 0.75rem; border-radius: 6px; border-left: 3px solid ${statusColor}; margin-bottom: 0.75rem;">
               <strong style="color: ${isValid ? '#065f46' : '#92400e'};">${statusText}</strong><br>
-              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
-              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}</span><br>
-              <span style="color: ${isValid ? '#047857' : '#78350f'}; font-size: 0.875rem;">Structure: ${hasContext ? '✅' : '❌'} @context, ${hasGraph ? '✅' : '❌'} @graph</span>
+              ${warningBadge}
+              <span style="color: #047857; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
+              <span style="color: #047857; font-size: 0.875rem;">Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'} ${minificationSuccess ? '(minified)' : '(unminified)'}</span><br>
+              <span style="color: #047857; font-size: 0.875rem;">Structure: ${hasContext ? '✅' : '❌'} @context, ${hasGraph ? '✅' : '❌'} @graph</span>
             </div>
             <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; overflow-x: auto; margin-bottom: 0.75rem;">
               <div style="color: #6b7280; margin-bottom: 0.5rem;">📋 External Script Tag (Copied):</div>
@@ -7525,17 +7539,20 @@ ${minifiedJson}
             </div>
           `;
         }
-        
+
         addDebugLog(`\n📋 Squarespace Script Tag (GitHub Pages):`);
         addDebugLog(`   ✅ Copied to clipboard`);
         addDebugLog(`   📝 File: ${fileName}`);
         addDebugLog(`   🌐 URL: https://schema.alanranger.com/${fileName}`);
-        addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
+        addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'} ${minificationSuccess ? '(minified)' : '(unminified)'}`);
         addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
+        if (minificationWarning) {
+          addDebugLog(`   ${minificationWarning}`);
+        }
         addDebugLog(`   💡 Hosted on GitHub Pages - ready to use in Squarespace`);
         addDebugLog(`\n   Script tag:`);
         addDebugLog(`   ${scriptSrcTag.split('\n').join('\n   ')}`);
-        
+
         console.log('✅ Squarespace script src tag copied to clipboard');
       }).catch(err => {
         console.error('❌ Error copying to clipboard:', err);
