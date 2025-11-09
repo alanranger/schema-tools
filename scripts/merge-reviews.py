@@ -552,7 +552,9 @@ if len(product_slugs) > 0:
                 
                 # Strategy 1: Exact product name match (case-insensitive, ignore extra words)
                 ref_id_lower = ref_id.lower().strip()
-                ref_id_normalized = re.sub(r'\s+', ' ', ref_id_lower)  # Normalize whitespace
+                # Clean special characters for matching
+                ref_id_clean = re.sub(r'[^\w\s-]', '', ref_id_lower)
+                ref_id_normalized = re.sub(r'\s+', ' ', ref_id_clean)  # Normalize whitespace
                 for slug, name in name_by_slug.items():
                     name_lower = str(name).lower().strip()
                     name_normalized = re.sub(r'\s+', ' ', name_lower)
@@ -564,9 +566,33 @@ if len(product_slugs) > 0:
                         ref_id_matches += 1
                         break
                 
+                # Strategy 1b: Check aliases (including cleaned Reference Id)
+                if not matched_slug:
+                    # Try alias matching with cleaned Reference Id
+                    ref_id_for_alias = ref_id_clean.strip()
+                    # Try full Reference Id and key parts
+                    alias_keys = [ref_id_for_alias]
+                    # Extract key parts (remove generic words)
+                    words = [w for w in ref_id_for_alias.split() if w not in ['photography', 'workshop', 'workshops', 'course', 'courses']]
+                    if len(words) > 1:
+                        alias_keys.append(' '.join(words))
+                    
+                    for alias_key in alias_keys:
+                        if alias_key in ALIASES:
+                            potential_slug = ALIASES[alias_key]
+                            if potential_slug in product_by_slug:
+                                matched_slug = potential_slug
+                                ref_id_matches += 1
+                                break
+                    if matched_slug:
+                        break
+                
                 # Strategy 2: Extract key distinguishing words and require ALL to match
                 # Key words are location names, unique identifiers (not generic words like "photography", "workshop")
                 if not matched_slug:
+                    # Use cleaned Reference Id (without special characters)
+                    ref_id_lower = ref_id_clean.lower().strip()
+                    
                     # Extract significant words (longer than 4 chars, exclude generic terms)
                     generic_words = {'photography', 'workshop', 'workshops', 'course', 'courses', 'class', 'classes', 
                                     'beginners', 'beginner', 'advanced', 'intermediate', 'photo', 'photographic'}
@@ -577,12 +603,16 @@ if len(product_slugs) > 0:
                     location_words = ['glencoe', 'anglesey', 'gower', 'yorkshire', 'dales', 'devon', 'peak', 
                                      'district', 'lake', 'batsford', 'arboretum', 'urban', 'architecture', 
                                      'coventry', 'kenilworth', 'ireland', 'kerry', 'dartmoor', 'norfolk', 
-                                     'suffolk', 'northumberland', 'wales']
+                                     'suffolk', 'northumberland', 'wales', 'woodland', 'woodlands']
                     ref_words.extend([w for w in ref_id_lower.split() if w in location_words])
                     
                     # Check for product type words
-                    product_type_words = ['framed', 'unframed', 'lightroom', 'beginners']
+                    product_type_words = ['framed', 'unframed', 'lightroom']
                     ref_words.extend([w for w in ref_id_lower.split() if w in product_type_words])
+                    
+                    # Special handling for "beginners" - only include if it's part of "beginners photography course"
+                    if 'beginners photography course' in ref_id_lower or 'beginners photography classes' in ref_id_lower:
+                        ref_words.append('beginners-course-phrase')
                     
                     if ref_words:  # Only proceed if we have distinguishing words
                         best_match = None
@@ -591,6 +621,15 @@ if len(product_slugs) > 0:
                             name_lower = str(name).lower()
                             # Count how many key words match
                             matches = sum(1 for word in ref_words if word in name_lower)
+                            
+                            # Special check for "beginners-course-phrase"
+                            if 'beginners-course-phrase' in ref_words:
+                                if 'beginners photography course' in name_lower or 'beginners photography classes' in name_lower:
+                                    matches += 1
+                                elif 'lightroom' in name_lower and 'beginners' in name_lower:
+                                    # Don't count this as a match - it's a different course type
+                                    matches = 0
+                            
                             # Require ALL key words to match (not just 50%)
                             if matches == len(ref_words) and matches > 0:
                                 score = matches / len(ref_words) if ref_words else 0
@@ -703,8 +742,11 @@ if len(product_slugs) > 0:
                     
                     # Product type conflicts
                     if 'beginners-course' in ref_product_types:
-                        if 'lightroom' in matched_name and 'beginners' not in matched_name:
-                            conflict = True
+                        # Check if matched product is Lightroom (different course type)
+                        if 'lightroom' in matched_name:
+                            # Only conflict if matched product doesn't also mention "beginners photography course"
+                            if 'beginners photography course' not in matched_name and 'beginners photography classes' not in matched_name:
+                                conflict = True
                     if 'lightroom-course' in ref_product_types:
                         if 'beginners photography course' in matched_name or 'beginners photography classes' in matched_name:
                             conflict = True
@@ -721,19 +763,41 @@ if len(product_slugs) > 0:
                     
                     # Prevent matching based on review content (e.g., "Sunflower" review matching "Sunflower Shoot")
                     # If Reference Id doesn't mention the matched product's key identifier, it's likely wrong
-                    if matched_slug:
+                    if matched_slug and not conflict:
                         matched_keywords = matched_name.split()
-                        matched_keywords = [w for w in matched_keywords if len(w) > 4 and w not in ['photography', 'workshop', 'workshops', 'course', 'courses']]
+                        # Extract unique identifiers (longer words, not generic)
+                        generic_words = {'photography', 'workshop', 'workshops', 'course', 'courses', 'class', 'classes',
+                                        'beginners', 'beginner', 'photo', 'photographic', 'long', 'exposure', 'monthly'}
+                        matched_keywords = [w for w in matched_keywords if len(w) > 4 and w.lower() not in generic_words]
+                        
+                        # Add location-specific keywords
+                        if 'sunflower' in matched_name.lower():
+                            matched_keywords.append('sunflower')
+                        if 'gower' in matched_name.lower():
+                            matched_keywords.append('gower')
+                        if 'woodland' in matched_name.lower() or 'woodlands' in matched_name.lower():
+                            matched_keywords.append('woodland')
+                        
                         if matched_keywords:
                             # Check if any key identifier from matched product appears in Reference Id
-                            has_keyword_match = any(kw in ref_id_clean for kw in matched_keywords)
+                            has_keyword_match = any(kw.lower() in ref_id_clean for kw in matched_keywords)
                             # If matched product has unique identifier (like "Sunflower") but Reference Id doesn't mention it
                             if not has_keyword_match and len(matched_keywords) > 0:
                                 # Check if review content mentions it (false positive from text matching)
                                 review_text = str(row.get("reviewBody", "") or row.get("review_text", "") or "").lower()
-                                if any(kw in review_text for kw in matched_keywords) and not any(kw in ref_id_clean for kw in matched_keywords):
-                                    # This is likely a false match from review content
-                                    conflict = True
+                                review_title = str(row.get("reviewTitle", "") or row.get("title", "") or "").lower()
+                                combined_review = f"{review_title} {review_text}"
+                                
+                                # If review mentions the matched product's keyword but Reference Id doesn't
+                                if any(kw.lower() in combined_review for kw in matched_keywords):
+                                    # Special cases: Gower/Woodland reviews mentioning "Sunflower" shouldn't match Sunflower Shoot
+                                    if ('gower' in ref_id_clean or 'woodland' in ref_id_clean) and 'sunflower' in matched_name.lower():
+                                        conflict = True
+                                    elif 'sunflower' in matched_name.lower() and ('gower' in ref_id_clean or 'woodland' in ref_id_clean):
+                                        conflict = True
+                                    # If Reference Id has a location but matched product has different location keyword
+                                    elif any(loc in ref_id_clean for loc in ['gower', 'woodland', 'wales']) and 'sunflower' in matched_name.lower():
+                                        conflict = True
                     
                     if conflict:
                         # Reject the match - it's clearly wrong
