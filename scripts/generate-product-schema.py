@@ -924,11 +924,29 @@ def main():
     
     # Pre-process: identify first variant for each URL
     # Products without URLs are treated as standalone (each gets aggregateRating)
+    variant_counts = {}  # Track how many variants per URL
+    variant_indices = {}  # Track variant index for each product
     for idx, row in df_products.iterrows():
         product_url = str(row.get('url', '')).strip()
         if product_url:  # Only group products that have URLs
             if product_url not in url_to_first_index:
                 url_to_first_index[product_url] = idx
+                variant_counts[product_url] = 1
+                variant_indices[idx] = 1
+            else:
+                variant_counts[product_url] = variant_counts.get(product_url, 1) + 1
+                variant_indices[idx] = variant_counts[product_url]
+    
+    # Log products with multiple variants
+    products_with_variants = {url: count for url, count in variant_counts.items() if count > 1}
+    if products_with_variants:
+        print(f"\n📊 Products with multiple variants (same URL):")
+        for url, count in list(products_with_variants.items())[:10]:  # Show first 10
+            product_name = df_products.iloc[url_to_first_index[url]].get('name', 'Unknown')
+            print(f"   {product_name[:50]}... → {count} variants ({url})")
+        if len(products_with_variants) > 10:
+            print(f"   ... and {len(products_with_variants) - 10} more products with variants")
+        print(f"   ✅ Only first variant per URL will get aggregateRating\n")
     
     for idx, row in df_products.iterrows():
         product_name = str(row.get('name', '')).strip()
@@ -1214,6 +1232,11 @@ def main():
         product_url = str(row.get('url', '')).strip()
         if product_url:
             is_first_variant = (product_url in url_to_first_index and url_to_first_index[product_url] == idx)
+            if not is_first_variant and product_url in variant_counts and variant_counts[product_url] > 1:
+                # Log when a variant skips aggregateRating
+                variant_num = variant_indices.get(idx, 1)
+                first_variant_name = df_products.iloc[url_to_first_index[product_url]].get('name', 'Unknown')
+                print(f"   ⚠️ [{product_name[:50]}...] is variant #{variant_num} - skipping aggregateRating (first variant: {first_variant_name[:30]}...)")
         else:
             # Product without URL is standalone - gets aggregateRating
             is_first_variant = True
