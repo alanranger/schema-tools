@@ -1857,10 +1857,45 @@ def main():
         html_filename = f"{product_name_slug}_schema_squarespace_ready.html"
         html_path = outputs_dir / html_filename
         
+        # Check if file exists and is locked (open in another program)
+        if html_path.exists():
+            try:
+                # Try to open in append mode to check if file is locked
+                with open(html_path, 'a', encoding='utf-8'):
+                    pass
+            except PermissionError:
+                print(f"⚠️  File is locked (may be open in another program): {html_filename}")
+                print(f"   Please close the file and try again, or delete it manually.")
+                print(f"   File path: {html_path.absolute()}")
+                # Try to delete the locked file
+                try:
+                    html_path.unlink()
+                    print(f"   ✅ Successfully removed locked file, will recreate it.")
+                except PermissionError:
+                    print(f"   ❌ Cannot remove locked file. Please close it manually and re-run Step 4.")
+                    print(f"   Skipping this product and continuing with others...")
+                    continue
+                except Exception as e:
+                    print(f"   ⚠️  Error removing file: {e}")
+                    print(f"   Skipping this product and continuing with others...")
+                    continue
+        
         # Write HTML file
-        html_content = schema_to_html(schema_graph)
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
+        try:
+            html_content = schema_to_html(schema_graph)
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+        except PermissionError as e:
+            print(f"❌ Permission denied when writing {html_filename}")
+            print(f"   File may be open in another program (e.g., text editor, file explorer)")
+            print(f"   File path: {html_path.absolute()}")
+            print(f"   Please close the file and re-run Step 4.")
+            print(f"   Skipping this product and continuing with others...")
+            continue
+        except Exception as e:
+            print(f"❌ Error writing {html_filename}: {e}")
+            print(f"   Skipping this product and continuing with others...")
+            continue
         
         html_files.append(html_filename)
         
