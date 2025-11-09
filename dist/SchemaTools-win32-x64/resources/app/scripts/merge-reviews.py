@@ -337,6 +337,7 @@ try:
         'camera sensor clean': 'camera-sensor-clean',
         'intermediates intentions': 'intermediates-intentions-photography-project-course',
         'monthly photography mentoring': 'monthly-online-photography-mentoring',
+    }
     
     print(f"📋 Built product dictionary with {len(product_by_slug)} products")
     print(f"📋 Added {len(ALIASES)} location aliases")
