@@ -249,6 +249,9 @@ def detect_schema_type(product_name, product_url, events_df):
     return 'product'
 
 def main():
+    # Define workflow directory first
+    workflow_dir = Path('inputs-files/workflow')
+    
     # Load events CSV files to detect schema types
     events_df = None
     events_list = []
