@@ -340,13 +340,25 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         }
     }
     
-    # Add description
+    # Add description - limit to 600 chars and strip line breaks
     if product_description:
-        product_schema["description"] = product_description
+        # Strip line breaks and normalize whitespace
+        description_clean = ' '.join(product_description.split())
+        # Limit to 600 characters
+        if len(description_clean) > 600:
+            description_clean = description_clean[:597] + '...'
+        product_schema["description"] = description_clean
     
-    # Add image
+    # Add image - validate HTTPS URL, else omit
     if product_image:
-        product_schema["image"] = product_image
+        # Ensure HTTPS and valid URL format
+        image_url = str(product_image).strip()
+        if image_url.startswith('https://'):
+            product_schema["image"] = image_url
+        elif image_url.startswith('http://'):
+            # Upgrade HTTP to HTTPS
+            product_schema["image"] = image_url.replace('http://', 'https://', 1)
+        # If not HTTPS/HTTP, omit (don't add invalid image URLs)
     
     # Add URL
     if product_url:
@@ -382,7 +394,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     except:
                         pass
                 
-                # Calculate priceValidUntil (1 year from today)
+                # Calculate priceValidUntil (12 months from today)
                 price_valid_until = (date.today() + timedelta(days=365)).isoformat()
                 
                 offers_data = [{
@@ -416,7 +428,10 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     
     # Add offers to schema (can be single offer or array)
     if offers_data:
-        # Add URL and shipping details to each offer if missing
+        # Ensure all offers have priceValidUntil set to +12 months
+        price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+        
+        # Add URL and shipping details to each offer if missing, and ensure priceValidUntil
         for offer in offers_data:
             if 'url' not in offer and product_url:
                 offer['url'] = product_url
@@ -438,11 +453,29 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "applicableCountry": "GB",
                     "returnMethod": "http://schema.org/ReturnByMail"
                 }
+            # Ensure priceValidUntil is always set to +12 months
+            if 'priceValidUntil' not in offer:
+                offer['priceValidUntil'] = price_valid_until
+            else:
+                # Validate existing priceValidUntil is at least 12 months away
+                try:
+                    existing_date = pd.to_datetime(offer['priceValidUntil'], errors='coerce')
+                    if pd.notna(existing_date):
+                        min_valid_date = date.today() + timedelta(days=365)
+                        if existing_date.date() < min_valid_date:
+                            # Update to +12 months if it's too soon
+                            offer['priceValidUntil'] = price_valid_until
+                except:
+                    # If parsing fails, set to +12 months
+                    offer['priceValidUntil'] = price_valid_until
         
-        # Use array if multiple offers, single object if one offer
-        if len(offers_data) == 1:
+        # Always use array format for offers (even if single offer) when multiple variants exist
+        # This improves price range display chances
+        # However, if only one offer and no variants, use single object for cleaner schema
+        if len(offers_data) == 1 and not product_row.get('total_variants', 1) > 1:
             product_schema["offers"] = offers_data[0]
         else:
+            # Use array format (multiple offers OR single offer with variants)
             product_schema["offers"] = offers_data
     
     # Add reviews and aggregate rating (only if include_aggregate_rating is True)
@@ -488,9 +521,24 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_schema
     ]
     
-    # Add @id to product schema
-    product_slug = slugify(product_name)
-    product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
+    # Add @id to product schema - use URL slug, not product name slug
+    # Extract slug from product URL if available, otherwise use product name slug
+    if product_url:
+        # Extract slug from URL (e.g., https://www.alanranger.com/photo-workshops-uk/batsford-arboretum-photography-workshops)
+        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+        path_parts = url_path.split('/')
+        if len(path_parts) > 0:
+            # Use the last part of the URL path as the slug
+            url_slug = path_parts[-1]
+            product_schema["@id"] = f"https://www.alanranger.com/{url_slug}#schema"
+        else:
+            # Fallback to product name slug
+            product_slug = slugify(product_name)
+            product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
+    else:
+        # Fallback to product name slug if no URL
+        product_slug = slugify(product_name)
+        product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
     
     return {
         "@context": "https://schema.org",
@@ -1155,14 +1203,18 @@ def main():
                         else:
                             review_body = "Customer review available on Trustpilot"
                     
-                    # Get author
-                    author = 'Anonymous'
-                    for col in ['author', 'reviewer', 'reviewer_name']:
+                    # Get author - replace "nan" with "Anonymous Reviewer"
+                    author = 'Anonymous Reviewer'
+                    for col in ['author', 'reviewer', 'reviewer_name', 'review_username']:
                         if col in review_row.index:
                             author_val = str(review_row.get(col, '')).strip()
-                            if author_val and author_val.lower() not in ['anonymous', 'n/a', '']:
+                            if author_val and author_val.lower() not in ['anonymous', 'n/a', 'nan', 'none', '']:
                                 author = author_val
                                 break
+                    
+                    # If author is still "nan" or empty, use "Anonymous Reviewer"
+                    if not author or author.lower() in ['nan', 'none', '']:
+                        author = 'Anonymous Reviewer'
                     
                     # Get date - check multiple column name variations and handle ISO timestamp format
                     review_date = ''
@@ -1322,6 +1374,24 @@ def main():
         
         # Track validation statistics
         breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
+        
+        # Validate required fields and log warnings
+        missing_fields = []
+        if not row.get('url'):
+            missing_fields.append('URL')
+        if not row.get('main_sku') and not row.get('sku'):
+            missing_fields.append('SKU')
+        if not row.get('image'):
+            missing_fields.append('image')
+        if not row.get('price') and not row.get('offers'):
+            missing_fields.append('price')
+        
+        if missing_fields:
+            print(f"⚠️ [{product_name[:50]}...] Missing fields: {', '.join(missing_fields)}")
+            with open(error_log_path, 'a', encoding='utf-8') as f:
+                f.write(f"\nProduct: {product_name}\n")
+                f.write(f"URL: {row.get('url', 'N/A')}\n")
+                f.write(f"Missing fields: {', '.join(missing_fields)}\n\n")
         
         # Validate JSON-LD structure (basic JSON syntax)
         try:
