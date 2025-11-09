@@ -1881,6 +1881,7 @@ def main():
                     continue
         
         # Write HTML file
+        html_content = None
         try:
             html_content = schema_to_html(schema_graph)
             with open(html_path, 'w', encoding='utf-8') as f:
@@ -1895,6 +1896,10 @@ def main():
         except Exception as e:
             print(f"❌ Error writing {html_filename}: {e}")
             print(f"   Skipping this product and continuing with others...")
+            continue
+        
+        # Only add to lists if file was successfully written
+        if html_content is None:
             continue
         
         html_files.append(html_filename)
