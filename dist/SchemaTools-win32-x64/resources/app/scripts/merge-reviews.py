@@ -190,14 +190,14 @@ def match_via_text(text: str, aliases: dict, product_by_slug: dict, name_by_slug
             if best_keyword[1] >= 0.5:  # At least 50% of unique keywords match
                 return best_keyword[0]
     
-    # Priority 3: Fuzzy match on product names (fallback, higher threshold)
+    # Priority 3: Fuzzy match on product names (fallback, moderate threshold)
     if name_by_slug:
         best = max(
             ((slug, fuzzy(t, name_by_slug[slug])) for slug in name_by_slug),
             key=lambda x: x[1],
             default=(None, 0.0)
         )
-        return best[0] if best[1] >= 0.80 else None  # Higher threshold for fuzzy matching (was 0.70)
+        return best[0] if best[1] >= 0.70 else None  # Lower threshold for Google reviews (was 0.80)
     
     return None
 
@@ -851,23 +851,15 @@ if len(product_slugs) > 0:
             # Try matching with combined text first
             matched_slug = match_via_text(combined_text, ALIASES, product_by_slug, name_by_slug)
             
-            # Debug: Log if Batsford review matched
-            if 'batsford' in combined_text.lower() and matched_slug:
-                print(f"   ✅ Matched Batsford review to: {matched_slug}")
-            elif 'batsford' in combined_text.lower() and not matched_slug:
-                print(f"   ⚠️ Batsford review NOT matched (text: {combined_text[:80]}...)")
-            
-            # If no match and review text is empty, try matching against all products with lower threshold
-            # This handles Google reviews that mention products but don't have detailed text
-            if not matched_slug and not review_text.strip():
-                # Try fuzzy matching against product names with lower threshold
+            # If still no match, try fuzzy matching with lower threshold for Google reviews
+            if not matched_slug:
                 if name_by_slug:
                     best = max(
                         ((slug, fuzzy(combined_text, name_by_slug[slug])) for slug in name_by_slug),
                         key=lambda x: x[1],
                         default=(None, 0.0)
                     )
-                    if best[1] >= 0.60:  # Lower threshold for empty reviews
+                    if best[1] >= 0.65:  # Lower threshold for Google reviews
                         matched_slug = best[0]
         
         # Deduplication key
