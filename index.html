@@ -7187,8 +7187,73 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 }
 
+  // GitHub Hosting Verification - Ping GitHub function
+  function initGitHubVerification() {
+    const pingButton = document.getElementById('pingGitHub');
+    if (pingButton && !pingButton.dataset.initialized) {
+      pingButton.dataset.initialized = 'true';
+      pingButton.addEventListener('click', async function() {
+        const resultsDiv = document.getElementById('pingResults');
+        const linksDiv = document.getElementById('schemaLinks');
+        
+        if (!resultsDiv) return;
+        
+        resultsDiv.textContent = '🔄 Pinging schema URLs...';
+        resultsDiv.style.color = '#6b7280';
+        
+        const urls = [
+          { name: 'Lessons Schema', url: 'https://schema.alanranger.com/lessons-schema.json' },
+          { name: 'Workshops Schema', url: 'https://schema.alanranger.com/workshops-schema.json' }
+        ];
+        
+        const checks = await Promise.all(urls.map(async (item) => {
+          const start = performance.now();
+          try {
+            const res = await fetch(item.url, { 
+              cache: 'no-cache',
+              method: 'HEAD' // Use HEAD to avoid downloading full file
+            });
+            const time = (performance.now() - start).toFixed(0);
+            const statusIcon = res.status === 200 ? '✅' : '⚠️';
+            const statusColor = res.status === 200 ? '#10b981' : '#f59e0b';
+            return `<div style="margin-bottom: 0.5rem;"><span style="color: ${statusColor};">${statusIcon}</span> <strong>${item.name}:</strong> ${res.status} ${res.statusText} <span style="color: #6b7280;">(${time} ms)</span></div>`;
+          } catch (err) {
+            const time = (performance.now() - start).toFixed(0);
+            return `<div style="margin-bottom: 0.5rem;"><span style="color: #ef4444;">❌</span> <strong>${item.name}:</strong> ERROR - ${err.message} <span style="color: #6b7280;">(${time} ms)</span></div>`;
+          }
+        }));
+        
+        resultsDiv.innerHTML = checks.join('');
+        resultsDiv.style.color = '#374151';
+        
+        // Show validation links
+        if (linksDiv) {
+          linksDiv.style.display = 'block';
+        }
+        
+        // Log to debug console
+        addDebugLog('\n🔍 GitHub Hosting Verification:');
+        checks.forEach(check => {
+          addDebugLog(`   ${check.replace(/<[^>]*>/g, '')}`);
+        });
+      });
+    }
+  }
+  
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGitHubVerification);
+  } else {
+    initGitHubVerification();
+  }
+
   // Prepare Schema Export UI (v4.4)
   function prepareSchemaExport(schema, csvType, stats) {
+    // Initialize GitHub verification when export container is shown
+    setTimeout(function() {
+      initGitHubVerification();
+    }, 100);
+    
     const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
                      csvType === 'lessons' ? 'lessons-schema.json' : 
                      'event-schema.json';
