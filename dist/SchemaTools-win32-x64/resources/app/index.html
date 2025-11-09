@@ -7286,9 +7286,21 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         JSON.parse(minifiedJson);
         
         // Verify it ends correctly (should end with ]} for @graph array)
+        // Valid JSON-LD schema should end with: ]} (closing @graph array, then root object)
         const trimmed = minifiedJson.trim();
-        if (!trimmed.endsWith(']}') && !trimmed.endsWith('}}')) {
-          throw new Error('Invalid JSON structure: incorrect ending');
+        if (!trimmed.endsWith(']}')) {
+          // If it doesn't end with ]}, check if it's valid JSON structure
+          // This catches issues like extra commas, wrong brackets, etc.
+          try {
+            const testParse = JSON.parse(minifiedJson);
+            // If it parses but doesn't end correctly, it might have trailing whitespace
+            // But if it ends with }}}, that's a structural issue
+            if (trimmed.endsWith('}}}') || trimmed.endsWith(',]}') || trimmed.endsWith(',}')) {
+              throw new Error('Invalid JSON structure: incorrect ending (extra brackets or commas)');
+            }
+          } catch (parseErr) {
+            throw new Error('Invalid JSON structure: ' + parseErr.message);
+          }
         }
         
         minificationSuccess = true;
