@@ -861,6 +861,14 @@ if len(product_slugs) > 0:
                     )
                     if best[1] >= 0.65:  # Lower threshold for Google reviews
                         matched_slug = best[0]
+            
+            # Debug: Log Google review matching
+            if not matched_slug and len(combined_text) > 10:
+                # Only log first few unmatched Google reviews to avoid spam
+                google_unmatched_count = getattr(match_via_text, '_google_unmatched_count', 0)
+                if google_unmatched_count < 5:
+                    print(f"   ⚠️ Google review not matched: {combined_text[:80]}...")
+                    match_via_text._google_unmatched_count = google_unmatched_count + 1
         
         # Deduplication key
         reviewer = norm(str(row.get('reviewer', '') or row.get('author', '') or ''))
@@ -869,6 +877,9 @@ if len(product_slugs) > 0:
         dedupe_key = (source, reviewer, date_str, review_text_norm)
         
         if dedupe_key in seen:
+            # Debug: Log skipped reviews
+            if source == 'Google':
+                print(f"   ⚠️ Skipped duplicate Google review: {reviewer[:20]}...")
             continue
         
         seen.add(dedupe_key)
