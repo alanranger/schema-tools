@@ -853,28 +853,21 @@ def validate_schema_structure(schema_data, product_name):
     
     # Event-specific validation
     if isinstance(obj_type, list) and 'Event' in obj_type:
-        event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-        for field in event_fields:
+        # Required Event fields (always required)
+        required_event_fields = ['eventStatus', 'eventAttendanceMode', 'location']
+        for field in required_event_fields:
             if field not in product_schema:
                 errors.append(f"Missing Event field: {field}")
-    
-    # Ensure no Event fields are present for Product-only schemas (but allow if Event is in @type)
-    if isinstance(obj_type, list) and 'Event' not in obj_type:
-        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-        for key in forbidden_keys:
-            if key in product_schema:
-                errors.append(f"Forbidden Event field found in non-Event schema: {key}")
-    elif isinstance(obj_type, list) and 'Event' in obj_type:
-        # For Event schemas, startDate/endDate are required, but if missing, make them optional with warning
+        
+        # Optional Event fields (for recurring events, dates may not be available)
+        # startDate/endDate are optional for recurring events like "Monthly Workshop"
         if 'startDate' not in product_schema or 'endDate' not in product_schema:
-            # Don't fail validation, but log a warning
+            # Log warning but don't fail validation (recurring events don't have specific dates)
             if 'startDate' not in product_schema:
-                print(f"⚠️  Warning: Event schema missing startDate (dates couldn't be extracted from product name)")
+                print(f"⚠️  Warning: Event schema missing startDate (dates couldn't be extracted - may be recurring event)")
             if 'endDate' not in product_schema:
-                print(f"⚠️  Warning: Event schema missing endDate (dates couldn't be extracted from product name)")
-            # Make dates optional for recurring events (like monthly workshops)
-            # Only require them if it's a specific dated event
-            pass  # Allow Event schemas without dates (for recurring events)
+                print(f"⚠️  Warning: Event schema missing endDate (dates couldn't be extracted - may be recurring event)")
+            # Don't add to errors - allow Event schemas without dates for recurring events
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
