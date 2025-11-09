@@ -1086,18 +1086,31 @@ def main():
                     
                     # Track mapped reviews by source for statistics
                     source_lower = str(source).lower() if source else ''
-                    review_date_obj = None
-                    if review_date:
+                    
+                    # Use review_date_obj if we already parsed it, otherwise try to parse review_date
+                    if review_date_obj is None and review_date:
                         try:
                             review_date_obj = pd.to_datetime(review_date, errors='coerce')
                             if pd.isna(review_date_obj):
                                 review_date_obj = None
                         except:
                             review_date_obj = None
-                    else:
-                        # If review_date is empty, try to get date directly from review_row
+                    
+                    # If still no date_obj, try date_parsed column directly (from Google reviews)
+                    if review_date_obj is None and 'date_parsed' in review_row.index:
+                        date_val = review_row.get('date_parsed')
+                        if pd.notna(date_val):
+                            try:
+                                review_date_obj = pd.to_datetime(date_val, errors='coerce')
+                                if pd.isna(review_date_obj):
+                                    review_date_obj = None
+                            except:
+                                review_date_obj = None
+                    
+                    # If still no date_obj, try other date columns
+                    if review_date_obj is None:
                         for col in date_columns:
-                            if col in review_row.index:
+                            if col in review_row.index and col != 'date_parsed':
                                 date_val = review_row.get(col)
                                 if pd.notna(date_val):
                                     try:
