@@ -7259,20 +7259,38 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
                      'event-schema.json';
     
     try {
-      // Validate JSON
+      // Validate JSON structure first
       const jsonString = JSON.stringify(schema, null, 2);
-      JSON.parse(jsonString);
-      const minifiedJson = JSON.stringify(schema);
+      JSON.parse(jsonString); // Validate syntax
+      
+      // Safe minification using JSON.stringify (lossless, no regex)
+      let minifiedJson;
+      let minificationSuccess = false;
+      let minificationWarning = '';
+      
+      try {
+        minifiedJson = JSON.stringify(schema, null, 0); // Safe minify, no regex
+        JSON.parse(minifiedJson); // Validate minified version parses correctly
+        minificationSuccess = true;
+      } catch (minifyError) {
+        // Fallback: use unminified version if minification fails
+        console.warn('⚠️ Minify validation failed. Using unminified version:', minifyError);
+        minifiedJson = jsonString;
+        minificationWarning = '⚠️ Minification failed - using unminified version';
+      }
+      
       const sizeReduction = Math.round((1 - minifiedJson.length/jsonString.length) * 100);
       
       const exportContent = document.getElementById('schemaExportContent');
       if (exportContent) {
+        const warningBadge = minificationWarning ? `<span style="color: #f59e0b; font-size: 0.875rem;">${minificationWarning}</span><br>` : '';
         exportContent.innerHTML = `
           <div style="background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #0ea5e9;">
             <strong style="color: #0369a1;">📦 Export Ready</strong><br>
             <span style="color: #075985; font-size: 0.875rem;">File: <code>${fileName}</code></span><br>
             <span style="color: #075985; font-size: 0.875rem;">✅ Validated: JSON.parse successful</span><br>
-            <span style="color: #075985; font-size: 0.875rem;">📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB (minified, ${sizeReduction}% reduction)</span><br>
+            ${warningBadge}
+            <span style="color: #075985; font-size: 0.875rem;">📊 Size: ${(minifiedJson.length / 1024).toFixed(2)} KB ${minificationSuccess ? `(minified, ${sizeReduction}% reduction)` : '(unminified)'}</span><br>
             <span style="color: #075985; font-size: 0.875rem;">✅ Structure: @context=${schema['@context'] === 'https://schema.org' ? '✅' : '❌'}, @graph=${Array.isArray(schema['@graph']) ? '✅' : '❌'}</span><br>
             <span style="color: #075985; font-size: 0.875rem;">🌐 GitHub Pages: <a href="https://schema.alanranger.com/${fileName}" target="_blank" style="color: #0369a1;">https://schema.alanranger.com/${fileName}</a></span><br>
             <span style="color: #075985; font-size: 0.875rem;">📋 Script src tag ready for Squarespace</span>
@@ -7290,8 +7308,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
       
-      addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB (minified) ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
+      addDebugLog(`   📊 Size: ${fileSizeKB.toFixed(2)} KB ${minificationSuccess ? `(minified, ${sizeReduction}% reduction)` : '(unminified - minification failed)'} ${fileSizeKB < 250 ? '✅' : '⚠️ (exceeds 250 KB)'}`);
       addDebugLog(`   ✅ Structure: @context=${hasContext ? '✅' : '❌'}, @graph=${hasGraph ? '✅' : '❌'}`);
+      if (minificationWarning) {
+        addDebugLog(`   ${minificationWarning}`);
+      }
       addDebugLog(`\n🌐 GitHub Hosting Status:`);
       addDebugLog(`   ✅ Repository: alanranger-schema (public)`);
       addDebugLog(`   🌐 Hosted via GitHub Pages: https://schema.alanranger.com/`);
