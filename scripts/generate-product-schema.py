@@ -696,8 +696,18 @@ def main():
             reviews_df["reviewbody"] = ""
             print("⚠️  No review text column found; created empty reviewBody for compatibility")
         
+        # Ensure reviewbody is string type and handle NaN
+        if "reviewbody" in reviews_df.columns:
+            reviews_df["reviewbody"] = reviews_df["reviewbody"].fillna('').astype(str)
+        
         # Convert ratingValue to numeric
         reviews_df["ratingvalue"] = pd.to_numeric(reviews_df.get("ratingvalue"), errors="coerce")
+        
+        # Debug: Check counts before filtering
+        print(f"🔍 Debug: Before filtering - Total rows: {len(reviews_df)}")
+        print(f"🔍 Debug: ratingValue not null: {reviews_df['ratingvalue'].notna().sum()}")
+        print(f"🔍 Debug: reviewBody not empty: {(reviews_df['reviewbody'].astype(str).str.strip() != '').sum()}")
+        print(f"🔍 Debug: Both conditions: {(reviews_df['ratingvalue'].notna() & (reviews_df['reviewbody'].astype(str).str.strip() != '')).sum()}")
         
         # Parse dates safely - handle ISO timestamp format
         if "date" in reviews_df.columns:
