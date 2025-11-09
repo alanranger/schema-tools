@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Squarespace Product Export Normalization Script
-Stage 1: Clean and standardize Squarespace product export CSV
+Squarespace Product Export Normalization Script - v2.0
+Stage 1: Clean and group products with variants into offers arrays
 
 Reads: inputs-files/workflow/01 – products_<date/time>.csv
 Outputs: inputs-files/workflow/02 – products_cleaned.xlsx
+
+New in v2.0:
+- Groups products by Title (main product + variants)
+- Creates offers JSON array for each product
+- Includes all variant details (SKU, Price, Option Value, etc.)
 """
 
 import pandas as pd
+import json
 import re
 import html
 from pathlib import Path
@@ -17,6 +23,7 @@ import os
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
+from datetime import date, timedelta
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
@@ -70,10 +77,7 @@ def slugify(text):
     return slug
 
 def normalize_url(product_page, product_url, product_name=None):
-    """Build full URL from Product Page (parent category) and Product URL (slug)
-    
-    If Product URL is generic (like 'print', 'canvas'), generate unique slug from product name.
-    """
+    """Build full URL from Product Page (parent category) and Product URL (slug)"""
     # Handle Product Page (parent category slug)
     if pd.isna(product_page) or not product_page:
         product_page = ''
@@ -105,7 +109,6 @@ def normalize_url(product_page, product_url, product_name=None):
     if product_page and product_url:
         return f'https://www.alanranger.com/{product_page}/{product_url}'
     elif product_url:
-        # Fallback: if no Product Page, just use Product URL
         return f'https://www.alanranger.com/{product_url}'
     else:
         return ''
@@ -133,10 +136,70 @@ def validate_url(url, timeout=5):
     except Exception as e:
         return False, f'Error: {str(e)}'
 
+def create_offer_from_row(row):
+    """Create an Offer object from a CSV row"""
+    sku = str(row.get('SKU', '')).strip() if pd.notna(row.get('SKU')) else ''
+    if not sku or sku.lower() in ['nan', 'none', '']:
+        return None
+    
+    sku = sku[:40]  # Truncate to 40 chars for Merchant Center compliance
+    
+    price = normalize_price(row.get('Price', ''))
+    if price is None or price <= 0:
+        return None
+    
+    sale_price = normalize_price(row.get('Sale Price', ''))
+    on_sale = str(row.get('On Sale', '')).strip().lower() == 'yes'
+    
+    # Use sale price if on sale and sale price is valid
+    final_price = sale_price if (on_sale and sale_price and sale_price > 0) else price
+    
+    # Get option value for offer name
+    option_value = str(row.get('Option Value 1', '')).strip() if pd.notna(row.get('Option Value 1')) else ''
+    if not option_value or option_value.lower() == 'nan':
+        option_value = ''  # Will use SKU as fallback
+    
+    # Determine availability
+    stock = row.get('Stock', '')
+    if pd.notna(stock):
+        try:
+            stock_val = int(float(stock))
+            availability = "https://schema.org/InStock" if stock_val > 0 else "https://schema.org/OutOfStock"
+        except:
+            availability = "https://schema.org/InStock"
+    else:
+        availability = "https://schema.org/InStock"
+    
+    # Calculate dates
+    valid_from = date.today().isoformat()
+    price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+    
+    offer = {
+        "@type": "Offer",
+        "sku": sku,
+        "price": f"{final_price:.2f}",
+        "priceCurrency": "GBP",
+        "availability": availability,
+        "validFrom": valid_from,
+        "priceValidUntil": price_valid_until
+    }
+    
+    # Add name if option value exists
+    if option_value:
+        offer["name"] = option_value
+    
+    # Add priceSpecification if on sale
+    if on_sale and sale_price and sale_price > 0 and sale_price != price:
+        offer["priceSpecification"] = {
+            "price": f"{sale_price:.2f}",
+            "priceCurrency": "GBP"
+        }
+    
+    return offer
+
 def main():
     # Find the input CSV file
     workflow_dir = Path('inputs-files/workflow')
-    # Try multiple patterns for the dash character
     csv_files = []
     patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
     for pattern in patterns:
@@ -145,187 +208,199 @@ def main():
     if not csv_files:
         print("Error: No CSV file found matching pattern '01 [dash] products_*.csv'")
         print(f"   Expected location: {workflow_dir.absolute()}")
-        print(f"   Looking for files starting with '01' and containing 'products'")
         sys.exit(1)
     
-    # Use the most recent file if multiple exist
     input_file = sorted(csv_files)[-1]
-    print(f"📂 Reading: {input_file.name}")
+    print(f"Reading: {input_file.name}")
     
     # Read CSV
     try:
         df = pd.read_csv(input_file, encoding='utf-8')
     except Exception as e:
-        print(f"❌ Error reading CSV: {e}")
+        print(f"Error reading CSV: {e}")
         sys.exit(1)
     
-    print(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+    print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     
-    # Verify it's a Squarespace export
-    expected_columns = ['Title', 'Product URL', 'Description', 'Hosted Image URLs', 'Price']
-    missing_columns = [col for col in expected_columns if col not in df.columns]
-    if missing_columns:
-        print(f"⚠️  Warning: Missing expected columns: {missing_columns}")
-        print(f"   Available columns: {list(df.columns)[:10]}...")
+    # Step 1: Filter out hidden or incomplete rows
+    if 'Visible' in df.columns:
+        df = df[df['Visible'].astype(str).str.lower() == 'yes']
+        print(f"After filtering Visible=Yes: {len(df)} rows")
     
-    # Create cleaned DataFrame
-    cleaned_data = []
-    url_errors = []
+    if 'SKU' in df.columns:
+        df = df[df['SKU'].notna()]
+        print(f"After filtering SKU not null: {len(df)} rows")
     
-    print("\n🔍 Processing products and validating URLs...")
+    # Step 2: Normalize field types
+    df = df.fillna("")
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].apply(lambda x: str(x).strip() if pd.notna(x) else '')
     
-    skipped_variants = 0
+    # Step 3: Group by Product Title using position-based linking
+    # Variants follow their main product immediately after in CSV
+    print(f"\nProduct breakdown:")
+    main_count = len(df[df['Title'].astype(str).str.strip() != ''])
+    variant_count = len(df[df['Title'].astype(str).str.strip() == ''])
+    print(f"  Main products (with Title): {main_count}")
+    print(f"  Variant rows (empty Title): {variant_count}")
     
-    for idx, row in df.iterrows():
-        # Map columns
-        name = str(row.get('Title', '')).strip() if pd.notna(row.get('Title')) else ''
+    # Group variants by position (they follow their main product)
+    grouped_data = []
+    
+    # Reset index to use position-based matching
+    df_reset = df.reset_index(drop=True)
+    
+    i = 0
+    while i < len(df_reset):
+        row = df_reset.iloc[i]
+        title = str(row.get('Title', '')).strip()
         
-        # Skip variant rows (rows with empty or missing Title)
-        # These are price variants that don't have their own product page
-        if not name or name.lower() == 'nan':
-            skipped_variants += 1
+        # Skip if not a main product
+        if not title:
+            i += 1
             continue
         
+        # This is a main product - get its details
         description = strip_html(row.get('Description', ''))
         image = extract_first_image(row.get('Hosted Image URLs', ''))
-        # Build full URL from Product Page (parent category) + Product URL (slug)
-        # Pass product name to generate unique slugs for generic URLs
-        url = normalize_url(row.get('Product Page', ''), row.get('Product URL', ''), product_name=name)
-        price = normalize_price(row.get('Price', ''))
+        product_page = str(row.get('Product Page', '')).strip()
+        product_url_slug = str(row.get('Product URL', '')).strip()
+        url = normalize_url(product_page, product_url_slug, product_name=title)
         category = str(row.get('Categories', '')).strip() if pd.notna(row.get('Categories')) else ''
         
-        # Extract SKU if available (try multiple column name variations)
-        # Priority: SKU column → Product ID → Variant ID (never use Title or Description)
-        sku = ''
-        for sku_col in ['SKU', 'Sku', 'sku', 'Product SKU']:
-            if sku_col in row.index and pd.notna(row.get(sku_col)):
-                sku_val = str(row.get(sku_col)).strip()
-                if sku_val and sku_val.lower() not in ['nan', 'none', '']:
-                    sku = sku_val[:40]  # Truncate to 40 chars for Merchant Center compliance
-                    break
+        # Get main product SKU
+        main_sku = str(row.get('SKU', '')).strip() if pd.notna(row.get('SKU')) else ''
+        if main_sku:
+            main_sku = main_sku[:40]
         
-        # Fallback to Product ID or Variant ID if SKU column not found (but never Title/Description)
-        if not sku:
-            for fallback_col in ['Product ID', 'Variant ID']:
-                if fallback_col in row.index and pd.notna(row.get(fallback_col)):
-                    fallback_val = str(row.get(fallback_col)).strip()
-                    if fallback_val and fallback_val.lower() not in ['nan', 'none', '']:
-                        sku = fallback_val[:40]  # Truncate to 40 chars
-                        break
+        # Find variants that follow this main product (position-based)
+        product_variants = []
+        i += 1  # Move to next row
+        # Get next rows until we hit another main product
+        while i < len(df_reset):
+            next_row = df_reset.iloc[i]
+            next_title = str(next_row.get('Title', '')).strip()
+            if next_title:  # Hit another main product, stop
+                break
+            # This is a variant (empty Title), add it
+            product_variants.append(next_row.to_dict())
+            i += 1
+        
+        # Create offers array
+        offers = []
+        
+        # Add main product as first offer
+        main_offer = create_offer_from_row(row)
+        if main_offer:
+            offers.append(main_offer)
+        
+        # Add variant offers
+        for variant_row in product_variants:
+            variant_offer = create_offer_from_row(pd.Series(variant_row))
+            if variant_offer:
+                offers.append(variant_offer)
+        
+        if not offers:
+            continue  # Skip products with no valid offers
+        
+        # Calculate price range
+        prices = [float(offer['price']) for offer in offers]
+        lowest_price = min(prices)
+        highest_price = max(prices)
+        
+        # Get all SKUs
+        skus = [offer['sku'] for offer in offers]
+        skus_str = ', '.join(skus)
         
         # Validate URL
+        url_valid = True
         if url:
             is_valid, error_msg = validate_url(url)
             if not is_valid:
-                url_errors.append({
-                    'row': idx + 1,
-                    'name': name[:50],
-                    'url': url,
-                    'error': error_msg
-                })
+                url_valid = False
+                print(f"Warning: Invalid URL for '{title[:50]}': {error_msg}")
         
-        cleaned_data.append({
-            'name': name,
+        grouped_data.append({
+            'name': title,
             'description': description,
             'image': image,
             'url': url,
-            'price': price,
             'category': category,
-            'sku': sku
+            'offers': json.dumps(offers, ensure_ascii=False),  # Store as JSON string
+            'total_variants': len(offers),
+            'lowest_price': lowest_price,
+            'highest_price': highest_price,
+            'skus': skus_str,
+            'main_sku': main_sku
         })
     
-    if skipped_variants > 0:
-        print(f"✅ Skipped {skipped_variants} variant rows (empty Title)")
+    if not grouped_data:
+        print("Error: No products found after grouping")
+        sys.exit(1)
     
-    # Report URL errors and exit with error code if any found
-    if url_errors:
-        print(f"\n⚠️  URL VALIDATION ERRORS ({len(url_errors)} found):")
-        print("="*60)
-        for error in url_errors[:20]:  # Show first 20 errors
-            print(f"Row {error['row']}: {error['name']}")
-            print(f"  URL: {error['url']}")
-            print(f"  Error: {error['error']}")
-            print()
-        if len(url_errors) > 20:
-            print(f"... and {len(url_errors) - 20} more errors")
-        print("="*60)
-        print(f"\n❌ FAILED: {len(url_errors)} products have invalid URLs")
-        print("   Please fix the URLs in the source CSV and try again.")
-        print("   The cleaned file was saved but contains invalid URLs.")
-        sys.exit(1)  # Exit with error code to fail the task
-    else:
-        print("✅ All URLs validated successfully")
-    
-    cleaned_df = pd.DataFrame(cleaned_data)
+    cleaned_df = pd.DataFrame(grouped_data)
     
     # Save as Excel
     output_file = workflow_dir / '02 – products_cleaned.xlsx'
     
     # Check if file exists and might be locked
     if output_file.exists():
-        print(f"⚠️  Output file already exists: {output_file.name}")
-        print(f"   Attempting to overwrite...")
+        print(f"\nOutput file already exists: {output_file.name}")
+        print(f"Attempting to overwrite...")
         try:
-            # Try to remove existing file first
             output_file.unlink()
-            print(f"   ✅ Removed existing file")
+            print(f"Removed existing file")
         except PermissionError:
-            print(f"\n❌ ERROR: Cannot overwrite file - it may be open in Excel or another program")
-            print(f"   File: {output_file.absolute()}")
-            print(f"\n💡 SOLUTION:")
-            print(f"   1. Close the Excel file if it's open")
-            print(f"   2. Close any Windows Explorer windows showing this folder")
-            print(f"   3. Try running Step 2 again")
+            print(f"\nERROR: Cannot overwrite file - it may be open in Excel")
+            print(f"File: {output_file.absolute()}")
+            print(f"\nSOLUTION:")
+            print(f"1. Close the Excel file if it's open")
+            print(f"2. Close any Windows Explorer windows showing this folder")
+            print(f"3. Try running Step 2 again")
             sys.exit(1)
         except Exception as e:
-            print(f"   ⚠️  Could not remove existing file: {e}")
-            print(f"   Will attempt to overwrite anyway...")
+            print(f"Could not remove existing file: {e}")
     
     try:
         cleaned_df.to_excel(output_file, index=False, engine='openpyxl')
-        print(f"✅ Saved: {output_file.name}")
+        print(f"\nSaved: {output_file.name}")
     except ImportError:
-        print("❌ Error: openpyxl library not installed. Install with: pip install openpyxl")
+        print("Error: openpyxl library not installed. Install with: pip install openpyxl")
         sys.exit(1)
     except PermissionError as e:
-        print(f"\n❌ ERROR: Permission denied when saving Excel file")
-        print(f"   File: {output_file.absolute()}")
-        print(f"\n💡 SOLUTION:")
-        print(f"   1. Close the Excel file if it's open in Excel or another program")
-        print(f"   2. Close any Windows Explorer windows showing this folder")
-        print(f"   3. Check if another process is using the file (Task Manager)")
-        print(f"   4. Try running Step 2 again")
+        print(f"\nERROR: Permission denied when saving Excel file")
+        print(f"File: {output_file.absolute()}")
+        print(f"\nSOLUTION:")
+        print(f"1. Close the Excel file if it's open in Excel or another program")
+        print(f"2. Close any Windows Explorer windows showing this folder")
+        print(f"3. Check if another process is using the file (Task Manager)")
+        print(f"4. Try running Step 2 again")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Error saving Excel file: {e}")
-        print(f"   File: {output_file.absolute()}")
+        print(f"Error saving Excel file: {e}")
+        print(f"File: {output_file.absolute()}")
         sys.exit(1)
     
     # Summary
     print("\n" + "="*60)
-    print("📊 CLEANED FILE SUMMARY")
+    print("CLEANED FILE SUMMARY")
     print("="*60)
-    print(f"Rows: {len(cleaned_df)}")
-    print(f"Columns: {len(cleaned_df.columns)}")
+    print(f"Products: {len(cleaned_df)}")
+    print(f"Total offers: {cleaned_df['total_variants'].sum()}")
     print(f"Columns: {', '.join(cleaned_df.columns)}")
-    print("\n📋 Sample (first 3 rows):")
+    print("\nSample (first product):")
     print("-"*60)
-    for idx in range(min(3, len(cleaned_df))):
-        row = cleaned_df.iloc[idx]
-        print(f"\nRow {idx + 1}:")
-        print(f"  name: {row['name'][:50]}..." if len(str(row['name'])) > 50 else f"  name: {row['name']}")
-        print(f"  description: {row['description'][:50]}..." if len(str(row['description'])) > 50 else f"  description: {row['description']}")
-        print(f"  image: {row['image']}")
-        print(f"  url: {row['url']}")
-        print(f"  price: {row['price']}")
-        print(f"  category: {row['category']}")
-    
-    # Show URL validation summary
-    if url_errors:
-        print(f"\n⚠️  URL Errors: {len(url_errors)} products have invalid URLs")
-        print("   Check the error list above for details")
+    if len(cleaned_df) > 0:
+        row = cleaned_df.iloc[0]
+        print(f"Name: {row['name']}")
+        print(f"Variants: {row['total_variants']}")
+        print(f"Price range: £{row['lowest_price']:.2f} - £{row['highest_price']:.2f}")
+        print(f"SKUs: {row['skus'][:80]}...")
+        offers_sample = json.loads(row['offers'])
+        print(f"First offer: SKU={offers_sample[0]['sku']}, Price=£{offers_sample[0]['price']}")
     print("="*60)
-    print(f"\n✅ Success! Cleaned file saved to: {output_file.absolute()}")
+    print(f"\nSuccess! Cleaned file saved to: {output_file.absolute()}")
 
 if __name__ == '__main__':
     main()

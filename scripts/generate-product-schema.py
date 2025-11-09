@@ -303,13 +303,19 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     product_description = str(product_row.get('description', '')).strip()
     product_image = str(product_row.get('image', '')).strip()
     
-    # Use SKU from input file if available, otherwise generate from product name + year
+    # Use SKU from input file (main_sku column from cleaned file)
     # Never use title or description as fallback for SKU
     sku = ''
-    if pd.notna(product_row.get('sku')):
-        sku_val = str(product_row.get('sku', '')).strip()
+    if pd.notna(product_row.get('main_sku')):
+        sku_val = str(product_row.get('main_sku', '')).strip()
         if sku_val and sku_val.lower() not in ['nan', 'none', '']:
             sku = sku_val[:40]  # Truncate to 40 chars for Merchant Center compliance
+    
+    # Fallback to old 'sku' column if main_sku not available
+    if not sku and pd.notna(product_row.get('sku')):
+        sku_val = str(product_row.get('sku', '')).strip()
+        if sku_val and sku_val.lower() not in ['nan', 'none', '']:
+            sku = sku_val[:40]
     
     # Only generate SKU if no valid SKU found (never use title/description)
     if not sku:
@@ -346,42 +352,85 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     if product_url:
         product_schema["url"] = product_url
     
-    # Add offers if price is available
-    price = product_row.get('price')
-    if price and pd.notna(price):
+    # Add offers from cleaned file (JSON array)
+    # If offers column exists and contains JSON, parse and use it
+    offers_data = None
+    if 'offers' in product_row.index and pd.notna(product_row.get('offers')):
         try:
-            price_val = float(price)
-            
-            # Determine validFrom date - try product date field, then default to current date
-            valid_from = date.today().isoformat()
-            if 'date' in product_row.index and pd.notna(product_row.get('date')):
-                try:
-                    product_date = pd.to_datetime(product_row.get('date'), errors='coerce')
-                    if pd.notna(product_date):
-                        valid_from = product_date.strftime('%Y-%m-%d')
-                except:
-                    pass
-            
-            # Calculate priceValidUntil (1 year from today)
-            price_valid_until = (date.today() + timedelta(days=365)).isoformat()
-            
-            product_schema["offers"] = {
-                "@type": "Offer",
-                "price": f"{price_val:.2f}",
-                "priceCurrency": "GBP",
-                "availability": "https://schema.org/InStock",
-                "url": product_url,
-                "validFrom": valid_from,
-                "priceValidUntil": price_valid_until,
-                "shippingDetails": {
+            offers_str = str(product_row.get('offers', '')).strip()
+            if offers_str and offers_str.lower() not in ['nan', 'none', '']:
+                offers_data = json.loads(offers_str)
+                if not isinstance(offers_data, list):
+                    offers_data = None
+        except (json.JSONDecodeError, ValueError, TypeError):
+            offers_data = None
+    
+    # Fallback: Create single offer from price if offers array not available
+    if not offers_data:
+        price = product_row.get('price')
+        if price and pd.notna(price):
+            try:
+                price_val = float(price)
+                
+                # Determine validFrom date - try product date field, then default to current date
+                valid_from = date.today().isoformat()
+                if 'date' in product_row.index and pd.notna(product_row.get('date')):
+                    try:
+                        product_date = pd.to_datetime(product_row.get('date'), errors='coerce')
+                        if pd.notna(product_date):
+                            valid_from = product_date.strftime('%Y-%m-%d')
+                    except:
+                        pass
+                
+                # Calculate priceValidUntil (1 year from today)
+                price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+                
+                offers_data = [{
+                    "@type": "Offer",
+                    "sku": sku,
+                    "price": f"{price_val:.2f}",
+                    "priceCurrency": "GBP",
+                    "availability": "https://schema.org/InStock",
+                    "url": product_url,
+                    "validFrom": valid_from,
+                    "priceValidUntil": price_valid_until,
+                    "shippingDetails": {
+                        "@type": "OfferShippingDetails",
+                        "doesNotShip": "http://schema.org/True",
+                        "shippingDestination": {
+                            "@type": "DefinedRegion",
+                            "addressCountry": "GB"
+                        }
+                    },
+                    "hasMerchantReturnPolicy": {
+                        "@type": "MerchantReturnPolicy",
+                        "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+                        "merchantReturnDays": 28,
+                        "refundType": "http://schema.org/FullRefund",
+                        "applicableCountry": "GB",
+                        "returnMethod": "http://schema.org/ReturnByMail"
+                    }
+                }]
+            except (ValueError, TypeError):
+                offers_data = None
+    
+    # Add offers to schema (can be single offer or array)
+    if offers_data:
+        # Add URL and shipping details to each offer if missing
+        for offer in offers_data:
+            if 'url' not in offer and product_url:
+                offer['url'] = product_url
+            if 'shippingDetails' not in offer:
+                offer['shippingDetails'] = {
                     "@type": "OfferShippingDetails",
                     "doesNotShip": "http://schema.org/True",
                     "shippingDestination": {
                         "@type": "DefinedRegion",
                         "addressCountry": "GB"
                     }
-                },
-                "hasMerchantReturnPolicy": {
+                }
+            if 'hasMerchantReturnPolicy' not in offer:
+                offer['hasMerchantReturnPolicy'] = {
                     "@type": "MerchantReturnPolicy",
                     "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
                     "merchantReturnDays": 28,
@@ -389,9 +438,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "applicableCountry": "GB",
                     "returnMethod": "http://schema.org/ReturnByMail"
                 }
-            }
-        except (ValueError, TypeError):
-            pass
+        
+        # Use array if multiple offers, single object if one offer
+        if len(offers_data) == 1:
+            product_schema["offers"] = offers_data[0]
+        else:
+            product_schema["offers"] = offers_data
     
     # Add reviews and aggregate rating (only if include_aggregate_rating is True)
     if reviews_list:
@@ -924,6 +976,14 @@ def main():
     products_with_reviews_count = 0
     summary_rows = []
     
+    # Initialize validation error log
+    error_log_path = outputs_dir / 'validation-errors.log'
+    if error_log_path.exists():
+        error_log_path.unlink()  # Remove old log
+    with open(error_log_path, 'w', encoding='utf-8') as f:
+        f.write("Product Schema Validation Errors\n")
+        f.write("=" * 60 + "\n\n")
+    
     # Track mapped reviews by source
     mapped_google_reviews = []  # All Google reviews mapped (total)
     mapped_trustpilot_reviews = []  # All Trustpilot reviews mapped (total)
@@ -1271,6 +1331,87 @@ def main():
             print(f"❌ JSON syntax error for {product_name}: {e}")
             json_valid = False
             sys.exit(1)
+        
+        # Validate schema structure (required fields for Rich Results)
+        rich_results_errors = []
+        
+        # Check @context
+        if '@context' not in schema_graph or schema_graph['@context'] != 'https://schema.org':
+            rich_results_errors.append('Missing or invalid @context')
+        
+        # Check @graph
+        if '@graph' not in schema_graph or not isinstance(schema_graph['@graph'], list):
+            rich_results_errors.append('Missing or invalid @graph')
+        else:
+            graph = schema_graph['@graph']
+            
+            # Find Product/Course object
+            product_obj = None
+            for obj in graph:
+                obj_type = obj.get('@type', [])
+                if isinstance(obj_type, list) and 'Product' in obj_type:
+                    product_obj = obj
+                    break
+            
+            if not product_obj:
+                rich_results_errors.append('Missing Product/Course object in @graph')
+            else:
+                # Check required Product fields
+                required_fields = ['name', 'sku', 'brand', 'provider', 'url', 'offers']
+                for field in required_fields:
+                    if field not in product_obj:
+                        rich_results_errors.append(f'Missing required field: {field}')
+                
+                # Check offers
+                if 'offers' in product_obj:
+                    offers = product_obj['offers']
+                    if isinstance(offers, list):
+                        for i, offer in enumerate(offers):
+                            if not isinstance(offer, dict):
+                                rich_results_errors.append(f'Offer {i} is not an object')
+                            else:
+                                if '@type' not in offer or offer['@type'] != 'Offer':
+                                    rich_results_errors.append(f'Offer {i} missing @type')
+                                if 'price' not in offer:
+                                    rich_results_errors.append(f'Offer {i} missing price')
+                                if 'priceCurrency' not in offer:
+                                    rich_results_errors.append(f'Offer {i} missing priceCurrency')
+                                if 'priceValidUntil' not in offer:
+                                    rich_results_errors.append(f'Offer {i} missing priceValidUntil')
+                                if 'sku' not in offer:
+                                    rich_results_errors.append(f'Offer {i} missing sku')
+                                # Check SKU length
+                                if 'sku' in offer and len(str(offer['sku'])) > 40:
+                                    rich_results_errors.append(f'Offer {i} SKU exceeds 40 characters')
+                    elif isinstance(offers, dict):
+                        # Single offer
+                        if '@type' not in offers or offers['@type'] != 'Offer':
+                            rich_results_errors.append('Single offer missing @type')
+                        if 'price' not in offers:
+                            rich_results_errors.append('Single offer missing price')
+                        if 'priceCurrency' not in offers:
+                            rich_results_errors.append('Single offer missing priceCurrency')
+                        if 'priceValidUntil' not in offers:
+                            rich_results_errors.append('Single offer missing priceValidUntil')
+                        if 'sku' not in offers:
+                            rich_results_errors.append('Single offer missing sku')
+                        if 'sku' in offers and len(str(offers['sku'])) > 40:
+                            rich_results_errors.append('Single offer SKU exceeds 40 characters')
+        
+        # Log Rich Results validation errors
+        if rich_results_errors:
+            with open(error_log_path, 'a', encoding='utf-8') as f:
+                f.write(f"\nProduct: {product_name}\n")
+                f.write(f"URL: {row.get('url', 'N/A')}\n")
+                f.write("Rich Results Validation Errors:\n")
+                for error in rich_results_errors:
+                    f.write(f"  - {error}\n")
+                f.write("\n")
+            print(f"⚠️ Rich Results validation errors for {product_name}:")
+            for error in rich_results_errors:
+                print(f"   - {error}")
+            print(f"   Errors logged to: {error_log_path}")
+            # Don't exit - continue processing but log errors
         
         # Validate schema structure against v6.1 baseline requirements
         is_valid, validation_errors = validate_schema_structure(schema_graph, product_name)
