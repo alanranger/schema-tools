@@ -1,0 +1,206 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Nant Mill Woodlands and Waterfalls Photo Workshop 30 May",
+          "item": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshops-nant-mill"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "NANT MILL Woodlands and Waterfalls Photo Workshop 30 May",
+      "sku": "NANT-MILL-WOODLANDS-AND-WATERFALLS-PHOTO-WORKSHOP-30-MAY-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Long exposures photography on the river and waterfalls that run through this enchanting woodland, secluded Welsh valley at Nant MillSummaryLocation: Wales - Wrexham - Nant MillDates: Sat 7th June 202510:30 am to 2 pmParticipants: Max 6Fitness: 2. Easy-ModerateExperience Level: Beginner to AdvancedEquipment Needed: DSLR or Mirrorless Camera and TripodPhotography Workshop Event Details: Nant MillDescription: Embark on a captivating journey of long-exposure photography amidst the secluded Welsh valley of Nant Mill. Join us for an immersive workshop where you'll discover the mesmerizing art of capturing river and waterfall scenes in this ancient woodland near Wrexham.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/83fecb77-55e2-4a1b-b532-efa4213e832a/limbs.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshops-nant-mill",
+      "offers": {
+        "@type": "Offer",
+        "price": "125.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshops-nant-mill",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Richard Hoar"
+          },
+          "reviewBody": "Excellent, fun and informative day workshop.  Alan has great experience and is keen to share it to help and encourage our own photographic journeys.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2025-05-30",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "re wu"
+          },
+          "reviewBody": "I have attended a few good workshop with Alan and done some face to face lessons and summarizing, if you are looking for passionate, knowledgeable photographer who will guide you through this sometime complicated but also fascinating world, it is Alan. He is not a photographer but and artist and soulful person, who will inspire you with his stories as a person and teach you a lot with his experience. Workshops gave me very valuable time in beautiful places and interesting people, which worth is every penny as a life experience.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2023-11-16",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Phil Martin"
+          },
+          "reviewBody": "Attended a weekend workshop recently. Alan has a very balanced approach which he adapts to suit the needs and experience of his clients. Helpful, knowledgeable and attentive. Recommended to anyone wishing to improve their photographic skills.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2021-09-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Howard Allen"
+          },
+          "reviewBody": "Alan's introduction course was just right for me and provided technical information but more importantly, inspiration to look for good shots: \"it is photographers who take good photographs, not cameras\". The instruction is delivered at a pace that matches his audience and he gives objective feedback that critical but positive. I am continuing with other courses and workshops with Alan and look forward to learning more with him about showing in my photographs what I feel about the world around me.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2014-04-28",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": 4
+      },
+      "@id": "https://www.alanranger.com/nant-mill-woodlands-and-waterfalls-photo-workshop-30-may#schema"
+    }
+  ]
+}
+</script>

@@ -1,0 +1,123 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Peak District Heather Photography Workshops - 15 – 16 Aug",
+          "item": "https://www.alanranger.com/photo-workshops-uk/peak-district-heather-photography-workshop"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "PEAK DISTRICT HEATHER Photography Workshops - 15-16 Aug",
+      "sku": "PEAK-DISTRICT-HEATHER-PHOTOGRAPHY-WORKSHOPS-15-16-AUG-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Join me for the Peak District heather displays over this iconic landscape in August - 4hr Heather Peak District Photography Workshops | All levels welcomeSummaryLocation: Peak District - Derbyshire/Staffordshire2026 - Sat 15th Aug 18:15 21:15 - Derbyshire Surprise View2026 - Sun 17th Aug 05:45 08:45 - Staffordshire - The RoachesParticipants: Max 6Fitness: 3. ModerateExperience Level: Beginner to AdvancedEquipment Needed: DSLR or Mirrorless Camera and TripodPhotography Workshop Event Details: HeathersDescription: Peak District heather WorkshopsSurprise View, perched atop Hathersage, is one of the best viewpoints in the Peak District. It's a perfect spot to admire the sunset and, on a clear night, is a designated 'Dark Skies' stargazing location. To access this special place, head uphill in a northerly direction from the car park and find the strangely shaped Mother Cap stone. Then, marvel at the vivid stars filling the Peak District's dark skies.The Roaches, with Hen Cloud and Ramshaw Rocks, form a gritstone escarpment that marks the Peak's south-western edge. Best viewed from the approach along the Leek road, they stand as a line of silent sentinels guarding the entrance to the Peak District, worn into fantastic shapes by the elements.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707246605883-FVZKLJN54Z455J1Q13CV/peak+district+heather.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/peak-district-heather-photography-workshop",
+      "offers": {
+        "@type": "Offer",
+        "price": "145.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photo-workshops-uk/peak-district-heather-photography-workshop",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "@id": "https://www.alanranger.com/peak-district-heather-photography-workshops-15-16-aug#schema"
+    }
+  ]
+}
+</script>

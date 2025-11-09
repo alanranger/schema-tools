@@ -1,0 +1,605 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Warwickshire Woodland Photography Walks - Monthly - 2hrs",
+          "item": "https://www.alanranger.com/photo-workshops-uk/woodland-photography-walk-warwickshire"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "WARWICKSHIRE Woodland PHOTOGRAPHY WALKS - Monthly - 2hrs",
+      "sku": "WARWICKSHIRE-WOODLAND-PHOTOGRAPHY-WALKS-MONTHLY-2HRS-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Informal woodland photography walks in and around Warwickshire Woodlands - All Levels and types of camera welcome - Length 2hrs. 9:30 am-11:30 amSummaryLocation: Various Warwickshire Woodlands2025 - 09:30 - 11:30Crackley Wood, Kenilworth - Fri Nov 7Hay Woods - Solihull Fri Dec 5Tile Hill Nature Reserve Mon Dec 82026 - 09:30 - 11:30Hay Woods - Solihull Fri Jan 2Tile Hill Nature Reserve Mon Feb 2Millisons Wood, Meriden -Sun May 3Piles Coppice, Coventry - Fri Oct 16Participants: Max 6Fitness: 1. EasyExperience Level: Novice to BeginnerEquipment Needed: Phone or Digital CameraPhotography Workshop Event Details: Woodland WalksDescription: Simplifying Woodland Photography: Unlocking the Secrets to Capturing the Beauty of Nature on a photography walkMy aim is not to instruct you what to shoot, instead, I want to help you develop your own sense of visual awareness, photographic eye and your personal interpretation. I will be happy to help you with the “how to shoot” whatever it is you feel drawn to and wish to express through your creative vision using the camera to construct your intention. The photography walks around these selected woodlands are aimed to promote our senses and connection to trees/woodland/nature - as we walk, observe and take in our environment we may decide to make a photograph, or not.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707217364251-99ITJH38DI58S3G3YA47/Woodland+Photography+Walk.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/woodland-photography-walk-warwickshire",
+      "offers": {
+        "@type": "Offer",
+        "price": "15.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photo-workshops-uk/woodland-photography-walk-warwickshire",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ian Harrop"
+          },
+          "reviewBody": "The woodland walks that I have been on have been interesting and well worth it",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-10-03",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "This is one of many Woodland Photo Walks I have now been on with Alan. They are extremely enjoyable. Alan is always there to help with both the technical side of photography as well as photo composition. He offers excellent technical advice as well as constructive criticism. I would thoroughly recommend him.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-02-26",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jean Dance"
+          },
+          "reviewBody": "Inspirational, instructive and interesting",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-02-09",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Charlie Budd"
+          },
+          "reviewBody": "I've really enjoyed the couple of woodland walks I've been on - Alan has been generous with his snippets of advice, and there's always been a lovely bunch of people who love woodland and photography.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-15",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Mr J Parker"
+          },
+          "reviewBody": "Although the light was not at its best, the locations Alan had chosen a walk that had plenty of interest, and Alan gave clear, simple explanations which helped me to take the auto off my camera - and to not put it back on since. Alan is very personable and pitch advance at the level needed. It was a small group and meant that you could engage on a detailed discussion if required. An enjoyable day in good company at a good pace, even though it was very wet under foot. Thank you Alan",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-12",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "Another enjoyable outing with Alan. His approach to teaching photography revolves around a really positive and encouraging attitude. He always gives maximum help whilst allowing one to make their own progress. An excellent outing with much learned.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-09",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Gabrielle  Smith"
+          },
+          "reviewBody": "Alan Ian clear about what is included, makes the whole experience relaxed and non-threatening and encourages everyone to achieve what they set out to do.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Charles Budd"
+          },
+          "reviewBody": "Really enjoyed an amiable ramble through the woods, looking for little scenes to photograph. Hoping to do it every month if I can.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Mr Ian Harrop"
+          },
+          "reviewBody": "Well organised event",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "John  Grant"
+          },
+          "reviewBody": "Always some useful tips to impart from Alan. Alan always seems to attract the nicest customers. His blogs often show some of his own work taken which provides inspiration to compliment tips and support given.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2020-01-01",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Nuria Alonso"
+          },
+          "reviewBody": "I have done a couple of courses and workshops with Alan. They are always packed with knowledge and tips. Whether you are a beginner like me or a more advance photographer you will learn loads  with Alan. I really like the emails he sends before the class/workshop full of information (I.e. location, map, what to wear, what accessories you need...) so you know exactly what to expect.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-12-13",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Charles Budd"
+          },
+          "reviewBody": "Really enjoyed the woodland walk - and I learned a few things about how to look differently and therefore see more. Thanks Alan and the rest of the lovely group too.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-12-04",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Janice Jordan"
+          },
+          "reviewBody": "A relaxed ramble around Crackley Woods with fellow photographers.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-11-09",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Anne Watkinson"
+          },
+          "reviewBody": "Despite a few showers this was an excellent photographic morning spent in n Crackley Woods. Alan was on hand to make sure that the whole group got the most out of the spectacular autumn colours with composition and other camera skills. All skill levels were catered for.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-11-06",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Caroline Key"
+          },
+          "reviewBody": "Lovely day - in a beautiful setting, with wonderful help and guidance from Alan. Thoroughly enjoyed it, learnt loads, came home with some photos to be proud of",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-11-06",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "John  Grant"
+          },
+          "reviewBody": "Always some really pleasant people to speak to on Alan's workshops in addition to tapping into whatever help you may wish to pick up.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-11-06",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Wendy Anthony"
+          },
+          "reviewBody": "We really enjoyed this photowalk in a little wood we would otherwise not have found. There were only 3 of us, and Alan, as 2 others had had to cancel, which made for a very pleasant session. We picked up a few tips and have some interesting photos as a result. A good way to spend a morning!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-09-06",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "As ever, Alan went out of his way to encourage me and help with both my composition and the technical side of my photography. I would definitely use him again and would thoroughly recommend him.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-09-04",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "I have been on a number of photography outings with Alan. He is always willing to help, both practically and with advice. His criticism is always aimed at helping you to improve. I would thoroughly recommend him.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-07-11",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Anne Watkinson"
+          },
+          "reviewBody": "A lovely morning with my camera in Ryton Wood. Lots of helpful tips from Alan and a new technique learned",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-07-04",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "I am always very pleased with the help and advice that Alan gives. Whilst always honest, he is constructive with his criticism. I would thoroughly recommend him to anyone interested in improving their photography.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-19",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Helen Sotheran"
+          },
+          "reviewBody": "Alan has a friendly, practical and flexible approach and he is a really excellent teacher, highly recommended!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-16",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jeremy Troth"
+          },
+          "reviewBody": "As always, Alan's knowledge, expertise and enthusiasm show.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jean Dance"
+          },
+          "reviewBody": "The Woodland Photo Walk in Moseley Wood / Bog was most enjoyable. Thanks Alan for another great morning.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jean Dance"
+          },
+          "reviewBody": "I have had tuition from Alan for a number of years, It is a journey and I have a long way to go. I value his honesty, it is always forthright, sometimes harsh but this is a challenge.When Alan says 'well done' this gives me encouragement and determination to master these challenges.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-02-07",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.92",
+        "reviewCount": 25
+      },
+      "@id": "https://www.alanranger.com/warwickshire-woodland-photography-walks-monthly-2hrs#schema"
+    }
+  ]
+}
+</script>

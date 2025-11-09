@@ -1,0 +1,225 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Fine Art Photography Prints - Unframed Prints - Multi Sizes",
+          "item": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-unframed"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Fine Art Photography Prints - Unframed Prints - Multi Sizes",
+      "sku": "FINE-ART-PHOTOGRAPHY-PRINTS-UNFRAMED-PRINTS-MULTI-SIZES-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Fine Art Photography Prints available in seven sizes. Giclee print on archival paper. Please include in the image title when ordering | Pro-Lab Printing",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707240002916-MMJ7CA3MX9HLO60532BO/fine+art+photography+prints.jpg",
+      "url": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-unframed",
+      "offers": {
+        "@type": "Offer",
+        "price": "50.57",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-unframed",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Fred Roberts"
+          },
+          "reviewBody": "A good experience, usefull information,well presented, plesent venue.  Thank you",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2015-02-20",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Graham Hilling"
+          },
+          "reviewBody": "Alan did a great job of imparting knowledge and making the weekend a very enjoyable experience. Locations are well researched and appropriate and I'd have no hesitation in heartily recommending him.    When money allows I hope to join him on further workshops in the future.    g",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2015-02-12",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Karen"
+          },
+          "reviewBody": "A very enjoyable & informative course which was very well structured & presented. Made me feel more confident about using the manual settings on my camera. Will definitely look at booking further courses.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2015-01-16",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "rbegg"
+          },
+          "reviewBody": "A worthwhile 3 hour session (with stretching breaks!). Whether you are a complete beginner or know a bit, like me, it helps to bring together the basics and give ideas to develop further. It give a good overview of the concept of photography, practical camera settings and picture composition.  It really consolidated bits I'd picked up along the way and motivates to move forward with some pointers and confidence.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2014-12-11",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Chris Shaw"
+          },
+          "reviewBody": "In the best way possible, I can’t remember ever being on a course and learning so much yet being taught so little. Alan you deserve a big pat on the back for not only having the foresight to put a course like this together but providing students with the opportunity to go through a complete end to end process culminating in a public exhibition.    This is not about Alan standing up and teaching class room style week in week out. This is about him providing a structured project to See Design Shoot Enhance and Share your panel of images with his experience, guidance and support every step of the way. (Perhaps “Sell” should also be added to that list!)    Week 1 presented 9 nervous strangers all of whom thought they were completely out of their depth and wondering what the hell they were doing there.  16 weeks later we left as good friends having helped and supported each other throughout, confident in approaching the next stage of our photographic journey.    Many thanks Alan and thanks to fellow students for a brilliant few months.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2014-10-12",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": 5
+      },
+      "@id": "https://www.alanranger.com/fine-art-photography-prints-unframed-prints-multi-sizes#schema"
+    }
+  ]
+}
+</script>

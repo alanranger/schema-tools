@@ -1,0 +1,282 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Photography Workshops Chesterton Windmill - Warwickshire",
+          "item": "https://www.alanranger.com/photo-workshops-uk/photography-workshops-chesterton-windmill"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Photography Workshops CHESTERTON WINDMILL - Warwickshire",
+      "sku": "PHOTOGRAPHY-WORKSHOPS-CHESTERTON-WINDMILL-WARWICKSHIRE-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Chesterton windmill is one of Warwickshire's most famous landmarks. Join me in a sunset landscape photography workshop and learn about composition and lightSummaryLocation: Warwickshire - ChestertonDates:Mon 30th Mar 2026 - 17:30 - 20:00Mon 18th May 2026 - 18:30 - 21:00Wed 16th Sep 2026 - 18:00 - 20:30Mon 5th Oct 2026 - 17:30 - 20:00Participants: Max 6Fitness: 1. EasyExperience Level: Beginner to AdvancedEquipment Needed: DSLR or Mirrorless Camera and TripodPhotography Workshop Event Details: ChestertonDescription: Immerse yourself in the beauty of Warwickshire's iconic Chesterton Windmill with our exclusive sunset landscape photography workshop. Join us for an enriching experience where you'll delve into the art of composition and light, guided by experienced photography professionals.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714682519866-NVMB6B7Q4F93DGOGPQIK/Moonlit+Chesterton.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/photography-workshops-chesterton-windmill",
+      "offers": {
+        "@type": "Offer",
+        "price": "65.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photo-workshops-uk/photography-workshops-chesterton-windmill",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ester  Riodran"
+          },
+          "reviewBody": "Alan was his normal helpful self encouraging us to expand our knowledge by trying new things.  Always available to answer any questions or to provide guidance.  It was just a pity the sky didn't play ball with us.  Here's to the next time",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-05-17",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Justin Meaden"
+          },
+          "reviewBody": "Really enjoyable workshop despite not getting the weather we were hoping for with guidance and advice throughout when requested and enabled me to make the most of a lovely location despite the weather not being perfect.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-17",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "John  Grant"
+          },
+          "reviewBody": "Always a nice friendly approach from Alan. Always full response to any technical questions",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-16",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Angela Abraham"
+          },
+          "reviewBody": "Wonderful Photographer and Trainer. I have attended several courses and enjoyed everyone. Had a really great time. Excellent class.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-11",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Gillian Perry"
+          },
+          "reviewBody": "I saw an advert for a workshop I really wanted to do that was cancelled.  I was not upset about the cancellation as the reason was due to a change in conditions and the I was pleased it didn't go ahead when there would be nothing to photograph.  It then took many attempts to find a date that worked for myself and for Alan.    The details for joining the workshop came a couple of days before the event.  It did recommend a filter that I didn't have but it was too late to buy it from Amazon.  No real problem through as we did really need it.  The first 15 minutes of the workshop were tuition and I picked up a few very useful tips from the workshop which I will use in future.  The rest of the workshop is you photograph the subject and move around the site at your own pace but not too far from the group so Alan can move around each individual and answer questions, review photos and give advice.  You are expected to ask questions and learn more that way.  I personally find that I don't think of questions until much later when the learning experience has really soaked in.  So it would have been good to stop and specifically talk about a topic.    I plan to visit the location again on a different day and try again now I have seen my photos.  I will definitely consider booking again in the future depending on the subjects.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-09-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Helen Sotheran"
+          },
+          "reviewBody": "Most enjoyable, with lots of practical hints and tips: we learnt a lot, got some fabulous shots and  will be out  again soon to practise more!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-06-22",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Linda"
+          },
+          "reviewBody": "Alan is a very good teacher",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-04-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sheri Hughes"
+          },
+          "reviewBody": "Knowing it was a more lecture based rather than practical course did fill me initially with a bit of trepidation, but having been I now totally understand why Alan does it that way. There is lots of theory that really helps build the foundation before you can start to put that into practice.   I found Alan really high energy and passionate about photography, which meant I came away feeling like I'd learnt a lot and excited about using my new knowledge.  Also, seeing as I was attending at almost 9months pregnant the fact he kept my attention until 10pm is no mean feat, I'm normally asleep by 9.30!!!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2015-05-28",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.75",
+        "reviewCount": 8
+      },
+      "@id": "https://www.alanranger.com/photography-workshops-chesterton-windmill-warwickshire#schema"
+    }
+  ]
+}
+</script>

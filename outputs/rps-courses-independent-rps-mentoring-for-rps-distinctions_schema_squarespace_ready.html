@@ -1,0 +1,187 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Rps Courses - Independent Rps Mentoring for Rps Distinctions",
+          "item": "https://www.alanranger.com/photography-services-near-me/rps-mentoring-photography-course"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "RPS Courses - Independent RPS Mentoring for RPS Distinctions",
+      "sku": "RPS-COURSES-INDEPENDENT-RPS-MENTORING-FOR-RPS-DISTINCTIONS-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "RPS Courses - Independant RPS Mentoring for RPS Distinctions - Start anytime, you select six online Zoom sessions within twelve months at intervals to suit youRPS Courses - Mentoring for DistinctionsParticipants: Via Zoom online in a group of max 3, or on 1-2-1 basis.Equipment Needed: Zoom AppDropbox App used for updated portfolios and imagesTerms: Sessions must be taken within 12 months of booking the course or forfeited, but there are options to extend the timeline and retain unused classes or add additional classes.Method:Technical and creative critique with suggestions for improvementAdvice on image selection and panel layoutMore Details about the RPS Mentoring Course*Note: Your tutor, Alan Ranger, holds both the RPS's Licentiate and Associate Distinctions, but the RPS does not accredit this Course. This is not an approved course or endorsed by the RPS as an organisation. Alan’s advice is private, unofficial and based on his experience and understanding of the elements required to reach the standard that may result in being awarded a distinction without any guarantee.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1707307452323-G3C2AIXAHRLLVB36VASA/RPS+Courses.jpg",
+      "url": "https://www.alanranger.com/photography-services-near-me/rps-mentoring-photography-course",
+      "offers": {
+        "@type": "Offer",
+        "price": "295.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photography-services-near-me/rps-mentoring-photography-course",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jacki"
+          },
+          "reviewBody": "I have done quite a few workshops and courses with Alan over the years, most recently the RPS course. Alan has been very supportive throughout and I have valued both his advice and very honest critique. I wouldn't hesitate to recommend Alan to anyone who wants to improve their photography.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-10-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Anne Watkinson"
+          },
+          "reviewBody": "I have recently completed a mentoring course with Alan. This was to help me prepare for a submission of a panel of work to gain my LRPS. I learned a huge amount in terms of composition, processing, technique and presentation and I am pleased to say I was successful in gaining my LRPS.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-07-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Joyce James"
+          },
+          "reviewBody": "Alan is an excellent mentor. His honest, accurate critiques, eagle eye and meticulous attention to detail make him an ideal support in preparing for any photographic recognition  I unreservedly recommend him",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-07-06",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": 3
+      },
+      "@id": "https://www.alanranger.com/rps-courses-independent-rps-mentoring-for-rps-distinctions#schema"
+    }
+  ]
+}
+</script>

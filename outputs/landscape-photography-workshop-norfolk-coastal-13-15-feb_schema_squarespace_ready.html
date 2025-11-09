@@ -1,0 +1,206 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Landscape Photography Workshop Norfolk - Coastal 13 – 15 Feb",
+          "item": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshop-norfolk"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Landscape Photography Workshop NORFOLK - Coastal 13 - 15 Feb",
+      "sku": "LANDSCAPE-PHOTOGRAPHY-WORKSHOP-NORFOLK-COASTAL-13-15-FEB-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Landscape Photography Workshop Norfolk - Coastal Photography Based Nr CromerSummary - Norfolk Photography WorkshopLocation: North Norfolk Coast - Cromer AreaDates: Fri 13th, 09:30am - Sun 15th Feb 2026, 14:00 - 3 Days/2 NightsParticipants: Max 4Fitness: 1. EasyExperience Level: Beginner to AdvancedEquipment Needed: DSLR or Mirrorless Camera and TripodPhotography Workshop Event Details: NorfolkDescription: Photography Workshop Norfolk - We will photograph the North Norfolk coastline ranging from Overstand and Cromer sea fronts and groynes to the atmospheric estuaries of Morston Quay and Blakeney Harbour. Beach huts, boats, estuaries, marshland, there is something for everyone on this 3 day North Norfolk photography workshop.Abandoned boats, windmills, nature reserve, sand dunes, coastal erosion, coastal path/estuary, optional seal trip and of course seascapes. The silting has left a fascinating landscape of marshes, sandhills and mud banks, with many creeks and channels twisting and turning their way through. Blakeney village is set on a small hill leading down to the harbour and has pretty flint cottages.",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1711625462292-PCMT7Q118L1X51MPSENJ/Wells+Next+To+Sea+%2302+-+Sep+2022.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshop-norfolk",
+      "offers": {
+        "@type": "Offer",
+        "price": "1025.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photo-workshops-uk/landscape-photography-workshop-norfolk",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Peter Hagger"
+          },
+          "reviewBody": "A well organised shoot, expert advice when needed. Despite weather problems Alan found alternative sites and had a flexible approach.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "4",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-09-30",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Harriet"
+          },
+          "reviewBody": "A fantastic three days in Norfolk with Alan. The weekend was planned really thoroughly to ensure we had a great selection of locations and spent a minimum amount of time in the car - although the agenda was flexible enough to move things around to suit conditions and the preferences of the group. Alan was always on hand to help with our pictures re settings, composition and equipment and would show is what he was doing as he was shooting as well. Accommodation and food stops all very good too. A thoroughly enjoyable weekend that has really helped with my photography",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-09-30",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Dr James Parker"
+          },
+          "reviewBody": "I attended one of Alan's 3 day all inclusive trips to Norfolk this September. It was extremely well organised, with a detailed itinerary which covered a huge range of locations to suit all tastes. His knowledge of the locations and where to get the best shots was excellent. The itinerary was adjusted according to the changes in weather and worked brilliantly. There was opportunity to try new techniques and creative styles with tuition or you can just do what you normally do in a beautiful place.  There were plenty of loo stops, a great B&B and some fantastic places to eat. I valued Alan's direct feedback and guidance, but he won't mince his words and will be honest and clear! Alan was always available for input but his style is not to be in your face, which our group appreciated. He is extremely knowledgable and skilled but is able to pitch things at the right level for the range of skill across the group. His good humour made the weekend great fun for all. Thanks",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-09-30",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Andy Holmes"
+          },
+          "reviewBody": "Despite challenging circumstances, Alan proved to be an excellent tour leader. Accomodation was great value and instruction was first class.  He clearly tries to tailor his guidance to individual needs from the discussions at the beginning of the workshop. Alan offers a range of options for his workshops and it is clear that some participants had not known what they were looking for which makes it near impossible to satisfy those with wholly unrealistic expectations.  I will go again and hope to get more appropriate weather next time.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-04-16",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.75",
+        "reviewCount": 4
+      },
+      "@id": "https://www.alanranger.com/landscape-photography-workshop-norfolk-coastal-13-15-feb#schema"
+    }
+  ]
+}
+</script>

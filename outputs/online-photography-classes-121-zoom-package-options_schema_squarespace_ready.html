@@ -1,0 +1,339 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Online Photography Classes 121 - Zoom - Package Options",
+          "item": "https://www.alanranger.com/photography-services-near-me/private-online-photography-classes-zoom"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Online Photography Classes 121 - Zoom - Package Options",
+      "sku": "ONLINE-PHOTOGRAPHY-CLASSES-121-ZOOM-PACKAGE-OPTIONS-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Private online photography classes tailored to your needs - Tuition & support on any aspect of photography - Pay Now - Book dates later.Online photography classes and support are run via Zoom (free to use)Must be used within 12 months of purchase dateIf you want a package (series) of lessons, these package options offer a discount for purchasing multiples. Mon - Fri - 9 am - 5 pm1 x 1hr - £50 - Normal Price for lesson4 x 1hr - 15% Off normal price6 x 1hr - 20% Off normal price8 x 1hr - 25% Off normal price12 x 1hr - 25% Off normal price",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1698395506000-MRZ4RFY6D3D1ZT6B2MND/photography-classes-online.png",
+      "url": "https://www.alanranger.com/photography-services-near-me/private-online-photography-classes-zoom",
+      "offers": {
+        "@type": "Offer",
+        "price": "50.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photography-services-near-me/private-online-photography-classes-zoom",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Emma Moxon"
+          },
+          "reviewBody": "I found Alan online and got in touch as his style of photography and tuition looked  exactly like what we were looking for. Alan responded quickly and was very professional and we went along for a 2 hour session.  In the session he was informative and knowledgeable and we learnt a lot. He explained what he could offer as well as advising on things we were not sure on and from this we decided to book his premium mentoring and also 12 121 sessions to take throughout the year. Highly recommend if you are seeking someone to give you guidance on knowledge on photography!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-07-22",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Rosamund Sheppard"
+          },
+          "reviewBody": "Alan Ranger is an extremely talented artistic photographer.  His enthusiastic approach to photography makes him an excellent photography tutor that I can highly recommend.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Anne Watkinson"
+          },
+          "reviewBody": "Alan is an excellent tutor taking all skill levels into account. He is a very talented photographer and willingly shares his expertise with members of the group. He offers a wide variety of interesting and flexible courses covering both classes and outdoor photographic opportunities.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Louise Whitehouse"
+          },
+          "reviewBody": "Have done a few classroom based courses and some photography workshops, all of which have been excellent.   Alan has really helped me develop my skills and confidence and I have recommended him to lots of other people.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "jade kerri dibb"
+          },
+          "reviewBody": "Wonderful Photographer and Trainer. I would highly recommend Alan Ranger Photography to all whom are looking for an experienced professional trainer that provides supportive, honest and friendly guidance and feedback, along with offering great workshops and all round great tutoring. He is also an amazing Photographer.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jean Dance"
+          },
+          "reviewBody": "I would unreservedly recommend Alan Ranger to teach and guide you through your photography Journey",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "paul skidmore"
+          },
+          "reviewBody": "I have attended several courses and enjoyed everyone. There are many topics to choose from and it doesn't matter what level you are at you will always gain more knowledge and experience from any of them.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "T Balcombe"
+          },
+          "reviewBody": "We attended a 'foundation' course and had a very interesting, informative and fun evening. My photography has definitely benefited and we would have taken further courses had we not moved away from Coventry, though when we get time we are hoping to attend one of Alan's 'field' days. I'm sure that anyone from beginners like ourselves upwards would enjoy and benefit from Alan's expertise if not from attending a course just reading his blog which we find excellent.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Andy"
+          },
+          "reviewBody": "Highly recommended! Alan really gets you thinking about your photography and puts his knowledge across in a way that's easy to understand",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Paolo9999"
+          },
+          "reviewBody": "I was given a place on one of Alan's courses as a gift and found it very informative and worthwhile.  Alan has not only excellent presentation skills, but he had prepared the event with some thought, for instance arranging the seating to allow people with similar hardware to sit near to each other.  He changed my views on how I should be taking my hobby forward.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-01-05",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Chantal Garman"
+          },
+          "reviewBody": "I've wanted a 'proper' camera (ie. A DSLR) for a long time and I got one for Christmas. I love it, but have no idea how to use all the settings to get the best out of it, so after seeing the 'photography made easy' course online, I decided to book onto it.     I found out after booking that the course was a 'lecture' format so I was a bit skeptical, thinking that I probably wouldn't learn a whole lot. I was completely wrong! Although it's not practical, it is really interactive and Alan encourages lots of participation, questions, thoughts etc. The course covers the basics of aperture, shutter speed, ISO etc. necessary for you to go home and experiment, knowing what all the settings on the camera dial are. Alan was very patient and didn't mind explaining numerous times what certain things are when the class for confused!    I enjoyed the course very much and I have now signed up to the extended course, because I believe I will greatly benefit from doing practical work with Alan. Thank you very much!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2016-01-08",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": 11
+      },
+      "@id": "https://www.alanranger.com/online-photography-classes-121-zoom-package-options#schema"
+    }
+  ]
+}
+</script>

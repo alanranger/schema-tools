@@ -1,0 +1,605 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Beginners Photography Course | 3 Weekly Evening Classes",
+          "item": "https://www.alanranger.com/photography-services-near-me/beginners-photography-course"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Beginners Photography Course | 3 Weekly Evening Classes",
+      "sku": "BEGINNERS-PHOTOGRAPHY-COURSE-3-WEEKLY-EVENING-CLASSES-2025",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Beginners Photography Course CoventrySummary - Camera Courses For Beginners - Key InformationLocation: 45 Hathaway Road, Tile Hill Village, Coventry, CV4 9HWParticipants: Max 4Time: 19:00 - 21:00Multi Course Start Dates: Beginners Photography Course3wks Mondays - Nov 3 - Nov 17 Coventry3wks Wednesdays - Nov 12 - Nov 26 Coventry3wks Tuesdays - Dec 2 - Dec 16 Coventry3wks Tuesdays - Jan 6 - Jan 20 Coventry3wks Wednesdays - Feb 4 - Feb 18 Coventry3wks Mondays - Feb 9 - 23 Feb Coventry3wks Thursdays - Mar 4 - Mar 18 Coventry3wks Mondays - Mar 9 - Mar 23 Coventry3wks Thursdays - Apr 2 - Apr 16 Coventry3wks Tuesdays - May 5 - May 19 CoventryExperience - Level: Beginner and NoviceThis beginners photography course is aimed at anyone with a digital camera wishing to get off auto exposure mode and learn about key camera settings and composition to make better photos.Equipment Needed:You will need a DSLR or Mirrorless Camera with manual exposure modes.Alan will provide you with a course book covering all the topics for the course",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/bceae6f2-91b8-4012-a00b-7b7b177d346f/Beginners+Photography+Classes.png",
+      "url": "https://www.alanranger.com/photography-services-near-me/beginners-photography-course",
+      "offers": {
+        "@type": "Offer",
+        "price": "150.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.alanranger.com/photography-services-near-me/beginners-photography-course",
+        "validFrom": "2025-11-09",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail"
+        }
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Kerrie Porter"
+          },
+          "reviewBody": "I joined Alan for a long exposure photography lesson at Kenilworth Castle on a beautiful May evening. While the sunny weather wasn’t ideal for long exposure shots, the session was still fantastic. Over the course of two hours, our small group (typically allows 6 people per event) received insightful guidance from Alan, who proved to be an excellent tutor. His deep knowledge and approachable teaching style made the lesson valuable for both beginners and advanced photographers alike. He helped us set up our cameras and provided clear explanations of the fundamental principles, ensuring everyone got the most out of the experience.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2025-05-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Kelly Westwood"
+          },
+          "reviewBody": "I thoroughly enjoyed both the beginners photography course and the lightroom course. I am a complete beginner but feel like I have learned so much. Alan is really good at giving examples and explaining things in a way you can understand. The classes are small, which makes them personal and we had lots of laughs throughout the course. Already signed up the monthly mentoring, which I’m hoping with continue to improve my knowledge and skills. Look forward to the workshops in the future. Thanks Alan.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2024-02-19",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Google"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Nuria Alonso"
+          },
+          "reviewBody": "Alan is a good teacher and his lessons are well structured with great content",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-10-29",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jodie Munn"
+          },
+          "reviewBody": "It is clear that Alan has a wealth of knowledge which he conveys really well. He is also happy to answer any questions you may have, no question is a stupid one. Alan also gives great tips and tricks of taking the best picture. Looking forward to learning more throughout the beginners course and increasing in confidence with photography.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-06-04",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "James L"
+          },
+          "reviewBody": "I have attended a couple of DSLR introduction courses in the past and have both were not particularly good. Mostly a brief overview of the non-automatic modes and then you're sent out to take pictures. What this means is you don't really learn anything. I was therefore a bit cautious about booking this one in case it was similar. It couldn't have been more different.  I recently completed the 'Get Off Auto' course as a taster session and found this to be excellent. Alan covers everything you need to known in a 2.5 hour session and rather than sending you out blindly to take photo's - these are given as exercises to complete in your own time - meaning you have more time to explore each topic and ask the questions that you really want to ask.   The first week introduction is a good starter and is the natural lead in to the 4 week beginners course.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-23",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Michele Harrison"
+          },
+          "reviewBody": "At the start of the course, I didn't have a clue about using my camera, I am not technically minded at all. After 4 weeks, I now feel much more confident in using my camera..I will definitely be signing up for more courses and workshops. There's so much more to learn, thanks Alan.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-04-17",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "David"
+          },
+          "reviewBody": "Really enjoyed the session I attended.  Alan explained everything clearly and I understood farmore than my previous attempts in reading it in a book. It is a quick fire session but has certainly inspired me to try more with my camera and, when time permits, I will definitely consider going back for the four week course. Thoroughly recommended.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-25",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Michele Harrison"
+          },
+          "reviewBody": "As a result of attending this introductory class to photography, I have now booked Alans 4 week beginners course.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-22",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Caroline Key"
+          },
+          "reviewBody": "A very interesting and informative course - highly recommended",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Federico Botta"
+          },
+          "reviewBody": "Alan is very friendly, knowledgeable and patient in his explanation. I attended the introductory workshop, and I found it extremely useful and helpful! Alan explained very well how to get off automatic mode and start using my camera settings properly, and he gave us lots of good examples.  I would totally recommend his introductory workshop! Alan has a real passion for photography and it definitely comes across when he talks about it!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-03-01",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Anthony  Hall"
+          },
+          "reviewBody": "Excellent starting point for the novice.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-01-10",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ryan Biggerstaff"
+          },
+          "reviewBody": "Great course, Alan is clearly very knowledgable about photography and can help anyone’s needs.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-01-09",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Donna C"
+          },
+          "reviewBody": "A great mix of technical and creative content. Ideal for beginners who want to get inspired and learn practical tools to get started.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-01-04",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Colleen"
+          },
+          "reviewBody": "Really good introduction class for a beginner and I have a better understanding of the basic concepts now.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-01-03",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Raman Sharma"
+          },
+          "reviewBody": "I attended the beginner class. It was a great learning experience !! Recommend Alan as he takes time to explain things in detail.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2019-01-03",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Colette  Reeves"
+          },
+          "reviewBody": "Very good introduction, will certainly be booking on courses in the future.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-24",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "customer"
+          },
+          "reviewBody": "Very good course for a beginner. Good content delivered with passion and enthusiasm. Very engaging and inspiring. Would recommend it!!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Alan Gardner"
+          },
+          "reviewBody": "Very understanding to the different levels of everybodys knowledge. Alan made sure everyone had taken in all he had said before moving on to the next subject matter.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sylvia Fillingham"
+          },
+          "reviewBody": "This workshop was everything I hoped it would be.. I’ve been taking photos for over 2 years now and have struggled off Auto mode. I wanted a lesson on the other settings the camera offers in order to progress and completely forget Auto all together! Alan was very precise, fun and made sure we understood one component before moving on to another! I have used my camera off Auto many many times and have at times felt like I’ll never master this!! However, this workshop helped me understand what I am doing wrong... seriously thinking of following it up with another of Alan’s workshops 😊",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-21",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "David McGuire"
+          },
+          "reviewBody": "Prior to booking myself onto the course, I contacted Alan, shared some of my work and asked for his recommendations. The choice of course was simply prefect for my needs. Admittedly, there was some content that i was aware of already, but Alan shared this during the four weeks in a way that explained the reasoning behind his methods. I found the course useful and can't wait to book myself onto one of Alans workshops so I can put into practice what he has taught on this course. Many thanks... Highly recommended.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-19",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Olivia  Sewell"
+          },
+          "reviewBody": "I would highly recommend Alan's beginner course to anyone looking to improve not only their technical understanding and use of a camera but also their eye, aims and creation of an image. I came away feeling inspired, having grown my confidence in my camera considerably and excited to continue practising, improving and hopefully attending some of Alan's other courses in the future.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-14",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Robert Hull"
+          },
+          "reviewBody": "A great course for beginners. Clearly explained concepts and interesting assignments to test what you have learned each week.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-14",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ann"
+          },
+          "reviewBody": "I thoroughly enjoyed the beginner's course.  Alan had a good way of explaining things, supplementing these with visual representations and practical activities.  The course was supported with a handbook which is very readable for a beginner's level of understanding.  The group was a small group which gave time for when you wanted to ask questions and for Alan to give time to individual students.  There was a lot of content which you could only fully take in by going home and reviewing / studying it.  Alan has a dry sense of humour which helped make the sessions enjoyable.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-11-14",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Olivia  Sewell"
+          },
+          "reviewBody": "I found this evening course extremely usefu land Alan explain things in a great way and was up for discussion and questions. I'm excited to start the four week course to extend my knowledge and confidence!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-10-23",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "nathan"
+          },
+          "reviewBody": "I have been on a workshop with Alan and taken the beginers coarse ,classroom based. Fantasic and really informative. I shall be booking more workshops and continue my photography path with Alan. Also great to meet nice likeminded people from various ages and backgrounds who have the same intent on learning and becoming better photographers ,  Hopfully i shall see you out there at the workshops..... Get yourself in touch with Alan Ranger you will not regret it!!",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "datePublished": "2018-10-09",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": 25
+      },
+      "@id": "https://www.alanranger.com/beginners-photography-course-3-weekly-evening-classes#schema"
+    }
+  ]
+}
+</script>
