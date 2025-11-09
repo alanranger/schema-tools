@@ -289,7 +289,7 @@ def calculate_aggregate_rating(reviews):
         "reviewCount": count
     }
 
-def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True, schema_type='product'):
+def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True, schema_type='product', events_df=None):
     """Generate complete @graph schema for a product
     
     Args:
@@ -297,6 +297,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         reviews_list: List of review objects
         include_aggregate_rating: If True, add aggregateRating (only for first variant per page)
         schema_type: 'product', 'course', or 'event' - determines @type and additional fields
+        events_df: DataFrame of events with dates for matching Event schemas to dates
     """
     
     product_name = str(product_row.get('name', '')).strip()
@@ -586,14 +587,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 location_name = location
                 break
         
-        # Add Event-specific fields
-        if start_date:
-            product_schema["startDate"] = start_date
-        if end_date:
-            product_schema["endDate"] = end_date
-        elif start_date:
-            product_schema["endDate"] = start_date
-        
+        # Add Event-specific fields (REQUIRED for Event schemas)
+        product_schema["startDate"] = start_date
+        product_schema["endDate"] = end_date
         product_schema["eventStatus"] = "https://schema.org/EventScheduled"
         product_schema["eventAttendanceMode"] = "https://schema.org/OfflineEventAttendanceMode"
         
@@ -853,21 +849,11 @@ def validate_schema_structure(schema_data, product_name):
     
     # Event-specific validation
     if isinstance(obj_type, list) and 'Event' in obj_type:
-        # Required Event fields (always required)
-        required_event_fields = ['eventStatus', 'eventAttendanceMode', 'location']
+        # ALL Event fields are REQUIRED for rich results
+        required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
         for field in required_event_fields:
             if field not in product_schema:
-                errors.append(f"Missing Event field: {field}")
-        
-        # Optional Event fields (for recurring events, dates may not be available)
-        # startDate/endDate are optional for recurring events like "Monthly Workshop"
-        if 'startDate' not in product_schema or 'endDate' not in product_schema:
-            # Log warning but don't fail validation (recurring events don't have specific dates)
-            if 'startDate' not in product_schema:
-                print(f"⚠️  Warning: Event schema missing startDate (dates couldn't be extracted - may be recurring event)")
-            if 'endDate' not in product_schema:
-                print(f"⚠️  Warning: Event schema missing endDate (dates couldn't be extracted - may be recurring event)")
-            # Don't add to errors - allow Event schemas without dates for recurring events
+                errors.append(f"Missing required Event field: {field}")
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
@@ -1066,6 +1052,67 @@ def main():
     if schema_type == 'product':
         # We'll detect per-product after loading
         print(f"📋 Will detect schema type per product from URLs/names")
+    
+    # Load events CSV files to match dates for Event schemas
+    events_df = None
+    events_list = []
+    
+    # Try to find event CSV files
+    events_workshops_path = None
+    events_lessons_path = None
+    
+    for possible_name in [
+        "01 – workshops.csv",
+        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
+        "01 - workshops.csv",
+        "workshops.csv"
+    ]:
+        test_path = workflow_dir / possible_name
+        if test_path.exists():
+            events_workshops_path = test_path
+            break
+    
+    for possible_name in [
+        "01 – lessons.csv",
+        "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv",
+        "01 - lessons.csv",
+        "lessons.csv"
+    ]:
+        test_path = workflow_dir / possible_name
+        if test_path.exists():
+            events_lessons_path = test_path
+            break
+    
+    if events_workshops_path and events_workshops_path.exists():
+        try:
+            workshops = pd.read_csv(events_workshops_path, encoding="utf-8-sig")
+            if 'Start_Date' in workshops.columns:
+                workshops['start_date_parsed'] = pd.to_datetime(workshops['Start_Date'], errors='coerce')
+                workshops = workshops[workshops['start_date_parsed'].notna()].copy()
+                events_list.append(workshops)
+                print(f"📅 Loaded {len(workshops)} workshop events for date matching")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load workshop events: {e}")
+    
+    if events_lessons_path and events_lessons_path.exists():
+        try:
+            lessons = pd.read_csv(events_lessons_path, encoding="utf-8-sig")
+            if 'Start_Date' in lessons.columns:
+                lessons['start_date_parsed'] = pd.to_datetime(lessons['Start_Date'], errors='coerce')
+                lessons = lessons[lessons['start_date_parsed'].notna()].copy()
+                events_list.append(lessons)
+                print(f"📅 Loaded {len(lessons)} lesson events for date matching")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load lesson events: {e}")
+    
+    if events_list:
+        events_df = pd.concat(events_list, ignore_index=True)
+        print(f"📅 Total events loaded: {len(events_df)}")
+    else:
+        events_df = pd.DataFrame()
+        print(f"⚠️  No event CSV files found - will generate default dates for recurring events")
+    
+    print()
     
     if not products_file.exists():
         print(f"❌ Error: Products file not found")
@@ -1794,17 +1841,11 @@ def main():
                 
                 # Event-specific validation
                 if isinstance(obj_type, list) and 'Event' in obj_type:
-                    # Required Event fields (always required)
-                    required_event_fields = ['eventStatus', 'eventAttendanceMode', 'location']
+                    # ALL Event fields are REQUIRED for rich results
+                    required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
                     for field in required_event_fields:
                         if field not in product_obj:
-                            rich_results_errors.append(f'Missing Event field: {field}')
-                    
-                    # startDate/endDate are optional for recurring events
-                    # Don't add to errors if missing (recurring events like monthly workshops)
-                    if 'startDate' not in product_obj or 'endDate' not in product_obj:
-                        # Log warning but don't fail validation
-                        pass
+                            rich_results_errors.append(f'Missing required Event field: {field}')
                 
                 # Check offers
                 if 'offers' in product_obj:
