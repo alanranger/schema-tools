@@ -591,7 +591,11 @@ def validate_schema_structure(schema_data, product_name):
         if key not in product_schema:
             errors.append(f"Product schema missing required key: {key}")
         elif expected_type == 'dict' and not isinstance(product_schema[key], dict):
-            errors.append(f"Product schema key '{key}' must be an object")
+            # Special case: 'offers' can be dict or list (for multiple variants)
+            if key == 'offers' and isinstance(product_schema[key], list):
+                pass  # Valid - offers can be an array
+            else:
+                errors.append(f"Product schema key '{key}' must be an object")
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
@@ -610,11 +614,27 @@ def validate_schema_structure(schema_data, product_name):
     if not isinstance(provider, dict) or provider.get('@type') != 'Organization' or 'name' not in provider or 'sameAs' not in provider:
         errors.append("Product 'provider' must be an Organization object with 'name' and 'sameAs'")
     
-    # Validate offers structure
+    # Validate offers structure (can be object or array for multiple variants)
     offers = product_schema.get('offers', {})
-    if not isinstance(offers, dict):
-        errors.append("Product 'offers' must be an object")
-    else:
+    if isinstance(offers, list):
+        # Array format - validate each offer
+        if len(offers) == 0:
+            errors.append("Product 'offers' array is empty")
+        else:
+            for i, offer in enumerate(offers):
+                if not isinstance(offer, dict):
+                    errors.append(f"Product 'offers' array item {i} must be an object")
+                else:
+                    if '@type' not in offer or offer['@type'] != 'Offer':
+                        errors.append(f"Product 'offers' array item {i} must have @type='Offer'")
+                    if 'price' not in offer:
+                        errors.append(f"Product 'offers' array item {i} missing 'price'")
+                    if 'priceCurrency' not in offer:
+                        errors.append(f"Product 'offers' array item {i} missing 'priceCurrency'")
+                    if 'priceValidUntil' not in offer:
+                        errors.append(f"Product 'offers' array item {i} missing 'priceValidUntil'")
+    elif isinstance(offers, dict):
+        # Single object format - validate it
         required_offer_keys = ['price', 'priceCurrency', 'availability', 'url', 'validFrom', 'shippingDetails', 'hasMerchantReturnPolicy']
         for key in required_offer_keys:
             if key not in offers:
