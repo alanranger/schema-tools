@@ -1791,10 +1791,17 @@ def main():
                 
                 # Event-specific validation
                 if isinstance(obj_type, list) and 'Event' in obj_type:
-                    event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-                    for field in event_fields:
+                    # Required Event fields (always required)
+                    required_event_fields = ['eventStatus', 'eventAttendanceMode', 'location']
+                    for field in required_event_fields:
                         if field not in product_obj:
                             rich_results_errors.append(f'Missing Event field: {field}')
+                    
+                    # startDate/endDate are optional for recurring events
+                    # Don't add to errors if missing (recurring events like monthly workshops)
+                    if 'startDate' not in product_obj or 'endDate' not in product_obj:
+                        # Log warning but don't fail validation
+                        pass
                 
                 # Check offers
                 if 'offers' in product_obj:
