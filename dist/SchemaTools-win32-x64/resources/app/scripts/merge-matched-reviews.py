@@ -74,6 +74,57 @@ print("Standardizing columns...")
 trustpilot_df['source'] = 'Trustpilot'
 google_df['source'] = 'Google'
 
+# Standardize rating column to 'ratingValue' (numeric)
+if 'rating' in trustpilot_df.columns:
+    trustpilot_df['ratingValue'] = pd.to_numeric(trustpilot_df['rating'], errors='coerce')
+elif 'ratingValue' not in trustpilot_df.columns:
+    # Try other rating columns
+    for col in ['review_stars', 'stars', 'ratingValue']:
+        if col in trustpilot_df.columns:
+            trustpilot_df['ratingValue'] = pd.to_numeric(trustpilot_df[col], errors='coerce')
+            break
+
+if 'rating' in google_df.columns or 'rating_numeric' in google_df.columns:
+    # Use rating_numeric if available (already converted), otherwise convert rating
+    if 'rating_numeric' in google_df.columns:
+        google_df['ratingValue'] = google_df['rating_numeric']
+    else:
+        google_df['ratingValue'] = pd.to_numeric(google_df['rating'], errors='coerce')
+elif 'ratingValue' not in google_df.columns:
+    # Try other rating columns
+    for col in ['review_stars', 'stars']:
+        if col in google_df.columns:
+            google_df['ratingValue'] = pd.to_numeric(google_df[col], errors='coerce')
+            break
+
+# Standardize review text column to 'reviewBody'
+if 'review' in trustpilot_df.columns:
+    trustpilot_df['reviewBody'] = trustpilot_df['review'].fillna('')
+elif 'review_content' in trustpilot_df.columns:
+    trustpilot_df['reviewBody'] = trustpilot_df['review_content'].fillna('')
+elif 'reviewBody' not in trustpilot_df.columns:
+    trustpilot_df['reviewBody'] = ''
+
+if 'review' in google_df.columns:
+    google_df['reviewBody'] = google_df['review'].fillna('')
+elif 'comment' in google_df.columns:
+    google_df['reviewBody'] = google_df['comment'].fillna('')
+elif 'reviewBody' not in google_df.columns:
+    google_df['reviewBody'] = ''
+
+# Ensure date column exists
+if 'date' not in trustpilot_df.columns:
+    # Try to find date column
+    for col in ['review_created_(utc)', 'date', 'created_at']:
+        if col in trustpilot_df.columns:
+            trustpilot_df['date'] = trustpilot_df[col]
+            break
+if 'date' not in google_df.columns:
+    google_df['date'] = ''
+
+print("Column standardization complete")
+print()
+
 # Deduplicate
 print("Deduplicating reviews...")
 seen = set()
