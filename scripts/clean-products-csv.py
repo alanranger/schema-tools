@@ -197,18 +197,22 @@ def create_offer_from_row(row):
     
     return offer
 
-def detect_schema_type(product_name, product_url, events_df):
+def detect_schema_type(product_name, product_url, lessons_df, workshops_df):
     """
-    Detect schema type by matching product to events CSV files.
+    Detect schema type by matching product to lessons and workshops CSV files.
     Returns: 'event', 'course', or 'product'
     
     Logic:
-    1. Hardcoded list of 5 courses (exact match by name)
-    2. Check URL path: if 'photo-workshops-uk' → 'event', if 'photography-services-near-me' → check course list
-    3. Match remaining products to events CSV (workshops) → 'event'
-    4. Default to 'product' if no match found
+    1. Try to match product to lessons CSV:
+       - If match found AND it's one of the 5 courses → 'course'
+       - If match found BUT it's NOT one of the 5 courses → 'product'
+    2. Try to match product to workshops CSV:
+       - If match found → 'event'
+    3. If no match to either → 'product'
+    
+    Note: Lessons CSV contains both courses AND products, so we need to distinguish.
     """
-    # Hardcoded list of 5 courses (exact match by name)
+    # Hardcoded list of 5 courses (to distinguish courses from products in lessons CSV)
     course_names = [
         "Lightroom Courses for Beginners Photo Editing - Coventry",
         "RPS Courses - Independent RPS Mentoring for RPS Distinctions",
@@ -217,119 +221,86 @@ def detect_schema_type(product_name, product_url, events_df):
         "Beginners Portrait Photography Course - Coventry - 1 Day"
     ]
     
-    # Check if product is one of the 5 courses (exact match)
-    if product_name in course_names:
-        return 'course'
-    
-    # Check URL path to quickly identify events vs courses/products
-    if product_url:
-        url_lower = product_url.lower()
-        # If URL contains 'photo-workshops-uk', it's definitely an event (workshop)
-        if 'photo-workshops-uk' in url_lower:
-            # But still verify it matches an event with dates
-            if events_df is not None and len(events_df) > 0:
-                product_url_slug = product_url.split('/')[-1].strip().lower()
-                for _, event_row in events_df.iterrows():
-                    event_url = str(event_row.get('Event_URL', '')).strip()
-                    event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
-                    if product_url_slug == event_url_slug:
-                        if 'Start_Date' in event_row.index and pd.notna(event_row.get('Start_Date')):
-                            start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
-                            if pd.notna(start_date):
-                                return 'event'
-            # If URL says workshop but no match found, still return event (URL is authoritative)
-            return 'event'
-        # If URL contains 'photography-services-near-me', check if it's a course
-        elif 'photography-services-near-me' in url_lower:
-            # Already checked course list above, so if we get here it's not a course
-            # Products in this section are products (like "4 x 2hr Private Photography Classes")
-            return 'product'
-    
-    # For all other products, try to match to events CSV (workshops)
-    if events_df is None or len(events_df) == 0:
-        return 'product'  # Default if no events loaded
-    
     product_name_lower = product_name.lower() if product_name else ''
     product_url_slug = ''
     if product_url:
         product_url_slug = product_url.split('/')[-1].strip().lower()
     
-    # Try to match by URL slug first (most reliable - exact match)
-    matched_event = None
-    for _, event_row in events_df.iterrows():
-        event_url = str(event_row.get('Event_URL', '')).strip()
-        event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+    # Helper function to match product to events/lessons
+    def match_to_events(product_name_lower, product_url_slug, events_df):
+        """Returns matched event row if found, None otherwise"""
+        matched_event = None
         
-        # Match by URL slug (exact match required)
-        if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
-            # CRITICAL: Only consider it a match if the event has dates
-            if 'Start_Date' in event_row.index and pd.notna(event_row.get('Start_Date')):
+        # Try URL slug match first (most reliable)
+        if product_url_slug:
+            for _, event_row in events_df.iterrows():
+                event_url = str(event_row.get('Event_URL', '')).strip()
+                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+                
+                if product_url_slug == event_url_slug:
+                    # Only consider it a match if the event has dates
+                    if 'Start_Date' in event_row.index and pd.notna(event_row.get('Start_Date')):
+                        start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
+                        if pd.notna(start_date):
+                            matched_event = event_row
+                            break
+        
+        # If no URL match, try strict fuzzy match by Event_Title
+        if matched_event is None:
+            for _, event_row in events_df.iterrows():
+                # Only consider events with dates
+                if 'Start_Date' not in event_row.index or pd.isna(event_row.get('Start_Date')):
+                    continue
+                
                 start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
-                if pd.notna(start_date):
-                    matched_event = event_row
-                    break
-    
-    # If no URL match, try VERY STRICT fuzzy match by Event_Title
-    # This should be extremely strict - only match if titles are almost identical
-    if matched_event is None:
-        for _, event_row in events_df.iterrows():
-            # CRITICAL: Only consider events with dates
-            if 'Start_Date' not in event_row.index or pd.isna(event_row.get('Start_Date')):
-                continue
-            
-            start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
-            if pd.isna(start_date):
-                continue
-            
-            event_title = str(event_row.get('Event_Title', '')).lower()
-            
-            # VERY strict matching: require at least 4 significant words to match
-            # AND at least 70% of event words must match
-            if event_title and product_name_lower:
-                event_words = [w for w in event_title.split() if len(w) > 4]
+                if pd.isna(start_date):
+                    continue
                 
-                if len(event_words) < 3:
-                    continue  # Skip if event title is too short
+                event_title = str(event_row.get('Event_Title', '')).lower()
                 
-                # Count matches
-                matches = sum(1 for word in event_words if word in product_name_lower)
-                
-                # Require at least 4 matches AND at least 70% match ratio
-                match_ratio = matches / len(event_words) if event_words else 0
-                if matches >= 4 and match_ratio >= 0.7:
-                    matched_event = event_row
-                    break
+                # Strict matching: require at least 4 significant words to match AND 70% match ratio
+                if event_title and product_name_lower:
+                    event_words = [w for w in event_title.split() if len(w) > 4]
+                    
+                    if len(event_words) < 3:
+                        continue
+                    
+                    matches = sum(1 for word in event_words if word in product_name_lower)
+                    match_ratio = matches / len(event_words) if event_words else 0
+                    
+                    if matches >= 4 and match_ratio >= 0.7:
+                        matched_event = event_row
+                        break
+        
+        return matched_event
     
-    # If matched to an event, return 'event' (workshop)
-    if matched_event is not None:
-        return 'event'
+    # Step 1: Try to match to lessons CSV
+    # Lessons CSV contains both courses AND products, so we need to check which one
+    if lessons_df is not None and len(lessons_df) > 0:
+        matched_lesson = match_to_events(product_name_lower, product_url_slug, lessons_df)
+        if matched_lesson is not None:
+            # Check if this product is one of the 5 courses
+            if product_name in course_names:
+                return 'course'
+            else:
+                # Matched to lessons CSV but not a course → product
+                return 'product'
     
-    # If no match found, return 'product' (Product only)
+    # Step 2: Try to match to workshops CSV (events)
+    if workshops_df is not None and len(workshops_df) > 0:
+        matched_workshop = match_to_events(product_name_lower, product_url_slug, workshops_df)
+        if matched_workshop is not None:
+            return 'event'
+    
+    # Step 3: No match found → product
     return 'product'
 
 def main():
     # Define workflow directory first
     workflow_dir = Path('inputs-files/workflow')
     
-    # Load events CSV files to detect schema types
-    events_df = None
-    events_list = []
-    
-    # Try to find event CSV files
-    events_workshops_path = None
-    events_lessons_path = None
-    
-    for possible_name in [
-        "01 – workshops.csv",
-        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
-        "01 - workshops.csv",
-        "workshops.csv"
-    ]:
-        test_path = workflow_dir / possible_name
-        if test_path.exists():
-            events_workshops_path = test_path
-            break
-    
+    # Load lessons CSV (for courses)
+    lessons_df = None
     for possible_name in [
         "01 – lessons.csv",
         "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv",
@@ -338,30 +309,31 @@ def main():
     ]:
         test_path = workflow_dir / possible_name
         if test_path.exists():
-            events_lessons_path = test_path
-            break
+            try:
+                lessons_df = pd.read_csv(test_path, encoding="utf-8-sig")
+                print(f"📅 Loaded {len(lessons_df)} lesson events for course detection")
+                break
+            except Exception as e:
+                print(f"⚠️  Warning: Could not load lesson events: {e}")
     
-    if events_workshops_path and events_workshops_path.exists():
-        try:
-            workshops = pd.read_csv(events_workshops_path, encoding="utf-8-sig")
-            events_list.append(workshops)
-            print(f"📅 Loaded {len(workshops)} workshop events for schema type detection")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not load workshop events: {e}")
+    # Load workshops CSV (for events)
+    workshops_df = None
+    for possible_name in [
+        "01 – workshops.csv",
+        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
+        "01 - workshops.csv",
+        "workshops.csv"
+    ]:
+        test_path = workflow_dir / possible_name
+        if test_path.exists():
+            try:
+                workshops_df = pd.read_csv(test_path, encoding="utf-8-sig")
+                print(f"📅 Loaded {len(workshops_df)} workshop events for event detection")
+                break
+            except Exception as e:
+                print(f"⚠️  Warning: Could not load workshop events: {e}")
     
-    if events_lessons_path and events_lessons_path.exists():
-        try:
-            lessons = pd.read_csv(events_lessons_path, encoding="utf-8-sig")
-            events_list.append(lessons)
-            print(f"📅 Loaded {len(lessons)} lesson events for schema type detection")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not load lesson events: {e}")
-    
-    if events_list:
-        events_df = pd.concat(events_list, ignore_index=True)
-        print(f"📅 Total events loaded: {len(events_df)}")
-    else:
-        events_df = pd.DataFrame()
+    if lessons_df is None and workshops_df is None:
         print(f"⚠️  No event CSV files found - all products will default to 'product' schema type")
     
     print()
@@ -516,7 +488,7 @@ def main():
             'highest_price': highest_price,
             'skus': skus_str,
             'main_sku': main_sku,
-            'schema_type': detect_schema_type(title, url, events_df)  # Add schema type detection
+            'schema_type': detect_schema_type(title, url, lessons_df, workshops_df)  # Add schema type detection
         })
     
     if not grouped_data:
