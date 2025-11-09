@@ -199,100 +199,31 @@ def create_offer_from_row(row):
 
 def detect_schema_type(product_name, product_url, lessons_df, workshops_df):
     """
-    Detect schema type by matching product to lessons and workshops CSV files.
+    Detect schema type based on URL patterns.
     Returns: 'event', 'course', or 'product'
     
-    Logic:
-    1. Try to match product to lessons CSV:
-       - If match found AND it's one of the 5 courses → 'course'
-       - If match found BUT it's NOT one of the 5 courses → 'product'
-    2. Try to match product to workshops CSV:
-       - If match found → 'event'
-    3. If no match to either → 'product'
-    
-    Note: Lessons CSV contains both courses AND products, so we need to distinguish.
+    Simple logic:
+    1. If URL contains '/photo-workshops-uk/' → 'event' (34 workshops)
+    2. If URL contains '/photography-services-near-me/' AND slug contains 'course' or 'courses' → 'course' (5 courses)
+    3. Everything else → 'product' (11 products)
     """
-    # Hardcoded list of 5 courses (to distinguish courses from products in lessons CSV)
-    course_names = [
-        "Lightroom Courses for Beginners Photo Editing - Coventry",
-        "RPS Courses - Independent RPS Mentoring for RPS Distinctions",
-        "Beginners Photography Course | 3 Weekly Evening Classes",
-        "Intermediates Intentions Photography Project Course",
-        "Beginners Portrait Photography Course - Coventry - 1 Day"
-    ]
+    if not product_url:
+        return 'product'
     
-    product_name_lower = product_name.lower() if product_name else ''
-    product_url_slug = ''
-    if product_url:
-        product_url_slug = product_url.split('/')[-1].strip().lower()
+    product_url_lower = product_url.lower()
     
-    # Helper function to match product to events/lessons
-    def match_to_events(product_name_lower, product_url_slug, events_df):
-        """Returns matched event row if found, None otherwise"""
-        matched_event = None
-        
-        # Try URL slug match first (most reliable)
-        if product_url_slug:
-            for _, event_row in events_df.iterrows():
-                event_url = str(event_row.get('Event_URL', '')).strip()
-                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
-                
-                if product_url_slug == event_url_slug:
-                    # Only consider it a match if the event has dates
-                    if 'Start_Date' in event_row.index and pd.notna(event_row.get('Start_Date')):
-                        start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
-                        if pd.notna(start_date):
-                            matched_event = event_row
-                            break
-        
-        # If no URL match, try strict fuzzy match by Event_Title
-        if matched_event is None:
-            for _, event_row in events_df.iterrows():
-                # Only consider events with dates
-                if 'Start_Date' not in event_row.index or pd.isna(event_row.get('Start_Date')):
-                    continue
-                
-                start_date = pd.to_datetime(event_row.get('Start_Date'), errors='coerce')
-                if pd.isna(start_date):
-                    continue
-                
-                event_title = str(event_row.get('Event_Title', '')).lower()
-                
-                # Strict matching: require at least 4 significant words to match AND 70% match ratio
-                if event_title and product_name_lower:
-                    event_words = [w for w in event_title.split() if len(w) > 4]
-                    
-                    if len(event_words) < 3:
-                        continue
-                    
-                    matches = sum(1 for word in event_words if word in product_name_lower)
-                    match_ratio = matches / len(event_words) if event_words else 0
-                    
-                    if matches >= 4 and match_ratio >= 0.7:
-                        matched_event = event_row
-                        break
-        
-        return matched_event
+    # Step 1: Check for workshops (events)
+    if '/photo-workshops-uk/' in product_url_lower:
+        return 'event'
     
-    # Step 1: Try to match to lessons CSV
-    # Lessons CSV contains both courses AND products, so we need to check which one
-    if lessons_df is not None and len(lessons_df) > 0:
-        matched_lesson = match_to_events(product_name_lower, product_url_slug, lessons_df)
-        if matched_lesson is not None:
-            # Check if this product is one of the 5 courses
-            if product_name in course_names:
-                return 'course'
-            else:
-                # Matched to lessons CSV but not a course → product
-                return 'product'
+    # Step 2: Check for courses
+    if '/photography-services-near-me/' in product_url_lower:
+        # Extract the slug (last part of URL)
+        url_slug = product_url.split('/')[-1].strip().lower()
+        if 'course' in url_slug or 'courses' in url_slug:
+            return 'course'
     
-    # Step 2: Try to match to workshops CSV (events)
-    if workshops_df is not None and len(workshops_df) > 0:
-        matched_workshop = match_to_events(product_name_lower, product_url_slug, workshops_df)
-        if matched_workshop is not None:
-            return 'event'
-    
-    # Step 3: No match found → product
+    # Step 3: Everything else is a product
     return 'product'
 
 def main():
