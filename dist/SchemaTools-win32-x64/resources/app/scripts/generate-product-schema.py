@@ -449,7 +449,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                         "refundType": "http://schema.org/FullRefund",
                         "applicableCountry": "GB",
                         "returnMethod": "http://schema.org/ReturnByMail",
-                        "returnFees": "https://www.alanranger.com/s/Alan-Ranger-Photography-Tuition-Terms-Conditions-2021.pdf"
+                        "returnFees": "https://schema.org/FreeReturn"
                     }
                 }]
             except (ValueError, TypeError):
@@ -492,12 +492,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "refundType": "http://schema.org/FullRefund",
                     "applicableCountry": "GB",
                     "returnMethod": "http://schema.org/ReturnByMail",
-                    "returnFees": "https://www.alanranger.com/s/Alan-Ranger-Photography-Tuition-Terms-Conditions-2021.pdf"
+                    "returnFees": "https://schema.org/FreeReturn"
                 }
             else:
                 # Ensure returnFees is set even if policy already exists
                 if 'returnFees' not in offer['hasMerchantReturnPolicy']:
-                    offer['hasMerchantReturnPolicy']['returnFees'] = "https://www.alanranger.com/s/Alan-Ranger-Photography-Tuition-Terms-Conditions-2021.pdf"
+                    offer['hasMerchantReturnPolicy']['returnFees'] = "https://schema.org/FreeReturn"
             
             # Ensure priceValidUntil is always set to +12 months
             if 'priceValidUntil' not in offer:
