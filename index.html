@@ -12917,6 +12917,47 @@ exit`;
       const progressBarFill = document.querySelector('#progress-step2 .progress-bar');
       const statusText = document.getElementById('status-step2');
       
+      // Check if running on Vercel/web deployment FIRST (before any network requests)
+      const isWebDeployment = window.location.hostname.includes('vercel.app') || 
+                              (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
+      
+      if (isWebDeployment && !isElectronMode) {
+        // On web deployment, show clear message and update dashboard
+        if (consoleOutput) {
+          consoleOutput.style.display = 'block';
+          consoleOutput.textContent = 'ℹ️ Web Mode Detected\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+          consoleOutput.textContent += 'Step 2 cannot run automatically in web browser mode.\n';
+          consoleOutput.textContent += '\nWhy?\n';
+          consoleOutput.textContent += '• Browsers cannot access local files for security reasons\n';
+          consoleOutput.textContent += '• Step 2 needs to run Python scripts on your computer\n';
+          consoleOutput.textContent += '\nSolution:\n';
+          consoleOutput.textContent += '• Use the Electron desktop app for full automation\n';
+          consoleOutput.textContent += '• Or run locally: npm run start-local\n';
+          consoleOutput.textContent += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        }
+        if (progressBar) {
+          progressBar.style.display = 'block';
+        }
+        if (progressBarFill) {
+          progressBarFill.style.width = '0%';
+          progressBarFill.style.background = '#e2e8f0';
+        }
+        if (statusText) {
+          statusText.textContent = '⏸️ Step 2 requires Electron app or local server (not available in web browser)';
+          statusText.style.color = '#667eea';
+          statusText.style.fontWeight = '500';
+        }
+        // Update dashboard status
+        updateStepStatus('2', 'waiting', 'Web Mode');
+        // Show instructions box
+        const instructionsBox = document.getElementById('localServerInstructions');
+        if (instructionsBox) {
+          instructionsBox.style.display = 'block';
+        }
+        return;
+      }
+      
       // Show console and progress bar immediately
       if (consoleOutput) {
         consoleOutput.style.display = 'block';
@@ -12937,9 +12978,6 @@ exit`;
       // Check server status first (skip alert in Electron mode or web deployment)
       const isRunning = await ensureLocalExecutorRunning();
       if (!isRunning && !isElectronMode) {
-        // Check if running on Vercel/web (don't show blocking alert)
-        const isWebDeployment = window.location.hostname.includes('vercel.app') || 
-                                window.location.hostname.includes('localhost') === false;
         
         if (isWebDeployment) {
           // On web deployment, show clear message and update dashboard
