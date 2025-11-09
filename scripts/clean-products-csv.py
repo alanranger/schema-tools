@@ -305,7 +305,6 @@ def main():
     print()
     
     # Find the input CSV file
-    csv_files = []
     patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
     for pattern in patterns:
         csv_files.extend(list(workflow_dir.glob(pattern)))
