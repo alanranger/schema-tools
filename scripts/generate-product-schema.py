@@ -526,66 +526,150 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     
     # Add Event-specific fields when schema_type is 'event'
     if schema_type == 'event':
-        # Try to extract dates from product name or description
+        # Try to match product to event in events CSV to get actual dates
         start_date = None
         end_date = None
         location_name = None
         
-        # Extract dates from product name
-        date_patterns = [
-            r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
-            r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
-            r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
-        ]
-        
-        for pattern in date_patterns:
-            match = re.search(pattern, product_name)
-            if match:
-                try:
-                    if len(match.groups()) == 4:
-                        if match.group(1).isdigit():
-                            day1, day2, month, year = match.groups()
-                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
-                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+        # First: Match product to event in events_df by URL slug or title
+        if events_df is not None and len(events_df) > 0:
+            product_name_lower = product_name.lower()
+            product_url_slug = ''
+            if product_url:
+                product_url_slug = product_url.split('/')[-1].strip().lower()
+            
+            # Try to match by Event_URL (most reliable)
+            for _, event_row in events_df.iterrows():
+                event_url = str(event_row.get('Event_URL', '')).strip()
+                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+                
+                # Match by URL slug (most reliable)
+                if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
+                    if pd.notna(event_row.get('start_date_parsed')):
+                        start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
+                        # Try to get end date
+                        if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
+                            try:
+                                end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
+                                if pd.notna(end_date):
+                                    end_date = end_date.strftime('%Y-%m-%d')
+                                else:
+                                    end_date = start_date  # Use start date if end date invalid
+                            except:
+                                end_date = start_date
                         else:
-                            month, day1, day2, year = match.groups()
-                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
-                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
-                    elif len(match.groups()) == 2:
-                        month, year = match.groups()
-                        start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
-                        end_date = start_date
+                            end_date = start_date  # Use start date if no end date
+                        
+                        # Extract location from event if available
+                        if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
+                            location_name = str(event_row['Location_Business_Name']).strip()
+                        elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
+                            location_name = str(event_row['Location_Name']).strip()
+                        
+                        break
+            
+            # If no URL match, try to match by Event_Title (fuzzy match)
+            if not start_date:
+                for _, event_row in events_df.iterrows():
+                    event_title = str(event_row.get('Event_Title', '')).lower()
+                    
+                    # Check if key words match (at least 2 significant words)
+                    if event_title and product_name_lower:
+                        event_words = [w for w in event_title.split() if len(w) > 4]
+                        product_words = [w for w in product_name_lower.split() if len(w) > 4]
+                        matches = sum(1 for word in event_words if word in product_name_lower)
+                        if matches >= 2:  # At least 2 significant words match
+                            if pd.notna(event_row.get('start_date_parsed')):
+                                start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
+                                if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
+                                    try:
+                                        end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
+                                        if pd.notna(end_date):
+                                            end_date = end_date.strftime('%Y-%m-%d')
+                                        else:
+                                            end_date = start_date
+                                    except:
+                                        end_date = start_date
+                                else:
+                                    end_date = start_date
+                                
+                                # Extract location from event if available
+                                if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
+                                    location_name = str(event_row['Location_Business_Name']).strip()
+                                elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
+                                    location_name = str(event_row['Location_Name']).strip()
+                                
+                                break
+        
+        # Second: If no match found, try to extract dates from product name
+        if not start_date:
+            date_patterns = [
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
+                r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
+                r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
+            ]
+            
+            for pattern in date_patterns:
+                match = re.search(pattern, product_name)
+                if match:
+                    try:
+                        if len(match.groups()) == 4:
+                            if match.group(1).isdigit():
+                                day1, day2, month, year = match.groups()
+                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                            else:
+                                month, day1, day2, year = match.groups()
+                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                        elif len(match.groups()) == 2:
+                            month, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
+                            end_date = start_date
+                        break
+                    except:
+                        pass
+        
+        # Extract location from product name if not found from event
+        if not location_name:
+            location_keywords = {
+                'coventry': 'Coventry',
+                'lake district': 'Lake District',
+                'peak district': 'Peak District',
+                'yorkshire dales': 'Yorkshire Dales',
+                'snowdonia': 'Snowdonia',
+                'norfolk': 'Norfolk',
+                'devon': 'Devon',
+                'dorset': 'Dorset',
+                'anglesey': 'Anglesey',
+                'northumberland': 'Northumberland',
+                'suffolk': 'Suffolk',
+                'gower': 'Gower',
+                'kerry': 'Kerry',
+                'dartmoor': 'Dartmoor',
+                'exmoor': 'Exmoor',
+                'warwickshire': 'Warwickshire',
+                'worcestershire': 'Worcestershire',
+                'gloucestershire': 'Gloucestershire'
+            }
+            
+            name_lower = product_name.lower()
+            for keyword, location in location_keywords.items():
+                if keyword in name_lower:
+                    location_name = location
                     break
-                except:
-                    pass
         
-        # Extract location from product name
-        location_keywords = {
-            'coventry': 'Coventry',
-            'lake district': 'Lake District',
-            'peak district': 'Peak District',
-            'yorkshire dales': 'Yorkshire Dales',
-            'snowdonia': 'Snowdonia',
-            'norfolk': 'Norfolk',
-            'devon': 'Devon',
-            'dorset': 'Dorset',
-            'anglesey': 'Anglesey',
-            'northumberland': 'Northumberland',
-            'suffolk': 'Suffolk',
-            'gower': 'Gower',
-            'kerry': 'Kerry',
-            'dartmoor': 'Dartmoor',
-            'exmoor': 'Exmoor',
-            'warwickshire': 'Warwickshire',
-            'worcestershire': 'Worcestershire',
-            'gloucestershire': 'Gloucestershire'
-        }
+        # Ensure we have dates (REQUIRED for Event schemas)
+        if not start_date:
+            print(f"❌ ERROR: Could not find dates for Event '{product_name[:50]}...' - Event schemas require startDate and endDate")
+            print(f"   Product URL: {product_url}")
+            print(f"   Please ensure this product matches an event in the workshops CSV file")
+            # Use error dates (will fail validation but schema will be generated)
+            start_date = "1900-01-01"
+            end_date = "1900-01-01"
         
-        name_lower = product_name.lower()
-        for keyword, location in location_keywords.items():
-            if keyword in name_lower:
-                location_name = location
-                break
+        if not end_date:
+            end_date = start_date
         
         # Add Event-specific fields (REQUIRED for Event schemas)
         product_schema["startDate"] = start_date
