@@ -1492,6 +1492,25 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     <div id="schemaExportContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
       <h4 style="margin-top: 0; color: #0369a1;">📦 Schema Export & Squarespace Integration</h4>
       <div id="schemaExportContent" style="margin-top: 0.75rem;"></div>
+      
+      <!-- GitHub Hosting Verification Panel -->
+      <div id="githubHostingVerification" style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #1f2937;">🔍 GitHub Schema Hosting Verification</h4>
+        <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+          🚀 Ping GitHub
+        </button>
+        <div id="pingResults" style="margin-top: 10px; font-family: monospace; font-size: 0.875rem; color: #374151; line-height: 1.6;"></div>
+        <div id="schemaLinks" style="margin-top: 15px; display: none;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #1f2937; font-size: 0.875rem;"><strong>Validation Links:</strong></p>
+          <ul style="margin: 0; padding-left: 1.5rem; color: #374151; font-size: 0.875rem;">
+            <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/lessons-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Lessons Schema Validator</a></li>
+            <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/workshops-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Workshops Schema Validator</a></li>
+            <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/beginners-photography-lessons" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Lessons</a></li>
+            <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/photographic-workshops-near-me" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Workshops</a></li>
+          </ul>
+        </div>
+      </div>
+      
       <div style="margin-top: 1rem;">
         <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem;">
           📥 Export JSON File
