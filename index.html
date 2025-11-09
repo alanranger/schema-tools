@@ -1499,7 +1499,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 4px; border-left: 3px solid #0369a1;">
           <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location:</strong></p>
           <p style="margin: 0; font-size: 0.8rem; color: #1e3a8a; font-family: monospace; word-break: break-all;">
-            G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema\public
+            G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema
           </p>
           <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
             Save <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">lessons-schema.json</code> and <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
@@ -7687,7 +7687,7 @@ ${minifiedJson}
       // Validate JSON
       JSON.parse(jsonString);
       
-      const githubFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema\\public';
+      const githubFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema';
       
       // Check if we're in Electron mode (can write directly to file system)
       if (typeof window.require !== 'undefined' || typeof require !== 'undefined') {
@@ -7696,13 +7696,13 @@ ${minifiedJson}
           const path = typeof window.require !== 'undefined' ? window.require('path') : require('path');
           
           // Ensure directory exists
-          const publicDir = path.join(githubFolderPath);
-          if (!fs.existsSync(publicDir)) {
-            fs.mkdirSync(publicDir, { recursive: true });
+          const repoDir = path.join(githubFolderPath);
+          if (!fs.existsSync(repoDir)) {
+            fs.mkdirSync(repoDir, { recursive: true });
           }
           
-          // Write file directly to public folder
-          const filePath = path.join(publicDir, fileName);
+          // Write file directly to root of repository (GitHub Pages serves from root)
+          const filePath = path.join(repoDir, fileName);
           fs.writeFileSync(filePath, jsonString, 'utf-8');
           
           // Open folder in file explorer
