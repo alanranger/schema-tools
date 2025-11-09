@@ -515,7 +515,6 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     if is_course_workshop and product_url:
         # Try to extract dates from product name or description
         # Look for date patterns like "Jan 2026", "23-25 Jan", etc.
-        import re
         date_patterns = [
             r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
             r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
