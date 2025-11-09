@@ -901,8 +901,11 @@ def main():
     summary_rows = []
     
     # Track mapped reviews by source
-    mapped_google_reviews = []
-    mapped_trustpilot_reviews = []
+    mapped_google_reviews = []  # All Google reviews mapped (total)
+    mapped_trustpilot_reviews = []  # All Trustpilot reviews mapped (total)
+    included_google_reviews = []  # Google reviews included in schema (capped at 25 per product)
+    included_trustpilot_reviews = []  # Trustpilot reviews included in schema (capped at 25 per product)
+    total_excluded_reviews = 0  # Total reviews excluded due to 25-review cap
     
     # Track validation statistics
     breadcrumbs_normalised_count = 0
@@ -974,8 +977,15 @@ def main():
                 reviews_for_product = reviews_for_product.sort_values('_sort_date', ascending=False, na_position='last')
                 reviews_for_product = reviews_for_product.drop(columns=['_sort_date'])
             
-            # Remove review limit - include ALL reviews (user wants all reviews, not just 25)
-            group = reviews_for_product
+            # Limit to 25 reviews per product for schema optimization (Google best practice)
+            # But we'll track total counts separately for accurate statistics
+            total_reviews_for_product = len(reviews_for_product)
+            group = reviews_for_product.head(25)
+            excluded_count = max(0, total_reviews_for_product - 25)
+            total_excluded_reviews += excluded_count
+            
+            # Track newest review date included in schema
+            newest_review_date_included = None
             
             for _, review_row in group.iterrows():
                 rating_val = review_row.get('ratingvalue')
@@ -1122,16 +1132,33 @@ def main():
                                     except:
                                         pass
                     
+                    # Track newest review date included in schema
+                    if review_date_obj is not None and pd.notna(review_date_obj):
+                        if newest_review_date_included is None or review_date_obj > newest_review_date_included:
+                            newest_review_date_included = review_date_obj
+                    
                     if 'google' in source_lower:
-                        # Always track Google reviews, even without dates (for counting)
+                        # Track all Google reviews mapped (total)
                         mapped_google_reviews.append({
                             'date': review_date_obj,
                             'source': 'Google',
                             'review_date_str': review_date
                         })
+                        # Track Google reviews included in schema (capped at 25 per product)
+                        included_google_reviews.append({
+                            'date': review_date_obj,
+                            'source': 'Google',
+                            'review_date_str': review_date
+                        })
                     elif 'trustpilot' in source_lower:
-                        # Always track Trustpilot reviews, even without dates (for counting)
+                        # Track all Trustpilot reviews mapped (total)
                         mapped_trustpilot_reviews.append({
+                            'date': review_date_obj,
+                            'source': 'Trustpilot',
+                            'review_date_str': review_date
+                        })
+                        # Track Trustpilot reviews included in schema (capped at 25 per product)
+                        included_trustpilot_reviews.append({
                             'date': review_date_obj,
                             'source': 'Trustpilot',
                             'review_date_str': review_date

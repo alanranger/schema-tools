@@ -2873,6 +2873,31 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       
       summaryHtml += '</div>';
+      
+      // Reviews included in schema section
+      if (step4.includedGoogleCount !== null || step4.includedTrustpilotCount !== null || step4.totalExcludedReviews !== null) {
+        summaryHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ffe0b2;">';
+        summaryHtml += '<div style="font-weight: 600; margin-bottom: 0.5rem; color: #e65100;">📦 Reviews Included in Schema:</div>';
+        summaryHtml += '<div style="font-size: 0.85em; color: #757575; margin-bottom: 0.5rem;">(Capped at 25 reviews per product for optimal schema performance)</div>';
+        
+        if (step4.includedGoogleCount !== null) {
+          summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Google reviews included:</strong> <span style="color: #1976d2; font-weight: 600;">${step4.includedGoogleCount}</span></div>`;
+        }
+        if (step4.includedTrustpilotCount !== null) {
+          summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Trustpilot reviews included:</strong> <span style="color: #1976d2; font-weight: 600;">${step4.includedTrustpilotCount}</span></div>`;
+        }
+        if (step4.totalIncludedReviews !== null) {
+          summaryHtml += `<div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #ffe0b2;"><strong>Total included:</strong> <span style="color: #27AE60; font-weight: 600;">${step4.totalIncludedReviews}</span></div>`;
+        }
+        if (step4.totalExcludedReviews !== null && step4.totalExcludedReviews > 0) {
+          summaryHtml += `<div style="margin-top: 0.25rem; color: #f57c00; font-weight: 500;">Reviews excluded due to 25-review cap: <span style="color: #e65100;">${step4.totalExcludedReviews}</span></div>`;
+        }
+        if (step4.newestReviewDateIncluded) {
+          summaryHtml += `<div style="margin-top: 0.25rem; color: #757575; font-size: 0.85em;">Newest review date included: <strong>${step4.newestReviewDateIncluded}</strong></div>`;
+        }
+        
+        summaryHtml += '</div>';
+      }
       summaryHtml += '</div>';
       summaryHtml += '</div>';
     }
@@ -12734,7 +12759,12 @@ exit`;
               mappedTrustpilotCount: stepId === 4 ? mappedTrustpilotCount : null,
               totalMappedReviews: stepId === 4 ? totalMappedReviews : null,
               latestGoogleDate: stepId === 4 ? latestGoogleDate : null,
-              latestTrustpilotDate: stepId === 4 ? latestTrustpilotDate : null
+              latestTrustpilotDate: stepId === 4 ? latestTrustpilotDate : null,
+              includedGoogleCount: stepId === 4 ? includedGoogleCount : null,
+              includedTrustpilotCount: stepId === 4 ? includedTrustpilotCount : null,
+              totalIncludedReviews: stepId === 4 ? totalIncludedReviews : null,
+              totalExcludedReviews: stepId === 4 ? totalExcludedReviews : null,
+              newestReviewDateIncluded: stepId === 4 ? newestReviewDateIncluded : null
             };
             
             // Update Step 4 match status indicator
