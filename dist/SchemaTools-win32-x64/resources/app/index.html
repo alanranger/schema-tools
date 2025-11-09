@@ -2857,6 +2857,22 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       }
       summaryHtml += '</div>';
       
+      // Schema types section
+      if (step4 && (step4.schemaTypeProduct !== null || step4.schemaTypeCourse !== null || step4.schemaTypeEvent !== null)) {
+        summaryHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ffe0b2;">';
+        summaryHtml += '<div style="font-weight: 600; margin-bottom: 0.5rem; color: #e65100;">📋 Schema Types Generated:</div>';
+        if (step4.schemaTypeProduct !== null) {
+          summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Product only:</strong> <span style="color: #1976d2; font-weight: 600;">${step4.schemaTypeProduct}</span></div>`;
+        }
+        if (step4.schemaTypeCourse !== null) {
+          summaryHtml += `<div style="margin-bottom: 0.25rem;"><strong>Product + Course:</strong> <span style="color: #388e3c; font-weight: 600;">${step4.schemaTypeCourse}</span></div>`;
+        }
+        if (step4.schemaTypeEvent !== null) {
+          summaryHtml += `<div><strong>Product + Event:</strong> <span style="color: #f57c00; font-weight: 600;">${step4.schemaTypeEvent}</span></div>`;
+        }
+        summaryHtml += '</div>';
+      }
+      
       // Mapped reviews section
       summaryHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #ffe0b2;">';
       summaryHtml += '<div style="font-weight: 600; margin-bottom: 0.5rem; color: #e65100;">📊 Mapped Reviews:</div>';
@@ -12948,6 +12964,14 @@ exit`;
             productsWithoutReviews = parseInt(productsWithoutReviewsMatch[1]);
           }
           
+          // Extract schema type counts
+          const schemaTypesMatch = outputText.match(/📋\s*Schema Types Generated:[\s\S]*?•\s*Product only:\s*(\d+)[\s\S]*?•\s*Product \+ Course:\s*(\d+)[\s\S]*?•\s*Product \+ Event:\s*(\d+)/i);
+          if (schemaTypesMatch) {
+            schemaTypeProduct = parseInt(schemaTypesMatch[1]);
+            schemaTypeCourse = parseInt(schemaTypesMatch[2]);
+            schemaTypeEvent = parseInt(schemaTypesMatch[3]);
+          }
+          
           // Extract mapped review statistics (new format)
           // Match: "Google reviews mapped: 127 (from 127 available in merged file)"
           const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(from\s*(\d+)\s+available/i);
@@ -13091,6 +13115,9 @@ exit`;
               matchCount: stepId === 4 ? matchCount : null,
               totalProducts: stepId === 4 ? totalProducts : null,
               productsWithoutReviews: stepId === 4 ? productsWithoutReviews : null,
+              schemaTypeProduct: stepId === 4 ? schemaTypeProduct : null,
+              schemaTypeCourse: stepId === 4 ? schemaTypeCourse : null,
+              schemaTypeEvent: stepId === 4 ? schemaTypeEvent : null,
               latestReviewDate: stepId === 4 ? latestReviewDate : null,
               googleReviewsCount: stepId === 4 ? googleReviewsCount : null,
               trustpilotReviewsCount: stepId === 4 ? trustpilotReviewsCount : null,
