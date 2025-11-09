@@ -305,7 +305,6 @@ def main():
     print()
     
     # Find the input CSV file
-    workflow_dir = Path('inputs-files/workflow')
     csv_files = []
     patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
     for pattern in patterns:
