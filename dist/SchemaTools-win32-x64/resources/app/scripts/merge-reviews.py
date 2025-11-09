@@ -307,14 +307,38 @@ try:
         'fireworks photo workshop': 'fireworks-photography-workshop-kenilworth',
         'fireworks photography workshop': 'fireworks-photography-workshop-kenilworth',
         'quarterly pick n mix': 'quarterly-pick-n-mix-subscription',
+        'quarterly pick n mix subscription': 'quarterly-pick-n-mix-subscription',
         'premium photography academy': 'premium-photography-academy-membership',
+        'premium photography academy membership': 'premium-photography-academy-membership',
         'framed fine art prints': 'framed-fine-art-photography-prints',
+        'framed fine art photography prints': 'framed-fine-art-photography-prints',
+        'unframed fine art prints': 'fine-art-photography-prints-unframed',
+        'unframed fine art photography prints': 'fine-art-photography-prints-unframed',
         'glencoe': 'landscape-photography-workshop-glencoe',
         'anglesey': 'landscape-photography-workshops-anglesey',
         'gower': 'gower-landscape-photography-wales',
+        'gower landscape photography': 'gower-landscape-photography-wales',
         'dartmoor': 'dartmoor-photography-landscape-workshop',
         'kerry': 'ireland-photography-workshops-dingle',
-    }
+        'kerry southern ireland': 'ireland-photography-workshops-dingle',
+        'burnham on sea': 'long-exposure-photography-workshops-burnham',
+        'lavender field': 'lavender-field-photography-workshop',
+        'nant mill': 'landscape-photography-workshops-nant-mill',
+        'yorkshire dales': 'yorkshire-dales-photography-workshops',
+        'north yorkshire': 'north-yorkshire-landscape-photography',
+        'wales': 'wales-photography-workshop-pistyll-rhaeadr',
+        'dorset': 'dorset-landscape-photography-workshop',
+        'garden photography': 'garden-photography-workshop',
+        'exmoor': 'exmoor-photography-workshops-lynmouth',
+        'peak district heather': 'peak-district-heather-photography-workshop',
+        'sezincote': 'sezincote-garden-photography-workshop',
+        'woodland photography': 'secrets-of-woodland-photography-workshop',
+        'christmas photography': 'christmas-photography-workshops',
+        'monthly pick n mix': 'monthly-pick-n-mix-subscription',
+        'annual pick n mix': 'annual-pick-n-mix-subscription',
+        'camera sensor clean': 'camera-sensor-clean',
+        'intermediates intentions': 'intermediates-intentions-photography-project-course',
+        'monthly photography mentoring': 'monthly-online-photography-mentoring',
     
     print(f"📋 Built product dictionary with {len(product_by_slug)} products")
     print(f"📋 Added {len(ALIASES)} location aliases")
@@ -627,11 +651,12 @@ if len(product_slugs) > 0:
                                 if 'beginners photography course' in name_lower or 'beginners photography classes' in name_lower:
                                     matches += 1
                                 elif 'lightroom' in name_lower and 'beginners' in name_lower:
-                                    # Don't count this as a match - it's a different course type
-                                    matches = 0
+                                    # Don't count this as a match for beginners-course-phrase - it's a different course type
+                                    # But don't set matches to 0 - let other words still count
+                                    pass
                             
-                            # Require ALL key words to match (not just 50%)
-                            if matches == len(ref_words) and matches > 0:
+                            # Require at least 70% of key words to match (more lenient than 100%)
+                            if matches > 0 and matches >= (len(ref_words) * 0.7):
                                 score = matches / len(ref_words) if ref_words else 0
                                 if score > best_score:
                                     best_score = score
@@ -649,7 +674,7 @@ if len(product_slugs) > 0:
                         matched_slug = normalized_product_slugs[norm_ref]
                         ref_id_matches += 1
                 
-                # Strategy 4: Fuzzy match Reference Id against product names (strict threshold)
+                # Strategy 4: Fuzzy match Reference Id against product names (moderate threshold)
                 if not matched_slug and name_by_slug:
                     best_match = None
                     best_ratio = 0.0
@@ -658,12 +683,12 @@ if len(product_slugs) > 0:
                         if ratio > best_ratio:
                             best_ratio = ratio
                             best_match = slug
-                    # Increased threshold to 0.80 to prevent false matches
-                    if best_ratio >= 0.80:
+                    # Moderate threshold to allow more matches while preventing obvious false positives
+                    if best_ratio >= 0.75:
                         matched_slug = best_match
                         ref_id_matches += 1
                 
-                # Strategy 5: Fuzzy match normalized Reference Id against normalized product slugs (strict)
+                # Strategy 5: Fuzzy match normalized Reference Id against normalized product slugs (moderate)
                 if not matched_slug:
                     norm_ref = normalize_ref(ref_id)
                     normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
@@ -674,8 +699,8 @@ if len(product_slugs) > 0:
                         if ratio > best_ratio:
                             best_ratio = ratio
                             best_match = orig_prod_slug
-                    # Increased threshold to 0.80 to prevent false matches
-                    if best_ratio >= 0.80:
+                    # Moderate threshold to allow more matches while preventing obvious false positives
+                    if best_ratio >= 0.75:
                         matched_slug = best_match
                         ref_id_matches += 1
                 
