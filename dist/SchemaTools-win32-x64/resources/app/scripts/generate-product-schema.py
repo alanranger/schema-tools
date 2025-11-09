@@ -1770,7 +1770,7 @@ def main():
             is_first_variant = True
         
         # Generate schema graph (only first variant per URL gets aggregateRating)
-        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type)
+        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type, events_df=events_df)
         
         # Track schema type counts
         schema_type_counts[product_schema_type] += 1
