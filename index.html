@@ -12949,17 +12949,19 @@ exit`;
           }
           
           // Extract mapped review statistics (new format)
-          const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
-          const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+          // Match: "Google reviews mapped: 127 (from 127 available in merged file)"
+          const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(from\s*(\d+)\s+available/i);
+          const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(from\s*(\d+)\s+available/i);
           const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
           
           const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
           const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
           const overallLatestDateMatch = outputText.match(/Overall\s+latest\s+review:\s*([\d-]+)/i);
           
-          // Fallback to old format if new format not found
-          const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)/i);
-          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)/i);
+          // Fallback to old format if new format not found (but be more specific to avoid matching dates)
+          // Only match if it's clearly a count, not a date
+          const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)(?![\d-])/i);
+          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)(?![\d-])/i);
           const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
           
           if (mappedGoogleMatch) {
@@ -13034,8 +13036,9 @@ exit`;
             
             if (stepId === 4 && consoleOutput) {
               const outputText = consoleOutput.textContent || '';
-              const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
-              const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(of\s*(\d+)\s*total\)/i);
+              // Match: "Google reviews mapped: 127 (from 127 available in merged file)"
+              const mappedGoogleMatch = outputText.match(/Google\s+reviews?\s+mapped:\s*(\d+)\s*\(from\s*(\d+)\s+available/i);
+              const mappedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+mapped:\s*(\d+)\s*\(from\s*(\d+)\s+available/i);
               const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
               const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
               const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
