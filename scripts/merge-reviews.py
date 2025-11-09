@@ -502,33 +502,8 @@ if len(product_slugs) > 0:
         
         matched_slug = None
         
-        # For Trustpilot: If Reference Id matches an exact product name, use it (highest priority)
-        if source == 'Trustpilot':
-            ref_id = None
-            ref_col_names = ["reference_id", "referenceid", "ref_id", "Reference Id", "ReferenceId", "referenceId", "Ref Id"]
-            for col_name in ref_col_names:
-                if col_name in row.index:
-                    ref_val = row.get(col_name)
-                    if ref_val and pd.notna(ref_val) and str(ref_val).strip():
-                        ref_id = str(ref_val).strip()
-                        break
-            
-            # If Reference Id exists, try to match it directly to product names (exact match)
-            if ref_id:
-                ref_id_lower = ref_id.lower().strip()
-                # First try exact product name match
-                for slug, name in name_by_slug.items():
-                    if str(name).lower().strip() == ref_id_lower:
-                        matched_slug = slug
-                        ref_id_matches += 1
-                        break
-                
-                # If exact match failed but we have a slug from Reference Id, check if it's valid
-                if not matched_slug and existing_slug and existing_slug in product_slugs:
-                    matched_slug = existing_slug
-        
         # Skip if already matched exactly (for Google or if Trustpilot Reference Id didn't match)
-        if not matched_slug and existing_slug and existing_slug in product_slugs:
+        if existing_slug and existing_slug in product_slugs:
             matched_slug = existing_slug
         
         if not matched_slug and source == 'Trustpilot':
@@ -562,22 +537,50 @@ if len(product_slugs) > 0:
             if ref_id:
                 ref_id_total += 1
                 # Reference Id is usually a product name/description, not a slug
-                # Try multiple matching strategies:
+                # Try multiple matching strategies in order of strictness:
                 
-                # Strategy 1: Match Reference Id directly against product names (loose keyword matching)
+                # Strategy 1: Exact product name match (case-insensitive, ignore extra words)
                 ref_id_lower = ref_id.lower().strip()
+                ref_id_normalized = re.sub(r'\s+', ' ', ref_id_lower)  # Normalize whitespace
                 for slug, name in name_by_slug.items():
-                    name_lower = str(name).lower()
-                    # Check if Reference Id keywords appear in product name
-                    ref_words = [w for w in ref_id_lower.split() if len(w) > 3]  # Only significant words
-                    if ref_words:
-                        matches = sum(1 for word in ref_words if word in name_lower)
-                        if matches >= len(ref_words) * 0.5:  # At least 50% of keywords match
-                            matched_slug = slug
-                            ref_id_matches += 1
-                            break
+                    name_lower = str(name).lower().strip()
+                    name_normalized = re.sub(r'\s+', ' ', name_lower)
+                    # Check if Reference Id is contained in product name or vice versa
+                    # This handles cases like "URBAN ARCHITECTURE Photography Workshops" 
+                    # matching "URBAN ARCHITECTURE Photography Workshops - Coventry 16 Apr"
+                    if ref_id_normalized in name_normalized or name_normalized in ref_id_normalized:
+                        matched_slug = slug
+                        ref_id_matches += 1
+                        break
                 
-                # Strategy 2: Normalize and match against product slugs (exact)
+                # Strategy 2: Extract key distinguishing words and require ALL to match
+                # Key words are location names, unique identifiers (not generic words like "photography", "workshop")
+                if not matched_slug:
+                    # Extract significant words (longer than 4 chars, exclude generic terms)
+                    generic_words = {'photography', 'workshop', 'workshops', 'course', 'courses', 'class', 'classes', 
+                                    'beginners', 'beginner', 'advanced', 'intermediate', 'photo', 'photographic'}
+                    ref_words = [w for w in ref_id_lower.split() 
+                                if len(w) > 4 and w not in generic_words]
+                    
+                    if ref_words:  # Only proceed if we have distinguishing words
+                        best_match = None
+                        best_score = 0
+                        for slug, name in name_by_slug.items():
+                            name_lower = str(name).lower()
+                            # Count how many key words match
+                            matches = sum(1 for word in ref_words if word in name_lower)
+                            # Require ALL key words to match (not just 50%)
+                            if matches == len(ref_words) and matches > 0:
+                                score = matches / len(ref_words) if ref_words else 0
+                                if score > best_score:
+                                    best_score = score
+                                    best_match = slug
+                        
+                        if best_match:
+                            matched_slug = best_match
+                            ref_id_matches += 1
+                
+                # Strategy 3: Normalize and match against product slugs (exact)
                 if not matched_slug:
                     norm_ref = normalize_ref(ref_id)
                     normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
@@ -585,7 +588,7 @@ if len(product_slugs) > 0:
                         matched_slug = normalized_product_slugs[norm_ref]
                         ref_id_matches += 1
                 
-                # Strategy 3: Fuzzy match Reference Id against product names (lower threshold)
+                # Strategy 4: Fuzzy match Reference Id against product names (strict threshold)
                 if not matched_slug and name_by_slug:
                     best_match = None
                     best_ratio = 0.0
@@ -594,11 +597,12 @@ if len(product_slugs) > 0:
                         if ratio > best_ratio:
                             best_ratio = ratio
                             best_match = slug
-                    if best_ratio >= 0.65:  # Lowered from 0.80 to 0.65 for better matching
+                    # Increased threshold to 0.80 to prevent false matches
+                    if best_ratio >= 0.80:
                         matched_slug = best_match
                         ref_id_matches += 1
                 
-                # Strategy 4: Fuzzy match normalized Reference Id against normalized product slugs
+                # Strategy 5: Fuzzy match normalized Reference Id against normalized product slugs (strict)
                 if not matched_slug:
                     norm_ref = normalize_ref(ref_id)
                     normalized_product_slugs = {normalize_ref(slug): slug for slug in product_by_slug.keys()}
@@ -609,9 +613,52 @@ if len(product_slugs) > 0:
                         if ratio > best_ratio:
                             best_ratio = ratio
                             best_match = orig_prod_slug
-                    if best_ratio >= 0.65:  # Lowered from 0.80 to 0.65
+                    # Increased threshold to 0.80 to prevent false matches
+                    if best_ratio >= 0.80:
                         matched_slug = best_match
                         ref_id_matches += 1
+                
+                # Final validation: Prevent obvious mismatches
+                # Check if matched product contains conflicting location/keywords
+                if matched_slug and ref_id:
+                    ref_id_lower = ref_id.lower()
+                    matched_name = name_by_slug.get(matched_slug, '').lower()
+                    
+                    # Extract location/keywords from Reference Id
+                    ref_locations = []
+                    ref_keywords = []
+                    if 'urban' in ref_id_lower and 'architecture' in ref_id_lower:
+                        ref_keywords.append('urban-architecture')
+                    if 'batsford' in ref_id_lower or 'arboretum' in ref_id_lower:
+                        ref_locations.append('batsford')
+                    if 'peak' in ref_id_lower and 'district' in ref_id_lower:
+                        ref_locations.append('peak-district')
+                    if 'lake' in ref_id_lower and 'district' in ref_id_lower:
+                        ref_locations.append('lake-district')
+                    if 'yorkshire' in ref_id_lower and 'dales' in ref_id_lower:
+                        ref_locations.append('yorkshire-dales')
+                    
+                    # Check for conflicts
+                    conflict = False
+                    if 'urban-architecture' in ref_keywords:
+                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                            conflict = True
+                    if 'batsford' in ref_locations:
+                        if 'urban' in matched_name and 'architecture' in matched_name:
+                            conflict = True
+                    if 'peak-district' in ref_locations:
+                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                            conflict = True
+                    if 'lake-district' in ref_locations:
+                        if 'batsford' in matched_name or 'arboretum' in matched_name:
+                            conflict = True
+                    if 'yorkshire-dales' in ref_locations:
+                        if 'devon' in matched_name:
+                            conflict = True
+                    
+                    if conflict:
+                        # Reject the match - it's clearly wrong
+                        matched_slug = None
             
             # Phase 1 – Try Tags column if Reference Id didn't match
             if not matched_slug:
