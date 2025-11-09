@@ -222,16 +222,12 @@ def main():
     
     print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     
-    # Step 1: Filter out hidden or incomplete rows
-    if 'Visible' in df.columns:
-        df = df[df['Visible'].astype(str).str.lower() == 'yes']
-        print(f"After filtering Visible=Yes: {len(df)} rows")
-    
+    # Step 1: Filter out rows without SKU first (applies to both main products and variants)
     if 'SKU' in df.columns:
         df = df[df['SKU'].notna()]
         print(f"After filtering SKU not null: {len(df)} rows")
     
-    # Step 2: Normalize field types
+    # Step 2: Normalize field types BEFORE filtering Visible (so we can check variants properly)
     df = df.fillna("")
     for col in df.columns:
         if df[col].dtype == 'object':
@@ -261,7 +257,22 @@ def main():
             i += 1
             continue
         
-        # This is a main product - get its details
+        # Check if main product is visible (skip hidden products and their variants)
+        if 'Visible' in df.columns:
+            visible = str(row.get('Visible', '')).strip().lower()
+            if visible != 'yes':
+                # Skip this hidden main product and its variants
+                i += 1
+                # Skip all variants that follow
+                while i < len(df_reset):
+                    next_row = df_reset.iloc[i]
+                    next_title = str(next_row.get('Title', '')).strip()
+                    if next_title:  # Hit another main product, stop
+                        break
+                    i += 1
+                continue
+        
+        # This is a visible main product - get its details
         description = strip_html(row.get('Description', ''))
         image = extract_first_image(row.get('Hosted Image URLs', ''))
         product_page = str(row.get('Product Page', '')).strip()
