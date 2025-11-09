@@ -194,6 +194,15 @@ def main():
         price = normalize_price(row.get('Price', ''))
         category = str(row.get('Categories', '')).strip() if pd.notna(row.get('Categories')) else ''
         
+        # Extract SKU if available (try multiple column name variations)
+        sku = ''
+        for sku_col in ['SKU', 'Sku', 'sku', 'Product SKU', 'Product ID']:
+            if sku_col in row.index and pd.notna(row.get(sku_col)):
+                sku_val = str(row.get(sku_col)).strip()
+                if sku_val and sku_val.lower() != 'nan':
+                    sku = sku_val
+                    break
+        
         # Validate URL
         if url:
             is_valid, error_msg = validate_url(url)
@@ -211,7 +220,8 @@ def main():
             'image': image,
             'url': url,
             'price': price,
-            'category': category
+            'category': category,
+            'sku': sku
         })
     
     if skipped_variants > 0:
@@ -240,14 +250,45 @@ def main():
     
     # Save as Excel
     output_file = workflow_dir / '02 – products_cleaned.xlsx'
+    
+    # Check if file exists and might be locked
+    if output_file.exists():
+        print(f"⚠️  Output file already exists: {output_file.name}")
+        print(f"   Attempting to overwrite...")
+        try:
+            # Try to remove existing file first
+            output_file.unlink()
+            print(f"   ✅ Removed existing file")
+        except PermissionError:
+            print(f"\n❌ ERROR: Cannot overwrite file - it may be open in Excel or another program")
+            print(f"   File: {output_file.absolute()}")
+            print(f"\n💡 SOLUTION:")
+            print(f"   1. Close the Excel file if it's open")
+            print(f"   2. Close any Windows Explorer windows showing this folder")
+            print(f"   3. Try running Step 2 again")
+            sys.exit(1)
+        except Exception as e:
+            print(f"   ⚠️  Could not remove existing file: {e}")
+            print(f"   Will attempt to overwrite anyway...")
+    
     try:
         cleaned_df.to_excel(output_file, index=False, engine='openpyxl')
         print(f"✅ Saved: {output_file.name}")
     except ImportError:
         print("❌ Error: openpyxl library not installed. Install with: pip install openpyxl")
         sys.exit(1)
+    except PermissionError as e:
+        print(f"\n❌ ERROR: Permission denied when saving Excel file")
+        print(f"   File: {output_file.absolute()}")
+        print(f"\n💡 SOLUTION:")
+        print(f"   1. Close the Excel file if it's open in Excel or another program")
+        print(f"   2. Close any Windows Explorer windows showing this folder")
+        print(f"   3. Check if another process is using the file (Task Manager)")
+        print(f"   4. Try running Step 2 again")
+        sys.exit(1)
     except Exception as e:
         print(f"❌ Error saving Excel file: {e}")
+        print(f"   File: {output_file.absolute()}")
         sys.exit(1)
     
     # Summary

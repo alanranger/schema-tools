@@ -301,10 +301,13 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     product_description = str(product_row.get('description', '')).strip()
     product_image = str(product_row.get('image', '')).strip()
     
-    # Generate SKU from product name + year
-    product_slug = slugify(product_name)
-    current_year = date.today().year
-    sku = f"{product_slug.upper()}-{current_year}"
+    # Use SKU from input file if available, otherwise generate from product name + year
+    sku = str(product_row.get('sku', '')).strip() if pd.notna(product_row.get('sku')) else ''
+    if not sku or sku.lower() == 'nan':
+        # Fallback: Generate SKU from product name + year
+        product_slug = slugify(product_name)
+        current_year = date.today().year
+        sku = f"{product_slug.upper()}-{current_year}"
     
     # Build product schema
     product_schema = {
