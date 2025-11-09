@@ -197,7 +197,113 @@ def create_offer_from_row(row):
     
     return offer
 
+def detect_schema_type(product_name, product_url, events_df):
+    """
+    Detect schema type by matching product to events CSV files.
+    Returns: 'event', 'course', or 'product'
+    """
+    if events_df is None or len(events_df) == 0:
+        return 'product'  # Default if no events loaded
+    
+    product_name_lower = product_name.lower() if product_name else ''
+    product_url_slug = ''
+    if product_url:
+        product_url_slug = product_url.split('/')[-1].strip().lower()
+    
+    # Try to match by URL slug first (most reliable)
+    matched_event = None
+    for _, event_row in events_df.iterrows():
+        event_url = str(event_row.get('Event_URL', '')).strip()
+        event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+        
+        # Match by URL slug
+        if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
+            matched_event = event_row
+            break
+    
+    # If no URL match, try fuzzy match by Event_Title
+    if matched_event is None:
+        for _, event_row in events_df.iterrows():
+            event_title = str(event_row.get('Event_Title', '')).lower()
+            
+            # Check if key words match (at least 2 significant words)
+            if event_title and product_name_lower:
+                event_words = [w for w in event_title.split() if len(w) > 4]
+                matches = sum(1 for word in event_words if word in product_name_lower)
+                if matches >= 2:  # At least 2 significant words match
+                    matched_event = event_row
+                    break
+    
+    # If matched, determine if it's a workshop or lesson based on Event_URL
+    if matched_event is not None:
+        event_url = str(matched_event.get('Event_URL', '')).lower()
+        if 'photo-workshops-uk' in event_url or 'workshops' in event_url.lower():
+            return 'event'  # Product + Event
+        elif 'photography-services-near-me' in event_url or 'beginners-photography-lessons' in event_url or 'lessons' in event_url.lower():
+            return 'course'  # Product + Course
+        else:
+            # Default to event if we can't determine (workshops are more common)
+            return 'event'
+    
+    # If no match found, return 'product' (Product only)
+    return 'product'
+
 def main():
+    # Load events CSV files to detect schema types
+    events_df = None
+    events_list = []
+    
+    # Try to find event CSV files
+    events_workshops_path = None
+    events_lessons_path = None
+    
+    for possible_name in [
+        "01 – workshops.csv",
+        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
+        "01 - workshops.csv",
+        "workshops.csv"
+    ]:
+        test_path = workflow_dir / possible_name
+        if test_path.exists():
+            events_workshops_path = test_path
+            break
+    
+    for possible_name in [
+        "01 – lessons.csv",
+        "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv",
+        "01 - lessons.csv",
+        "lessons.csv"
+    ]:
+        test_path = workflow_dir / possible_name
+        if test_path.exists():
+            events_lessons_path = test_path
+            break
+    
+    if events_workshops_path and events_workshops_path.exists():
+        try:
+            workshops = pd.read_csv(events_workshops_path, encoding="utf-8-sig")
+            events_list.append(workshops)
+            print(f"📅 Loaded {len(workshops)} workshop events for schema type detection")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load workshop events: {e}")
+    
+    if events_lessons_path and events_lessons_path.exists():
+        try:
+            lessons = pd.read_csv(events_lessons_path, encoding="utf-8-sig")
+            events_list.append(lessons)
+            print(f"📅 Loaded {len(lessons)} lesson events for schema type detection")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load lesson events: {e}")
+    
+    if events_list:
+        events_df = pd.concat(events_list, ignore_index=True)
+        print(f"📅 Total events loaded: {len(events_df)}")
+    else:
+        events_df = pd.DataFrame()
+        print(f"⚠️  No event CSV files found - all products will default to 'product' schema type")
+    
+    print()
+    
     # Find the input CSV file
     workflow_dir = Path('inputs-files/workflow')
     csv_files = []
@@ -348,7 +454,8 @@ def main():
             'lowest_price': lowest_price,
             'highest_price': highest_price,
             'skus': skus_str,
-            'main_sku': main_sku
+            'main_sku': main_sku,
+            'schema_type': detect_schema_type(title, url, events_df)  # Add schema type detection
         })
     
     if not grouped_data:
