@@ -287,8 +287,14 @@ def calculate_aggregate_rating(reviews):
         "reviewCount": count
     }
 
-def generate_product_schema_graph(product_row, reviews_list):
-    """Generate complete @graph schema for a product"""
+def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True):
+    """Generate complete @graph schema for a product
+    
+    Args:
+        product_row: Product data row
+        reviews_list: List of review objects
+        include_aggregate_rating: If True, add aggregateRating (only for first variant per page)
+    """
     
     product_name = str(product_row.get('name', '')).strip()
     product_url = str(product_row.get('url', '')).strip()
@@ -371,13 +377,15 @@ def generate_product_schema_graph(product_row, reviews_list):
         except (ValueError, TypeError):
             pass
     
-    # Add reviews and aggregate rating
+    # Add reviews and aggregate rating (only if include_aggregate_rating is True)
     if reviews_list:
         product_schema["review"] = reviews_list
         
-        aggregate_rating = calculate_aggregate_rating(reviews_list)
-        if aggregate_rating:
-            product_schema["aggregateRating"] = aggregate_rating
+        # Only add aggregateRating for the first variant per product page
+        if include_aggregate_rating:
+            aggregate_rating = calculate_aggregate_rating(reviews_list)
+            if aggregate_rating:
+                product_schema["aggregateRating"] = aggregate_rating
     
     # Build @graph structure - Keep only LocalBusiness (it inherits Organization properties)
     try:
@@ -910,6 +918,18 @@ def main():
     # Track validation statistics
     breadcrumbs_normalised_count = 0
     
+    # Group products by URL to identify variants (products sharing the same page)
+    # Only the first variant per URL will get aggregateRating
+    url_to_first_index = {}  # Maps URL to the first product index with that URL
+    
+    # Pre-process: identify first variant for each URL
+    # Products without URLs are treated as standalone (each gets aggregateRating)
+    for idx, row in df_products.iterrows():
+        product_url = str(row.get('url', '')).strip()
+        if product_url:  # Only group products that have URLs
+            if product_url not in url_to_first_index:
+                url_to_first_index[product_url] = idx
+    
     for idx, row in df_products.iterrows():
         product_name = str(row.get('name', '')).strip()
         if not product_name or product_name.lower() == 'nan':
@@ -1189,8 +1209,17 @@ def main():
         if len(product_reviews) > 0:
             products_with_reviews_count += 1
         
-        # Generate schema graph
-        schema_graph = generate_product_schema_graph(row, product_reviews)
+        # Determine if this is the first variant for this URL (only first gets aggregateRating)
+        # Products without URLs are treated as standalone (each gets aggregateRating)
+        product_url = str(row.get('url', '')).strip()
+        if product_url:
+            is_first_variant = (product_url in url_to_first_index and url_to_first_index[product_url] == idx)
+        else:
+            # Product without URL is standalone - gets aggregateRating
+            is_first_variant = True
+        
+        # Generate schema graph (only first variant per URL gets aggregateRating)
+        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant)
         
         # Track validation statistics
         breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
