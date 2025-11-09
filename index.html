@@ -12717,6 +12717,11 @@ exit`;
             let totalMappedReviews = null;
             let latestGoogleDate = null;
             let latestTrustpilotDate = null;
+            let includedGoogleCount = null;
+            let includedTrustpilotCount = null;
+            let totalIncludedReviews = null;
+            let totalExcludedReviews = null;
+            let newestReviewDateIncluded = null;
             
             if (stepId === 4 && consoleOutput) {
               const outputText = consoleOutput.textContent || '';
@@ -12725,6 +12730,13 @@ exit`;
               const totalMappedMatch = outputText.match(/Total\s+mapped\s+reviews?:\s*(\d+)/i);
               const latestGoogleDateMatch = outputText.match(/Latest\s+Google\s+review:\s*([\d-]+)/i);
               const latestTrustpilotDateMatch = outputText.match(/Latest\s+Trustpilot\s+review:\s*([\d-]+)/i);
+              
+              // Parse reviews included in schema section
+              const includedGoogleMatch = outputText.match(/Google\s+reviews?\s+included:\s*(\d+)/i);
+              const includedTrustpilotMatch = outputText.match(/Trustpilot\s+reviews?\s+included:\s*(\d+)/i);
+              const totalIncludedMatch = outputText.match(/Total\s+included:\s*(\d+)/i);
+              const excludedMatch = outputText.match(/Reviews?\s+excluded\s+due\s+to\s+25-review\s+cap:\s*(\d+)/i);
+              const newestDateMatch = outputText.match(/Newest\s+review\s+date\s+included:\s*([\d-]+)/i);
               
               if (mappedGoogleMatch) {
                 mappedGoogleCount = parseInt(mappedGoogleMatch[1]);
@@ -12740,6 +12752,21 @@ exit`;
               }
               if (latestTrustpilotDateMatch) {
                 latestTrustpilotDate = latestTrustpilotDateMatch[1];
+              }
+              if (includedGoogleMatch) {
+                includedGoogleCount = parseInt(includedGoogleMatch[1]);
+              }
+              if (includedTrustpilotMatch) {
+                includedTrustpilotCount = parseInt(includedTrustpilotMatch[1]);
+              }
+              if (totalIncludedMatch) {
+                totalIncludedReviews = parseInt(totalIncludedMatch[1]);
+              }
+              if (excludedMatch) {
+                totalExcludedReviews = parseInt(excludedMatch[1]);
+              }
+              if (newestDateMatch) {
+                newestReviewDateIncluded = newestDateMatch[1];
               }
             }
             
