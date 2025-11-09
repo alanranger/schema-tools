@@ -1338,6 +1338,13 @@ def main():
     products_with_reviews_count = 0
     summary_rows = []
     
+    # Track schema types
+    schema_type_counts = {
+        'product': 0,      # Product only
+        'course': 0,       # Product + Course
+        'event': 0         # Product + Event
+    }
+    
     # Initialize validation error log
     error_log_path = outputs_dir / 'validation-errors.log'
     if error_log_path.exists():
@@ -1711,6 +1718,9 @@ def main():
         # Generate schema graph (only first variant per URL gets aggregateRating)
         schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type)
         
+        # Track schema type counts
+        schema_type_counts[product_schema_type] += 1
+        
         # Track validation statistics
         breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
         
@@ -2083,6 +2093,11 @@ def main():
     # Count ALL products that have reviews (including fuzzy matches from Step 4)
     print(f"Products with reviews: {products_with_reviews_count}")
     print(f"Products without reviews: {valid_products - products_with_reviews_count}")
+    print("")
+    print("📋 Schema Types Generated:")
+    print(f"  • Product only: {schema_type_counts['product']}")
+    print(f"  • Product + Course: {schema_type_counts['course']}")
+    print(f"  • Product + Event: {schema_type_counts['event']}")
     print("")
     print("📊 Mapped Reviews (all reviews matched to products, before 25-review cap):")
     print(f"  Google reviews mapped: {mapped_google_count} (from {total_google_count} available in merged file)")
