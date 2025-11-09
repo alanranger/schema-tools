@@ -783,7 +783,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         # Second: If no match found, try to extract dates from product name
         if not start_date:
             date_patterns = [
-                r'(\d{1,1})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
                 r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
                 r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
             ]
