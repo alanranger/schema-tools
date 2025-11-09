@@ -689,10 +689,6 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "addressCountry": "GB"
                 }
             }
-        
-        # Add organizer and performer (required for Event schemas)
-        product_schema["organizer"] = ORGANIZER
-        product_schema["performer"] = PERFORMER
         else:
             # Default location
             product_schema["location"] = {
@@ -705,6 +701,10 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "addressCountry": "GB"
                 }
             }
+        
+        # Add organizer and performer (required for Event schemas)
+        product_schema["organizer"] = ORGANIZER
+        product_schema["performer"] = PERFORMER
     
     # Add hasCourseInstance for Course type (optional enhancement)
     # This boosts chance of Course rich results
