@@ -425,6 +425,27 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 # Calculate priceValidUntil (12 months from today)
                 price_valid_until = (date.today() + timedelta(days=365)).isoformat()
                 
+                # Determine return fees
+                return_fees_val = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
+                
+                # Build return policy
+                return_policy = {
+                    "@type": "MerchantReturnPolicy",
+                    "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+                    "merchantReturnDays": 28,
+                    "refundType": "http://schema.org/FullRefund",
+                    "applicableCountry": "GB",
+                    "returnMethod": "http://schema.org/ReturnByMail",
+                    "returnFees": return_fees_val
+                }
+                # Add returnShippingFeesAmount when returnFees is ReturnShippingFees
+                if return_fees_val == "https://schema.org/ReturnShippingFees":
+                    return_policy["returnShippingFeesAmount"] = {
+                        "@type": "MonetaryAmount",
+                        "value": "50.00",
+                        "currency": "GBP"
+                    }
+                
                 offers_data = [{
                     "@type": "Offer",
                     "sku": sku,
@@ -442,15 +463,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                             "addressCountry": "GB"
                         }
                     },
-                    "hasMerchantReturnPolicy": {
-                        "@type": "MerchantReturnPolicy",
-                        "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
-                        "merchantReturnDays": 28,
-                        "refundType": "http://schema.org/FullRefund",
-                        "applicableCountry": "GB",
-                        "returnMethod": "http://schema.org/ReturnByMail",
-                        "returnFees": "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
-                    }
+                    "hasMerchantReturnPolicy": return_policy
                 }]
             except (ValueError, TypeError):
                 offers_data = None
@@ -485,19 +498,44 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     del offer['shippingDetails']['doesNotShip']
             
             if 'hasMerchantReturnPolicy' not in offer:
-                offer['hasMerchantReturnPolicy'] = {
+                return_fees = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
+                return_policy = {
                     "@type": "MerchantReturnPolicy",
                     "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
                     "merchantReturnDays": 28,
                     "refundType": "http://schema.org/FullRefund",
                     "applicableCountry": "GB",
                     "returnMethod": "http://schema.org/ReturnByMail",
-                    "returnFees": "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
+                    "returnFees": return_fees
                 }
+                # Add returnShippingFeesAmount when returnFees is ReturnShippingFees
+                if return_fees == "https://schema.org/ReturnShippingFees":
+                    return_policy["returnShippingFeesAmount"] = {
+                        "@type": "MonetaryAmount",
+                        "value": "50.00",
+                        "currency": "GBP"
+                    }
+                offer['hasMerchantReturnPolicy'] = return_policy
             else:
                 # Ensure returnFees is set even if policy already exists
                 if 'returnFees' not in offer['hasMerchantReturnPolicy']:
-                    offer['hasMerchantReturnPolicy']['returnFees'] = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
+                    return_fees = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
+                    offer['hasMerchantReturnPolicy']['returnFees'] = return_fees
+                    # Add returnShippingFeesAmount when returnFees is ReturnShippingFees
+                    if return_fees == "https://schema.org/ReturnShippingFees":
+                        offer['hasMerchantReturnPolicy']['returnShippingFeesAmount'] = {
+                            "@type": "MonetaryAmount",
+                            "value": "50.00",
+                            "currency": "GBP"
+                        }
+                # Also ensure returnShippingFeesAmount is set if returnFees is already ReturnShippingFees
+                elif offer['hasMerchantReturnPolicy'].get('returnFees') == "https://schema.org/ReturnShippingFees":
+                    if 'returnShippingFeesAmount' not in offer['hasMerchantReturnPolicy']:
+                        offer['hasMerchantReturnPolicy']['returnShippingFeesAmount'] = {
+                            "@type": "MonetaryAmount",
+                            "value": "50.00",
+                            "currency": "GBP"
+                        }
             
             # Ensure priceValidUntil is always set to +12 months
             if 'priceValidUntil' not in offer:
