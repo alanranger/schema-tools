@@ -449,7 +449,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                         "refundType": "http://schema.org/FullRefund",
                         "applicableCountry": "GB",
                         "returnMethod": "http://schema.org/ReturnByMail",
-                        "returnFees": "https://schema.org/FreeReturn"
+                        "returnFees": "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
                     }
                 }]
             except (ValueError, TypeError):
@@ -492,12 +492,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "refundType": "http://schema.org/FullRefund",
                     "applicableCountry": "GB",
                     "returnMethod": "http://schema.org/ReturnByMail",
-                    "returnFees": "https://schema.org/FreeReturn"
+                    "returnFees": "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
                 }
             else:
                 # Ensure returnFees is set even if policy already exists
                 if 'returnFees' not in offer['hasMerchantReturnPolicy']:
-                    offer['hasMerchantReturnPolicy']['returnFees'] = "https://schema.org/FreeReturn"
+                    offer['hasMerchantReturnPolicy']['returnFees'] = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
             
             # Ensure priceValidUntil is always set to +12 months
             if 'priceValidUntil' not in offer:
