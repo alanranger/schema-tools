@@ -7398,13 +7398,32 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       JSON.parse(jsonString); // Validate it parses correctly
       
       // Step 2: Safe minification using JSON.stringify (lossless, no regex)
+      // Note: JSON.stringify(obj, null, 0) produces minified JSON (no indentation)
+      // This is equivalent to JSON.stringify(obj) but more explicit
       let minifiedJson;
       let minificationSuccess = false;
       let minificationWarning = '';
       
       try {
-        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0); // Safe minify, no regex
-        JSON.parse(minifiedJson); // Validate minified version parses correctly
+        // Validate schema structure before minification
+        if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
+          throw new Error('Invalid schema: not an object');
+        }
+        if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
+          throw new Error('Invalid schema: @graph is not an array');
+        }
+        
+        // Safe minification: use JSON.stringify (lossless, no regex manipulation)
+        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0);
+        
+        // Validate minified version parses correctly (catches syntax errors)
+        JSON.parse(minifiedJson);
+        
+        // Verify it ends correctly (should end with ]} for @graph array)
+        if (!minifiedJson.trim().endsWith(']}') && !minifiedJson.trim().endsWith('}}')) {
+          throw new Error('Invalid JSON structure: incorrect ending');
+        }
+        
         minificationSuccess = true;
       } catch (minifyError) {
         // Fallback: use unminified version if minification fails
@@ -7503,13 +7522,32 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const hasGraph = Array.isArray(parsed['@graph']);
       
       // Step 2: Safe minification with validation and fallback
+      // Note: JSON.stringify(obj, null, 0) produces minified JSON (no indentation)
+      // This is equivalent to JSON.stringify(obj) but more explicit
       let minifiedJson;
       let minificationSuccess = false;
       let minificationWarning = '';
       
       try {
-        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0); // Safe minify, no regex
-        JSON.parse(minifiedJson); // Validate minified version parses correctly
+        // Validate schema structure before minification
+        if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
+          throw new Error('Invalid schema: not an object');
+        }
+        if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
+          throw new Error('Invalid schema: @graph is not an array');
+        }
+        
+        // Safe minification: use JSON.stringify (lossless, no regex manipulation)
+        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0);
+        
+        // Validate minified version parses correctly (catches syntax errors)
+        JSON.parse(minifiedJson);
+        
+        // Verify it ends correctly (should end with ]} for @graph array)
+        if (!minifiedJson.trim().endsWith(']}') && !minifiedJson.trim().endsWith('}}')) {
+          throw new Error('Invalid JSON structure: incorrect ending');
+        }
+        
         minificationSuccess = true;
       } catch (minifyError) {
         // Fallback: use unminified version if minification fails
