@@ -289,19 +289,29 @@ def calculate_aggregate_rating(reviews):
         "reviewCount": count
     }
 
-def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True):
+def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True, schema_type='product'):
     """Generate complete @graph schema for a product
     
     Args:
         product_row: Product data row
         reviews_list: List of review objects
         include_aggregate_rating: If True, add aggregateRating (only for first variant per page)
+        schema_type: 'product', 'course', or 'event' - determines @type and additional fields
     """
     
     product_name = str(product_row.get('name', '')).strip()
     product_url = str(product_row.get('url', '')).strip()
     product_description = str(product_row.get('description', '')).strip()
     product_image = str(product_row.get('image', '')).strip()
+    
+    # Determine schema @type based on schema_type parameter
+    if schema_type == 'event':
+        type_array = ["Product", "Event"]
+    elif schema_type == 'course':
+        type_array = ["Product", "Course"]
+    else:
+        # Default: Product only (for prints, vouchers, etc.)
+        type_array = ["Product"]
     
     # Use SKU from input file (main_sku column from cleaned file)
     # Never use title or description as fallback for SKU
@@ -324,21 +334,24 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         current_year = date.today().year
         sku = f"{product_slug.upper()}-{current_year}"[:40]  # Truncate to 40 chars
     
-    # Build product schema
+    # Build product schema with dynamic @type
     product_schema = {
-        "@type": ["Product", "Course"],
+        "@type": type_array,
         "name": product_name,
         "sku": sku,
         "brand": {
             "@type": "Brand",
             "name": "Alan Ranger Photography"
-        },
-        "provider": {
+        }
+    }
+    
+    # Add provider for Course and Event types
+    if schema_type in ['course', 'event']:
+        product_schema["provider"] = {
             "@type": "Organization",
             "name": "Alan Ranger Photography",
             "sameAs": "https://www.alanranger.com"
         }
-    }
     
     # Add description - limit to 600 chars and strip line breaks
     if product_description:
@@ -510,9 +523,108 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             # Use array format (multiple offers OR single offer with variants)
             product_schema["offers"] = offers_data
     
-    # Add hasCourseInstance for educational courses/workshops (optional enhancement)
+    # Add Event-specific fields when schema_type is 'event'
+    if schema_type == 'event':
+        # Try to extract dates from product name or description
+        start_date = None
+        end_date = None
+        location_name = None
+        
+        # Extract dates from product name
+        date_patterns = [
+            r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
+            r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
+            r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
+        ]
+        
+        for pattern in date_patterns:
+            match = re.search(pattern, product_name)
+            if match:
+                try:
+                    if len(match.groups()) == 4:
+                        if match.group(1).isdigit():
+                            day1, day2, month, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                        else:
+                            month, day1, day2, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                            end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                    elif len(match.groups()) == 2:
+                        month, year = match.groups()
+                        start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
+                        end_date = start_date
+                    break
+                except:
+                    pass
+        
+        # Extract location from product name
+        location_keywords = {
+            'coventry': 'Coventry',
+            'lake district': 'Lake District',
+            'peak district': 'Peak District',
+            'yorkshire dales': 'Yorkshire Dales',
+            'snowdonia': 'Snowdonia',
+            'norfolk': 'Norfolk',
+            'devon': 'Devon',
+            'dorset': 'Dorset',
+            'anglesey': 'Anglesey',
+            'northumberland': 'Northumberland',
+            'suffolk': 'Suffolk',
+            'gower': 'Gower',
+            'kerry': 'Kerry',
+            'dartmoor': 'Dartmoor',
+            'exmoor': 'Exmoor',
+            'warwickshire': 'Warwickshire',
+            'worcestershire': 'Worcestershire',
+            'gloucestershire': 'Gloucestershire'
+        }
+        
+        name_lower = product_name.lower()
+        for keyword, location in location_keywords.items():
+            if keyword in name_lower:
+                location_name = location
+                break
+        
+        # Add Event-specific fields
+        if start_date:
+            product_schema["startDate"] = start_date
+        if end_date:
+            product_schema["endDate"] = end_date
+        elif start_date:
+            product_schema["endDate"] = start_date
+        
+        product_schema["eventStatus"] = "https://schema.org/EventScheduled"
+        product_schema["eventAttendanceMode"] = "https://schema.org/OfflineEventAttendanceMode"
+        
+        # Add location
+        if location_name:
+            product_schema["location"] = {
+                "@type": "Place",
+                "name": location_name,
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Coventry",
+                    "addressRegion": "West Midlands",
+                    "addressCountry": "GB"
+                }
+            }
+        else:
+            # Default location
+            product_schema["location"] = {
+                "@type": "Place",
+                "name": "United Kingdom",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Coventry",
+                    "addressRegion": "West Midlands",
+                    "addressCountry": "GB"
+                }
+            }
+    
+    # Add hasCourseInstance for Course type (optional enhancement)
     # This boosts chance of Course rich results
-    if is_course_workshop and product_url:
+    if schema_type == 'course' and is_course_workshop and product_url:
         # Try to extract dates from product name or description
         # Look for date patterns like "Jan 2026", "23-25 Jan", etc.
         date_patterns = [
@@ -885,6 +997,38 @@ def main():
     # Find input files
     products_file = workflow_dir / '02 – products_cleaned.xlsx'
     merged_reviews_file = workflow_dir / '03 – combined_product_reviews.csv'
+    
+    # Try to detect original CSV filename to determine schema type
+    # Look for the original 01 products CSV file
+    original_csv_files = []
+    csv_patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
+    for pattern in csv_patterns:
+        original_csv_files.extend(list(workflow_dir.glob(pattern)))
+    
+    schema_type = 'product'  # Default to Product only
+    original_csv_name = None
+    
+    if original_csv_files:
+        original_csv_name = sorted(original_csv_files)[-1].name
+        csv_name_lower = original_csv_name.lower()
+        
+        # Detect schema type from filename
+        if 'workshops-near-me' in csv_name_lower or ('workshop' in csv_name_lower and 'lesson' not in csv_name_lower):
+            schema_type = 'event'  # Workshops → Product + Event
+            print(f"📋 Detected schema type: Event (from filename: {original_csv_name})")
+        elif 'lessons' in csv_name_lower or 'beginners-photography-lessons' in csv_name_lower:
+            schema_type = 'course'  # Lessons → Product + Course
+            print(f"📋 Detected schema type: Course (from filename: {original_csv_name})")
+        else:
+            print(f"📋 Detected schema type: Product (from filename: {original_csv_name})")
+    else:
+        # Fallback: Detect from product URLs/names if CSV not found
+        print(f"📋 Original CSV not found, will detect schema type from product data")
+    
+    # Load products and detect schema type from product data if not detected from filename
+    if schema_type == 'product':
+        # We'll detect per-product after loading
+        print(f"📋 Will detect schema type per product from URLs/names")
     
     if not products_file.exists():
         print(f"❌ Error: Products file not found")
@@ -1498,6 +1642,31 @@ def main():
         # Determine if this is the first variant for this URL (only first gets aggregateRating)
         # Products without URLs are treated as standalone (each gets aggregateRating)
         product_url = str(row.get('url', '')).strip()
+        product_name = str(row.get('name', '')).strip()
+        
+        # Detect schema_type per product if global schema_type is 'product' (fallback detection)
+        product_schema_type = schema_type
+        if schema_type == 'product':
+            # Detect from product URL or name
+            if product_url:
+                url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+                if 'photo-workshops-uk' in url_path:
+                    product_schema_type = 'event'  # Workshops → Product + Event
+                elif 'photography-services-near-me' in url_path:
+                    product_schema_type = 'course'  # Lessons → Product + Course
+            
+            # Also check product name for keywords
+            if product_schema_type == 'product':
+                name_lower = product_name.lower()
+                # Check for workshop keywords (but not lesson keywords)
+                if ('workshop' in name_lower and 'lesson' not in name_lower) or 'workshops-near-me' in name_lower:
+                    product_schema_type = 'event'
+                elif 'lesson' in name_lower or 'course' in name_lower or 'beginners-photography-lessons' in name_lower:
+                    product_schema_type = 'course'
+                # Check for non-course items (prints, vouchers, etc.)
+                elif any(keyword in name_lower for keyword in ['print', 'voucher', 'gift card', 'canvas', 'artwork', 'photo print']):
+                    product_schema_type = 'product'  # Keep as Product only
+        
         if product_url:
             is_first_variant = (product_url in url_to_first_index and url_to_first_index[product_url] == idx)
             if not is_first_variant and product_url in variant_counts and variant_counts[product_url] > 1:
@@ -1510,7 +1679,7 @@ def main():
             is_first_variant = True
         
         # Generate schema graph (only first variant per URL gets aggregateRating)
-        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant)
+        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type)
         
         # Track validation statistics
         breadcrumbs_normalised_count += 1  # All breadcrumbs use normalized names
@@ -1555,7 +1724,7 @@ def main():
         else:
             graph = schema_graph['@graph']
             
-            # Find Product/Course object
+            # Find Product/Course/Event object
             product_obj = None
             for obj in graph:
                 obj_type = obj.get('@type', [])
@@ -1564,13 +1733,24 @@ def main():
                     break
             
             if not product_obj:
-                rich_results_errors.append('Missing Product/Course object in @graph')
+                rich_results_errors.append('Missing Product/Course/Event object in @graph')
             else:
-                # Check required Product fields
-                required_fields = ['name', 'sku', 'brand', 'provider', 'url', 'offers']
+                # Check required Product fields (provider only required for Course/Event)
+                required_fields = ['name', 'sku', 'brand', 'url', 'offers']
+                obj_type = product_obj.get('@type', [])
+                if isinstance(obj_type, list) and ('Course' in obj_type or 'Event' in obj_type):
+                    required_fields.append('provider')
+                
                 for field in required_fields:
                     if field not in product_obj:
                         rich_results_errors.append(f'Missing required field: {field}')
+                
+                # Event-specific validation
+                if isinstance(obj_type, list) and 'Event' in obj_type:
+                    event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+                    for field in event_fields:
+                        if field not in product_obj:
+                            rich_results_errors.append(f'Missing Event field: {field}')
                 
                 # Check offers
                 if 'offers' in product_obj:
