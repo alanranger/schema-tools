@@ -943,11 +943,14 @@ def validate_schema_structure(schema_data, product_name):
         if second_type != 'BreadcrumbList':
             errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
     
-    # Ensure no Event fields are present
-    forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-    for key in forbidden_keys:
-        if key in product_schema:
-            errors.append(f"Forbidden Event field found: {key}")
+    # Ensure no Event fields are present for Product-only schemas
+    # Only check this if Event is NOT in the @type
+    obj_type_for_check = product_schema.get('@type', [])
+    if isinstance(obj_type_for_check, list) and 'Event' not in obj_type_for_check:
+        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+        for key in forbidden_keys:
+            if key in product_schema:
+                errors.append(f"Forbidden Event field found in non-Event schema: {key}")
     
     # Validate all objects have @type and url (if applicable)
     for i, obj in enumerate(graph):
