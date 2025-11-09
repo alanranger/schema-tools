@@ -968,11 +968,14 @@ def main():
                 # Convert dates to datetime for proper sorting
                 reviews_for_product = reviews_for_product.copy()
                 reviews_for_product['_sort_date'] = pd.to_datetime(reviews_for_product['date'], errors='coerce', dayfirst=True)
+                # Also try date_parsed column if it exists (from Google reviews)
+                if 'date_parsed' in reviews_for_product.columns:
+                    reviews_for_product['_sort_date'] = reviews_for_product['_sort_date'].fillna(reviews_for_product['date_parsed'])
                 reviews_for_product = reviews_for_product.sort_values('_sort_date', ascending=False, na_position='last')
                 reviews_for_product = reviews_for_product.drop(columns=['_sort_date'])
             
-            # Limit to 25 reviews per product (after sorting, so we get the newest 25)
-            group = reviews_for_product.head(25)
+            # Remove review limit - include ALL reviews (user wants all reviews, not just 25)
+            group = reviews_for_product
             
             for _, review_row in group.iterrows():
                 rating_val = review_row.get('ratingvalue')
@@ -1005,37 +1008,58 @@ def main():
                     
                     # Get date - check multiple column name variations and handle ISO timestamp format
                     review_date = ''
-                    date_columns = ['date', 'review_date', 'datepublished', 'date_published', 'created_at', 'timestamp', 'updatetime', 'update_time']
-                    for col in date_columns:
-                        if col in review_row.index:
-                            date_val = review_row.get(col)
-                            if pd.notna(date_val):
-                                try:
-                                    # Try parsing as datetime first
-                                    if isinstance(date_val, pd.Timestamp):
-                                        review_date = date_val.strftime('%Y-%m-%d')
-                                    else:
-                                        date_str = str(date_val).strip()
-                                        # Handle ISO timestamp format (e.g., "2024-12-15T14:30:00" or "2024-12-15T14:30:00Z")
-                                        if 'T' in date_str:
-                                            # Extract just the date part (YYYY-MM-DD)
-                                            review_date = date_str.split('T')[0]
-                                            # Validate it's a proper date
-                                            pd.to_datetime(review_date)
+                    review_date_obj = None
+                    date_columns = ['date', 'date_parsed', 'review_date', 'datepublished', 'date_published', 'created_at', 'timestamp', 'updatetime', 'update_time']
+                    
+                    # First try date_parsed (from Google reviews) if it exists
+                    if 'date_parsed' in review_row.index:
+                        date_val = review_row.get('date_parsed')
+                        if pd.notna(date_val):
+                            try:
+                                if isinstance(date_val, pd.Timestamp):
+                                    review_date_obj = date_val
+                                    review_date = date_val.strftime('%Y-%m-%d')
+                                else:
+                                    review_date_obj = pd.to_datetime(date_val, errors='coerce')
+                                    if pd.notna(review_date_obj):
+                                        review_date = review_date_obj.strftime('%Y-%m-%d')
+                            except:
+                                pass
+                    
+                    # If date_parsed didn't work, try other date columns
+                    if not review_date:
+                        for col in date_columns:
+                            if col in review_row.index and col != 'date_parsed':
+                                date_val = review_row.get(col)
+                                if pd.notna(date_val):
+                                    try:
+                                        # Try parsing as datetime first
+                                        if isinstance(date_val, pd.Timestamp):
+                                            review_date_obj = date_val
+                                            review_date = date_val.strftime('%Y-%m-%d')
                                         else:
-                                            # Try parsing string dates
-                                            parsed_date = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
-                                            if pd.notna(parsed_date):
-                                                review_date = parsed_date.strftime('%Y-%m-%d')
+                                            date_str = str(date_val).strip()
+                                            # Handle ISO timestamp format (e.g., "2024-12-15T14:30:00" or "2024-12-15T14:30:00Z")
+                                            if 'T' in date_str:
+                                                # Extract just the date part (YYYY-MM-DD)
+                                                review_date = date_str.split('T')[0]
+                                                # Validate it's a proper date
+                                                review_date_obj = pd.to_datetime(review_date, errors='coerce')
                                             else:
-                                                # Fallback: try extracting YYYY-MM-DD format
-                                                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
-                                                if date_match:
-                                                    review_date = date_match.group(1)
-                                except Exception as e:
-                                    pass
-                            if review_date:
-                                break
+                                                # Try parsing string dates
+                                                review_date_obj = pd.to_datetime(date_str, errors='coerce', dayfirst=True)
+                                                if pd.notna(review_date_obj):
+                                                    review_date = review_date_obj.strftime('%Y-%m-%d')
+                                                else:
+                                                    # Fallback: try extracting YYYY-MM-DD format
+                                                    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
+                                                    if date_match:
+                                                        review_date = date_match.group(1)
+                                                        review_date_obj = pd.to_datetime(review_date, errors='coerce')
+                                    except Exception as e:
+                                        pass
+                                if review_date:
+                                    break
                     
                     # Get source
                     source = review_row.get('source', 'Google')
