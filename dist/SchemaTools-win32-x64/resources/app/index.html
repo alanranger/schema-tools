@@ -12959,9 +12959,9 @@ exit`;
           const overallLatestDateMatch = outputText.match(/Overall\s+latest\s+review:\s*([\d-]+)/i);
           
           // Fallback to old format if new format not found (but be more specific to avoid matching dates)
-          // Only match if it's clearly a count, not a date
-          const googleReviewsMatch = outputText.match(/Google\s+reviews?:\s*(\d+)(?![\d-])/i);
-          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews?:\s*(\d+)(?![\d-])/i);
+          // Only match "Google reviews:" (plural) followed by a number, not "Google review:" (singular) used in dates
+          const googleReviewsMatch = outputText.match(/Google\s+reviews:\s*(\d+)(?![\d-])/i);
+          const trustpilotReviewsMatch = outputText.match(/Trustpilot\s+reviews:\s*(\d+)(?![\d-])/i);
           const latestReviewDateMatch = outputText.match(/Latest\s+review\s+date:\s*([\d-]+)/i);
           
           if (mappedGoogleMatch) {
