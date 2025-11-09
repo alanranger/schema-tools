@@ -1890,28 +1890,56 @@ def main():
         product_url = str(row.get('url', '')).strip()
         product_name = str(row.get('name', '')).strip()
         
-        # Detect schema_type per product if global schema_type is 'product' (fallback detection)
-        product_schema_type = schema_type
-        if schema_type == 'product':
-            # Detect from product URL or name
+        # Detect schema_type per product by matching to events CSV files
+        # If product matches a workshop event → Product + Event
+        # If product matches a lesson event → Product + Course
+        # If product doesn't match either → Product only
+        product_schema_type = 'product'  # Default to Product only
+        
+        if events_df is not None and len(events_df) > 0:
+            product_name_lower = product_name.lower()
+            product_url_slug = ''
             if product_url:
-                url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
-                if 'photo-workshops-uk' in url_path:
-                    product_schema_type = 'event'  # Workshops → Product + Event
-                elif 'photography-services-near-me' in url_path:
-                    product_schema_type = 'course'  # Lessons → Product + Course
+                product_url_slug = product_url.split('/')[-1].strip().lower()
             
-            # Also check product name for keywords
-            if product_schema_type == 'product':
-                name_lower = product_name.lower()
-                # Check for workshop keywords (but not lesson keywords)
-                if ('workshop' in name_lower and 'lesson' not in name_lower) or 'workshops-near-me' in name_lower:
+            # Try to match by URL slug first (most reliable)
+            matched_event = None
+            for _, event_row in events_df.iterrows():
+                event_url = str(event_row.get('Event_URL', '')).strip()
+                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+                
+                # Match by URL slug
+                if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
+                    matched_event = event_row
+                    break
+            
+            # If no URL match, try fuzzy match by Event_Title
+            if matched_event is None:
+                for _, event_row in events_df.iterrows():
+                    event_title = str(event_row.get('Event_Title', '')).lower()
+                    
+                    # Check if key words match (at least 2 significant words)
+                    if event_title and product_name_lower:
+                        event_words = [w for w in event_title.split() if len(w) > 4]
+                        matches = sum(1 for word in event_words if word in product_name_lower)
+                        if matches >= 2:  # At least 2 significant words match
+                            matched_event = event_row
+                            break
+            
+            # If matched, determine if it's a workshop or lesson based on which CSV it came from
+            if matched_event is not None:
+                # Check if this event came from workshops CSV (check if Event_URL contains workshop path)
+                event_url = str(matched_event.get('Event_URL', '')).lower()
+                if 'photo-workshops-uk' in event_url or 'workshops' in event_url.lower():
+                    product_schema_type = 'event'  # Product + Event
+                # Check if this event came from lessons CSV (check if Event_URL contains lessons path)
+                elif 'photography-services-near-me' in event_url or 'beginners-photography-lessons' in event_url or 'lessons' in event_url.lower():
+                    product_schema_type = 'course'  # Product + Course
+                else:
+                    # Default to event if we can't determine (workshops are more common)
                     product_schema_type = 'event'
-                elif 'lesson' in name_lower or 'course' in name_lower or 'beginners-photography-lessons' in name_lower:
-                    product_schema_type = 'course'
-                # Check for non-course items (prints, vouchers, etc.)
-                elif any(keyword in name_lower for keyword in ['print', 'voucher', 'gift card', 'canvas', 'artwork', 'photo print']):
-                    product_schema_type = 'product'  # Keep as Product only
+        
+        # If no match found in events CSV, product_schema_type remains 'product' (Product only)
         
         if product_url:
             is_first_variant = (product_url in url_to_first_index and url_to_first_index[product_url] == idx)
