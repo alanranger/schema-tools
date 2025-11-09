@@ -222,16 +222,17 @@ def main():
     
     print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     
-    # Step 1: Filter out rows without SKU first (applies to both main products and variants)
-    if 'SKU' in df.columns:
-        df = df[df['SKU'].notna()]
-        print(f"After filtering SKU not null: {len(df)} rows")
-    
-    # Step 2: Normalize field types BEFORE filtering Visible (so we can check variants properly)
+    # Step 1: Normalize field types FIRST (before any filtering)
     df = df.fillna("")
     for col in df.columns:
         if df[col].dtype == 'object':
             df[col] = df[col].apply(lambda x: str(x).strip() if pd.notna(x) else '')
+    
+    # Step 2: Filter out rows without SKU (applies to both main products and variants)
+    if 'SKU' in df.columns:
+        before_sku = len(df)
+        df = df[df['SKU'].notna()]
+        print(f"After filtering SKU not null: {len(df)} rows (removed {before_sku - len(df)} rows)")
     
     # Step 3: Group by Product Title using position-based linking
     # Variants follow their main product immediately after in CSV
@@ -258,7 +259,7 @@ def main():
             continue
         
         # Check if main product is visible (skip hidden products and their variants)
-        if 'Visible' in df.columns:
+        if 'Visible' in row.index:
             visible = str(row.get('Visible', '')).strip().lower()
             if visible != 'yes':
                 # Skip this hidden main product and its variants
@@ -297,6 +298,10 @@ def main():
             # This is a variant (empty Title), add it
             product_variants.append(next_row.to_dict())
             i += 1
+        
+        # Debug: Log variant count for first few products
+        if len(grouped_data) < 3:
+            print(f"  DEBUG: Product '{title[:50]}' has {len(product_variants)} variants")
         
         # Create offers array
         offers = []
