@@ -364,6 +364,20 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     if product_url:
         product_schema["url"] = product_url
     
+    # Determine if this is a course/workshop (in-person) vs physical product
+    # Check URL path and product name for keywords
+    is_course_workshop = False
+    if product_url:
+        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+        if 'photo-workshops-uk' in url_path or 'photography-services-near-me' in url_path:
+            is_course_workshop = True
+    if not is_course_workshop:
+        # Check product name for course/workshop keywords
+        name_lower = product_name.lower()
+        course_keywords = ['workshop', 'course', 'class', 'lesson', 'tuition', 'mentoring', 'academy']
+        if any(keyword in name_lower for keyword in course_keywords):
+            is_course_workshop = True
+    
     # Add offers from cleaned file (JSON array)
     # If offers column exists and contains JSON, parse and use it
     offers_data = None
@@ -429,20 +443,6 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     
     # Add offers to schema (can be single offer or array)
     if offers_data:
-        # Determine if this is a course/workshop (in-person) vs physical product
-        # Check URL path and product name for keywords
-        is_course_workshop = False
-        if product_url:
-            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
-            if 'photo-workshops-uk' in url_path or 'photography-services-near-me' in url_path:
-                is_course_workshop = True
-        if not is_course_workshop:
-            # Check product name for course/workshop keywords
-            name_lower = product_name.lower()
-            course_keywords = ['workshop', 'course', 'class', 'lesson', 'tuition', 'mentoring', 'academy']
-            if any(keyword in name_lower for keyword in course_keywords):
-                is_course_workshop = True
-        
         # Ensure all offers have priceValidUntil set to +12 months
         price_valid_until = (date.today() + timedelta(days=365)).isoformat()
         
