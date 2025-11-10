@@ -6502,30 +6502,18 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     return virtualKeywords.some(keyword => locationStr.includes(keyword));
   }
 
-  // Detect audience type from keywords
+  // Detect audience type from keywords - returns simple text string for Event schema
   function detectAudience(eventTitle, description, tags) {
     const text = ((eventTitle || '') + ' ' + (description || '') + ' ' + (tags || '')).toLowerCase();
     
     if (text.includes('beginner') || text.includes('beginners')) {
-      return {
-        "@type": "EducationalAudience",
-        "educationalRole": "student",
-        "audienceType": "Beginner"
-      };
+      return "Beginner photographers";
     }
     if (text.includes('advanced') || text.includes('professional')) {
-      return {
-        "@type": "EducationalAudience",
-        "educationalRole": "student",
-        "audienceType": "Advanced"
-      };
+      return "Advanced photographers";
     }
     if (text.includes('intermediate')) {
-      return {
-        "@type": "EducationalAudience",
-        "educationalRole": "student",
-        "audienceType": "Intermediate"
-      };
+      return "Intermediate photographers";
     }
     return null;
   }
@@ -7037,6 +7025,13 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       }
       
       stats.offersBlocks++;
+      
+      // Calculate priceValidUntil (+12 months from today)
+      const today = new Date();
+      const priceValidUntilDate = new Date(today);
+      priceValidUntilDate.setMonth(priceValidUntilDate.getMonth() + 12);
+      const priceValidUntil = priceValidUntilDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
       eventSchema.offers = {
         "@type": "Offer",
         "price": eventPrice > 0 ? eventPrice.toFixed(2) : "0.00",
@@ -7044,10 +7039,21 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         "availability": normalizedAvailability,
         "url": eventUrl,
         "validFrom": validFrom,
+        "priceValidUntil": priceValidUntil,
         "seller": {
           "@type": "Organization",
           "name": "Alan Ranger Photography",
           "url": "https://www.alanranger.com"
+        }
+      };
+      
+      // Add shippingDetails (required for Product+Event hybrid)
+      eventSchema.offers.shippingDetails = {
+        "@type": "OfferShippingDetails",
+        "doesNotShip": "http://schema.org/True",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "GB"
         }
       };
       
@@ -7073,9 +7079,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         eventSchema.isAccessibleForFree = true;
       }
       
-      // Add merchant return policy if merchant fields enabled
+      // Add merchant return policy if merchant fields enabled (full object structure)
       if (includeMerchantFields) {
-        eventSchema.offers.hasMerchantReturnPolicy = "https://www.alanranger.com/returns-policy";
+        eventSchema.offers.hasMerchantReturnPolicy = {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/ReturnShippingFees"
+        };
       }
       
       if (index < 3) {
