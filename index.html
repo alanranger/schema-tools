@@ -1451,6 +1451,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </ol>
       <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Optional Files:</p>
       <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
+        <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code>02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
+          <span style="font-size: 0.875rem; color: #64748b;">⚠️ Without this: SKU will be extracted from URL slug (may exceed 40 chars and cause validation warnings)</span></li>
         <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code>03 – combined_product_reviews.csv</code> for review enrichment</li>
       </ol>
     </div>
@@ -1468,6 +1470,15 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           File: <code>event-product-mappings-*.csv</code> (from chat-bot ingest app)<br>
           Provides: price_gbp, product_url mapping, SKU extraction<br>
           <strong>Without this:</strong> Events will have price = 0 (logged as data error)
+        </span>
+      </label>
+      <label for="productsExcelFile" style="display: block; margin-bottom: 0.75rem;">
+        <strong>Products Excel (Optional - for actual SKU values):</strong><br>
+        <input type="file" id="productsExcelFile" accept=".xlsx,.xls" style="margin-top: 0.5rem; margin-left: 0;">
+        <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
+          File: <code>02 – products_cleaned.xlsx</code><br>
+          Provides: Actual SKU from <code>main_sku</code> column (prevents fallback to URL slug)<br>
+          <strong>Without this:</strong> SKU extracted from URL slug (may exceed 40 chars → validation warnings)
         </span>
       </label>
       <label for="reviewsCsvFile" style="display: block;">
@@ -2279,6 +2290,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
 </script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   // Override console methods to also log to debug console (MUST be before debugLog)
   const originalConsoleLog = console.log.bind(console);
@@ -6251,16 +6263,47 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       }
       
       if (eventUrl && productUrl) {
-        // Extract SKU from product URL slug
-        // TODO: Improve to use products_cleaned.xlsx main_sku column (like product generator does)
-        // Current fallback: Extract from URL slug (not ideal, but works until products CSV is integrated)
-        const urlParts = productUrl.split('/');
-        const productSlug = urlParts[urlParts.length - 1] || '';
-        const sku = productSlug.toUpperCase().replace(/-/g, '-').replace(/[^A-Z0-9-]/g, '');
+        // Extract SKU - try products data first, then fallback to URL slug (truncated to 40 chars)
+        let sku = null;
+        
+        // Try to get SKU from products data (if loaded)
+        if (window.productsData && window.productsData.length > 0) {
+          const normProductUrl = normalizeUrl(productUrl);
+          const productMatch = window.productsData.find(p => {
+            const pUrl = normalizeUrl(p.url || '');
+            return pUrl === normProductUrl || matchProductUrl(productUrl, pUrl);
+          });
+          
+          if (productMatch) {
+            // Try main_sku first
+            if (productMatch.main_sku) {
+              const skuVal = String(productMatch.main_sku).trim();
+              if (skuVal && skuVal.toLowerCase() !== 'nan' && skuVal.toLowerCase() !== 'none' && skuVal !== '') {
+                sku = skuVal.substring(0, 40); // Truncate to 40 chars for Merchant Center
+              }
+            }
+            
+            // Fallback to 'sku' column if main_sku not available
+            if (!sku && productMatch.sku) {
+              const skuVal = String(productMatch.sku).trim();
+              if (skuVal && skuVal.toLowerCase() !== 'nan' && skuVal.toLowerCase() !== 'none' && skuVal !== '') {
+                sku = skuVal.substring(0, 40);
+              }
+            }
+          }
+        }
+        
+        // Fallback: Extract from URL slug (always truncated to 40 chars to avoid validation errors)
+        if (!sku) {
+          const urlParts = productUrl.split('/');
+          const productSlug = urlParts[urlParts.length - 1] || '';
+          const slugSku = productSlug.toUpperCase().replace(/-/g, '-').replace(/[^A-Z0-9-]/g, '');
+          sku = slugSku ? slugSku.substring(0, 40) : null; // Always truncate to 40 chars
+        }
         
         dict[eventUrl] = {
           product_url: productUrl,
-          sku: sku || null,
+          sku: sku,
           brand: {
             "@type": "Brand",
             "name": "Alan Ranger Photography"
