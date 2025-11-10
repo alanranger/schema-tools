@@ -6185,20 +6185,31 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       return reviewsDict[normProductUrl];
     }
     
-    // Try matching by slug (handles /photography-services-near-me/ prefix differences)
+    // Extract slug from product URL (handles /photo-workshops-uk/ prefix)
     const productSlug = normProductUrl.split('/').pop() || '';
     if (productSlug) {
-      // First try using matchProductUrl function
+      // Strategy 1: Try using matchProductUrl function (handles prefix differences)
       for (const reviewUrl in reviewsDict) {
         if (matchProductUrl(productUrl, reviewUrl)) {
           return reviewsDict[reviewUrl];
         }
       }
       
-      // Fallback: try direct slug matching on all review URLs
+      // Strategy 2: Try direct slug matching on all review URLs
       for (const reviewUrl in reviewsDict) {
         const reviewSlug = normalizeUrl(reviewUrl).split('/').pop() || '';
         if (reviewSlug === productSlug) {
+          return reviewsDict[reviewUrl];
+        }
+      }
+      
+      // Strategy 3: Try matching against review URLs that might have different prefixes
+      // This handles cases where review URL is https://www.alanranger.com/{slug}
+      // but mapping URL is https://www.alanranger.com/photo-workshops-uk/{slug}
+      for (const reviewUrl in reviewsDict) {
+        const normReviewUrl = normalizeUrl(reviewUrl);
+        // Check if the slug appears anywhere in the review URL
+        if (normReviewUrl.includes(productSlug) || normProductUrl.includes(normReviewUrl.split('/').pop() || '')) {
           return reviewsDict[reviewUrl];
         }
       }
