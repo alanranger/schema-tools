@@ -1926,18 +1926,19 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     <div id="blogSchemaOutput" style="display: none; margin-top: 2rem;">
       <h3>Generated Schema</h3>
-      <div class="code-card">
-        <div class="code-card-head">
-          <span>JSON-LD Schema</span>
-          <button class="copy-btn" onclick="copyBlogSchema()">Copy Schema</button>
-        </div>
-        <pre style="background:#000 !important; color:#fff !important; padding:12px; margin:0; overflow:auto; font-family:'Courier New', monospace !important; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word;"><code id="blogSchemaCode" style="background:#000 !important; color:#fff !important; display:block !important; visibility:visible !important; opacity:1 !important;"></code></pre>
-      </div>
       
-      <div class="button-group" style="margin-top: 1rem;">
+      <div class="button-group" style="margin-bottom: 1rem;">
         <button onclick="testBlogSchemaOrg()">Test on Schema.org Validator</button>
         <button onclick="testBlogGoogleRichResults()" class="secondary">Test on Google Rich Results</button>
         <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save to alanranger-schema folder</button>
+        <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema</button>
+      </div>
+      
+      <div class="code-card">
+        <div class="code-card-head">
+          <span>JSON-LD Schema</span>
+        </div>
+        <pre style="background:#000 !important; color:#fff !important; padding:12px; margin:0; overflow:auto; font-family:'Courier New', monospace !important; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word;"><code id="blogSchemaCode" style="background:#000 !important; color:#fff !important; display:block !important; visibility:visible !important; opacity:1 !important;"></code></pre>
       </div>
     </div>
 
