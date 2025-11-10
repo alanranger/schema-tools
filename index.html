@@ -7081,7 +7081,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       
       // Add merchant return policy if merchant fields enabled (full object structure)
       if (includeMerchantFields) {
-        eventSchema.offers.hasMerchantReturnPolicy = {
+        const returnPolicy = {
           "@type": "MerchantReturnPolicy",
           "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
           "merchantReturnDays": 28,
@@ -7090,6 +7090,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           "returnMethod": "http://schema.org/ReturnByMail",
           "returnFees": "https://schema.org/ReturnShippingFees"
         };
+        
+        // Add returnShippingFeesAmount when returnFees is ReturnShippingFees (required by Schema.org)
+        if (returnPolicy.returnFees === "https://schema.org/ReturnShippingFees") {
+          returnPolicy.returnShippingFeesAmount = {
+            "@type": "MonetaryAmount",
+            "value": "50.00",
+            "currency": "GBP"
+          };
+        }
+        
+        eventSchema.offers.hasMerchantReturnPolicy = returnPolicy;
       }
       
       if (index < 3) {
