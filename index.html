@@ -6275,7 +6275,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`   Product ${idx + 1}: ${productUrl} - ${reviews.length} total reviews, ${validReviews.length} valid (≥4★)`);
       }
       
-      if (validReviews.length >= 3) {
+      if (validReviews.length >= 1) {  // Changed from >= 3 to >= 1 to include all products with reviews
         const totalRating = validReviews.reduce((sum, r) => {
           return sum + parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
         }, 0);
