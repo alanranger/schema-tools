@@ -5713,9 +5713,61 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     });
   });
 
+  // Global variable to store products data
+  window.productsData = [];
+  
+  // Load products Excel file (optional, for actual SKU values)
+  async function loadProductsData() {
+    const debugLog = [];
+    const productsFileInput = document.getElementById('productsExcelFile');
+    
+    if (productsFileInput && productsFileInput.files && productsFileInput.files[0]) {
+      debugLog.push(`📄 Loading products Excel: ${productsFileInput.files[0].name}`);
+      try {
+        const file = productsFileInput.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const products = XLSX.utils.sheet_to_json(worksheet);
+        
+        window.productsData = products.map(p => ({
+          url: normalizeUrl(p.url || ''),
+          main_sku: p.main_sku || p.Main_SKU || p['main_sku'] || null,
+          sku: p.sku || p.SKU || p['sku'] || null,
+          name: p.name || p.Name || p['name'] || ''
+        }));
+        
+        debugLog.push(`✅ Loaded ${window.productsData.length} products from Excel`);
+        if (products.length > 0) {
+          debugLog.push(`   Columns found: ${Object.keys(products[0]).join(', ')}`);
+        }
+        const productsWithSku = window.productsData.filter(p => p.main_sku || p.sku).length;
+        debugLog.push(`   Products with SKU: ${productsWithSku}`);
+        
+        window.debugLog = window.debugLog || [];
+        window.debugLog.push(...debugLog);
+        updateDebugLog();
+      } catch (e) {
+        debugLog.push(`❌ Error reading products Excel: ${e.message}`);
+        window.debugLog = window.debugLog || [];
+        window.debugLog.push(...debugLog);
+        updateDebugLog();
+      }
+    } else {
+      debugLog.push('⚠️ No products Excel file uploaded (optional - SKU will use URL slug fallback)');
+      window.debugLog = window.debugLog || [];
+      window.debugLog.push(...debugLog);
+      updateDebugLog();
+    }
+  }
+
   // Load reviews and mappings CSVs from file inputs (optional, for review enrichment)
   async function loadReviewData() {
     const debugLog = [];
+    
+    // Load products Excel first (for SKU lookup)
+    await loadProductsData();
     
     // Load reviews CSV from file input
     const reviewsFileInput = document.getElementById('reviewsCsvFile');
