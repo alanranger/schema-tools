@@ -4924,7 +4924,23 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
     
     // Display the script-wrapped version
-    document.getElementById('blogSchemaCode').textContent = scriptWrapped;
+    const codeElement = document.getElementById('blogSchemaCode');
+    if (codeElement) {
+      codeElement.textContent = scriptWrapped;
+      // Force visibility with inline styles
+      codeElement.style.color = '#fff';
+      codeElement.style.backgroundColor = '#000';
+      codeElement.style.display = 'block';
+      codeElement.style.visibility = 'visible';
+      codeElement.style.opacity = '1';
+      
+      // Also ensure parent pre has correct styles
+      const preElement = codeElement.parentElement;
+      if (preElement && preElement.tagName === 'PRE') {
+        preElement.style.color = '#fff';
+        preElement.style.backgroundColor = '#000';
+      }
+    }
     document.getElementById('blogSchemaOutput').style.display = 'block';
     
     // Scroll to output
