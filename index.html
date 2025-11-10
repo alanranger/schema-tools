@@ -5026,10 +5026,17 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 
   function saveBlogSchemaToFile() {
-    const schemaCode = document.getElementById('blogSchemaCode').textContent;
-    if (!schemaCode || schemaCode.trim().length === 0) {
+    const scriptWrapped = document.getElementById('blogSchemaCode').textContent;
+    if (!scriptWrapped || scriptWrapped.trim().length === 0) {
       alert('No schema generated yet. Please generate the schema first.');
       return;
+    }
+
+    // Extract JSON from script tags (remove <script> wrapper)
+    let schemaCode = scriptWrapped.trim();
+    if (schemaCode.startsWith('<script')) {
+      // Remove script tag wrapper
+      schemaCode = schemaCode.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '').trim();
     }
 
     const fileName = 'blog-schema.json';
@@ -5052,7 +5059,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
             fs.mkdirSync(repoDir, { recursive: true });
           }
 
-          // Write file directly to root of repository
+          // Write file directly to root of repository (JSON only, no script tags)
           const filePath = path.join(repoDir, fileName);
           fs.writeFileSync(filePath, schemaCode, 'utf-8');
 
@@ -5070,7 +5077,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         }
       }
 
-      // Fallback: Download file
+      // Fallback: Download file (JSON only, no script tags)
       const blob = new Blob([schemaCode], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
