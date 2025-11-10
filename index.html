@@ -1344,8 +1344,8 @@
     #detail-modal #modal-close:hover { color:#f00; }
     .code-card { border:1px solid #eee; border-radius:10px; margin-bottom:12px; }
     .code-card-head { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fafafa; border-bottom:1px solid #eee; }
-    .code-card pre { margin:0; padding:12px; overflow:auto; background:#f5f5f5; color:#000; border-radius:0 0 10px 10px; }
-    .code-card pre code { color:#000; }
+    .code-card pre { margin:0; padding:12px; overflow:auto; background:#1e1e1e; color:#d4d4d4; border-radius:0 0 10px 10px; font-family:'Courier New', monospace; }
+    .code-card pre code { color:#d4d4d4; }
     .code-card .copy-btn { background:#2563eb; color:#fff; border:none; padding:0.375rem 0.75rem; border-radius:4px; cursor:pointer; font-size:0.875rem; }
     .code-card .copy-btn:hover { background:#1d4ed8; }
     .grid.grid-two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
@@ -1935,21 +1935,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       </div>
       
       <div class="button-group" style="margin-top: 1rem;">
-        <button onclick="testSchemaOrg('blogTestUrl')">Test on Schema.org Validator</button>
-        <button onclick="testGoogleRichResults('blogTestUrl')" class="secondary">Test on Google Rich Results</button>
+        <button onclick="testBlogSchemaOrg()">Test on Schema.org Validator</button>
+        <button onclick="testBlogGoogleRichResults()" class="secondary">Test on Google Rich Results</button>
+        <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save to alanranger-schema folder</button>
       </div>
     </div>
 
-    <div class="test-url-section" style="margin-top: 2rem;">
-      <h4>Test Generated Schema:</h4>
-      <p>Paste a URL containing your schema to validate it:</p>
-      <label for="blogTestUrl">Test URL:</label>
-      <input type="text" id="blogTestUrl" placeholder="https://example.com/blog" aria-label="Blog test URL">
-      <div class="button-group">
-        <button onclick="testSchemaOrg('blogTestUrl')">Test on Schema.org Validator</button>
-        <button onclick="testGoogleRichResults('blogTestUrl')" class="secondary">Test on Google Rich Results</button>
-      </div>
-    </div>
   </div>
 
   <!-- Schema Validator Tab Content -->
@@ -4962,6 +4953,80 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     document.getElementById('blogCsvInfo').style.display = 'none';
     document.getElementById('blogDebugLogContainer').style.display = 'none';
     document.getElementById('blogSchemaOutput').style.display = 'none';
+  }
+
+  function testBlogSchemaOrg() {
+    const blogUrl = 'https://www.alanranger.com/blog-on-photography';
+    window.open('https://validator.schema.org/#url=' + encodeURIComponent(blogUrl), '_blank');
+  }
+
+  function testBlogGoogleRichResults() {
+    const blogUrl = 'https://www.alanranger.com/blog-on-photography';
+    window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(blogUrl), '_blank');
+  }
+
+  function saveBlogSchemaToFile() {
+    const schemaCode = document.getElementById('blogSchemaCode').textContent;
+    if (!schemaCode || schemaCode.trim().length === 0) {
+      alert('No schema generated yet. Please generate the schema first.');
+      return;
+    }
+
+    const fileName = 'blog-schema.json';
+    const githubFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema';
+
+    try {
+      // Validate JSON
+      JSON.parse(schemaCode);
+
+      // Check if we're in Electron mode (can write directly to file system)
+      if (typeof window.require !== 'undefined' || typeof require !== 'undefined') {
+        try {
+          const fs = typeof window.require !== 'undefined' ? window.require('fs') : require('fs');
+          const path = typeof window.require !== 'undefined' ? window.require('path') : require('path');
+          const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+
+          // Ensure directory exists
+          const repoDir = path.join(githubFolderPath);
+          if (!fs.existsSync(repoDir)) {
+            fs.mkdirSync(repoDir, { recursive: true });
+          }
+
+          // Write file directly to root of repository
+          const filePath = path.join(repoDir, fileName);
+          fs.writeFileSync(filePath, schemaCode, 'utf-8');
+
+          // Open folder in file explorer
+          shell.showItemInFolder(filePath);
+
+          blogLog(`💾 Saved blog schema to: ${filePath}`);
+          blogLog(`📁 Folder opened in Explorer`);
+
+          alert(`✅ Successfully saved ${fileName} to alanranger-schema folder!\n\nFolder opened in Explorer.`);
+          return;
+        } catch (electronError) {
+          console.warn('Electron file system access failed, falling back to download:', electronError);
+          blogLog(`⚠️ Electron file system access failed: ${electronError.message}`);
+        }
+      }
+
+      // Fallback: Download file
+      const blob = new Blob([schemaCode], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      blogLog(`💾 Downloaded ${fileName} (fallback mode)`);
+      alert(`✅ Downloaded ${fileName}\n\nIn browser mode, files are downloaded to your Downloads folder.\n\nTo save directly to the alanranger-schema folder, use the Electron app.`);
+    } catch (error) {
+      blogLog(`❌ Error saving file: ${error.message}`, 'error');
+      alert(`Error saving file: ${error.message}`);
+    }
   }
 
   // Helper: Validate URL input
