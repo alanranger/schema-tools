@@ -1344,8 +1344,8 @@
     #detail-modal #modal-close:hover { color:#f00; }
     .code-card { border:1px solid #eee; border-radius:10px; margin-bottom:12px; }
     .code-card-head { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fafafa; border-bottom:1px solid #eee; }
-    .code-card pre { margin:0; padding:12px; overflow:auto; background:#000; color:#fff; }
-    .code-card pre code { color:#fff; }
+    .code-card pre { margin:0; padding:12px; overflow:auto; background:#f5f5f5; color:#000; border-radius:0 0 10px 10px; }
+    .code-card pre code { color:#000; }
     .code-card .copy-btn { background:#2563eb; color:#fff; border:none; padding:0.375rem 0.75rem; border-radius:4px; cursor:pointer; font-size:0.875rem; }
     .code-card .copy-btn:hover { background:#1d4ed8; }
     .grid.grid-two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
@@ -1907,6 +1907,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       
       <div id="blogCsvInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border-left: 3px solid #3182ce;">
         <p style="margin: 0; color: #2c5282; font-weight: 600;" id="blogCsvInfoText"></p>
+      </div>
+
+      <!-- Debug Log Section -->
+      <div id="blogDebugLogContainer" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 300px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: #495057;">📋 Debug Log</h4>
+          <button onclick="copyBlogDebugLog()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid #dee2e6; border-radius: 4px; background: white; cursor: pointer;">Copy Log</button>
+        </div>
+        <pre id="blogDebugLog" style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; color: #212529; background: white; padding: 0.5rem; border-radius: 4px;"></pre>
       </div>
 
       <div class="button-group" style="margin-top: 1.5rem;">
@@ -4623,6 +4632,38 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   // Blog CSV data storage
   let blogPosts = [];
+  let blogDebugLog = [];
+
+  function blogLog(message, level = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    blogDebugLog.push(logEntry);
+    
+    // Update debug log display
+    const debugLogElement = document.getElementById('blogDebugLog');
+    const debugLogContainer = document.getElementById('blogDebugLogContainer');
+    if (debugLogElement) {
+      debugLogElement.textContent = blogDebugLog.join('\n');
+      if (debugLogContainer) {
+        debugLogContainer.style.display = 'block';
+        debugLogElement.scrollTop = debugLogElement.scrollHeight;
+      }
+    }
+    console.log(logEntry);
+  }
+
+  function copyBlogDebugLog() {
+    if (!blogDebugLog || blogDebugLog.length === 0) {
+      alert('No debug log available to copy.');
+      return;
+    }
+    const logText = blogDebugLog.join('\n');
+    navigator.clipboard.writeText(logText).then(() => {
+      alert('✅ Debug log copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy debug log. Please select the debug log text and copy manually (Ctrl+C).');
+    });
+  }
 
   // Blog Index Schema Generation Functions
   function handleBlogCsvUpload(event) {
@@ -4630,21 +4671,32 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     if (!file) {
       document.getElementById('generateBlogBtn').disabled = true;
       document.getElementById('blogCsvInfo').style.display = 'none';
+      blogDebugLog = [];
+      document.getElementById('blogDebugLogContainer').style.display = 'none';
       return;
     }
+
+    blogDebugLog = [];
+    blogLog(`📄 Loading blog CSV file: ${file.name}`);
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
         if (!results.data || results.data.length === 0) {
+          blogLog('❌ CSV file is empty or could not be parsed', 'error');
           alert('CSV file is empty or could not be parsed. Please check the file format.');
           document.getElementById('generateBlogBtn').disabled = true;
           return;
         }
 
         blogPosts = results.data;
-        console.log('✅ Loaded', blogPosts.length, 'blog posts from CSV');
+        blogLog(`✅ Loaded ${blogPosts.length} blog posts from CSV`);
+        blogLog(`   Columns found: ${results.meta.fields ? results.meta.fields.join(', ') : 'unknown'}`);
+        
+        if (blogPosts.length > 0) {
+          blogLog(`   Sample row keys: ${Object.keys(blogPosts[0]).join(', ')}`);
+        }
         
         // Show info
         const infoDiv = document.getElementById('blogCsvInfo');
@@ -4654,6 +4706,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         document.getElementById('generateBlogBtn').disabled = false;
       },
       error: function(error) {
+        blogLog(`❌ Error parsing CSV file: ${error.message}`, 'error');
         alert('Error parsing CSV file: ' + error.message);
         document.getElementById('generateBlogBtn').disabled = true;
       }
@@ -4700,9 +4753,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       return;
     }
 
+    blogLog('🔨 Starting blog schema generation...');
+    blogLog(`   Processing ${blogPosts.length} blog posts`);
+
     const BLOG_URL = 'https://www.alanranger.com/blog-on-photography';
     const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
     const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
+
+    blogLog(`   Blog URL: ${BLOG_URL}`);
+    blogLog(`   Blog Name: ${BLOG_NAME}`);
 
     const PUBLISHER = {
       "@type": "Organization",
@@ -4738,6 +4797,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Generate blog postings
     const blogPostings = [];
     const seenUrls = new Set();
+    let skippedCount = 0;
+    let newsArticleCount = 0;
+    let blogPostingCount = 0;
+
+    blogLog('📝 Generating blog postings...');
 
     for (let i = 0; i < blogPosts.length; i++) {
       const row = blogPosts[i];
@@ -4750,11 +4814,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
       // Skip duplicates
       if (url && seenUrls.has(url)) {
-        console.warn('Skipping duplicate URL:', url);
+        blogLog(`   ⚠️ Skipping duplicate URL: ${url}`);
+        skippedCount++;
         continue;
       }
 
       if (!headline || !url) {
+        blogLog(`   ⚠️ Skipping row ${i + 1}: missing headline or URL`);
+        skippedCount++;
         continue; // Skip rows without required fields
       }
 
@@ -4772,6 +4839,11 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       const description = truncate(headline, 110);
       
       const schemaType = getSchemaType(categories);
+      if (schemaType === 'NewsArticle') {
+        newsArticleCount++;
+      } else {
+        blogPostingCount++;
+      }
       
       const blogPosting = {
         "@type": schemaType,
@@ -4823,7 +4895,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       });
     }
 
+    blogLog(`✅ Generated ${blogPostings.length} blog postings`);
+    blogLog(`   - BlogPosting: ${blogPostingCount}`);
+    blogLog(`   - NewsArticle: ${newsArticleCount}`);
+    if (skippedCount > 0) {
+      blogLog(`   - Skipped: ${skippedCount}`);
+    }
+
     // Generate main Blog schema
+    blogLog('🔨 Building Blog schema structure...');
     const blogSchema = {
       "@context": "https://schema.org",
       "@type": "Blog",
@@ -4843,6 +4923,12 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
     // Display the schema
     const schemaCode = JSON.stringify(blogSchema, null, 2);
+    const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
+    
+    blogLog(`✅ Schema generation complete!`);
+    blogLog(`   - Total posts in schema: ${blogPostings.length}`);
+    blogLog(`   - Schema size: ${fileSizeKB} KB`);
+    
     document.getElementById('blogSchemaCode').textContent = schemaCode;
     document.getElementById('blogSchemaOutput').style.display = 'block';
     
@@ -4871,8 +4957,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   function clearBlogForm() {
     document.getElementById('blogCsvFile').value = '';
     blogPosts = [];
+    blogDebugLog = [];
     document.getElementById('generateBlogBtn').disabled = true;
     document.getElementById('blogCsvInfo').style.display = 'none';
+    document.getElementById('blogDebugLogContainer').style.display = 'none';
     document.getElementById('blogSchemaOutput').style.display = 'none';
   }
 
