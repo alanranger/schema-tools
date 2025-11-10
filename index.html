@@ -7097,12 +7097,14 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`      ✅ offers.@type: Offer`);
         addDebugLog(`      ✅ offers.price: ${eventSchema.offers.price} ${eventSchema.offers.priceCurrency}`);
         addDebugLog(`      ✅ offers.availability: ${normalizedAvailability}`);
+        addDebugLog(`      ✅ offers.priceValidUntil: ${priceValidUntil}`);
+        addDebugLog(`      ✅ offers.shippingDetails: Present`);
         if (eventSchema.offers.sku) {
           addDebugLog(`      ✅ offers.sku: ${eventSchema.offers.sku}`);
         }
         addDebugLog(`      ✅ offers.seller.name: Alan Ranger Photography`);
         if (includeMerchantFields) {
-          addDebugLog(`      ✅ offers.hasMerchantReturnPolicy: Present`);
+          addDebugLog(`      ✅ offers.hasMerchantReturnPolicy: Present (full object)`);
         }
       }
       
