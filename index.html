@@ -1366,6 +1366,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('event')">Event Schema</button>
     <button class="tab" onclick="switchTab('product')">Product Schema</button>
+    <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
     <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
     <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
   </div>
@@ -1884,6 +1885,72 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
   </div>
 
+  <!-- Blog Index Schema Tab Content -->
+  <div id="blogTab" class="tab-content">
+    <div class="instructions">
+      <strong>📝 Blog Index Schema Generator</strong><br><br>
+      
+      ✅ Generate CollectionPage schema for your blog index page.<br>
+      ✅ Works entirely offline in your browser.<br>
+      ✅ Compliant with Schema.org and Google Rich Results requirements.<br><br>
+      
+      <strong>What this does:</strong> Creates structured data for your blog listing/index page, helping search engines understand your blog structure and improve visibility in search results.
+    </div>
+
+    <div class="workflow-section">
+      <h3>Step 1: Enter Blog Details</h3>
+      <div class="form-group">
+        <label for="blogIndexUrl">Blog Index Page URL:</label>
+        <input type="text" id="blogIndexUrl" placeholder="https://www.alanranger.com/blog" aria-label="Blog index page URL">
+        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">The URL of your main blog listing/index page</small>
+      </div>
+
+      <div class="form-group">
+        <label for="blogName">Blog Name:</label>
+        <input type="text" id="blogName" placeholder="Alan Ranger Photography Blog" aria-label="Blog name">
+        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">The name of your blog</small>
+      </div>
+
+      <div class="form-group">
+        <label for="blogDescription">Blog Description:</label>
+        <textarea id="blogDescription" rows="3" placeholder="Photography tips, tutorials, and insights from professional photographer Alan Ranger" aria-label="Blog description"></textarea>
+        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">A brief description of your blog</small>
+      </div>
+
+      <div class="button-group">
+        <button onclick="generateBlogIndexSchema()">Generate Blog Index Schema</button>
+        <button onclick="clearBlogForm()" class="secondary">Clear Form</button>
+      </div>
+    </div>
+
+    <div id="blogSchemaOutput" style="display: none; margin-top: 2rem;">
+      <h3>Generated Schema</h3>
+      <div class="code-card">
+        <div class="code-card-head">
+          <span>JSON-LD Schema</span>
+          <button class="copy-btn" onclick="copyBlogSchema()">Copy Schema</button>
+        </div>
+        <pre><code id="blogSchemaCode"></code></pre>
+      </div>
+      
+      <div class="button-group" style="margin-top: 1rem;">
+        <button onclick="testSchemaOrg('blogTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('blogTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+
+    <div class="test-url-section" style="margin-top: 2rem;">
+      <h4>Test Generated Schema:</h4>
+      <p>Paste a URL containing your schema to validate it:</p>
+      <label for="blogTestUrl">Test URL:</label>
+      <input type="text" id="blogTestUrl" placeholder="https://example.com/blog" aria-label="Blog test URL">
+      <div class="button-group">
+        <button onclick="testSchemaOrg('blogTestUrl')">Test on Schema.org Validator</button>
+        <button onclick="testGoogleRichResults('blogTestUrl')" class="secondary">Test on Google Rich Results</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Schema Validator Tab Content -->
   <div id="validatorTab" class="tab-content">
     <div class="instructions">
@@ -2067,6 +2134,14 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         <li>Paste the JSON-LD into product pages on Squarespace.</li>
       </ul>
 
+      <h3>📝 Blog Index Schema</h3>
+      <ul>
+        <li>Generates <code>CollectionPage</code> schema for your blog index/listing page.</li>
+        <li>Helps search engines understand your blog structure and improve visibility.</li>
+        <li>Includes publisher information and ItemList structure for blog posts.</li>
+        <li>Paste the JSON-LD into your blog index page header or code block.</li>
+      </ul>
+
       <h3>🟡 Schema Validator</h3>
       <ul>
         <li>Enter one or more live URLs (CSV or single entry support coming).</li>
@@ -2140,8 +2215,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const tabMap = {
       'event': { tabIndex: 0, contentId: 'eventTab' },
       'product': { tabIndex: 1, contentId: 'productTab' },
-      'validator': { tabIndex: 2, contentId: 'validatorTab' },
-      'guide': { tabIndex: 3, contentId: 'guideTab' }
+      'blog': { tabIndex: 2, contentId: 'blogTab' },
+      'validator': { tabIndex: 3, contentId: 'validatorTab' },
+      'guide': { tabIndex: 4, contentId: 'guideTab' }
     };
     
     const config = tabMap[mode];
@@ -4551,6 +4627,88 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       return;
     }
     window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
+  }
+
+  // Blog Index Schema Generation Functions
+  function generateBlogIndexSchema() {
+    const blogIndexUrl = document.getElementById('blogIndexUrl').value.trim();
+    const blogName = document.getElementById('blogName').value.trim();
+    const blogDescription = document.getElementById('blogDescription').value.trim();
+
+    // Validate inputs
+    if (!blogIndexUrl) {
+      alert('Please enter the Blog Index Page URL');
+      return;
+    }
+    if (!blogName) {
+      alert('Please enter the Blog Name');
+      return;
+    }
+    if (!blogDescription) {
+      alert('Please enter a Blog Description');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(blogIndexUrl);
+    } catch (e) {
+      alert('Please enter a valid URL (e.g., https://www.alanranger.com/blog)');
+      return;
+    }
+
+    // Generate CollectionPage schema for blog index
+    const blogSchema = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": blogName,
+      "description": blogDescription,
+      "url": blogIndexUrl,
+      "publisher": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "url": "https://www.alanranger.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w"
+        }
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": []
+      }
+    };
+
+    // Display the schema
+    const schemaCode = JSON.stringify(blogSchema, null, 2);
+    document.getElementById('blogSchemaCode').textContent = schemaCode;
+    document.getElementById('blogSchemaOutput').style.display = 'block';
+    
+    // Scroll to output
+    document.getElementById('blogSchemaOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function copyBlogSchema() {
+    const schemaCode = document.getElementById('blogSchemaCode').textContent;
+    navigator.clipboard.writeText(schemaCode).then(() => {
+      const btn = document.querySelector('#blogSchemaOutput .copy-btn');
+      if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      }
+    }).catch(() => {
+      alert('Failed to copy. Please select and copy manually.');
+    });
+  }
+
+  function clearBlogForm() {
+    document.getElementById('blogIndexUrl').value = '';
+    document.getElementById('blogName').value = '';
+    document.getElementById('blogDescription').value = '';
+    document.getElementById('blogSchemaOutput').style.display = 'none';
   }
 
   // Helper: Validate URL input
