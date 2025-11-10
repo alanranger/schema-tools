@@ -7130,7 +7130,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       }
 
       // Phase 4: Review Enrichment (if enabled)
-      if (includeReviews && reviewData && reviewData.reviewCount >= 3) {
+      // Always add reviews if available (user confirmed: "there should be reviews for everything")
+      if (includeReviews && reviewData && reviewData.reviewCount >= 1) {
         stats.aggregateRatingsAdded++;
         eventSchema.aggregateRating = {
           "@type": "AggregateRating",
