@@ -6110,6 +6110,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
   }
   
   // Find review data for a product URL (handles path prefix differences)
+  // Enhanced matching: tries multiple strategies to find reviews
   function findReviewData(productUrl, reviewsDict) {
     if (!productUrl || !reviewsDict) return null;
     
@@ -6123,8 +6124,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     // Try matching by slug (handles /photography-services-near-me/ prefix differences)
     const productSlug = normProductUrl.split('/').pop() || '';
     if (productSlug) {
+      // First try using matchProductUrl function
       for (const reviewUrl in reviewsDict) {
         if (matchProductUrl(productUrl, reviewUrl)) {
+          return reviewsDict[reviewUrl];
+        }
+      }
+      
+      // Fallback: try direct slug matching on all review URLs
+      for (const reviewUrl in reviewsDict) {
+        const reviewSlug = normalizeUrl(reviewUrl).split('/').pop() || '';
+        if (reviewSlug === productSlug) {
           return reviewsDict[reviewUrl];
         }
       }
@@ -7220,10 +7230,12 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         }
       }
 
-      // Add audience if detected
-      if (audience) {
-        eventSchema.audience = audience;
-      }
+      // Remove audience field - causing validation warnings (optional field, not critical)
+      // Schema.org validators are strict about audience format for Event schema
+      // Commented out to avoid validation warnings
+      // if (audience) {
+      //   eventSchema.audience = audience;
+      // }
 
       // SEO Metadata Enhancers
       eventSchema.potentialAction = {
