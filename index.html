@@ -4917,7 +4917,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
     
     // Wrap in script tag for easy pasting
-    const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n</script>`;
+    const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
     
     blogLog(`✅ Schema generation complete!`);
     blogLog(`   - Total posts in schema: ${blogPostings.length}`);
@@ -5035,7 +5035,7 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     // Extract JSON from script tags (remove <script> wrapper)
     let schemaCode = scriptWrapped.trim();
     if (schemaCode.startsWith('<script')) {
-      // Remove script tag wrapper
+      // Remove script tag wrapper - escape forward slash in regex
       schemaCode = schemaCode.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '').trim();
     }
 
