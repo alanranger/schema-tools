@@ -6845,25 +6845,38 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       const reviewData = productUrl ? findReviewData(productUrl, reviewsDict) : null;
       
       // Enhanced debugging for review matching (for events like Burnham on Sea)
-      if (index < 5 && includeReviews && productUrl && !reviewData) {
+      // Check first 10 events without reviews, or specific problematic event titles
+      const eventTitle = (event['Event_Title'] || '').toLowerCase();
+      const isProblematicEvent = eventTitle.includes('burnham') || 
+                                 eventTitle.includes('fairy glen') || 
+                                 eventTitle.includes('exmoor') || 
+                                 eventTitle.includes('dartmoor') || 
+                                 eventTitle.includes('ireland') || 
+                                 eventTitle.includes('peak district');
+      
+      if ((index < 10 || isProblematicEvent) && includeReviews && productUrl && !reviewData) {
         addDebugLog(`\n   🔍 Review Matching Debug for "${event['Event_Title']}":`);
         addDebugLog(`      Product URL: ${productUrl}`);
         addDebugLog(`      Reviews dict size: ${Object.keys(reviewsDict).length}`);
-        const sampleReviewUrls = Object.keys(reviewsDict).slice(0, 3);
-        if (sampleReviewUrls.length > 0) {
-          addDebugLog(`      Sample review URLs: ${sampleReviewUrls.join(', ')}`);
-        }
-        // Try to find why it's not matching
         const productSlug = normalizeUrl(productUrl).split('/').pop() || '';
+        addDebugLog(`      Product slug: ${productSlug}`);
+        
+        // Find potential matches
         const matchingUrls = Object.keys(reviewsDict).filter(url => {
           const reviewSlug = normalizeUrl(url).split('/').pop() || '';
-          return reviewSlug === productSlug || matchProductUrl(productUrl, url);
+          return reviewSlug === productSlug || matchProductUrl(productUrl, url) || url.includes(productSlug);
         });
+        
         if (matchingUrls.length > 0) {
           addDebugLog(`      ⚠️ Found ${matchingUrls.length} potential matches but findReviewData returned null`);
           addDebugLog(`      Potential matches: ${matchingUrls.join(', ')}`);
         } else {
           addDebugLog(`      ⚠️ No matching URLs found in reviews dict`);
+          // Show sample review URLs for comparison
+          const sampleReviewUrls = Object.keys(reviewsDict).slice(0, 5);
+          if (sampleReviewUrls.length > 0) {
+            addDebugLog(`      Sample review URLs in dict: ${sampleReviewUrls.join(', ')}`);
+          }
         }
       }
       
