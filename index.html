@@ -4930,19 +4930,75 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 
   function copyBlogSchema() {
-    const schemaCode = document.getElementById('blogSchemaCode').textContent;
-    navigator.clipboard.writeText(schemaCode).then(() => {
-      const btn = document.querySelector('#blogSchemaOutput .copy-btn');
-      if (btn) {
-        const originalText = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => {
-          btn.textContent = originalText;
-        }, 2000);
+    const codeElement = document.getElementById('blogSchemaCode');
+    if (!codeElement) {
+      alert('Schema code element not found.');
+      return;
+    }
+
+    const schemaCode = codeElement.textContent || codeElement.innerText || '';
+    
+    if (!schemaCode || schemaCode.trim().length === 0) {
+      alert('No schema code to copy. Please generate the schema first.');
+      return;
+    }
+
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(schemaCode).then(() => {
+        const btn = document.querySelector('#blogSchemaOutput .copy-btn');
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 2000);
+        }
+        blogLog('✅ Schema copied to clipboard');
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        // Fallback to execCommand
+        fallbackCopy(schemaCode);
+      });
+    } else {
+      // Fallback for older browsers
+      fallbackCopy(schemaCode);
+    }
+  }
+
+  function fallbackCopy(text) {
+    // Create a temporary textarea element
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        const btn = document.querySelector('#blogSchemaOutput .copy-btn');
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ Copied!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 2000);
+        }
+        blogLog('✅ Schema copied to clipboard (fallback method)');
+      } else {
+        throw new Error('execCommand copy failed');
       }
-    }).catch(() => {
-      alert('Failed to copy. Please select and copy manually.');
-    });
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      alert('Failed to copy. Please select the code and copy manually (Ctrl+C).');
+      blogLog(`❌ Copy failed: ${err.message}`, 'error');
+    } finally {
+      document.body.removeChild(textarea);
+    }
   }
 
   function clearBlogForm() {
