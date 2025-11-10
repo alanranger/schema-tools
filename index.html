@@ -7026,9 +7026,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`      ✅ performer: ${includePerformer ? 'ON (will be added)' : 'OFF'}`);
         const category = (event['Category'] || event['category'] || '').split(',')[0].trim();
         const titleLower = (event['Event_Title'] || '').toLowerCase();
-        if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson') || titleLower.includes('course')) {
-          addDebugLog(`      ✅ provider: Present (same as organizer)`);
-        }
+        // Note: provider removed - not valid for Event schema, organizer already provides this info
       }
       
       const audience = detectAudience(event['Event_Title'], event['Excerpt'], event['Tags']);
@@ -7162,10 +7160,9 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         };
       }
       
-      // Add provider (same as organizer for courses)
-      if (category.toLowerCase().includes('course') || category.toLowerCase().includes('lesson') || titleLower.includes('course')) {
-        eventSchema.provider = organizerBlock;
-      }
+      // Note: provider is not valid for Event schema - use organizer instead
+      // Removed provider property as it's not recognized by Schema.org for Event type
+      // organizer already provides the same information and is valid for Event schema
       
       // Build offers with enhanced merchant fields
       // Always add offers (Google requirement) - if price = 0, log error as data issue
@@ -7704,10 +7701,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         eventSeries.performer = sample.performer;
       }
       
-      // Add provider if present in sample
-      if (sample.provider) {
-        eventSeries.provider = sample.provider;
-      }
+      // Note: provider removed - not valid for Event schema, organizer already provides this info
       
       // Add about field
       eventSeries.about = {
