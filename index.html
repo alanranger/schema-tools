@@ -7214,8 +7214,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         addDebugLog(`\n   ⭐ Reviews & Ratings:`);
         if (!reviewData) {
           addDebugLog(`      ⚠️ Reviews toggle ON but no reviewData (mapping: ${mappingData ? 'YES' : 'NO'}, productUrl: ${productUrl || 'none'})`);
-        } else if (reviewData.reviewCount < 3) {
-          addDebugLog(`      ⚠️ Reviews toggle ON but reviewCount (${reviewData.reviewCount}) < 3`);
+        } else if (reviewData.reviewCount < 1) {
+          addDebugLog(`      ⚠️ Reviews toggle ON but reviewCount (${reviewData.reviewCount}) < 1`);
         }
       }
 
