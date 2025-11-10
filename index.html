@@ -1898,28 +1898,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     </div>
 
     <div class="workflow-section">
-      <h3>Step 1: Enter Blog Details</h3>
-      <div class="form-group">
-        <label for="blogIndexUrl">Blog Index Page URL:</label>
-        <input type="text" id="blogIndexUrl" placeholder="https://www.alanranger.com/blog" aria-label="Blog index page URL">
-        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">The URL of your main blog listing/index page</small>
+      <h3>Step 1: Upload Blog CSV File</h3>
+      <label for="blogCsvFile">Upload Blog CSV File:</label>
+      <input type="file" id="blogCsvFile" accept=".csv" aria-label="Blog CSV file upload" onchange="handleBlogCsvUpload(event)">
+      <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">
+        Expected CSV fields: <code>Title</code>, <code>Url Id</code>, <code>Full Url</code>, <code>Categories</code>, <code>Tags</code>, <code>Image</code>, <code>Publish On</code>
+      </p>
+      
+      <div id="blogCsvInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border-left: 3px solid #3182ce;">
+        <p style="margin: 0; color: #2c5282; font-weight: 600;" id="blogCsvInfoText"></p>
       </div>
 
-      <div class="form-group">
-        <label for="blogName">Blog Name:</label>
-        <input type="text" id="blogName" placeholder="Alan Ranger Photography Blog" aria-label="Blog name">
-        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">The name of your blog</small>
-      </div>
-
-      <div class="form-group">
-        <label for="blogDescription">Blog Description:</label>
-        <textarea id="blogDescription" rows="3" placeholder="Photography tips, tutorials, and insights from professional photographer Alan Ranger" aria-label="Blog description"></textarea>
-        <small style="color: #4a5568; display: block; margin-top: 0.25rem;">A brief description of your blog</small>
-      </div>
-
-      <div class="button-group">
-        <button onclick="generateBlogIndexSchema()">Generate Blog Index Schema</button>
-        <button onclick="clearBlogForm()" class="secondary">Clear Form</button>
+      <div class="button-group" style="margin-top: 1.5rem;">
+        <button onclick="generateBlogIndexSchema()" id="generateBlogBtn" disabled>Generate Blog Index Schema</button>
+        <button onclick="clearBlogForm()" class="secondary">Clear</button>
       </div>
     </div>
 
@@ -4629,53 +4621,223 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(url), '_blank');
   }
 
+  // Blog CSV data storage
+  let blogPosts = [];
+
   // Blog Index Schema Generation Functions
-  function generateBlogIndexSchema() {
-    const blogIndexUrl = document.getElementById('blogIndexUrl').value.trim();
-    const blogName = document.getElementById('blogName').value.trim();
-    const blogDescription = document.getElementById('blogDescription').value.trim();
-
-    // Validate inputs
-    if (!blogIndexUrl) {
-      alert('Please enter the Blog Index Page URL');
-      return;
-    }
-    if (!blogName) {
-      alert('Please enter the Blog Name');
-      return;
-    }
-    if (!blogDescription) {
-      alert('Please enter a Blog Description');
+  function handleBlogCsvUpload(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      document.getElementById('generateBlogBtn').disabled = true;
+      document.getElementById('blogCsvInfo').style.display = 'none';
       return;
     }
 
-    // Validate URL format
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        if (!results.data || results.data.length === 0) {
+          alert('CSV file is empty or could not be parsed. Please check the file format.');
+          document.getElementById('generateBlogBtn').disabled = true;
+          return;
+        }
+
+        blogPosts = results.data;
+        console.log('✅ Loaded', blogPosts.length, 'blog posts from CSV');
+        
+        // Show info
+        const infoDiv = document.getElementById('blogCsvInfo');
+        const infoText = document.getElementById('blogCsvInfoText');
+        infoText.textContent = `✅ Loaded ${blogPosts.length} blog posts. Ready to generate schema.`;
+        infoDiv.style.display = 'block';
+        document.getElementById('generateBlogBtn').disabled = false;
+      },
+      error: function(error) {
+        alert('Error parsing CSV file: ' + error.message);
+        document.getElementById('generateBlogBtn').disabled = true;
+      }
+    });
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return null;
+    // Handle YYYY-MM-DD format
+    const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (dateMatch) {
+      return dateMatch[0];
+    }
+    // Try to parse other formats
     try {
-      new URL(blogIndexUrl);
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
     } catch (e) {
-      alert('Please enter a valid URL (e.g., https://www.alanranger.com/blog)');
+      console.warn('Could not parse date:', dateStr);
+    }
+    return null;
+  }
+
+  function truncate(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
+  }
+
+  function getSchemaType(categories) {
+    if (!categories) return 'BlogPosting';
+    const cats = categories.toLowerCase();
+    if (cats.includes('news')) {
+      return 'NewsArticle';
+    }
+    return 'BlogPosting';
+  }
+
+  function generateBlogIndexSchema() {
+    if (!blogPosts || blogPosts.length === 0) {
+      alert('Please upload a blog CSV file first.');
       return;
     }
 
-    // Generate CollectionPage schema for blog index
+    const BLOG_URL = 'https://www.alanranger.com/blog-on-photography';
+    const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
+    const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
+
+    const PUBLISHER = {
+      "@type": "Organization",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w"
+      },
+      "sameAs": [
+        "https://www.facebook.com/alanrangerphotography",
+        "https://www.instagram.com/alanrangerphoto",
+        "https://www.youtube.com/@AlanRangerPhotography",
+        "https://www.threads.net/@alanrangerphoto"
+      ]
+    };
+
+    const AUTHOR = {
+      "@type": "Person",
+      "name": "Alan Ranger",
+      "url": "https://www.alanranger.com/about-alan-ranger",
+      "jobTitle": "Photographer & Educator",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography"
+      },
+      "sameAs": [
+        "https://www.alanranger.com",
+        "https://www.linkedin.com/in/alanrangerphotography"
+      ]
+    };
+
+    // Generate blog postings
+    const blogPostings = [];
+    const seenUrls = new Set();
+
+    for (let i = 0; i < blogPosts.length; i++) {
+      const row = blogPosts[i];
+      const headline = (row['Title'] || '').trim();
+      const url = (row['Full Url'] || '').trim();
+      const image = (row['Image'] || '').trim();
+      const datePublished = formatDate(row['Publish On'] || '');
+      const categories = (row['Categories'] || '').trim();
+      const tags = (row['Tags'] || '').trim();
+
+      // Skip duplicates
+      if (url && seenUrls.has(url)) {
+        console.warn('Skipping duplicate URL:', url);
+        continue;
+      }
+
+      if (!headline || !url) {
+        continue; // Skip rows without required fields
+      }
+
+      if (url) {
+        seenUrls.add(url);
+      }
+
+      // Extract first category as articleSection
+      const articleSection = categories ? categories.split(';')[0].trim() : '';
+      
+      // Join tags as keywords
+      const keywords = tags ? tags.split(';').map(t => t.trim()).join(', ') : '';
+      
+      // Generate description (truncate title if needed)
+      const description = truncate(headline, 110);
+      
+      const schemaType = getSchemaType(categories);
+      
+      const blogPosting = {
+        "@type": schemaType,
+        "headline": headline,
+        "url": url,
+        "datePublished": datePublished || new Date().toISOString().split('T')[0],
+        "dateModified": datePublished || new Date().toISOString().split('T')[0],
+        "description": description,
+        "author": {
+          "@type": "Person",
+          "name": "Alan Ranger"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography"
+        },
+        "mainEntityOfPage": url,
+        "isPartOf": BLOG_URL,
+        "copyrightHolder": {
+          "@type": "Organization",
+          "name": "Alan Ranger Photography"
+        }
+      };
+      
+      // Add image if available
+      if (image) {
+        blogPosting.image = {
+          "@type": "ImageObject",
+          "url": image,
+          "caption": headline
+        };
+        blogPosting.thumbnailUrl = image;
+      }
+      
+      // Add articleSection if available
+      if (articleSection) {
+        blogPosting.articleSection = articleSection;
+      }
+      
+      // Add keywords if available
+      if (keywords) {
+        blogPosting.keywords = keywords;
+      }
+      
+      blogPostings.push({
+        "@type": "ListItem",
+        "position": blogPostings.length + 1,
+        "item": blogPosting
+      });
+    }
+
+    // Generate main Blog schema
     const blogSchema = {
       "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      "name": blogName,
-      "description": blogDescription,
-      "url": blogIndexUrl,
-      "publisher": {
-        "@type": "Organization",
-        "name": "Alan Ranger Photography",
-        "url": "https://www.alanranger.com",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w"
-        }
-      },
+      "@type": "Blog",
+      "@id": `${BLOG_URL}#blog`,
+      "url": BLOG_URL,
+      "name": BLOG_NAME,
+      "description": BLOG_DESCRIPTION,
+      "publisher": PUBLISHER,
+      "author": AUTHOR,
+      "inLanguage": "en-GB",
       "mainEntity": {
         "@type": "ItemList",
-        "itemListElement": []
+        "itemListOrder": "Descending",
+        "itemListElement": blogPostings
       }
     };
 
@@ -4686,6 +4848,8 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     
     // Scroll to output
     document.getElementById('blogSchemaOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
   }
 
   function copyBlogSchema() {
@@ -4705,9 +4869,10 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
   }
 
   function clearBlogForm() {
-    document.getElementById('blogIndexUrl').value = '';
-    document.getElementById('blogName').value = '';
-    document.getElementById('blogDescription').value = '';
+    document.getElementById('blogCsvFile').value = '';
+    blogPosts = [];
+    document.getElementById('generateBlogBtn').disabled = true;
+    document.getElementById('blogCsvInfo').style.display = 'none';
     document.getElementById('blogSchemaOutput').style.display = 'none';
   }
 
