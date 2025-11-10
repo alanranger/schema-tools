@@ -4707,16 +4707,20 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
 
   function formatDate(dateStr) {
     if (!dateStr) return null;
-    // Handle YYYY-MM-DD format
+    // Handle YYYY-MM-DD format - convert to ISO-8601 with timezone
     const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (dateMatch) {
-      return dateMatch[0];
+      // Return ISO-8601 format with timezone: YYYY-MM-DDTHH:MM:SS+00:00
+      return `${dateMatch[0]}T00:00:00+00:00`;
     }
     // Try to parse other formats
     try {
       const date = new Date(dateStr);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+        // Convert to ISO-8601 with timezone
+        const isoString = date.toISOString();
+        // Replace Z with +00:00 for explicit timezone
+        return isoString.replace('Z', '+00:00');
       }
     } catch (e) {
       console.warn('Could not parse date:', dateStr);
@@ -4761,7 +4765,9 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
       "url": "https://www.alanranger.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w"
+        "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+        "width": 800,
+        "height": 800
       },
       "sameAs": [
         "https://www.facebook.com/alanrangerphotography",
@@ -4841,19 +4847,24 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
         "@type": schemaType,
         "headline": headline,
         "url": url,
-        "datePublished": datePublished || new Date().toISOString().split('T')[0],
-        "dateModified": datePublished || new Date().toISOString().split('T')[0],
+        "datePublished": datePublished || new Date().toISOString().replace('Z', '+00:00'),
+        "dateModified": datePublished || new Date().toISOString().replace('Z', '+00:00'),
         "description": description,
         "author": {
           "@type": "Person",
-          "name": "Alan Ranger"
+          "name": "Alan Ranger",
+          "url": "https://www.alanranger.com/about-alan-ranger"
         },
         "publisher": {
           "@type": "Organization",
           "name": "Alan Ranger Photography"
         },
-        "mainEntityOfPage": url,
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": url
+        },
         "isPartOf": BLOG_URL,
+        "inLanguage": "en-GB",
         "copyrightHolder": {
           "@type": "Organization",
           "name": "Alan Ranger Photography"
