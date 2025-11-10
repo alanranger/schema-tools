@@ -7159,11 +7159,11 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         }
         
         // Add individual review snippets (top 5 reviews, trimmed to 300 chars)
+        // Enhanced matching: use same logic as findReviewData for consistency
         if (reviewsData && productUrl) {
-          // Find matching reviews using slug-based matching
-          const productSlug = normalizeUrl(productUrl).split('/').pop();
+          const productSlug = normalizeUrl(productUrl).split('/').pop() || '';
           const productReviews = reviewsData.filter(r => {
-            // Try multiple ways to match product URL (same logic as buildReviewsDict)
+            // Try multiple ways to match product URL (same logic as buildReviewsDict and findReviewData)
             let rUrl = normalizeUrl(r.product_url || r.url || '');
             if (!rUrl && r.product_slug) {
               const domain = r.domain_url || 'https://www.alanranger.com';
@@ -7172,10 +7172,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
               rUrl = normalizeUrl(`${cleanDomain}/${cleanSlug}`);
             }
             
-            // Match by exact URL or by slug
+            // Match by exact URL
             if (rUrl === normalizeUrl(productUrl)) return true;
-            const rSlug = rUrl.split('/').pop();
-            return rSlug === productSlug;
+            
+            // Match by slug
+            const rSlug = rUrl.split('/').pop() || '';
+            if (rSlug && productSlug && rSlug === productSlug) return true;
+            
+            // Try matchProductUrl function for fuzzy matching
+            if (matchProductUrl(productUrl, rUrl)) return true;
+            
+            return false;
           }).filter(r => {
             const rating = parseFloat(r.ratingValue || r.ratingvalue || r.rating || r.review_stars || 0);
             return rating >= 4 && rating <= 5;
