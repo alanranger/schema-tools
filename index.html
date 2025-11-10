@@ -1344,8 +1344,8 @@
     #detail-modal #modal-close:hover { color:#f00; }
     .code-card { border:1px solid #eee; border-radius:10px; margin-bottom:12px; }
     .code-card-head { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fafafa; border-bottom:1px solid #eee; }
-    .code-card pre { margin:0; padding:12px; overflow:auto; background:#1e1e1e; color:#d4d4d4; border-radius:0 0 10px 10px; font-family:'Courier New', monospace; }
-    .code-card pre code { color:#d4d4d4; }
+    .code-card pre { margin:0; padding:12px; overflow:auto; background:#000; color:#fff; border-radius:0 0 10px 10px; font-family:'Courier New', monospace; }
+    .code-card pre code { color:#fff; }
     .code-card .copy-btn { background:#2563eb; color:#fff; border:none; padding:0.375rem 0.75rem; border-radius:4px; cursor:pointer; font-size:0.875rem; }
     .code-card .copy-btn:hover { background:#1d4ed8; }
     .grid.grid-two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
@@ -4916,11 +4916,15 @@ Step 5: Paste schema into Squarespace event page (see instructions below)
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
     
+    // Wrap in script tag for easy pasting
+    const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n</script>`;
+    
     blogLog(`✅ Schema generation complete!`);
     blogLog(`   - Total posts in schema: ${blogPostings.length}`);
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
     
-    document.getElementById('blogSchemaCode').textContent = schemaCode;
+    // Display the script-wrapped version
+    document.getElementById('blogSchemaCode').textContent = scriptWrapped;
     document.getElementById('blogSchemaOutput').style.display = 'block';
     
     // Scroll to output
