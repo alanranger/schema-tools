@@ -17,11 +17,29 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Injects performer, organizer, address, validFrom, and location fields.
 - Fully structured schema output compliant with Google's Rich Results.
 
-### 3. `index.html` (Unified Schema Generator)
-- Combines both tools into one UI with three tabs:
-  - **Event Schema**: Generate Event schemas from CSV (🚧 In Development)
-  - **Product Schema**: Generate Product schemas with review support (🚧 In Development)
+### 3. `index.html` (Unified Schema Generator v4.3.1)
+- Combines both tools into one UI with multiple tabs:
+  - **Event Schema**: ✅ Complete - Generate Event schemas from CSV with Product+Event hybrid schema
+  - **Product Schema**: ✅ Complete - Generate Product schemas with review support
+  - **Blog Index Schema**: ✅ Complete - Generate Blog and ItemList schema for blog index pages
   - **Schema Validator**: ✅ Complete validation and enhancement system with inferred type detection
+- **Event Schema Generator Features (v4.3.1 - Latest)**:
+  - Product+Event hybrid schema (`["Product", "Event"]`) for workshops/courses
+  - Products Excel file upload for actual SKU values (`02 – products_cleaned.xlsx`)
+  - Enhanced review matching with 3 strategies (exact match, slug match, substring match)
+  - Review threshold lowered to >=1 review (includes all products with reviews)
+  - Provider property removed (not valid for Event schema, organizer used instead)
+  - Missing offers issue resolved (always adds offers, even if price = 0)
+  - EventSeries detection and backlinking (v4.2/v4.3)
+  - UI guidance improvements with detailed file upload instructions
+  - Enhanced debug logging for review matching issues
+  - All validation warnings resolved (0 errors, 0 warnings)
+- **Blog Index Schema Generator Features**:
+  - CSV upload for blog posts
+  - Generates Blog and ItemList schema
+  - Includes BlogPosting entries with proper dates, authors, and URLs
+  - Copy and save functionality
+  - Test links to Google Rich Results Test
 - **Schema Validator Features (v1.5.2 - Complete)**:
   - Single URL and batch CSV validation
   - Inferred schema type detection (Carousel, ReviewSnippet, MerchantListing)

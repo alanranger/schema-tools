@@ -56,7 +56,17 @@ Build a **single HTML tool** that can:
 - No manual terminal commands needed
 - Packageable as `.exe` for Windows
 
-**✅ Product Schema Generator - COMPLETE (v1.5.3)**
+**✅ Event Schema Generator - COMPLETE (v4.3.1)**
+- [x] Product+Event hybrid schema (`["Product", "Event"]`)
+- [x] SKU extraction from products Excel file (`02 – products_cleaned.xlsx`)
+- [x] Enhanced review matching with 3 strategies
+- [x] Review threshold lowered to >=1 review
+- [x] Provider property removed (not valid for Event schema)
+- [x] Missing offers issue resolved (always add offers, even if price = 0)
+- [x] EventSeries detection and backlinking (v4.2/v4.3)
+- [x] UI guidance improvements with file upload instructions
+- [x] Enhanced debug logging for review matching
+- [x] All validation warnings resolved (0 errors, 0 warnings)
 - [x] Automated workflow (Steps 1 → 2 → 3a → 3b → 4)
 - [x] URL validation with 404 checking
 - [x] Schema Suppressor v1.3 integration

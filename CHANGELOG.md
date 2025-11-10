@@ -2,6 +2,131 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## [4.3.1] - 2025-11-10
+
+### Event Schema Generator - Major Fixes & Enhancements
+
+#### Fixed
+- **SKU Issue - Resolved**:
+  - Added Products Excel file upload support (`02 – products_cleaned.xlsx`)
+  - Integrated SheetJS (xlsx.js) library for Excel parsing
+  - SKU extraction now prioritizes actual SKU values from `main_sku` column
+  - All SKUs truncated to 40 characters to prevent validation errors
+  - Result: Actual SKU values (e.g., `SQ3971373`, `SQ5697158`) are now used instead of URL slug fallback
+- **Review Matching - Enhanced**:
+  - Implemented 3-strategy review matching system:
+    1. `matchProductUrl()` function (handles prefix differences)
+    2. Direct slug matching (compares final slug segments)
+    3. Substring matching (checks if slug appears anywhere in URL)
+  - Lowered review threshold from `>= 3` to `>= 1` to include all products with reviews
+  - Result: Reviews dictionary increased from 39 to 50 products, all events now match reviews correctly
+- **Provider Property - Removed**:
+  - Removed invalid `provider` property from Event schema (not recognized by Schema.org for Event type)
+  - `organizer` property already provides the same information and is valid for Event schema
+  - Result: All validation warnings for `provider` property resolved
+- **Missing Offers Issue - Resolved**:
+  - Fixed issue where 27 events were missing "offers" field
+  - Root cause: Incomplete `event-product-mappings-*.csv` file (missing entries for 42 events)
+  - Solution: User fixed ingest app to generate complete mappings CSV
+  - Code updated to always add offers, even if price = 0 (logs data error in such cases)
+  - Result: All events now have proper offers blocks
+
+#### Added
+- **Products Excel File Upload**:
+  - New file input for `02 – products_cleaned.xlsx` in Event Schema tab
+  - Provides actual SKU values from `main_sku` column
+  - Prevents fallback to URL slug extraction
+- **Enhanced Review Matching Debug**:
+  - Expanded debug output to cover first 10 events without reviews
+  - Specifically checks problematic event titles (Burnham, Fairy Glen, Exmoor, Dartmoor, Ireland, Peak District)
+  - Shows detailed matching information including product slug and potential matches
+- **UI Guidance Improvements**:
+  - Updated instructions section with detailed file upload guidance
+  - Added "What it does" and "How it works" sections
+  - Expanded "Data Workflow Summary" with current workflow and notes
+
+#### Improved
+- **Review Matching Logic**:
+  - Enhanced `findReviewData()` function with multiple matching strategies
+  - Handles URL prefix differences (`/photo-workshops-uk/` vs direct domain)
+  - More robust matching for events like Burnham on Sea, Fairy Glen, etc.
+- **SKU Extraction**:
+  - Priority order: `main_sku` → `sku` → URL slug (truncated to 40 chars)
+  - Consistent truncation across all paths to prevent validation errors
+- **Debug Logging**:
+  - Enhanced debug output for review matching issues
+  - Shows product URLs, slugs, and potential matches
+  - Better diagnostics for troubleshooting
+
+#### Technical Details
+- Added SheetJS library (`xlsx@0.18.5`) for Excel file parsing
+- `loadProductsData()` function loads products Excel and extracts SKU values
+- `buildMappingsDict()` updated to use products data for SKU lookup
+- `findReviewData()` enhanced with 3 matching strategies
+- `buildReviewsDict()` threshold lowered from `>= 3` to `>= 1` reviews
+
+## [4.3] - 2025-11-08
+
+### Event Schema Generator - EventSeries Backlinking
+
+#### Added
+- **Stable @id Assignment**:
+  - Every Event and EventSeries now has a stable `@id` based on URL
+  - Format: `{eventUrl}#event` for events, `{baseUrl}#series-{slug}` for series
+- **EventSeries Backlinking**:
+  - `Event.superEvent` → `EventSeries(@id)` (forward link)
+  - `EventSeries.subEvent` → `[Event(@id)]` (backward link)
+  - Creates bidirectional relationship between events and their series
+- **Field Verification Summary**:
+  - Extended summary includes linkage statistics
+  - Console debug output for linkage verification
+
+#### Improved
+- **EventSeries Detection**:
+  - Keeps v4.2 detection & enrichment intact
+  - No UI changes, only backend linkage improvements
+
+## [4.2] - 2025-11-07
+
+### Event Schema Generator - EventSeries Optimization
+
+#### Added
+- **EventSeries Detection**:
+  - `detectEventSeries()` function for repeat workshop patterns
+  - Groups multi-instance Bluebell & Batsford workshops into EventSeries
+  - Adds `eventSchedule` + `subjectOf` ItemList linkage
+- **Grouping Summary**:
+  - Console + UI summary of detected series groups
+  - Shows number of events per series
+
+## [4.1] - 2025-11-06
+
+### Event Schema Generator - Product+Event Hybrid Schema
+
+#### Added
+- **Hybrid Schema Type**:
+  - Changed `@type` from `"Event"` to `["Product", "Event"]` hybrid
+  - Validates with Schema.org and Google Rich Results
+- **SKU Support**:
+  - Added SKU to offers object (required for Product+Event hybrid)
+  - SKU extracted from product URL slug (later improved to use products Excel)
+- **Merchant Fields**:
+  - Always adds offers (Google requirement)
+  - Logs error if price = 0 (data issue, not fallback)
+  - Added `shippingDetails`, `priceValidUntil`, `hasMerchantReturnPolicy`
+- **UI Enhancements**:
+  - Clear file upload guidance
+  - Workflow diagram at top of page
+  - Notes about Product+Event hybrid and SKU requirements
+
+#### Removed
+- Invalid Event-only fields: `thumbnailUrl`, `eventType`, `material`, `courseMode`, `isFamilyFriendly`, `learningResourceType`
+- These fields are not valid for Event or Product+Event hybrid schema
+
+#### Fixed
+- Validation function updated to handle Product+Event hybrid schemas
+- Updated validation to correctly filter for Event types including `["Product", "Event"]` arrays
+
 ## [1.5.3] - 2025-11-08
 
 ### Product Schema Generator - Schema Suppressor v1.3 Integration
