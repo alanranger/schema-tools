@@ -10215,9 +10215,51 @@ ${minifiedJson}
     let improvements = [];
     
     if (existingSchemas.length > 0) {
-      // Build enhanced schema graph that merges existing + new
+      // Build enhanced schema graph that merges existing + new AND actually enhances
       const allBlocks = [...existingSchemas, schema];
-      finalSchema = buildEnhancedSchema(allBlocks);
+      
+      // Enhance schemas before merging - add missing fields, improve data quality
+      const enhancedBlocks = allBlocks.map(block => {
+        const enhanced = JSON.parse(JSON.stringify(block)); // Deep clone
+        
+        // Enhance Service schemas
+        if (enhanced['@type'] === 'Service' || (Array.isArray(enhanced['@type']) && enhanced['@type'].includes('Service'))) {
+          // Add missing recommended fields
+          if (!enhanced.provider || !enhanced.provider['@id']) {
+            enhanced.provider = {
+              '@id': 'https://www.alanranger.com/#org',
+              '@type': 'Organization',
+              name: 'Alan Ranger Photography',
+              url: 'https://www.alanranger.com'
+            };
+          }
+          if (!enhanced.areaServed) {
+            enhanced.areaServed = {
+              '@type': 'Country',
+              name: 'GB'
+            };
+          }
+          // Ensure @id for page-specific Service
+          if (!enhanced['@id'] && enhanced.url) {
+            enhanced['@id'] = `${enhanced.url}#schema`;
+          }
+        }
+        
+        // Enhance Organization/LocalBusiness
+        if (enhanced['@id'] === 'https://www.alanranger.com/#org' || 
+            (Array.isArray(enhanced['@type']) && enhanced['@type'].includes('Organization'))) {
+          if (!enhanced.telephone) {
+            enhanced.telephone = '+44 7817 017994';
+          }
+          if (!enhanced.image) {
+            enhanced.image = 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w';
+          }
+        }
+        
+        return enhanced;
+      });
+      
+      finalSchema = buildEnhancedSchema(enhancedBlocks);
       
       // Track improvements
       const newSchemaTypes = extractSchemaTypes([schema]);
@@ -10225,6 +10267,14 @@ ${minifiedJson}
       
       improvements.push(`✅ Merged ${existingSchemas.length} existing schema(s) with new ${actualSchemaType} schema`);
       improvements.push(`📊 Final schema types: ${finalSchemaTypes.join(', ')}`);
+      
+      // Count deduplications
+      const beforeUniqueTypes = new Set(existingSchemaTypes);
+      const afterUniqueTypes = new Set(finalSchemaTypes);
+      const deduplicated = existingSchemas.length - (finalSchema['@graph'] || [finalSchema]).length;
+      if (deduplicated > 0) {
+        improvements.push(`✅ Deduplicated ${deduplicated} duplicate schema(s)`);
+      }
       
       // Compare field completeness
       if (existingAnalysis && existingAnalysis.missingFields) {
@@ -10686,14 +10736,29 @@ ${minifiedJson}
     const outputText = document.getElementById('landingSchemaOutputText');
     if (!outputText) {
       alert('Schema output not found');
+      console.error('landingSchemaOutputText element not found');
       return;
     }
     
-    // Get text content from pre element
-    const schemaText = outputText.textContent || outputText.innerText || '';
+    // Get text content from pre element - try multiple methods
+    let schemaText = '';
+    if (outputText.textContent) {
+      schemaText = outputText.textContent;
+    } else if (outputText.innerText) {
+      schemaText = outputText.innerText;
+    } else if (outputText.value) {
+      schemaText = outputText.value;
+    } else {
+      // Try to get from parent if it's nested
+      const parent = outputText.parentElement;
+      if (parent && parent.textContent) {
+        schemaText = parent.textContent;
+      }
+    }
     
-    if (!schemaText.trim()) {
+    if (!schemaText || !schemaText.trim()) {
       alert('No schema to copy. Please generate schema first.');
+      console.error('No schema text found in outputText');
       return;
     }
     
@@ -10704,37 +10769,38 @@ ${minifiedJson}
       }).catch(err => {
         console.error('Clipboard API failed:', err);
         // Fallback to execCommand
-        fallbackCopy(schemaText);
+        fallbackCopySchema(schemaText);
       });
     } else {
       // Fallback for older browsers
-      fallbackCopy(schemaText);
+      fallbackCopySchema(schemaText);
     }
   }
   
-  function fallbackCopy(text) {
+  function fallbackCopySchema(text) {
     // Create a temporary textarea
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
     textarea.style.left = '-999999px';
     textarea.style.top = '-999999px';
+    textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.focus();
     textarea.select();
     
     try {
       const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
       if (successful) {
         alert('Schema copied to clipboard!');
       } else {
         alert('Failed to copy. Please select and copy manually.');
       }
     } catch (err) {
+      document.body.removeChild(textarea);
       console.error('Fallback copy failed:', err);
       alert('Failed to copy. Please select and copy manually.');
-    } finally {
-      document.body.removeChild(textarea);
     }
   }
 
