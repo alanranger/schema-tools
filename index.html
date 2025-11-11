@@ -10015,30 +10015,35 @@ ${minifiedJson}
   function detectLandingSchemaType(title, description, url) {
     const text = ((title || '') + ' ' + (description || '') + ' ' + (url || '')).toLowerCase();
     
-    // Service detection keywords
-    const serviceKeywords = ['course', 'tuition', 'workshop', 'training', 'lesson', 'mentoring', 'service', 'private'];
+    // Service detection keywords (highest priority for service pages)
+    // Even if there's a product block, if the page is ABOUT the service, use Service
+    const serviceKeywords = ['course', 'tuition', 'workshop', 'training', 'lesson', 'lessons', 'mentoring', 'service', 'private', '1-2-1', 'one-to-one', 'one on one', 'photography lessons', 'photography course'];
     if (serviceKeywords.some(keyword => text.includes(keyword))) {
       return 'Service';
     }
 
-    // WebPage detection keywords
-    const webpageKeywords = ['guide', 'tips', 'how to', 'tutorial', 'article', 'blog', 'information', 'learn'];
+    // WebPage detection keywords (informational content)
+    const webpageKeywords = ['guide', 'tips', 'how to', 'tutorial', 'article', 'blog', 'information', 'learn', 'advice'];
     if (webpageKeywords.some(keyword => text.includes(keyword))) {
       return 'WebPage';
     }
 
-    // Product detection keywords
-    const productKeywords = ['voucher', 'gift', 'buy', 'purchase', 'shop', 'store', 'product'];
-    if (productKeywords.some(keyword => text.includes(keyword))) {
+    // Product detection keywords (only if page is ABOUT the product, not a service page)
+    // Lower priority - don't use Product if service keywords are present
+    const productKeywords = ['voucher', 'gift voucher', 'gift card', 'buy now', 'purchase', 'shop', 'store', 'product page'];
+    if (productKeywords.some(keyword => text.includes(keyword)) && 
+        !serviceKeywords.some(keyword => text.includes(keyword))) {
       return 'Product';
     }
 
     // ItemList detection (category/gateway pages)
-    if (text.includes('category') || text.includes('list') || text.includes('all ') || url.includes('/category/') || url.includes('/all-')) {
+    if (text.includes('category') || text.includes('list') || text.includes('all ') || 
+        url.includes('/category/') || url.includes('/all-') || url.includes('/shop') ||
+        text.includes('browse') || text.includes('view all')) {
       return 'ItemList';
     }
 
-    // Default to Service for most landing pages
+    // Default to Service for most landing pages (services are more common than products)
     return 'Service';
   }
 
