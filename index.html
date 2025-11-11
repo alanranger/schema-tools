@@ -8764,28 +8764,112 @@ ${minifiedJson}
       }
     }
 
-    // Extract image
+    // Extract image - try multiple strategies
     let image = '';
-    const imageSelectors = [
+    
+    // Strategy 1: Check meta tags (og:image, twitter:image)
+    const metaImageSelectors = [
       'meta[property="og:image"]',
       'meta[name="twitter:image"]',
-      '.product-image img',
-      '[data-testid="product-image"] img',
-      'img[itemprop="image"]'
+      'meta[property="og:image:secure_url"]',
+      'link[rel="image_src"]'
     ];
-    for (const selector of imageSelectors) {
+    for (const selector of metaImageSelectors) {
       const element = doc.querySelector(selector);
       if (element) {
-        image = element.getAttribute('content') || element.getAttribute('src');
-        if (image) {
-          // Ensure HTTPS
-          if (image.startsWith('//')) image = 'https:' + image;
-          else if (image.startsWith('/')) {
-            const urlObj = new URL(url);
-            image = urlObj.origin + image;
+        image = element.getAttribute('content') || element.getAttribute('href');
+        if (image) break;
+      }
+    }
+    
+    // Strategy 2: Check existing JSON-LD schema for image
+    if (!image) {
+      const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+      for (const script of jsonLdScripts) {
+        try {
+          const jsonLd = JSON.parse(script.textContent);
+          const schemas = jsonLd['@graph'] || (Array.isArray(jsonLd) ? jsonLd : [jsonLd]);
+          
+          for (const schema of schemas) {
+            if (schema['@type'] && (schema['@type'].includes('Product') || schema['@type'] === 'Product' || schema['@type'].includes('Course'))) {
+              if (schema.image) {
+                image = Array.isArray(schema.image) ? schema.image[0] : schema.image;
+                if (image) break;
+              }
+            }
           }
-          break;
+          if (image) break;
+        } catch (e) {
+          // Skip invalid JSON-LD
         }
+      }
+    }
+    
+    // Strategy 3: Check Squarespace-specific selectors
+    if (!image) {
+      const squarespaceSelectors = [
+        '.product-image img',
+        '.product-gallery img',
+        '[data-testid="product-image"] img',
+        '.sqs-image img',
+        '.sqs-block-image img',
+        'img[itemprop="image"]',
+        '.ProductItem-gallery img',
+        '.ProductItem-image img'
+      ];
+      for (const selector of squarespaceSelectors) {
+        const element = doc.querySelector(selector);
+        if (element) {
+          // Check data-src (lazy loading), srcset, or src
+          image = element.getAttribute('data-src') || 
+                  element.getAttribute('data-image-src') ||
+                  element.getAttribute('srcset')?.split(',')[0]?.trim().split(' ')[0] ||
+                  element.getAttribute('src');
+          if (image) break;
+        }
+      }
+    }
+    
+    // Strategy 4: Find first large image on page (fallback)
+    if (!image) {
+      const allImages = doc.querySelectorAll('img');
+      for (const img of allImages) {
+        const src = img.getAttribute('data-src') || 
+                   img.getAttribute('data-image-src') ||
+                   img.getAttribute('srcset')?.split(',')[0]?.trim().split(' ')[0] ||
+                   img.getAttribute('src');
+        if (src) {
+          // Skip small images (likely icons/logos)
+          const width = parseInt(img.getAttribute('width') || img.getAttribute('data-width') || '0');
+          const height = parseInt(img.getAttribute('height') || img.getAttribute('data-height') || '0');
+          // If dimensions suggest it's a product image (at least 200x200), use it
+          if ((width >= 200 && height >= 200) || (!width && !height)) {
+            image = src;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Normalize image URL
+    if (image) {
+      // Remove query parameters that might resize the image
+      image = image.split('?')[0];
+      
+      // Ensure HTTPS and full URL
+      if (image.startsWith('//')) {
+        image = 'https:' + image;
+      } else if (image.startsWith('/')) {
+        const urlObj = new URL(url);
+        image = urlObj.origin + image;
+      } else if (!image.startsWith('http')) {
+        const urlObj = new URL(url);
+        image = urlObj.origin + '/' + image;
+      }
+      
+      // Ensure HTTPS
+      if (image.startsWith('http://')) {
+        image = image.replace('http://', 'https://');
       }
     }
 
