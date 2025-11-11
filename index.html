@@ -158,9 +158,16 @@
     /* Ensure code elements inside inactive tabs are hidden */
     .tab-content:not(.active) .code-card,
     .tab-content:not(.active) pre,
-    .tab-content:not(.active) code {
+    .tab-content:not(.active) code,
+    .tab-content:not(.active) .workflow-section pre,
+    .tab-content:not(.active) .workflow-section code {
       display: none !important;
       visibility: hidden !important;
+      opacity: 0 !important;
+    }
+    /* Ensure workflow sections show their background colors */
+    .workflow-section {
+      background-color: inherit !important;
     }
     .tab-content h2 {
       color: #2d3748;
