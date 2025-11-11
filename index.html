@@ -2033,10 +2033,10 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     </div>
 
     <div class="workflow-section" style="margin-top: 1.5rem;">
-      <h3>Step 1: Enter Page URL or Manual Input</h3>
-      
       <div style="margin-bottom: 1rem;">
-        <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page URL (for auto-scan):</label>
+        <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Page URL (Optional - for auto-scan):
+        </label>
         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
           <input type="text" id="landingPageUrl" placeholder="https://www.alanranger.com/service-page" 
                  style="flex: 1; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
@@ -2048,46 +2048,68 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           </button>
         </div>
         <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-          Click "Auto-Scan Metadata" to fetch title, description, and image from the page.
+          Click "Auto-Scan Metadata" to fetch title, description, and image from the page. Or enter fields manually below.
         </p>
+        <div id="landingScanProgress" style="display: none; margin-top: 0.5rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+          <div id="landingScanProgressBar" style="height: 8px; background: #667eea; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
+        </div>
       </div>
 
       <div style="margin-top: 1.5rem;">
-        <label for="landingPageTitle" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Title:</label>
+        <label for="landingPageTitle" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Page Title <span style="color: #dc2626;">*</span>:
+        </label>
         <input type="text" id="landingPageTitle" placeholder="e.g., Private Photography Tuition" 
                style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
-               aria-label="Page title input">
+               aria-label="Page title input" maxlength="200">
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          <strong>Required.</strong> The main title of the page (typically matches your H1 or page title).
+        </p>
       </div>
 
       <div style="margin-top: 1rem;">
-        <label for="landingPageDescription" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Description:</label>
+        <label for="landingPageDescription" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Page Description <span style="color: #64748b;">(Optional - max 170 chars)</span>:
+        </label>
         <textarea id="landingPageDescription" placeholder="Enter page description or meta description..." 
-                  style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; min-height: 80px; font-family: inherit;"
-                  aria-label="Page description input"></textarea>
+                  style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; min-height: 60px; max-height: 80px; font-family: inherit;"
+                  aria-label="Page description input" maxlength="170" oninput="updateLandingDescriptionCounter()"></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+          <p style="font-size: 0.75rem; color: #64748b; margin: 0;">
+            Brief description of the page content. Recommended for SEO but not required.
+          </p>
+          <span id="landingDescriptionCounter" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">0/170</span>
+        </div>
       </div>
 
       <div style="margin-top: 1rem;">
-        <label for="landingPageImage" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Image URL:</label>
+        <label for="landingPageImage" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Page Image URL <span style="color: #64748b;">(Optional)</span>:
+        </label>
         <input type="text" id="landingPageImage" placeholder="https://example.com/image.jpg" 
                style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
                aria-label="Page image URL input">
         <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-          Full HTTPS URL to the main image for this page.
+          Full HTTPS URL to the main image for this page. Recommended for better rich results but not required.
         </p>
       </div>
 
       <div style="margin-top: 1rem;">
-        <label for="landingPageUrlFinal" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Canonical URL:</label>
+        <label for="landingPageUrlFinal" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Canonical URL <span style="color: #dc2626;">*</span>:
+        </label>
         <input type="text" id="landingPageUrlFinal" placeholder="https://www.alanranger.com/service-page" 
                style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
                aria-label="Canonical URL input">
         <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-          The canonical URL for this page (used in schema).
+          <strong>Required.</strong> The canonical URL for this page (used in schema). Must be a valid HTTPS URL.
         </p>
       </div>
 
       <div style="margin-top: 1rem;">
-        <label for="landingSchemaType" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Schema Type:</label>
+        <label for="landingSchemaType" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
+          Schema Type:
+        </label>
         <select id="landingSchemaType" 
                 style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; background: white;"
                 aria-label="Schema type selection">
@@ -2152,6 +2174,19 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
 
       <div id="landingScanStatus" style="display: none; margin-top: 1rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 0.875rem; color: #075985;"></div>
 
+      <!-- Debug Log Section -->
+      <div id="landingDebugLogContainer" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 300px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: #495057;">📋 Debug Log</h4>
+          <button onclick="copyLandingDebugLog()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid #dee2e6; border-radius: 4px; background: white; cursor: pointer;">Copy Log</button>
+        </div>
+        <pre id="landingDebugLog" style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; color: #212529; background: white; padding: 0.5rem; border-radius: 4px;"></pre>
+      </div>
+
+      <div id="landingGenerateProgress" style="display: none; margin-top: 1rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+        <div id="landingGenerateProgressBar" style="height: 8px; background: #667eea; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
+      </div>
+
       <div class="button-group" style="margin-top: 1.5rem;">
         <button onclick="generateLandingSchema()" id="generateLandingBtn"
                 style="background: #667eea; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;"
@@ -2176,6 +2211,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         <button onclick="testLandingSchemaOrg()" class="secondary">🔍 Test on Schema.org</button>
         <button onclick="testLandingGoogleRichResults()" class="secondary">🔍 Test on Google Rich Results</button>
         <button onclick="downloadLandingSchema()" class="secondary">💾 Download JSON</button>
+        <button onclick="downloadLandingSchemaHtml()" class="secondary">📄 Download HTML File</button>
       </div>
       
       <div class="code-card">
@@ -9472,6 +9508,47 @@ ${minifiedJson}
 
   // Landing / Service Pages Schema Generator
   let landingPageMetadata = null;
+  let landingDebugLog = '';
+
+  function addLandingDebugLog(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    landingDebugLog += `[${timestamp}] ${message}\n`;
+    const logContainer = document.getElementById('landingDebugLogContainer');
+    const logText = document.getElementById('landingDebugLog');
+    if (logContainer && logText) {
+      logContainer.style.display = 'block';
+      logText.textContent = landingDebugLog;
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+    console.log(`[Landing Schema] ${message}`);
+  }
+
+  function copyLandingDebugLog() {
+    if (landingDebugLog) {
+      navigator.clipboard.writeText(landingDebugLog).then(() => {
+        alert('Debug log copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy. Please select and copy manually.');
+      });
+    }
+  }
+
+  function updateLandingDescriptionCounter() {
+    const desc = document.getElementById('landingPageDescription');
+    const counter = document.getElementById('landingDescriptionCounter');
+    if (desc && counter) {
+      const length = desc.value.length;
+      counter.textContent = `${length}/170`;
+      if (length > 170) {
+        counter.style.color = '#dc2626';
+      } else if (length > 150) {
+        counter.style.color = '#f59e0b';
+      } else {
+        counter.style.color = '#64748b';
+      }
+    }
+  }
 
   // Update conditional fields visibility when schema type changes
   document.addEventListener('DOMContentLoaded', function() {
@@ -9480,6 +9557,12 @@ ${minifiedJson}
       schemaTypeSelect.addEventListener('change', function() {
         updateLandingSchemaFields();
       });
+    }
+    // Initialize description counter
+    const desc = document.getElementById('landingPageDescription');
+    if (desc) {
+      desc.addEventListener('input', updateLandingDescriptionCounter);
+      updateLandingDescriptionCounter();
     }
   });
 
@@ -9500,18 +9583,26 @@ ${minifiedJson}
     const urlInput = document.getElementById('landingPageUrl');
     const statusDiv = document.getElementById('landingScanStatus');
     const scanBtn = document.getElementById('scanMetadataBtn');
+    const progressDiv = document.getElementById('landingScanProgress');
+    const progressBar = document.getElementById('landingScanProgressBar');
+    
+    landingDebugLog = '';
+    addLandingDebugLog('🚀 Starting metadata scan...');
     
     const url = urlInput.value.trim();
     if (!url) {
       alert('Please enter a page URL first');
+      addLandingDebugLog('❌ Error: No URL provided');
       return;
     }
 
     // Validate URL format
     try {
       new URL(url);
+      addLandingDebugLog(`✅ URL validated: ${url}`);
     } catch (e) {
       alert('Please enter a valid URL');
+      addLandingDebugLog(`❌ Error: Invalid URL format - ${e.message}`);
       return;
     }
 
@@ -9522,23 +9613,45 @@ ${minifiedJson}
     statusDiv.style.background = '#e0f2fe';
     statusDiv.style.borderColor = '#0ea5e9';
     statusDiv.style.color = '#075985';
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '20%';
 
     try {
+      addLandingDebugLog('📡 Fetching page HTML...');
       const html = await fetchProductPage(url); // Reuse existing fetch function
+      progressBar.style.width = '60%';
+      addLandingDebugLog(`✅ Page HTML fetched (${html.length} characters)`);
+      
+      addLandingDebugLog('🔍 Extracting metadata...');
       const metadata = extractLandingPageMetadata(html, url);
       landingPageMetadata = metadata;
+      progressBar.style.width = '80%';
+      
+      addLandingDebugLog(`✅ Title extracted: ${metadata.title || 'Not found'}`);
+      addLandingDebugLog(`✅ Description extracted: ${metadata.description ? metadata.description.substring(0, 50) + '...' : 'Not found'}`);
+      addLandingDebugLog(`✅ Image extracted: ${metadata.image || 'Not found'}`);
+
+      // Truncate description to 170 chars
+      let description = metadata.description || '';
+      if (description.length > 170) {
+        description = description.substring(0, 170);
+        addLandingDebugLog(`⚠️ Description truncated to 170 characters`);
+      }
 
       // Populate form fields
       document.getElementById('landingPageTitle').value = metadata.title || '';
-      document.getElementById('landingPageDescription').value = metadata.description || '';
+      document.getElementById('landingPageDescription').value = description;
       document.getElementById('landingPageImage').value = metadata.image || '';
       document.getElementById('landingPageUrlFinal').value = url;
+      updateLandingDescriptionCounter();
 
       // Auto-detect schema type
+      addLandingDebugLog('🧠 Detecting schema type...');
       const detectedType = detectLandingSchemaType(metadata.title, metadata.description, url);
       const schemaTypeSelect = document.getElementById('landingSchemaType');
       if (schemaTypeSelect) {
         schemaTypeSelect.value = 'auto';
+        addLandingDebugLog(`✅ Detected schema type: ${detectedType}`);
         // Show detected type in status
         statusDiv.textContent = `✅ Metadata scanned successfully. Detected schema type: ${detectedType}`;
         statusDiv.style.background = '#d4edda';
@@ -9550,16 +9663,25 @@ ${minifiedJson}
       if (detectedType !== 'auto') {
         schemaTypeSelect.value = detectedType;
         updateLandingSchemaFields();
+        addLandingDebugLog(`✅ Schema type set to: ${detectedType}`);
       }
+      
+      progressBar.style.width = '100%';
+      addLandingDebugLog('✅ Metadata scan complete!');
     } catch (error) {
       console.error('Error scanning metadata:', error);
+      addLandingDebugLog(`❌ Error: ${error.message}`);
       statusDiv.textContent = `❌ Error: ${error.message}`;
       statusDiv.style.background = '#f8d7da';
       statusDiv.style.borderColor = '#f5c6cb';
       statusDiv.style.color = '#721c24';
+      progressBar.style.width = '0%';
     } finally {
       scanBtn.disabled = false;
       scanBtn.textContent = '🔍 Auto-Scan Metadata';
+      setTimeout(() => {
+        progressDiv.style.display = 'none';
+      }, 1000);
     }
   }
 
@@ -9662,6 +9784,9 @@ ${minifiedJson}
   }
 
   function generateLandingSchema() {
+    landingDebugLog = '';
+    addLandingDebugLog('🚀 Starting schema generation...');
+    
     const title = document.getElementById('landingPageTitle').value.trim();
     const description = document.getElementById('landingPageDescription').value.trim();
     const image = document.getElementById('landingPageImage').value.trim();
@@ -9669,60 +9794,119 @@ ${minifiedJson}
     const schemaType = document.getElementById('landingSchemaType').value;
     const outputDiv = document.getElementById('landingSchemaOutput');
     const outputText = document.getElementById('landingSchemaOutputText');
+    const progressDiv = document.getElementById('landingGenerateProgress');
+    const progressBar = document.getElementById('landingGenerateProgressBar');
+    const generateBtn = document.getElementById('generateLandingBtn');
 
     // Validation
     if (!title) {
       alert('Please enter a page title');
+      addLandingDebugLog('❌ Error: Page title is required');
       return;
     }
     if (!url) {
       alert('Please enter a canonical URL');
+      addLandingDebugLog('❌ Error: Canonical URL is required');
       return;
     }
 
     // Validate URL format
     try {
       new URL(url);
+      addLandingDebugLog(`✅ URL validated: ${url}`);
     } catch (e) {
       alert('Please enter a valid canonical URL');
+      addLandingDebugLog(`❌ Error: Invalid URL format - ${e.message}`);
       return;
     }
+
+    generateBtn.disabled = true;
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '20%';
+    addLandingDebugLog(`📋 Inputs: Title="${title}", Description length=${description.length}, Image=${image ? 'Yes' : 'No'}, Schema Type="${schemaType}"`);
+
+    // Truncate description to 170 chars
+    let finalDescription = description;
+    if (finalDescription.length > 170) {
+      finalDescription = finalDescription.substring(0, 170);
+      addLandingDebugLog(`⚠️ Description truncated to 170 characters`);
+    }
+
+    progressBar.style.width = '40%';
 
     // Determine actual schema type (auto-detect if needed)
     let actualSchemaType = schemaType;
     if (schemaType === 'auto') {
       actualSchemaType = detectLandingSchemaType(title, description, url);
+      addLandingDebugLog(`🧠 Auto-detected schema type: ${actualSchemaType}`);
+    } else {
+      addLandingDebugLog(`📌 Using manual schema type: ${actualSchemaType}`);
     }
+
+    progressBar.style.width = '60%';
 
     // Generate schema based on type
     let schema;
-    switch (actualSchemaType) {
-      case 'Service':
-        schema = generateServiceSchema(title, description, image, url);
-        break;
-      case 'ItemList':
-        schema = generateItemListSchema(title, description, image, url);
-        break;
-      case 'WebPage':
-        schema = generateWebPageSchema(title, description, image, url);
-        break;
-      case 'Product':
-        schema = generateSimplifiedProductSchema(title, description, image, url);
-        break;
-      default:
-        schema = generateServiceSchema(title, description, image, url); // Default fallback
+    try {
+      addLandingDebugLog(`⚙️ Generating ${actualSchemaType} schema...`);
+      switch (actualSchemaType) {
+        case 'Service':
+          schema = generateServiceSchema(title, finalDescription, image, url);
+          break;
+        case 'ItemList':
+          schema = generateItemListSchema(title, finalDescription, image, url);
+          break;
+        case 'WebPage':
+          schema = generateWebPageSchema(title, finalDescription, image, url);
+          break;
+        case 'Product':
+          schema = generateSimplifiedProductSchema(title, finalDescription, image, url);
+          break;
+        default:
+          schema = generateServiceSchema(title, finalDescription, image, url); // Default fallback
+          addLandingDebugLog(`⚠️ Unknown schema type, defaulting to Service`);
+      }
+      addLandingDebugLog(`✅ Schema generated successfully`);
+    } catch (error) {
+      addLandingDebugLog(`❌ Error generating schema: ${error.message}`);
+      alert(`Error generating schema: ${error.message}`);
+      progressBar.style.width = '0%';
+      generateBtn.disabled = false;
+      return;
     }
 
+    progressBar.style.width = '80%';
+
     // Format and display
-    const schemaJson = JSON.stringify(schema, null, 2);
-    outputText.textContent = schemaJson;
-    outputDiv.style.display = 'block';
-    outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+      const schemaJson = JSON.stringify(schema, null, 2);
+      outputText.textContent = schemaJson;
+      outputDiv.style.display = 'block';
+      progressBar.style.width = '100%';
+      addLandingDebugLog(`✅ Schema formatted and displayed (${schemaJson.length} characters)`);
+      addLandingDebugLog(`✅ Schema generation complete!`);
+      outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+      addLandingDebugLog(`❌ Error formatting schema: ${error.message}`);
+      alert(`Error formatting schema: ${error.message}`);
+      progressBar.style.width = '0%';
+    } finally {
+      generateBtn.disabled = false;
+      setTimeout(() => {
+        progressDiv.style.display = 'none';
+      }, 1000);
+    }
   }
 
   function generateServiceSchema(title, description, image, url) {
+    addLandingDebugLog('  Building Service schema...');
     const areaServed = document.getElementById('serviceAreaServed').value.trim() || 'GB';
     const servicePrice = parseFloat(document.getElementById('servicePrice').value) || null;
+
+    addLandingDebugLog(`  - Area served: ${areaServed}`);
+    if (servicePrice) {
+      addLandingDebugLog(`  - Service price: £${servicePrice.toFixed(2)}`);
+    }
 
     const serviceSchema = {
       '@context': 'https://schema.org',
@@ -9745,6 +9929,7 @@ ${minifiedJson}
 
     if (image && image.startsWith('https://')) {
       serviceSchema.image = image;
+      addLandingDebugLog('  - Image added');
     }
 
     if (servicePrice && servicePrice > 0) {
@@ -9755,6 +9940,7 @@ ${minifiedJson}
         availability: 'https://schema.org/InStock',
         url: url
       };
+      addLandingDebugLog('  - Offers added');
     }
 
     return serviceSchema;
@@ -9911,6 +10097,52 @@ ${minifiedJson}
     URL.revokeObjectURL(downloadUrl);
   }
 
+  function downloadLandingSchemaHtml() {
+    const outputText = document.getElementById('landingSchemaOutputText');
+    const url = document.getElementById('landingPageUrlFinal').value.trim();
+    const title = document.getElementById('landingPageTitle').value.trim() || 'Landing Page';
+    
+    if (!outputText || !outputText.textContent) {
+      alert('Please generate schema first');
+      return;
+    }
+
+    try {
+      const schema = JSON.parse(outputText.textContent);
+      const schemaJson = JSON.stringify(schema, null, 2);
+      const slug = url ? url.split('/').pop().replace(/[^a-z0-9-]/gi, '-').substring(0, 50) : 'landing-page';
+      const escapedTitle = title.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      
+      const htmlContent = '<!DOCTYPE html>\n' +
+        '<html lang="en">\n' +
+        '<head>\n' +
+        '  <meta charset="UTF-8">\n' +
+        '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+        '  <title>Schema - ' + escapedTitle + '</title>\n' +
+        '</head>\n' +
+        '<body>\n' +
+        '  <!-- Landing Page Schema -->\n' +
+        '  <script type="application/ld+json">\n' +
+        schemaJson + '\n' +
+        '  </script>\n' +
+        '</body>\n' +
+        '</html>';
+      
+      const filename = `${slug}_schema.html`;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      alert(`Error creating HTML file: ${error.message}`);
+    }
+  }
+
   function clearLandingForm() {
     document.getElementById('landingPageUrl').value = '';
     document.getElementById('landingPageTitle').value = '';
@@ -9923,8 +10155,13 @@ ${minifiedJson}
     document.getElementById('itemListItems').value = '';
     document.getElementById('landingSchemaOutput').style.display = 'none';
     document.getElementById('landingScanStatus').style.display = 'none';
+    document.getElementById('landingDebugLogContainer').style.display = 'none';
+    document.getElementById('landingScanProgress').style.display = 'none';
+    document.getElementById('landingGenerateProgress').style.display = 'none';
     updateLandingSchemaFields();
+    updateLandingDescriptionCounter();
     landingPageMetadata = null;
+    landingDebugLog = '';
   }
 
   // Product Schema Generation
