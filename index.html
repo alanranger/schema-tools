@@ -155,6 +155,13 @@
     .tab-content.active {
       display: block !important;
     }
+    /* Ensure code elements inside inactive tabs are hidden */
+    .tab-content:not(.active) .code-card,
+    .tab-content:not(.active) pre,
+    .tab-content:not(.active) code {
+      display: none !important;
+      visibility: hidden !important;
+    }
     .tab-content h2 {
       color: #2d3748;
       font-size: 1.75rem;
@@ -2335,7 +2342,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         <div class="code-card-head">
           <span>JSON-LD Schema</span>
         </div>
-        <pre style="background:#000 !important; color:#fff !important; padding:12px; margin:0; overflow:auto; font-family:'Courier New', monospace !important; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word;"><code id="blogSchemaCode" style="background:#000 !important; color:#fff !important; display:block !important; visibility:visible !important; opacity:1 !important;"></code></pre>
+        <pre style="background:#000 !important; color:#fff !important; padding:12px; margin:0; overflow:auto; font-family:'Courier New', monospace !important; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word;"><code id="blogSchemaCode" style="background:#000 !important; color:#fff !important;"></code></pre>
       </div>
     </div>
 
@@ -5338,12 +5345,9 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     const codeElement = document.getElementById('blogSchemaCode');
     if (codeElement) {
       codeElement.textContent = scriptWrapped;
-      // Force visibility with inline styles
+      // Set styles only when content is present
       codeElement.style.color = '#fff';
       codeElement.style.backgroundColor = '#000';
-      codeElement.style.display = 'block';
-      codeElement.style.visibility = 'visible';
-      codeElement.style.opacity = '1';
       
       // Also ensure parent pre has correct styles
       const preElement = codeElement.parentElement;
