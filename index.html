@@ -10149,7 +10149,47 @@ ${minifiedJson}
         }
       }
       
-      addLandingDebugLog(`✅ Schema formatted and displayed (${schemaJson.length} characters)`);
+      // Build schema output with suppressor code at the top
+      const suppressorCode = `<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+${schemaJson}
+</script>`;
+      
+      outputText.textContent = suppressorCode;
+      
+      addLandingDebugLog(`✅ Schema formatted and displayed (${suppressorCode.length} characters)`);
+      addLandingDebugLog(`   Includes Schema Suppressor v1.3 to prevent duplicate Squarespace schemas`);
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       addLandingDebugLog('✅ SCHEMA GENERATION COMPLETE!');
