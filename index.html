@@ -9066,61 +9066,64 @@ ${minifiedJson}
   function schemaToHtml(schema, productName) {
     const schemaJson = JSON.stringify(schema, null, 2);
     const slug = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
+    const escapedProductName = productName.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product Schema - ${productName}</title>
-</head>
-<body>
-  <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
-  <script>
-    (function() {
-      function suppressSquarespaceSchemas() {
-        const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-        scripts.forEach(function(script) {
-          try {
-            const data = JSON.parse(script.textContent);
-            const schemas = data['@graph'] || (Array.isArray(data) ? data : [data]);
-            
-            schemas.forEach(function(schema) {
-              const types = Array.isArray(schema['@type']) ? schema['@type'] : [schema['@type']];
-              if (types.includes('Product')) {
-                const hasRating = schema.aggregateRating || schema.review;
-                const hasOffers = schema.offers;
-                const hasReturnPolicy = schema.hasMerchantReturnPolicy;
-                const isShort = script.textContent.length < 1500;
-                
-                if (isShort && !hasRating && hasOffers && !hasReturnPolicy) {
-                  script.remove();
-                }
-              }
-            });
-          } catch(e) {
-            // Skip invalid JSON
-          }
-        });
-      }
-      
-      suppressSquarespaceSchemas();
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', suppressSquarespaceSchemas);
-      }
-      window.addEventListener('load', suppressSquarespaceSchemas);
-      
-      const observer = new MutationObserver(suppressSquarespaceSchemas);
-      observer.observe(document.body, { childList: true, subtree: true });
-    })();
-  </script>
-
-  <!-- Product Schema -->
-  <script type="application/ld+json">
-${schemaJson}
-  </script>
-</body>
-</html>`;
+    const htmlContent = '<!DOCTYPE html>\n' +
+      '<html lang="en">\n' +
+      '<head>\n' +
+      '  <meta charset="UTF-8">\n' +
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '  <title>Product Schema - ' + escapedProductName + '</title>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '  <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->\n' +
+      '  <script>\n' +
+      '    (function() {\n' +
+      '      function suppressSquarespaceSchemas() {\n' +
+      '        const scripts = document.querySelectorAll(\'script[type="application/ld+json"]\');\n' +
+      '        scripts.forEach(function(script) {\n' +
+      '          try {\n' +
+      '            const data = JSON.parse(script.textContent);\n' +
+      '            const schemas = data[\'@graph\'] || (Array.isArray(data) ? data : [data]);\n' +
+      '            \n' +
+      '            schemas.forEach(function(schema) {\n' +
+      '              const types = Array.isArray(schema[\'@type\']) ? schema[\'@type\'] : [schema[\'@type\']];\n' +
+      '              if (types.includes(\'Product\')) {\n' +
+      '                const hasRating = schema.aggregateRating || schema.review;\n' +
+      '                const hasOffers = schema.offers;\n' +
+      '                const hasReturnPolicy = schema.hasMerchantReturnPolicy;\n' +
+      '                const isShort = script.textContent.length < 1500;\n' +
+      '                \n' +
+      '                if (isShort && !hasRating && hasOffers && !hasReturnPolicy) {\n' +
+      '                  script.remove();\n' +
+      '                }\n' +
+      '              }\n' +
+      '            });\n' +
+      '          } catch(e) {\n' +
+      '            // Skip invalid JSON\n' +
+      '          }\n' +
+      '        });\n' +
+      '      }\n' +
+      '      \n' +
+      '      suppressSquarespaceSchemas();\n' +
+      '      if (document.readyState === \'loading\') {\n' +
+      '        document.addEventListener(\'DOMContentLoaded\', suppressSquarespaceSchemas);\n' +
+      '      }\n' +
+      '      window.addEventListener(\'load\', suppressSquarespaceSchemas);\n' +
+      '      \n' +
+      '      const observer = new MutationObserver(suppressSquarespaceSchemas);\n' +
+      '      observer.observe(document.body, { childList: true, subtree: true });\n' +
+      '    })();\n' +
+      '  </script>\n' +
+      '\n' +
+      '  <!-- Product Schema -->\n' +
+      '  <script type="application/ld+json">\n' +
+      schemaJson + '\n' +
+      '  </script>\n' +
+      '</body>\n' +
+      '</html>';
+    
+    return htmlContent;
   }
 
   function updateProgress(progressDiv, percent) {
