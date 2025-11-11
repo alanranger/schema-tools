@@ -159,9 +159,19 @@
     /* Ensure code elements inside inactive tabs are hidden */
     .tab-content:not(.active) .code-card,
     .tab-content:not(.active) pre,
-    .tab-content:not(.active) code,
+    .tab-content:not(.active) code:not(input),
     .tab-content:not(.active) .workflow-section pre,
-    .tab-content:not(.active) .workflow-section code {
+    .tab-content:not(.active) .workflow-section code:not(input),
+    .tab-content:not(.active) textarea[id*="Output"],
+    .tab-content:not(.active) textarea[id*="Schema"],
+    .tab-content:not(.active) #landingSchemaOutputText,
+    .tab-content:not(.active) #blogSchemaCode,
+    .tab-content:not(.active) #eventOutput,
+    .tab-content:not(.active) #productOutput,
+    .tab-content:not(.active) #singleUrlSchemaOutput,
+    .tab-content:not(.active) #landingDebugLog,
+    .tab-content:not(.active) #blogDebugLog,
+    .tab-content:not(.active) #debugLog {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
@@ -2048,8 +2058,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
         <div style="background: #667eea; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">1</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Auto-Scan Metadata (Optional)</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">🤖 Automatic: Fetches title, description, and image from page URL</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Auto-Scan Metadata (Optional)</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">🤖 Automatic: Fetches title, description, and image from page URL</p>
         </div>
       </div>
       
@@ -2082,8 +2092,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
         <div style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">2</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Page Information</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">✍️ Manual Input: Enter page details (or use auto-scan above)</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Page Information</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">✍️ Manual Input: Enter page details (or use auto-scan above)</p>
         </div>
       </div>
 
@@ -2145,8 +2155,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
         <div style="background: #f59e0b; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">3</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Schema Configuration</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">🤖 Automatic: Smart detection analyzes content | ✍️ Manual: Override if needed</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Schema Configuration</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">🤖 Automatic: Smart detection analyzes content | ✍️ Manual: Override if needed</p>
         </div>
       </div>
 
@@ -2222,8 +2232,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
         <div style="background: #8b5cf6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">4</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Status & Debug</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">📊 View progress and debug information</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Status & Debug</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">📊 View progress and debug information</p>
         </div>
       </div>
 
@@ -2248,8 +2258,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
         <div style="background: #ef4444; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">5</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Generate Schema</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">⚙️ Click to generate your schema (requires Title and URL)</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Generate Schema</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">⚙️ Click to generate your schema (requires Title and URL)</p>
         </div>
       </div>
 
@@ -2271,8 +2281,8 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #10b981;">
         <div style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">6</div>
         <div>
-          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Generated Schema</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">✅ Your schema is ready! Copy, test, or download below.</p>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Generated Schema</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">✅ Your schema is ready! Copy, test, or download below.</p>
         </div>
       </div>
       
