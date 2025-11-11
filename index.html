@@ -2288,6 +2288,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
                 <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Before</th>
                 <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">After</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Status</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Enhancement Summary</th>
               </tr>
             </thead>
             <tbody id="landingSchemaResultsTableBody">
@@ -10097,6 +10098,34 @@ ${minifiedJson}
         const finalTypesSet = new Set(finalSchemaTypes);
         const beforeTypesSet = new Set(existingSchemaTypes);
         
+        // Extract schemas by type for comparison
+        const getSchemasByType = (schemas, targetType) => {
+          const result = [];
+          const processSchema = (s) => {
+            if (!s) return;
+            const types = Array.isArray(s['@type']) ? s['@type'] : [s['@type']];
+            if (types.includes(targetType)) {
+              result.push(s);
+            }
+            // Check nested objects
+            Object.values(s).forEach(val => {
+              if (typeof val === 'object' && val !== null && !Array.isArray(val) && val['@type']) {
+                processSchema(val);
+              } else if (Array.isArray(val)) {
+                val.forEach(item => {
+                  if (typeof item === 'object' && item !== null && item['@type']) {
+                    processSchema(item);
+                  }
+                });
+              }
+            });
+          };
+          schemas.forEach(s => processSchema(s));
+          return result;
+        };
+        
+        const finalSchemas = finalSchema['@graph'] || [finalSchema];
+        
         // Combine all types (before + after) for comparison
         const allTypes = [...new Set([...existingSchemaTypes, ...finalSchemaTypes])];
         
@@ -10108,19 +10137,70 @@ ${minifiedJson}
             
             let status = '';
             let statusColor = '';
+            let enhancementSummary = '';
             
             if (!beforeExists && afterExists) {
               status = '✅ Added';
               statusColor = '#10b981';
+              const afterSchemas = getSchemasByType(finalSchemas, type);
+              if (afterSchemas.length > 0) {
+                const schema = afterSchemas[0];
+                const fields = Object.keys(schema).filter(k => !k.startsWith('@'));
+                enhancementSummary = `New schema with ${fields.length} fields: ${fields.slice(0, 5).join(', ')}${fields.length > 5 ? '...' : ''}`;
+              } else {
+                enhancementSummary = 'New schema type added';
+              }
             } else if (beforeExists && afterExists) {
               status = '🔧 Enhanced';
               statusColor = '#3b82f6';
+              
+              // Compare before and after
+              const beforeSchemas = getSchemasByType(existingSchemas, type);
+              const afterSchemas = getSchemasByType(finalSchemas, type);
+              
+              if (beforeSchemas.length > 0 && afterSchemas.length > 0) {
+                const beforeSchema = beforeSchemas[0];
+                const afterSchema = afterSchemas[0];
+                
+                const beforeFields = new Set(Object.keys(beforeSchema).filter(k => !k.startsWith('@')));
+                const afterFields = new Set(Object.keys(afterSchema).filter(k => !k.startsWith('@')));
+                
+                const addedFields = [...afterFields].filter(f => !beforeFields.has(f));
+                const improvedFields = [];
+                
+                // Check for field improvements (non-empty values added)
+                beforeFields.forEach(field => {
+                  const beforeVal = beforeSchema[field];
+                  const afterVal = afterSchema[field];
+                  if ((!beforeVal || (typeof beforeVal === 'string' && beforeVal.trim() === '')) && 
+                      afterVal && (typeof afterVal !== 'string' || afterVal.trim() !== '')) {
+                    improvedFields.push(field);
+                  }
+                });
+                
+                const enhancements = [];
+                if (addedFields.length > 0) {
+                  enhancements.push(`Added: ${addedFields.slice(0, 3).join(', ')}${addedFields.length > 3 ? '...' : ''}`);
+                }
+                if (improvedFields.length > 0) {
+                  enhancements.push(`Improved: ${improvedFields.slice(0, 3).join(', ')}${improvedFields.length > 3 ? '...' : ''}`);
+                }
+                if (addedFields.length === 0 && improvedFields.length === 0) {
+                  enhancements.push('Merged with canonical Organization/LocalBusiness');
+                }
+                
+                enhancementSummary = enhancements.length > 0 ? enhancements.join('; ') : 'Merged and normalized';
+              } else {
+                enhancementSummary = 'Merged with enhanced schema';
+              }
             } else if (beforeExists && !afterExists) {
               status = '⚠️ Removed';
               statusColor = '#ef4444';
+              enhancementSummary = 'Schema type removed during merge';
             } else {
               status = '—';
               statusColor = '#64748b';
+              enhancementSummary = '—';
             }
             
             row.innerHTML = `
@@ -10132,6 +10212,7 @@ ${minifiedJson}
                 ${afterExists ? '<span style="color: #10b981; font-weight: 600;">✓</span>' : '<span style="color: #94a3b8;">—</span>'}
               </td>
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; color: ${statusColor}; font-weight: 500;">${status}</td>
+              <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 0.8125rem; line-height: 1.4;">${enhancementSummary}</td>
             `;
             resultsTableBody.appendChild(row);
           });
@@ -10140,7 +10221,7 @@ ${minifiedJson}
           // No types found - show message
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td colspan="4" style="padding: 0.75rem; text-align: center; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+            <td colspan="5" style="padding: 0.75rem; text-align: center; color: #64748b; border-bottom: 1px solid #e2e8f0;">
               No schema types to compare
             </td>
           `;
