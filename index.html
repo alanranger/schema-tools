@@ -9071,15 +9071,60 @@ ${minifiedJson}
       };
     }
 
-    // Add offers
+    // Add offers with all merchant fields (matching batch generation)
     const price = parseFloat(productData.price) || 0;
+    
+    // Calculate priceValidUntil (+12 months from today)
+    const today = new Date();
+    const priceValidUntilDate = new Date(today);
+    priceValidUntilDate.setMonth(priceValidUntilDate.getMonth() + 12);
+    const priceValidUntil = priceValidUntilDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
     productSchema.offers = {
       '@type': 'Offer',
       price: price.toFixed(2),
       priceCurrency: 'GBP',
       availability: 'https://schema.org/InStock',
-      url: productData.url
+      url: productData.url,
+      priceValidUntil: priceValidUntil,
+      seller: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        url: 'https://www.alanranger.com'
+      }
     };
+    
+    // Add shippingDetails (required for Product+Event hybrid, matching batch generation)
+    productSchema.offers.shippingDetails = {
+      '@type': 'OfferShippingDetails',
+      doesNotShip: 'http://schema.org/True',
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'GB'
+      }
+    };
+    
+    // Add SKU to offers if available
+    if (productData.sku) {
+      productSchema.offers.sku = productData.sku.substring(0, 40); // Max 40 chars
+    }
+    
+    // Add hasMerchantReturnPolicy (full object, matching batch generation)
+    const returnPolicy = {
+      '@type': 'MerchantReturnPolicy',
+      returnPolicyCategory: 'http://schema.org/MerchantReturnFiniteReturnWindow',
+      merchantReturnDays: 28,
+      refundType: 'http://schema.org/FullRefund',
+      applicableCountry: 'GB',
+      returnMethod: 'http://schema.org/ReturnByMail',
+      returnFees: 'https://schema.org/ReturnShippingFees',
+      returnShippingFeesAmount: {
+        '@type': 'MonetaryAmount',
+        value: '50.00',
+        currency: 'GBP'
+      }
+    };
+    productSchema.offers.hasMerchantReturnPolicy = returnPolicy;
 
     // Add reviews if available
     if (reviews.length > 0) {
@@ -9133,12 +9178,24 @@ ${minifiedJson}
       }))
     };
 
-    // LocalBusiness
+    // LocalBusiness (matching batch generation exactly)
     const localBusiness = {
       '@type': 'LocalBusiness',
       name: 'Alan Ranger Photography',
       url: 'https://www.alanranger.com',
-      logo: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
+      logo: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+      image: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+      priceRange: '£50–£500',
+      email: 'info@alanranger.com',
+      telephone: '+44 781 701 7994',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: '45 Hathaway Road',
+        addressLocality: 'Coventry',
+        addressRegion: 'West Midlands',
+        postalCode: 'CV4 9HW',
+        addressCountry: 'GB'
+      }
     };
 
     return {
