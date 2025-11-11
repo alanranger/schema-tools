@@ -9939,18 +9939,29 @@ ${minifiedJson}
     // Format and display
     try {
       const schemaJson = JSON.stringify(schema, null, 2);
+      console.log('Schema JSON:', schemaJson);
+      console.log('Output text element:', outputText);
+      console.log('Output div element:', outputDiv);
+      
       if (!outputText) {
         addLandingDebugLog(`❌ Error: Output text element not found`);
+        console.error('Output text element not found!');
         alert('Error: Output element not found');
         return;
       }
       if (!outputDiv) {
         addLandingDebugLog(`❌ Error: Output div element not found`);
+        console.error('Output div element not found!');
         alert('Error: Output div element not found');
         return;
       }
+      
       outputText.textContent = schemaJson;
+      console.log('Schema set to outputText, length:', schemaJson.length);
+      
       outputDiv.style.display = 'block';
+      console.log('Output div display set to block');
+      
       progressBar.style.width = '100%';
       addLandingDebugLog(`✅ Schema formatted and displayed (${schemaJson.length} characters)`);
       addLandingDebugLog(`✅ Schema generation complete!`);
