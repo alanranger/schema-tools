@@ -9055,10 +9055,12 @@ ${minifiedJson}
   }
 
   async function fetchProductPage(url) {
+    const log = typeof addLandingDebugLog === 'function' ? addLandingDebugLog : (msg) => console.log(msg);
+    
     try {
       // Try using CORS proxy first
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      addLandingDebugLog(`   Trying CORS proxy: ${proxyUrl.substring(0, 80)}...`);
+      log(`   Trying CORS proxy: ${proxyUrl.substring(0, 80)}...`);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -9078,7 +9080,7 @@ ${minifiedJson}
         
         const data = await response.json();
         if (data.contents) {
-          addLandingDebugLog(`   ✅ Successfully fetched via CORS proxy (${data.contents.length} characters)`);
+          log(`   ✅ Successfully fetched via CORS proxy (${data.contents.length} characters)`);
           return data.contents;
         } else {
           throw new Error('Proxy returned empty contents');
@@ -9091,11 +9093,11 @@ ${minifiedJson}
         throw proxyError;
       }
     } catch (error) {
-      addLandingDebugLog(`   ⚠️ CORS proxy failed: ${error.message}`);
+      log(`   ⚠️ CORS proxy failed: ${error.message}`);
       
       // Fallback: try direct fetch (may fail due to CORS)
       try {
-        addLandingDebugLog(`   Trying direct fetch...`);
+        log(`   Trying direct fetch...`);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
         
@@ -9110,10 +9112,10 @@ ${minifiedJson}
         }
         
         const html = await response.text();
-        addLandingDebugLog(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
+        log(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
         return html;
       } catch (directError) {
-        addLandingDebugLog(`   ❌ Direct fetch also failed: ${directError.message}`);
+        log(`   ❌ Direct fetch also failed: ${directError.message}`);
         throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${directError.message}`);
       }
     }
