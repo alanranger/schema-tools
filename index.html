@@ -10428,10 +10428,12 @@ ${schemaJson}
       return;
     }
 
+    // Get the schema code (which includes suppressor)
+    const schemaCode = outputText.textContent;
     const slug = url ? url.split('/').pop().replace(/[^a-z0-9-]/gi, '-').substring(0, 50) : 'landing-page';
-    const filename = `${slug}_schema.json`;
+    const filename = `${slug}_schema.txt`; // Changed to .txt since it contains HTML/JS
     
-    const blob = new Blob([outputText.textContent], { type: 'application/json' });
+    const blob = new Blob([schemaCode], { type: 'text/plain' });
     const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
@@ -10453,8 +10455,8 @@ ${schemaJson}
     }
 
     try {
-      const schema = JSON.parse(outputText.textContent);
-      const schemaJson = JSON.stringify(schema, null, 2);
+      // Get the schema code (which already includes suppressor)
+      const schemaCode = outputText.textContent;
       const slug = url ? url.split('/').pop().replace(/[^a-z0-9-]/gi, '-').substring(0, 50) : 'landing-page';
       const escapedTitle = title.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       
@@ -10467,9 +10469,7 @@ ${schemaJson}
         '</head>\n' +
         '<body>\n' +
         '  <!-- Landing Page Schema -->\n' +
-        '  <script type="application/ld+json">\n' +
-        schemaJson + '\n' +
-        '  <' + '/script>\n' +
+        schemaCode + '\n' +
         '</body>\n' +
         '</html>';
       
