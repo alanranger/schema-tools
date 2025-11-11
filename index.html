@@ -3492,12 +3492,72 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     let m;
     while ((m = re.exec(html))) {
       try {
-        const json = JSON.parse(m[1].trim());
-        if (Array.isArray(json)) json.forEach(j => blocks.push(j));
-        else if (json['@graph']) json['@graph'].forEach(j => blocks.push(j));
-        else blocks.push(json);
-      } catch {}
+        const jsonText = m[1].trim();
+        if (!jsonText) continue;
+        
+        const json = JSON.parse(jsonText);
+        
+        // Handle @graph structure
+        if (json['@graph'] && Array.isArray(json['@graph'])) {
+          json['@graph'].forEach(j => {
+            if (j && j['@type']) {
+              blocks.push(j);
+            }
+          });
+        }
+        // Handle array of schemas
+        else if (Array.isArray(json)) {
+          json.forEach(j => {
+            if (j && j['@type']) {
+              blocks.push(j);
+            }
+          });
+        }
+        // Handle single schema object
+        else if (json && json['@type']) {
+          blocks.push(json);
+        }
+      } catch (e) {
+        // Try to extract even if JSON parsing fails partially
+        console.warn('Failed to parse JSON-LD block:', e);
+      }
     }
+    
+    // Also try to find schemas in noscript tags (Squarespace sometimes puts them there)
+    const noscriptRe = /<noscript[^>]*>([\s\S]*?)<\/noscript>/gi;
+    let noscriptMatch;
+    while ((noscriptMatch = noscriptRe.exec(html))) {
+      const noscriptContent = noscriptMatch[1];
+      const scriptRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+      let scriptMatch;
+      while ((scriptMatch = scriptRe.exec(noscriptContent))) {
+        try {
+          const jsonText = scriptMatch[1].trim();
+          if (!jsonText) continue;
+          
+          const json = JSON.parse(jsonText);
+          
+          if (json['@graph'] && Array.isArray(json['@graph'])) {
+            json['@graph'].forEach(j => {
+              if (j && j['@type']) {
+                blocks.push(j);
+              }
+            });
+          } else if (Array.isArray(json)) {
+            json.forEach(j => {
+              if (j && j['@type']) {
+                blocks.push(j);
+              }
+            });
+          } else if (json && json['@type']) {
+            blocks.push(json);
+          }
+        } catch (e) {
+          console.warn('Failed to parse JSON-LD from noscript:', e);
+        }
+      }
+    }
+    
     return blocks;
   }
 
@@ -9606,13 +9666,49 @@ ${minifiedJson}
   }
 
   function copyLandingDebugLog() {
-    if (landingDebugLog) {
+    if (!landingDebugLog || landingDebugLog.trim() === '') {
+      alert('No debug log to copy');
+      return;
+    }
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(landingDebugLog).then(() => {
         alert('Debug log copied to clipboard!');
       }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy. Please select and copy manually.');
+        console.error('Clipboard API failed:', err);
+        // Fallback to execCommand
+        fallbackCopyDebugLog(landingDebugLog);
       });
+    } else {
+      // Fallback for older browsers
+      fallbackCopyDebugLog(landingDebugLog);
+    }
+  }
+  
+  function fallbackCopyDebugLog(text) {
+    // Create a temporary textarea
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert('Debug log copied to clipboard!');
+      } else {
+        alert('Failed to copy. Please select and copy manually.');
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      alert('Failed to copy. Please select and copy manually.');
+    } finally {
+      document.body.removeChild(textarea);
     }
   }
 
