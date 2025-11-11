@@ -9058,16 +9058,63 @@ ${minifiedJson}
     try {
       // Try using CORS proxy first
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      const data = await response.json();
-      return data.contents;
+      addLandingDebugLog(`   Trying CORS proxy: ${proxyUrl.substring(0, 80)}...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await fetch(proxyUrl, { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.contents) {
+          addLandingDebugLog(`   ✅ Successfully fetched via CORS proxy (${data.contents.length} characters)`);
+          return data.contents;
+        } else {
+          throw new Error('Proxy returned empty contents');
+        }
+      } catch (proxyError) {
+        clearTimeout(timeoutId);
+        if (proxyError.name === 'AbortError') {
+          throw new Error('Request timeout after 30 seconds');
+        }
+        throw proxyError;
+      }
     } catch (error) {
+      addLandingDebugLog(`   ⚠️ CORS proxy failed: ${error.message}`);
+      
       // Fallback: try direct fetch (may fail due to CORS)
       try {
-        const response = await fetch(url, { mode: 'cors' });
-        return await response.text();
-      } catch (e) {
-        throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${e.message}`);
+        addLandingDebugLog(`   Trying direct fetch...`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        
+        const response = await fetch(url, { 
+          mode: 'cors',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Direct fetch returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const html = await response.text();
+        addLandingDebugLog(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
+        return html;
+      } catch (directError) {
+        addLandingDebugLog(`   ❌ Direct fetch also failed: ${directError.message}`);
+        throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${directError.message}`);
       }
     }
   }
