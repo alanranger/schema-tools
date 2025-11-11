@@ -9057,67 +9057,97 @@ ${minifiedJson}
   async function fetchProductPage(url) {
     const log = typeof addLandingDebugLog === 'function' ? addLandingDebugLog : (msg) => console.log(msg);
     
-    try {
-      // Try using CORS proxy first
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      log(`   Trying CORS proxy: ${proxyUrl.substring(0, 80)}...`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
+    // List of CORS proxies to try in order
+    const corsProxies = [
+      { name: 'allorigins.win', url: `https://api.allorigins.win/get?url=${encodeURIComponent(url)}` },
+      { name: 'corsproxy.io', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
+      { name: 'codetabs.com', url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` }
+    ];
+    
+    // Try each CORS proxy
+    for (const proxy of corsProxies) {
       try {
-        const response = await fetch(proxyUrl, { 
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-        clearTimeout(timeoutId);
+        log(`   Trying CORS proxy (${proxy.name})...`);
         
-        if (!response.ok) {
-          throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        if (data.contents) {
-          log(`   ✅ Successfully fetched via CORS proxy (${data.contents.length} characters)`);
-          return data.contents;
-        } else {
-          throw new Error('Proxy returned empty contents');
-        }
-      } catch (proxyError) {
-        clearTimeout(timeoutId);
-        if (proxyError.name === 'AbortError') {
-          throw new Error('Request timeout after 30 seconds');
-        }
-        throw proxyError;
-      }
-    } catch (error) {
-      log(`   ⚠️ CORS proxy failed: ${error.message}`);
-      
-      // Fallback: try direct fetch (may fail due to CORS)
-      try {
-        log(`   Trying direct fetch...`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per proxy
         
-        const response = await fetch(url, { 
-          mode: 'cors',
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`Direct fetch returned ${response.status}: ${response.statusText}`);
+        try {
+          const response = await fetch(proxy.url, { 
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
+          }
+          
+          let data;
+          if (proxy.name === 'allorigins.win') {
+            data = await response.json();
+            if (data.contents) {
+              log(`   ✅ Successfully fetched via ${proxy.name} (${data.contents.length} characters)`);
+              return data.contents;
+            } else {
+              throw new Error('Proxy returned empty contents');
+            }
+          } else if (proxy.name === 'corsproxy.io') {
+            const html = await response.text();
+            if (html && html.length > 100) {
+              log(`   ✅ Successfully fetched via ${proxy.name} (${html.length} characters)`);
+              return html;
+            } else {
+              throw new Error('Proxy returned empty or invalid content');
+            }
+          } else if (proxy.name === 'codetabs.com') {
+            const html = await response.text();
+            if (html && html.length > 100) {
+              log(`   ✅ Successfully fetched via ${proxy.name} (${html.length} characters)`);
+              return html;
+            } else {
+              throw new Error('Proxy returned empty or invalid content');
+            }
+          }
+        } catch (proxyError) {
+          clearTimeout(timeoutId);
+          if (proxyError.name === 'AbortError') {
+            log(`   ⚠️ ${proxy.name} timed out after 20 seconds`);
+            continue; // Try next proxy
+          }
+          log(`   ⚠️ ${proxy.name} failed: ${proxyError.message}`);
+          continue; // Try next proxy
         }
-        
-        const html = await response.text();
-        log(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
-        return html;
-      } catch (directError) {
-        log(`   ❌ Direct fetch also failed: ${directError.message}`);
-        throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${directError.message}`);
+      } catch (error) {
+        log(`   ⚠️ ${proxy.name} error: ${error.message}`);
+        continue; // Try next proxy
       }
+    }
+    
+    // All proxies failed, try direct fetch as last resort
+    log(`   ⚠️ All CORS proxies failed, trying direct fetch...`);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(url, { 
+        mode: 'cors',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Direct fetch returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const html = await response.text();
+      log(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
+      return html;
+    } catch (directError) {
+      log(`   ❌ Direct fetch also failed: ${directError.message}`);
+      throw new Error(`Failed to fetch page. All CORS proxies timed out and direct fetch failed. Error: ${directError.message}`);
     }
   }
 
