@@ -10744,30 +10744,42 @@ ${minifiedJson}
     
     // Get text content from pre element - try multiple methods
     let schemaText = '';
+    
+    // Method 1: textContent (most reliable for pre elements)
     if (outputText.textContent) {
-      schemaText = outputText.textContent;
-    } else if (outputText.innerText) {
-      schemaText = outputText.innerText;
-    } else if (outputText.value) {
-      schemaText = outputText.value;
-    } else {
-      // Try to get from parent if it's nested
+      schemaText = outputText.textContent.trim();
+    }
+    // Method 2: innerText (fallback)
+    else if (outputText.innerText) {
+      schemaText = outputText.innerText.trim();
+    }
+    // Method 3: value (if it's a textarea)
+    else if (outputText.value) {
+      schemaText = outputText.value.trim();
+    }
+    // Method 4: Try to get from parent
+    else {
       const parent = outputText.parentElement;
       if (parent && parent.textContent) {
-        schemaText = parent.textContent;
+        schemaText = parent.textContent.trim();
       }
     }
     
-    if (!schemaText || !schemaText.trim()) {
+    if (!schemaText || schemaText.length === 0) {
       alert('No schema to copy. Please generate schema first.');
-      console.error('No schema text found in outputText');
+      console.error('No schema text found. Element:', outputText);
+      console.error('textContent:', outputText.textContent);
+      console.error('innerText:', outputText.innerText);
       return;
     }
+    
+    console.log('Copying schema, length:', schemaText.length);
     
     // Try modern clipboard API first
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(schemaText).then(() => {
         alert('Schema copied to clipboard!');
+        console.log('Successfully copied to clipboard');
       }).catch(err => {
         console.error('Clipboard API failed:', err);
         // Fallback to execCommand
@@ -10775,6 +10787,7 @@ ${minifiedJson}
       });
     } else {
       // Fallback for older browsers
+      console.log('Clipboard API not available, using fallback');
       fallbackCopySchema(schemaText);
     }
   }
@@ -10787,16 +10800,25 @@ ${minifiedJson}
     textarea.style.left = '-999999px';
     textarea.style.top = '-999999px';
     textarea.style.opacity = '0';
+    textarea.style.width = '1px';
+    textarea.style.height = '1px';
     document.body.appendChild(textarea);
+    
+    // Focus and select
     textarea.focus();
     textarea.select();
+    
+    // For iOS
+    textarea.setSelectionRange(0, text.length);
     
     try {
       const successful = document.execCommand('copy');
       document.body.removeChild(textarea);
       if (successful) {
         alert('Schema copied to clipboard!');
+        console.log('Successfully copied using execCommand');
       } else {
+        console.error('execCommand copy returned false');
         alert('Failed to copy. Please select and copy manually.');
       }
     } catch (err) {
