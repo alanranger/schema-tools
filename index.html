@@ -9077,49 +9077,49 @@ ${minifiedJson}
       '</head>\n' +
       '<body>\n' +
       '  <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->\n' +
-      '  <script>\n' +
-      '    (function() {\n' +
-      '      function suppressSquarespaceSchemas() {\n' +
-      '        const scripts = document.querySelectorAll(\'script[type="application/ld+json"]\');\n' +
-      '        scripts.forEach(function(script) {\n' +
-      '          try {\n' +
-      '            const data = JSON.parse(script.textContent);\n' +
-      '            const schemas = data[\'@graph\'] || (Array.isArray(data) ? data : [data]);\n' +
-      '            \n' +
-      '            schemas.forEach(function(schema) {\n' +
-      '              const types = Array.isArray(schema[\'@type\']) ? schema[\'@type\'] : [schema[\'@type\']];\n' +
-      '              if (types.includes(\'Product\')) {\n' +
-      '                const hasRating = schema.aggregateRating || schema.review;\n' +
-      '                const hasOffers = schema.offers;\n' +
-      '                const hasReturnPolicy = schema.hasMerchantReturnPolicy;\n' +
-      '                const isShort = script.textContent.length < 1500;\n' +
-      '                \n' +
-      '                if (isShort && !hasRating && hasOffers && !hasReturnPolicy) {\n' +
-      '                  script.remove();\n' +
-      '                }\n' +
-      '              }\n' +
-      '            });\n' +
-      '          } catch(e) {\n' +
-      '            // Skip invalid JSON\n' +
-      '          }\n' +
-      '        });\n' +
-      '      }\n' +
-      '      \n' +
-      '      suppressSquarespaceSchemas();\n' +
-      '      if (document.readyState === \'loading\') {\n' +
-      '        document.addEventListener(\'DOMContentLoaded\', suppressSquarespaceSchemas);\n' +
-      '      }\n' +
-      '      window.addEventListener(\'load\', suppressSquarespaceSchemas);\n' +
-      '      \n' +
-      '      const observer = new MutationObserver(suppressSquarespaceSchemas);\n' +
-      '      observer.observe(document.body, { childList: true, subtree: true });\n' +
-      '    })();\n' +
-      '  </script>\n' +
-      '\n' +
-      '  <!-- Product Schema -->\n' +
-      '  <script type="application/ld+json">\n' +
-      schemaJson + '\n' +
-      '  </script>\n' +
+      '  <script>\\n' +
+      '    (function() {\\n' +
+      '      function suppressSquarespaceSchemas() {\\n' +
+      '        const scripts = document.querySelectorAll("script[type=\\"application/ld+json\\"]");\\n' +
+      '        scripts.forEach(function(script) {\\n' +
+      '          try {\\n' +
+      '            const data = JSON.parse(script.textContent);\\n' +
+      '            const schemas = data["@graph"] || (Array.isArray(data) ? data : [data]);\\n' +
+      '            \\n' +
+      '            schemas.forEach(function(schema) {\\n' +
+      '              const types = Array.isArray(schema["@type"]) ? schema["@type"] : [schema["@type"]];\\n' +
+      '              if (types.includes("Product")) {\\n' +
+      '                const hasRating = schema.aggregateRating || schema.review;\\n' +
+      '                const hasOffers = schema.offers;\\n' +
+      '                const hasReturnPolicy = schema.hasMerchantReturnPolicy;\\n' +
+      '                const isShort = script.textContent.length < 1500;\\n' +
+      '                \\n' +
+      '                if (isShort && !hasRating && hasOffers && !hasReturnPolicy) {\\n' +
+      '                  script.remove();\\n' +
+      '                }\\n' +
+      '              }\\n' +
+      '            });\\n' +
+      '          } catch(e) {\\n' +
+      '            // Skip invalid JSON\\n' +
+      '          }\\n' +
+      '        });\\n' +
+      '      }\\n' +
+      '      \\n' +
+      '      suppressSquarespaceSchemas();\\n' +
+      '      if (document.readyState === "loading") {\\n' +
+      '        document.addEventListener("DOMContentLoaded", suppressSquarespaceSchemas);\\n' +
+      '      }\\n' +
+      '      window.addEventListener("load", suppressSquarespaceSchemas);\\n' +
+      '      \\n' +
+      '      const observer = new MutationObserver(suppressSquarespaceSchemas);\\n' +
+      '      observer.observe(document.body, { childList: true, subtree: true });\\n' +
+      '    })();\\n' +
+      '  </script>\\n' +
+      '\\n' +
+      '  <!-- Product Schema -->\\n' +
+      '  <script type="application/ld+json">\\n' +
+      schemaJson + '\\n' +
+      '  </script>\\n' +
       '</body>\n' +
       '</html>';
     
