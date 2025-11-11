@@ -2277,6 +2277,26 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         <button onclick="downloadLandingSchemaHtml()" class="secondary">📄 Download HTML File</button>
       </div>
       
+      <!-- Results Panel: Before/After Schema Types Comparison -->
+      <div id="landingSchemaResultsPanel" style="display: none; margin-bottom: 1.5rem; padding: 1.5rem; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px;">
+        <h4 style="margin: 0 0 1rem 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">📊 Schema Analysis Results</h4>
+        <div style="overflow-x: auto;">
+          <table id="landingSchemaResultsTable" style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="background: #e2e8f0;">
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Schema Type</th>
+                <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Before</th>
+                <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">After</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #cbd5e0; font-weight: 600; color: #1e293b;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="landingSchemaResultsTableBody">
+              <!-- Results will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
       <div class="code-card">
         <pre id="landingSchemaOutputText" style="margin: 0; padding: 1rem; background: #ffffff; color: #000000; border: 1px solid #e2e8f0; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word; max-height: 600px; overflow-y: auto;"></pre>
       </div>
@@ -10065,6 +10085,70 @@ ${minifiedJson}
       outputDiv.style.display = 'block';
       progressBar.style.width = '100%';
       
+      // Build and display results table
+      const resultsPanel = document.getElementById('landingSchemaResultsPanel');
+      const resultsTableBody = document.getElementById('landingSchemaResultsTableBody');
+      
+      if (resultsPanel && resultsTableBody) {
+        resultsTableBody.innerHTML = '';
+        
+        // Get final schema types
+        const finalSchemaTypes = extractSchemaTypes(finalSchema['@graph'] || [finalSchema]);
+        const finalTypesSet = new Set(finalSchemaTypes);
+        const beforeTypesSet = new Set(existingSchemaTypes);
+        
+        // Combine all types (before + after) for comparison
+        const allTypes = [...new Set([...existingSchemaTypes, ...finalSchemaTypes])];
+        
+        if (allTypes.length > 0) {
+          allTypes.forEach(type => {
+            const row = document.createElement('tr');
+            const beforeExists = beforeTypesSet.has(type);
+            const afterExists = finalTypesSet.has(type);
+            
+            let status = '';
+            let statusColor = '';
+            
+            if (!beforeExists && afterExists) {
+              status = '✅ Added';
+              statusColor = '#10b981';
+            } else if (beforeExists && afterExists) {
+              status = '🔧 Enhanced';
+              statusColor = '#3b82f6';
+            } else if (beforeExists && !afterExists) {
+              status = '⚠️ Removed';
+              statusColor = '#ef4444';
+            } else {
+              status = '—';
+              statusColor = '#64748b';
+            }
+            
+            row.innerHTML = `
+              <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; font-weight: 500; color: #1e293b;">${type}</td>
+              <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                ${beforeExists ? '<span style="color: #10b981; font-weight: 600;">✓</span>' : '<span style="color: #94a3b8;">—</span>'}
+              </td>
+              <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                ${afterExists ? '<span style="color: #10b981; font-weight: 600;">✓</span>' : '<span style="color: #94a3b8;">—</span>'}
+              </td>
+              <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; color: ${statusColor}; font-weight: 500;">${status}</td>
+            `;
+            resultsTableBody.appendChild(row);
+          });
+          resultsPanel.style.display = 'block';
+        } else {
+          // No types found - show message
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td colspan="4" style="padding: 0.75rem; text-align: center; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+              No schema types to compare
+            </td>
+          `;
+          resultsTableBody.appendChild(row);
+          resultsPanel.style.display = 'block';
+        }
+      }
+      
       addLandingDebugLog(`✅ Schema formatted and displayed (${schemaJson.length} characters)`);
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -10244,14 +10328,37 @@ ${minifiedJson}
 
   function copyLandingSchema() {
     const outputText = document.getElementById('landingSchemaOutputText');
-    if (outputText && outputText.textContent) {
-      navigator.clipboard.writeText(outputText.textContent).then(() => {
-        alert('Schema copied to clipboard!');
-      }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy. Please select and copy manually.');
-      });
+    if (!outputText) {
+      alert('Schema output not found');
+      return;
     }
+    
+    // Get text content from pre element
+    const schemaText = outputText.textContent || outputText.innerText || '';
+    
+    if (!schemaText.trim()) {
+      alert('No schema to copy. Please generate schema first.');
+      return;
+    }
+    
+    navigator.clipboard.writeText(schemaText).then(() => {
+      alert('Schema copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+      // Fallback: select text
+      const range = document.createRange();
+      range.selectNodeContents(outputText);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        alert('Schema copied to clipboard!');
+      } catch (e) {
+        alert('Failed to copy. Please select and copy manually.');
+      }
+      selection.removeAllRanges();
+    });
   }
 
   function testLandingSchemaOrg() {
@@ -10352,6 +10459,7 @@ ${minifiedJson}
     document.getElementById('servicePrice').value = '';
     document.getElementById('itemListItems').value = '';
     document.getElementById('landingSchemaOutput').style.display = 'none';
+    document.getElementById('landingSchemaResultsPanel').style.display = 'none';
     document.getElementById('landingScanStatus').style.display = 'none';
     document.getElementById('landingDebugLogContainer').style.display = 'none';
     document.getElementById('landingScanProgress').style.display = 'none';
