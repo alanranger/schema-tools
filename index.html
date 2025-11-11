@@ -2032,10 +2032,19 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <strong>What this does:</strong> Creates context-appropriate structured data for pages that aren't products or events, improving E-E-A-T signals and AI Overviews performance. Never includes fake reviews or misleading ratings.
     </div>
 
-    <div class="workflow-section" style="margin-top: 1.5rem;">
+    <!-- Step 1: Auto-Scan or Manual Input -->
+    <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
+        <div style="background: #667eea; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">1</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Auto-Scan Metadata (Optional)</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">🤖 Automatic: Fetches title, description, and image from page URL</p>
+        </div>
+      </div>
+      
       <div style="margin-bottom: 1rem;">
         <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
-          Page URL (Optional - for auto-scan):
+          Page URL:
         </label>
         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
           <input type="text" id="landingPageUrl" placeholder="https://www.alanranger.com/service-page" 
@@ -2055,7 +2064,19 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         </div>
       </div>
 
-      <div style="margin-top: 1.5rem;">
+    </div>
+
+    <!-- Step 2: Manual Input Fields -->
+    <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
+        <div style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">2</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Page Information</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">✍️ Manual Input: Enter page details (or use auto-scan above)</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem;">
         <label for="landingPageTitle" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
           Page Title <span style="color: #dc2626;">*</span>:
         </label>
@@ -2104,6 +2125,18 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
           <strong>Required.</strong> The canonical URL for this page (used in schema). Must be a valid HTTPS URL.
         </p>
+      </div>
+
+    </div>
+
+    <!-- Step 3: Schema Configuration -->
+    <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
+        <div style="background: #f59e0b; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">3</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Schema Configuration</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">🤖 Automatic: Smart detection analyzes content | ✍️ Manual: Override if needed</p>
+        </div>
       </div>
 
       <div style="margin-top: 1rem;">
@@ -2171,6 +2204,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           • Multiple URLs or category pages → <strong>ItemList</strong>
         </p>
       </div>
+    </div>
+
+    <!-- Step 4: Status & Debug -->
+    <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
+        <div style="background: #8b5cf6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">4</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Status & Debug</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">📊 View progress and debug information</p>
+        </div>
+      </div>
 
       <div id="landingScanStatus" style="display: none; margin-top: 1rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 0.875rem; color: #075985;"></div>
 
@@ -2186,8 +2230,19 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       <div id="landingGenerateProgress" style="display: none; margin-top: 1rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
         <div id="landingGenerateProgressBar" style="height: 8px; background: #667eea; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
       </div>
+    </div>
 
-      <div class="button-group" style="margin-top: 1.5rem;">
+    <!-- Step 5: Generate -->
+    <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
+        <div style="background: #ef4444; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">5</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Generate Schema</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">⚙️ Click to generate your schema (requires Title and URL)</p>
+        </div>
+      </div>
+
+      <div class="button-group" style="margin-top: 1rem;">
         <button onclick="generateLandingSchema()" id="generateLandingBtn"
                 style="background: #667eea; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;"
                 onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
@@ -2200,8 +2255,15 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
     </div>
 
-    <div id="landingSchemaOutput" style="display: none; margin-top: 2rem;">
-      <h3>Generated Schema</h3>
+    <!-- Step 6: Output -->
+    <div id="landingSchemaOutput" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #ffffff; border: 2px solid #10b981; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #10b981;">
+        <div style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">6</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.125rem; font-weight: 600;">Generated Schema</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #64748b;">✅ Your schema is ready! Copy, test, or download below.</p>
+        </div>
+      </div>
       
       <div class="button-group" style="margin-bottom: 1rem;">
         <button onclick="copyLandingSchema()" class="copy-btn" 
