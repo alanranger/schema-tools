@@ -10015,6 +10015,9 @@ ${minifiedJson}
       progressBar.style.width = '20%';
       
       const html = await fetchProductPage(url);
+      addLandingDebugLog(`📡 Fetched HTML (${html.length} characters)`);
+      addLandingDebugLog(`🔍 Searching for JSON-LD blocks...`);
+      
       const existingBlocks = extractJsonLdBlocksFromHtml(html);
       
       if (existingBlocks.length > 0) {
@@ -10024,6 +10027,13 @@ ${minifiedJson}
         
         addLandingDebugLog(`✅ Found ${existingBlocks.length} existing schema block(s)`);
         addLandingDebugLog(`📋 Existing schema types: ${existingSchemaTypes.join(', ') || 'None'}`);
+        
+        // Log each schema found for debugging
+        existingBlocks.forEach((block, idx) => {
+          const types = Array.isArray(block['@type']) ? block['@type'].join(', ') : block['@type'];
+          const id = block['@id'] || block.url || 'no @id';
+          addLandingDebugLog(`   Block ${idx + 1}: ${types} (@id: ${id})`);
+        });
         
         if (existingAnalysis.schemas && existingAnalysis.schemas.length > 0) {
           addLandingDebugLog(`📊 Schema analysis:`);
@@ -10038,6 +10048,7 @@ ${minifiedJson}
         }
       } else {
         addLandingDebugLog(`ℹ️ No existing schema found on page - will generate new schema`);
+        addLandingDebugLog(`   (Searched for <script type="application/ld+json"> tags)`);
       }
     } catch (error) {
       addLandingDebugLog(`⚠️ Could not fetch page for analysis: ${error.message}`);
