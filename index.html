@@ -2267,10 +2267,6 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
       
       <div class="button-group" style="margin-bottom: 1rem;">
-        <button onclick="copyLandingSchema()" class="copy-btn" 
-                style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">
-          📋 Copy Schema
-        </button>
         <button onclick="testLandingSchemaOrg()" class="secondary">🔍 Test on Schema.org</button>
         <button onclick="testLandingGoogleRichResults()" class="secondary">🔍 Test on Google Rich Results</button>
         <button onclick="downloadLandingSchema()" class="secondary">💾 Download JSON</button>
@@ -2298,8 +2294,14 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         </div>
       </div>
       
-      <div class="code-card">
-        <pre id="landingSchemaOutputText" style="margin: 0; padding: 1rem; background: #ffffff; color: #000000; border: 1px solid #e2e8f0; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word; max-height: 600px; overflow-y: auto;"></pre>
+      <div class="code-card" style="position: relative;">
+        <button onclick="copyLandingSchema()" 
+                style="position: absolute; top: 0.75rem; right: 0.75rem; background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem; font-weight: 500; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                onmouseover="this.style.background='#1d4ed8'" 
+                onmouseout="this.style.background='#2563eb'">
+          📋 Copy Schema
+        </button>
+        <pre id="landingSchemaOutputText" style="margin: 0; padding: 1rem; padding-top: 3rem; background: #ffffff; color: #000000; border: 1px solid #e2e8f0; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word; max-height: 600px; overflow-y: auto;"></pre>
       </div>
     </div>
   </div>
