@@ -1376,6 +1376,7 @@
     <button class="tab active" onclick="switchTab('event')">Event Schema</button>
     <button class="tab" onclick="switchTab('product')">Product Schema</button>
     <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
+    <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
     <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
     <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
   </div>
@@ -2017,6 +2018,172 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     </div>
   </div>
 
+  <!-- Landing / Service Pages Tab Content -->
+  <div id="landingTab" class="tab-content">
+    <div class="instructions">
+      <strong>🌐 Landing / Service Pages Schema Generator</strong><br><br>
+      
+      ✅ Generate structured data for service, category, and informational landing pages.<br>
+      ✅ Auto-scan URL for metadata or manual input.<br>
+      ✅ Smart schema type detection (Service, ItemList, WebPage, Product).<br>
+      ✅ Works entirely offline in your browser.<br>
+      ✅ Compliant with Schema.org and Google Rich Results requirements.<br><br>
+      
+      <strong>What this does:</strong> Creates context-appropriate structured data for pages that aren't products or events, improving E-E-A-T signals and AI Overviews performance. Never includes fake reviews or misleading ratings.
+    </div>
+
+    <div class="workflow-section" style="margin-top: 1.5rem;">
+      <h3>Step 1: Enter Page URL or Manual Input</h3>
+      
+      <div style="margin-bottom: 1rem;">
+        <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page URL (for auto-scan):</label>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <input type="text" id="landingPageUrl" placeholder="https://www.alanranger.com/service-page" 
+                 style="flex: 1; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
+                 aria-label="Landing page URL input">
+          <button onclick="scanLandingPageMetadata()" id="scanMetadataBtn"
+                  style="background: #667eea; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap;"
+                  onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+            🔍 Auto-Scan Metadata
+          </button>
+        </div>
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          Click "Auto-Scan Metadata" to fetch title, description, and image from the page.
+        </p>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <label for="landingPageTitle" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Title:</label>
+        <input type="text" id="landingPageTitle" placeholder="e.g., Private Photography Tuition" 
+               style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
+               aria-label="Page title input">
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <label for="landingPageDescription" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Description:</label>
+        <textarea id="landingPageDescription" placeholder="Enter page description or meta description..." 
+                  style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; min-height: 80px; font-family: inherit;"
+                  aria-label="Page description input"></textarea>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <label for="landingPageImage" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Page Image URL:</label>
+        <input type="text" id="landingPageImage" placeholder="https://example.com/image.jpg" 
+               style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
+               aria-label="Page image URL input">
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          Full HTTPS URL to the main image for this page.
+        </p>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <label for="landingPageUrlFinal" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Canonical URL:</label>
+        <input type="text" id="landingPageUrlFinal" placeholder="https://www.alanranger.com/service-page" 
+               style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
+               aria-label="Canonical URL input">
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          The canonical URL for this page (used in schema).
+        </p>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <label for="landingSchemaType" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">Schema Type:</label>
+        <select id="landingSchemaType" 
+                style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; background: white;"
+                aria-label="Schema type selection">
+          <option value="auto">Auto-detect (Recommended)</option>
+          <option value="Service">Service (for service/course/tuition pages)</option>
+          <option value="ItemList">ItemList (for gateway/category pages)</option>
+          <option value="WebPage">WebPage (for informational/guide pages)</option>
+          <option value="Product">Product (for voucher/bundle pages, no reviews)</option>
+        </select>
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          Auto-detect analyzes page content to suggest the best schema type. You can override manually.
+        </p>
+      </div>
+
+      <!-- Additional fields for Service schema -->
+      <div id="landingServiceFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+        <h4 style="margin-top: 0; color: #0c4a6e; font-size: 1rem;">Service-Specific Fields</h4>
+        <div style="margin-top: 0.75rem;">
+          <label for="serviceAreaServed" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Area Served:</label>
+          <input type="text" id="serviceAreaServed" placeholder="e.g., GB, UK, Coventry" 
+                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
+                 aria-label="Area served input">
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Geographic area where the service is available (e.g., "GB", "UK", "Coventry").
+          </p>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <label for="servicePrice" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Service Price (Optional):</label>
+          <input type="number" id="servicePrice" placeholder="e.g., 50" step="0.01" min="0"
+                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
+                 aria-label="Service price input">
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Leave empty if service pricing varies or is not applicable.
+          </p>
+        </div>
+      </div>
+
+      <!-- Additional fields for ItemList schema -->
+      <div id="landingItemListFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+        <h4 style="margin-top: 0; color: #166534; font-size: 1rem;">ItemList-Specific Fields</h4>
+        <div style="margin-top: 0.75rem;">
+          <label for="itemListItems" style="display: block; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">List Items (one per line):</label>
+          <textarea id="itemListItems" placeholder="https://www.alanranger.com/product-1&#10;https://www.alanranger.com/product-2&#10;https://www.alanranger.com/product-3" 
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #86efac; border-radius: 6px; font-size: 0.875rem; min-height: 100px; font-family: monospace;"
+                    aria-label="Item list URLs input"></textarea>
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Enter URLs of items in this list (one per line). Will include first 3-5 items in schema.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+        <h4 style="margin-top: 0; color: #856404;">ℹ️ Schema Type Detection</h4>
+        <p style="margin: 0.5rem 0; color: #856404; font-size: 0.875rem;">
+          <strong>Auto-detect</strong> analyzes your page title and description to suggest the best schema type:<br>
+          • Keywords like "course", "tuition", "workshop" → <strong>Service</strong><br>
+          • Keywords like "guide", "tips", "how to" → <strong>WebPage</strong><br>
+          • Keywords like "vouchers", "gift", "buy" → <strong>Product</strong><br>
+          • Multiple URLs or category pages → <strong>ItemList</strong>
+        </p>
+      </div>
+
+      <div id="landingScanStatus" style="display: none; margin-top: 1rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 0.875rem; color: #075985;"></div>
+
+      <div class="button-group" style="margin-top: 1.5rem;">
+        <button onclick="generateLandingSchema()" id="generateLandingBtn"
+                style="background: #667eea; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;"
+                onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+          ⚙️ Generate Schema
+        </button>
+        <button onclick="clearLandingForm()" class="secondary"
+                style="background: #e2e8f0; color: #4a5568; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <div id="landingSchemaOutput" style="display: none; margin-top: 2rem;">
+      <h3>Generated Schema</h3>
+      
+      <div class="button-group" style="margin-bottom: 1rem;">
+        <button onclick="copyLandingSchema()" class="copy-btn" 
+                style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">
+          📋 Copy Schema
+        </button>
+        <button onclick="testLandingSchemaOrg()" class="secondary">🔍 Test on Schema.org</button>
+        <button onclick="testLandingGoogleRichResults()" class="secondary">🔍 Test on Google Rich Results</button>
+        <button onclick="downloadLandingSchema()" class="secondary">💾 Download JSON</button>
+      </div>
+      
+      <div class="code-card">
+        <pre id="landingSchemaOutputText" style="margin: 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word; max-height: 600px; overflow-y: auto;"></pre>
+      </div>
+    </div>
+  </div>
+
   <!-- Blog Index Schema Tab Content -->
   <div id="blogTab" class="tab-content">
     <div class="instructions">
@@ -2341,8 +2508,9 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       'event': { tabIndex: 0, contentId: 'eventTab' },
       'product': { tabIndex: 1, contentId: 'productTab' },
       'blog': { tabIndex: 2, contentId: 'blogTab' },
-      'validator': { tabIndex: 3, contentId: 'validatorTab' },
-      'guide': { tabIndex: 4, contentId: 'guideTab' }
+      'landing': { tabIndex: 3, contentId: 'landingTab' },
+      'validator': { tabIndex: 4, contentId: 'validatorTab' },
+      'guide': { tabIndex: 5, contentId: 'guideTab' }
     };
     
     const config = tabMap[mode];
@@ -9300,6 +9468,463 @@ ${minifiedJson}
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // Landing / Service Pages Schema Generator
+  let landingPageMetadata = null;
+
+  // Update conditional fields visibility when schema type changes
+  document.addEventListener('DOMContentLoaded', function() {
+    const schemaTypeSelect = document.getElementById('landingSchemaType');
+    if (schemaTypeSelect) {
+      schemaTypeSelect.addEventListener('change', function() {
+        updateLandingSchemaFields();
+      });
+    }
+  });
+
+  function updateLandingSchemaFields() {
+    const schemaType = document.getElementById('landingSchemaType').value;
+    const serviceFields = document.getElementById('landingServiceFields');
+    const itemListFields = document.getElementById('landingItemListFields');
+    
+    if (serviceFields) {
+      serviceFields.style.display = (schemaType === 'Service') ? 'block' : 'none';
+    }
+    if (itemListFields) {
+      itemListFields.style.display = (schemaType === 'ItemList') ? 'block' : 'none';
+    }
+  }
+
+  async function scanLandingPageMetadata() {
+    const urlInput = document.getElementById('landingPageUrl');
+    const statusDiv = document.getElementById('landingScanStatus');
+    const scanBtn = document.getElementById('scanMetadataBtn');
+    
+    const url = urlInput.value.trim();
+    if (!url) {
+      alert('Please enter a page URL first');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (e) {
+      alert('Please enter a valid URL');
+      return;
+    }
+
+    scanBtn.disabled = true;
+    scanBtn.textContent = '🔄 Scanning...';
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = '🔄 Fetching page metadata...';
+    statusDiv.style.background = '#e0f2fe';
+    statusDiv.style.borderColor = '#0ea5e9';
+    statusDiv.style.color = '#075985';
+
+    try {
+      const html = await fetchProductPage(url); // Reuse existing fetch function
+      const metadata = extractLandingPageMetadata(html, url);
+      landingPageMetadata = metadata;
+
+      // Populate form fields
+      document.getElementById('landingPageTitle').value = metadata.title || '';
+      document.getElementById('landingPageDescription').value = metadata.description || '';
+      document.getElementById('landingPageImage').value = metadata.image || '';
+      document.getElementById('landingPageUrlFinal').value = url;
+
+      // Auto-detect schema type
+      const detectedType = detectLandingSchemaType(metadata.title, metadata.description, url);
+      const schemaTypeSelect = document.getElementById('landingSchemaType');
+      if (schemaTypeSelect) {
+        schemaTypeSelect.value = 'auto';
+        // Show detected type in status
+        statusDiv.textContent = `✅ Metadata scanned successfully. Detected schema type: ${detectedType}`;
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.borderColor = '#c3e6cb';
+        statusDiv.style.color = '#155724';
+      }
+
+      // Update conditional fields based on detected type
+      if (detectedType !== 'auto') {
+        schemaTypeSelect.value = detectedType;
+        updateLandingSchemaFields();
+      }
+    } catch (error) {
+      console.error('Error scanning metadata:', error);
+      statusDiv.textContent = `❌ Error: ${error.message}`;
+      statusDiv.style.background = '#f8d7da';
+      statusDiv.style.borderColor = '#f5c6cb';
+      statusDiv.style.color = '#721c24';
+    } finally {
+      scanBtn.disabled = false;
+      scanBtn.textContent = '🔍 Auto-Scan Metadata';
+    }
+  }
+
+  function extractLandingPageMetadata(html, url) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Extract title
+    let title = '';
+    const titleSelectors = [
+      'meta[property="og:title"]',
+      'meta[name="twitter:title"]',
+      'title',
+      'h1'
+    ];
+    for (const selector of titleSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        title = element.getAttribute('content') || element.textContent.trim();
+        if (title) {
+          // Clean up title (remove site name suffix if present)
+          title = title.replace(/\s*[-|]\s*Alan Ranger Photography.*$/i, '').trim();
+          break;
+        }
+      }
+    }
+
+    // Extract description
+    let description = '';
+    const descSelectors = [
+      'meta[name="description"]',
+      'meta[property="og:description"]',
+      'meta[name="twitter:description"]'
+    ];
+    for (const selector of descSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        description = element.getAttribute('content') || '';
+        if (description) break;
+      }
+    }
+
+    // Extract image
+    let image = '';
+    const imageSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'meta[property="og:image:secure_url"]'
+    ];
+    for (const selector of imageSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        image = element.getAttribute('content') || '';
+        if (image) {
+          // Normalize image URL
+          if (image.startsWith('//')) image = 'https:' + image;
+          else if (image.startsWith('/')) {
+            const urlObj = new URL(url);
+            image = urlObj.origin + image;
+          }
+          if (image.startsWith('http://')) {
+            image = image.replace('http://', 'https://');
+          }
+          break;
+        }
+      }
+    }
+
+    return { title, description, image, url };
+  }
+
+  function detectLandingSchemaType(title, description, url) {
+    const text = ((title || '') + ' ' + (description || '') + ' ' + (url || '')).toLowerCase();
+    
+    // Service detection keywords
+    const serviceKeywords = ['course', 'tuition', 'workshop', 'training', 'lesson', 'mentoring', 'service', 'private'];
+    if (serviceKeywords.some(keyword => text.includes(keyword))) {
+      return 'Service';
+    }
+
+    // WebPage detection keywords
+    const webpageKeywords = ['guide', 'tips', 'how to', 'tutorial', 'article', 'blog', 'information', 'learn'];
+    if (webpageKeywords.some(keyword => text.includes(keyword))) {
+      return 'WebPage';
+    }
+
+    // Product detection keywords
+    const productKeywords = ['voucher', 'gift', 'buy', 'purchase', 'shop', 'store', 'product'];
+    if (productKeywords.some(keyword => text.includes(keyword))) {
+      return 'Product';
+    }
+
+    // ItemList detection (category/gateway pages)
+    if (text.includes('category') || text.includes('list') || text.includes('all ') || url.includes('/category/') || url.includes('/all-')) {
+      return 'ItemList';
+    }
+
+    // Default to Service for most landing pages
+    return 'Service';
+  }
+
+  function generateLandingSchema() {
+    const title = document.getElementById('landingPageTitle').value.trim();
+    const description = document.getElementById('landingPageDescription').value.trim();
+    const image = document.getElementById('landingPageImage').value.trim();
+    const url = document.getElementById('landingPageUrlFinal').value.trim();
+    const schemaType = document.getElementById('landingSchemaType').value;
+    const outputDiv = document.getElementById('landingSchemaOutput');
+    const outputText = document.getElementById('landingSchemaOutputText');
+
+    // Validation
+    if (!title) {
+      alert('Please enter a page title');
+      return;
+    }
+    if (!url) {
+      alert('Please enter a canonical URL');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (e) {
+      alert('Please enter a valid canonical URL');
+      return;
+    }
+
+    // Determine actual schema type (auto-detect if needed)
+    let actualSchemaType = schemaType;
+    if (schemaType === 'auto') {
+      actualSchemaType = detectLandingSchemaType(title, description, url);
+    }
+
+    // Generate schema based on type
+    let schema;
+    switch (actualSchemaType) {
+      case 'Service':
+        schema = generateServiceSchema(title, description, image, url);
+        break;
+      case 'ItemList':
+        schema = generateItemListSchema(title, description, image, url);
+        break;
+      case 'WebPage':
+        schema = generateWebPageSchema(title, description, image, url);
+        break;
+      case 'Product':
+        schema = generateSimplifiedProductSchema(title, description, image, url);
+        break;
+      default:
+        schema = generateServiceSchema(title, description, image, url); // Default fallback
+    }
+
+    // Format and display
+    const schemaJson = JSON.stringify(schema, null, 2);
+    outputText.textContent = schemaJson;
+    outputDiv.style.display = 'block';
+    outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function generateServiceSchema(title, description, image, url) {
+    const areaServed = document.getElementById('serviceAreaServed').value.trim() || 'GB';
+    const servicePrice = parseFloat(document.getElementById('servicePrice').value) || null;
+
+    const serviceSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      '@id': `${url}#schema`,
+      name: title,
+      description: description || '',
+      url: url,
+      provider: {
+        '@id': 'https://www.alanranger.com/#org',
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        url: 'https://www.alanranger.com'
+      },
+      areaServed: {
+        '@type': 'Country',
+        name: areaServed
+      }
+    };
+
+    if (image && image.startsWith('https://')) {
+      serviceSchema.image = image;
+    }
+
+    if (servicePrice && servicePrice > 0) {
+      serviceSchema.offers = {
+        '@type': 'Offer',
+        price: servicePrice.toFixed(2),
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+        url: url
+      };
+    }
+
+    return serviceSchema;
+  }
+
+  function generateItemListSchema(title, description, image, url) {
+    const itemsText = document.getElementById('itemListItems').value.trim();
+    const items = itemsText.split('\n').filter(line => line.trim()).slice(0, 5); // Max 5 items
+
+    const itemListSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      '@id': `${url}#schema`,
+      name: title,
+      description: description || '',
+      url: url,
+      itemListElement: items.map((itemUrl, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'WebPage',
+          '@id': itemUrl.trim(),
+          url: itemUrl.trim()
+        }
+      }))
+    };
+
+    if (image && image.startsWith('https://')) {
+      itemListSchema.image = image;
+    }
+
+    return itemListSchema;
+  }
+
+  function generateWebPageSchema(title, description, image, url) {
+    const webpageSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${url}#schema`,
+      headline: title,
+      description: description || '',
+      url: url,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': url
+      },
+      publisher: {
+        '@id': 'https://www.alanranger.com/#org',
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
+        }
+      },
+      author: {
+        '@id': 'https://www.alanranger.com/#org',
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography'
+      }
+    };
+
+    if (image && image.startsWith('https://')) {
+      webpageSchema.image = image;
+      webpageSchema.primaryImageOfPage = {
+        '@type': 'ImageObject',
+        url: image
+      };
+    }
+
+    return webpageSchema;
+  }
+
+  function generateSimplifiedProductSchema(title, description, image, url) {
+    // Simplified Product schema - NO reviews or ratings
+    const productSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      '@id': `${url}#schema`,
+      name: title,
+      description: description || '',
+      url: url,
+      brand: {
+        '@type': 'Brand',
+        name: 'Alan Ranger Photography'
+      }
+    };
+
+    if (image && image.startsWith('https://')) {
+      productSchema.image = image;
+    }
+
+    // Add basic offers (no price if not provided)
+    productSchema.offers = {
+      '@type': 'Offer',
+      priceCurrency: 'GBP',
+      availability: 'https://schema.org/InStock',
+      url: url
+    };
+
+    return productSchema;
+  }
+
+  function copyLandingSchema() {
+    const outputText = document.getElementById('landingSchemaOutputText');
+    if (outputText && outputText.textContent) {
+      navigator.clipboard.writeText(outputText.textContent).then(() => {
+        alert('Schema copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy. Please select and copy manually.');
+      });
+    }
+  }
+
+  function testLandingSchemaOrg() {
+    const url = document.getElementById('landingPageUrlFinal').value.trim();
+    if (url) {
+      window.open(`https://validator.schema.org/#url=${encodeURIComponent(url)}`, '_blank');
+    } else {
+      alert('Please generate schema first or enter a URL');
+    }
+  }
+
+  function testLandingGoogleRichResults() {
+    const url = document.getElementById('landingPageUrlFinal').value.trim();
+    if (url) {
+      window.open(`https://search.google.com/test/rich-results?url=${encodeURIComponent(url)}`, '_blank');
+    } else {
+      alert('Please generate schema first or enter a URL');
+    }
+  }
+
+  function downloadLandingSchema() {
+    const outputText = document.getElementById('landingSchemaOutputText');
+    const url = document.getElementById('landingPageUrlFinal').value.trim();
+    
+    if (!outputText || !outputText.textContent) {
+      alert('Please generate schema first');
+      return;
+    }
+
+    const slug = url ? url.split('/').pop().replace(/[^a-z0-9-]/gi, '-').substring(0, 50) : 'landing-page';
+    const filename = `${slug}_schema.json`;
+    
+    const blob = new Blob([outputText.textContent], { type: 'application/json' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+  }
+
+  function clearLandingForm() {
+    document.getElementById('landingPageUrl').value = '';
+    document.getElementById('landingPageTitle').value = '';
+    document.getElementById('landingPageDescription').value = '';
+    document.getElementById('landingPageImage').value = '';
+    document.getElementById('landingPageUrlFinal').value = '';
+    document.getElementById('landingSchemaType').value = 'auto';
+    document.getElementById('serviceAreaServed').value = '';
+    document.getElementById('servicePrice').value = '';
+    document.getElementById('itemListItems').value = '';
+    document.getElementById('landingSchemaOutput').style.display = 'none';
+    document.getElementById('landingScanStatus').style.display = 'none';
+    updateLandingSchemaFields();
+    landingPageMetadata = null;
   }
 
   // Product Schema Generation
