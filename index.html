@@ -156,26 +156,6 @@
     .tab-content.active {
       display: block !important;
     }
-    /* Ensure code elements inside inactive tabs are hidden */
-    .tab-content:not(.active) .code-card,
-    .tab-content:not(.active) pre,
-    .tab-content:not(.active) code:not(input),
-    .tab-content:not(.active) .workflow-section pre,
-    .tab-content:not(.active) .workflow-section code:not(input),
-    .tab-content:not(.active) textarea[id*="Output"],
-    .tab-content:not(.active) textarea[id*="Schema"],
-    .tab-content:not(.active) #landingSchemaOutputText,
-    .tab-content:not(.active) #blogSchemaCode,
-    .tab-content:not(.active) #eventOutput,
-    .tab-content:not(.active) #productOutput,
-    .tab-content:not(.active) #singleUrlSchemaOutput,
-    .tab-content:not(.active) #landingDebugLog,
-    .tab-content:not(.active) #blogDebugLog,
-    .tab-content:not(.active) #debugLog {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-    }
     .tab-content h2 {
       color: #2d3748;
       font-size: 1.75rem;
@@ -10204,7 +10184,7 @@ ${minifiedJson}
         '  <!-- Landing Page Schema -->\n' +
         '  <script type="application/ld+json">\n' +
         schemaJson + '\n' +
-        '  </script>\n' +
+        '  <' + '/script>\n' +
         '</body>\n' +
         '</html>';
       
