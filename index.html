@@ -9844,9 +9844,9 @@ ${minifiedJson}
     return 'Service';
   }
 
-  function generateLandingSchema() {
+  async function generateLandingSchema() {
     landingDebugLog = '';
-    addLandingDebugLog('🚀 Starting schema generation...');
+    addLandingDebugLog('🚀 Starting enhanced schema generation with analysis...');
     
     const title = document.getElementById('landingPageTitle').value.trim();
     const description = document.getElementById('landingPageDescription').value.trim();
@@ -9883,8 +9883,51 @@ ${minifiedJson}
 
     generateBtn.disabled = true;
     progressDiv.style.display = 'block';
-    progressBar.style.width = '20%';
+    progressBar.style.width = '10%';
     addLandingDebugLog(`📋 Inputs: Title="${title}", Description length=${description.length}, Image=${image ? 'Yes' : 'No'}, Schema Type="${schemaType}"`);
+
+    // STEP 1: Fetch and analyze existing schema on page
+    let existingSchemas = [];
+    let existingSchemaTypes = [];
+    let existingAnalysis = null;
+    
+    try {
+      addLandingDebugLog('');
+      addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      addLandingDebugLog('📊 STEP 1: Analyzing existing schema on page...');
+      progressBar.style.width = '20%';
+      
+      const html = await fetchProductPage(url);
+      const existingBlocks = extractJsonLdBlocksFromHtml(html);
+      
+      if (existingBlocks.length > 0) {
+        existingSchemas = existingBlocks;
+        existingSchemaTypes = extractSchemaTypes(existingBlocks);
+        existingAnalysis = analyzeSchemas(existingBlocks, url);
+        
+        addLandingDebugLog(`✅ Found ${existingBlocks.length} existing schema block(s)`);
+        addLandingDebugLog(`📋 Existing schema types: ${existingSchemaTypes.join(', ') || 'None'}`);
+        
+        if (existingAnalysis.schemas && existingAnalysis.schemas.length > 0) {
+          addLandingDebugLog(`📊 Schema analysis:`);
+          existingAnalysis.schemas.forEach((s, idx) => {
+            const typeStr = Array.isArray(s.type) ? s.type.join(', ') : s.type;
+            addLandingDebugLog(`   ${idx + 1}. ${typeStr}: ${s.missingFields?.length || 0} missing fields, ${s.warnings?.length || 0} warnings`);
+          });
+        }
+        
+        if (existingAnalysis.missingFields && existingAnalysis.missingFields.length > 0) {
+          addLandingDebugLog(`⚠️ Missing fields detected: ${existingAnalysis.missingFields.length}`);
+        }
+      } else {
+        addLandingDebugLog(`ℹ️ No existing schema found on page - will generate new schema`);
+      }
+    } catch (error) {
+      addLandingDebugLog(`⚠️ Could not fetch page for analysis: ${error.message}`);
+      addLandingDebugLog(`   Continuing with new schema generation...`);
+    }
+
+    progressBar.style.width = '40%';
 
     // Truncate description to 170 chars
     let finalDescription = description;
@@ -9893,23 +9936,41 @@ ${minifiedJson}
       addLandingDebugLog(`⚠️ Description truncated to 170 characters`);
     }
 
-    progressBar.style.width = '40%';
-
-    // Determine actual schema type (auto-detect if needed)
+    // STEP 2: Determine actual schema type (auto-detect if needed)
+    addLandingDebugLog('');
+    addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    addLandingDebugLog('🧠 STEP 2: Determining schema type...');
+    
     let actualSchemaType = schemaType;
     if (schemaType === 'auto') {
       actualSchemaType = detectLandingSchemaType(title, description, url);
-      addLandingDebugLog(`🧠 Auto-detected schema type: ${actualSchemaType}`);
+      addLandingDebugLog(`✅ Auto-detected schema type: ${actualSchemaType}`);
     } else {
-      addLandingDebugLog(`📌 Using manual schema type: ${actualSchemaType}`);
+      addLandingDebugLog(`✅ Using manual schema type: ${actualSchemaType}`);
+    }
+    
+    // Compare with existing
+    if (existingSchemaTypes.length > 0) {
+      const existingMatches = existingSchemaTypes.filter(t => 
+        t.toLowerCase() === actualSchemaType.toLowerCase() || 
+        (actualSchemaType === 'Service' && t.toLowerCase().includes('service'))
+      );
+      if (existingMatches.length > 0) {
+        addLandingDebugLog(`✅ Existing ${existingMatches.join(', ')} schema found - will enhance it`);
+      } else {
+        addLandingDebugLog(`ℹ️ Existing types (${existingSchemaTypes.join(', ')}) differ from target (${actualSchemaType}) - will add new schema`);
+      }
     }
 
     progressBar.style.width = '60%';
 
-    // Generate schema based on type
+    // STEP 3: Generate new/enhanced schema
+    addLandingDebugLog('');
+    addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    addLandingDebugLog('⚙️ STEP 3: Generating enhanced schema...');
+    
     let schema;
     try {
-      addLandingDebugLog(`⚙️ Generating ${actualSchemaType} schema...`);
       switch (actualSchemaType) {
         case 'Service':
           schema = generateServiceSchema(title, finalDescription, image, url);
@@ -9924,10 +9985,10 @@ ${minifiedJson}
           schema = generateSimplifiedProductSchema(title, finalDescription, image, url);
           break;
         default:
-          schema = generateServiceSchema(title, finalDescription, image, url); // Default fallback
+          schema = generateServiceSchema(title, finalDescription, image, url);
           addLandingDebugLog(`⚠️ Unknown schema type, defaulting to Service`);
       }
-      addLandingDebugLog(`✅ Schema generated successfully`);
+      addLandingDebugLog(`✅ New schema generated successfully`);
     } catch (error) {
       addLandingDebugLog(`❌ Error generating schema: ${error.message}`);
       alert(`Error generating schema: ${error.message}`);
@@ -9936,12 +9997,56 @@ ${minifiedJson}
       return;
     }
 
-    // Format and display
+    progressBar.style.width = '80%';
+
+    // STEP 4: Merge and enhance with existing schemas
+    addLandingDebugLog('');
+    addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    addLandingDebugLog('🔧 STEP 4: Merging and enhancing schemas...');
+    
+    let finalSchema;
+    let improvements = [];
+    
+    if (existingSchemas.length > 0) {
+      // Build enhanced schema graph that merges existing + new
+      const allBlocks = [...existingSchemas, schema];
+      finalSchema = buildEnhancedSchema(allBlocks);
+      
+      // Track improvements
+      const newSchemaTypes = extractSchemaTypes([schema]);
+      const finalSchemaTypes = extractSchemaTypes(finalSchema['@graph'] || [finalSchema]);
+      
+      improvements.push(`✅ Merged ${existingSchemas.length} existing schema(s) with new ${actualSchemaType} schema`);
+      improvements.push(`📊 Final schema types: ${finalSchemaTypes.join(', ')}`);
+      
+      // Compare field completeness
+      if (existingAnalysis && existingAnalysis.missingFields) {
+        const beforeMissing = existingAnalysis.missingFields.length;
+        const afterAnalysis = analyzeSchemas(finalSchema['@graph'] || [finalSchema], url);
+        const afterMissing = afterAnalysis.missingFields?.length || 0;
+        
+        if (afterMissing < beforeMissing) {
+          improvements.push(`✅ Reduced missing fields from ${beforeMissing} to ${afterMissing}`);
+        } else if (afterMissing === 0 && beforeMissing > 0) {
+          improvements.push(`✅ All missing fields resolved!`);
+        }
+      }
+      
+      addLandingDebugLog(`✅ Schema merged and enhanced`);
+      improvements.forEach(imp => addLandingDebugLog(`   ${imp}`));
+    } else {
+      // No existing schema - use new one as-is
+      finalSchema = schema;
+      addLandingDebugLog(`✅ Using new schema (no existing schema to merge)`);
+    }
+
+    // STEP 5: Format and display
+    addLandingDebugLog('');
+    addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    addLandingDebugLog('📄 STEP 5: Formatting final schema...');
+    
     try {
-      const schemaJson = JSON.stringify(schema, null, 2);
-      console.log('Schema JSON:', schemaJson);
-      console.log('Output text element:', outputText);
-      console.log('Output div element:', outputDiv);
+      const schemaJson = JSON.stringify(finalSchema, null, 2);
       
       if (!outputText) {
         addLandingDebugLog(`❌ Error: Output text element not found`);
@@ -9957,14 +10062,26 @@ ${minifiedJson}
       }
       
       outputText.textContent = schemaJson;
-      console.log('Schema set to outputText, length:', schemaJson.length);
-      
       outputDiv.style.display = 'block';
-      console.log('Output div display set to block');
-      
       progressBar.style.width = '100%';
+      
       addLandingDebugLog(`✅ Schema formatted and displayed (${schemaJson.length} characters)`);
-      addLandingDebugLog(`✅ Schema generation complete!`);
+      addLandingDebugLog('');
+      addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      addLandingDebugLog('✅ SCHEMA GENERATION COMPLETE!');
+      addLandingDebugLog('');
+      addLandingDebugLog('📊 SUMMARY:');
+      if (existingSchemas.length > 0) {
+        addLandingDebugLog(`   • Analyzed ${existingSchemas.length} existing schema block(s)`);
+        addLandingDebugLog(`   • Found types: ${existingSchemaTypes.join(', ')}`);
+        addLandingDebugLog(`   • Generated enhanced ${actualSchemaType} schema`);
+        addLandingDebugLog(`   • Merged existing + new schemas`);
+        improvements.forEach(imp => addLandingDebugLog(`   • ${imp.replace('✅ ', '').replace('📊 ', '')}`));
+      } else {
+        addLandingDebugLog(`   • No existing schema found`);
+        addLandingDebugLog(`   • Generated new ${actualSchemaType} schema`);
+      }
+      
       outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (error) {
       addLandingDebugLog(`❌ Error formatting schema: ${error.message}`);
