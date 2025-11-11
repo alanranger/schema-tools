@@ -2196,14 +2196,46 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
 
       <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
-        <h4 style="margin-top: 0; color: #856404;">ℹ️ Schema Type Detection</h4>
-        <p style="margin: 0.5rem 0; color: #856404; font-size: 0.875rem;">
-          <strong>Auto-detect</strong> analyzes your page title and description to suggest the best schema type:<br>
-          • Keywords like "course", "tuition", "workshop" → <strong>Service</strong><br>
-          • Keywords like "guide", "tips", "how to" → <strong>WebPage</strong><br>
-          • Keywords like "vouchers", "gift", "buy" → <strong>Product</strong><br>
-          • Multiple URLs or category pages → <strong>ItemList</strong>
-        </p>
+        <h4 style="margin-top: 0; color: #856404;">ℹ️ Understanding Schema Types</h4>
+        <div style="margin-top: 0.75rem; color: #856404; font-size: 0.875rem; line-height: 1.6;">
+          <p style="margin: 0 0 0.75rem 0;"><strong>📌 Important:</strong> A page can have MULTIPLE schema types. This generator creates the PAGE-LEVEL schema (what the page is about). Product blocks on the page can have their own Product schemas separately.</p>
+          
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600;">🔵 <strong>Service</strong> - Use for:</p>
+          <ul style="margin: 0 0 0.75rem 1.5rem; padding: 0;">
+            <li>Service pages (photography lessons, tutoring, consulting)</li>
+            <li>Course/tuition pages (even if they sell products to book the course)</li>
+            <li>Pages describing WHAT you offer (the service itself)</li>
+            <li><strong>Example:</strong> "Private Photography Lessons" page - describes the SERVICE, even if there's a product block to purchase it</li>
+          </ul>
+          
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600;">🟢 <strong>Product</strong> - Use for:</p>
+          <ul style="margin: 0 0 0.75rem 1.5rem; padding: 0;">
+            <li>Product pages (physical products, vouchers, gift cards)</li>
+            <li>Pages where the PRODUCT is the main focus</li>
+            <li><strong>Note:</strong> Only use if the page is ABOUT the product, not about a service that happens to sell products</li>
+            <li><strong>Example:</strong> "Gift Voucher" page - the product IS the page content</li>
+          </ul>
+          
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600;">🟡 <strong>ItemList</strong> - Use for:</p>
+          <ul style="margin: 0 0 0.75rem 1.5rem; padding: 0;">
+            <li>Category/gateway pages that list multiple items</li>
+            <li>Pages that link to multiple products or services</li>
+            <li><strong>Example:</strong> "All Photography Courses" page listing multiple courses</li>
+          </ul>
+          
+          <p style="margin: 0 0 0.5rem 0; font-weight: 600;">🟣 <strong>WebPage</strong> - Use for:</p>
+          <ul style="margin: 0 0 0.75rem 1.5rem; padding: 0;">
+            <li>Informational articles, guides, blog posts</li>
+            <li>Pages that are primarily content/information</li>
+            <li><strong>Example:</strong> "How to Choose a Photography Tutor" guide page</li>
+          </ul>
+          
+          <p style="margin: 0.75rem 0 0 0; padding-top: 0.75rem; border-top: 1px solid #ffc107; font-weight: 600;">🤖 Auto-Detection Logic:</p>
+          <p style="margin: 0.5rem 0 0 0;">Keywords like "course", "tuition", "workshop", "lesson" → <strong>Service</strong><br>
+          Keywords like "guide", "tips", "how to", "article" → <strong>WebPage</strong><br>
+          Keywords like "voucher", "gift", "buy" → <strong>Product</strong><br>
+          Category/list pages → <strong>ItemList</strong></p>
+        </div>
       </div>
     </div>
 
