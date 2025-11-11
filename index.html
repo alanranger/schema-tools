@@ -1743,6 +1743,76 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         </div>
       </div>
 
+      <!-- ===================== SINGLE URL SCHEMA GENERATOR ===================== -->
+      <div style="margin-top: 2rem; margin-bottom: 2rem; padding: 1.5rem; background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px;">
+        <h3 style="font-weight: 600; font-size: 1.25rem; color: #0c4a6e; margin: 0 0 0.75rem 0;">🔗 Single URL Schema Generator</h3>
+        <p style="font-size: 0.875rem; color: #075985; margin: 0.5rem 0; line-height: 1.6;">
+          Generate product schema for a single product URL without batch processing. This will fetch product data from the URL and generate a complete schema file with reviews (if available).
+        </p>
+        
+        <div style="margin-top: 1rem;">
+          <label for="singleProductUrl" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Product URL:</label>
+          <input type="text" id="singleProductUrl" placeholder="https://www.alanranger.com/photo-workshops-uk/product-name" 
+                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem; margin-bottom: 0.75rem;"
+                 aria-label="Single product URL input">
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; margin-bottom: 0.75rem;">
+            Enter the full URL of the product page you want to generate schema for.
+          </p>
+          
+          <div style="margin-top: 0.75rem;">
+            <label for="singleUrlReviewsFile" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Optional: Upload Reviews CSV (for review enrichment):</label>
+            <input type="file" id="singleUrlReviewsFile" accept=".csv" 
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem; margin-bottom: 0.5rem;"
+                   aria-label="Reviews CSV file upload for single URL">
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+              Upload <code style="background: #e0f2fe; padding: 2px 4px; border-radius: 3px;">03 – combined_product_reviews.csv</code> to include reviews in the schema.
+            </p>
+          </div>
+          
+          <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button onclick="generateSingleUrlSchema()" id="generateSingleUrlBtn" 
+                    style="background: #0ea5e9; color: white; font-size: 0.875rem; font-weight: 500; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;"
+                    onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#0ea5e9'">
+              🔗 Generate Schema for Single URL
+            </button>
+            <button onclick="clearSingleUrlForm()" class="secondary" 
+                    style="background: #e2e8f0; color: #4a5568; font-size: 0.875rem; font-weight: 500; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer;">
+              Clear
+            </button>
+          </div>
+          
+          <div id="singleUrlProgress" class="progress" style="display: none; margin-top: 1rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+            <div class="progress-bar" style="height: 8px; background: #0ea5e9; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
+          </div>
+          
+          <div id="singleUrlStatus" style="display: none; margin-top: 1rem; padding: 0.75rem; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 0.875rem; color: #075985;"></div>
+          
+          <div id="singleUrlOutput" style="display: none; margin-top: 1.5rem;">
+            <h4 style="font-weight: 600; color: #0c4a6e; margin-bottom: 0.75rem;">Generated Schema:</h4>
+            <textarea id="singleUrlSchemaOutput" readonly 
+                      style="min-height: 400px; font-family: 'Courier New', monospace; font-size: 0.85rem; width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; background: #f8fafc;"></textarea>
+            <div style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button onclick="copyToClipboard('singleUrlSchemaOutput')" 
+                      style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                📋 Copy to Clipboard
+              </button>
+              <button onclick="downloadSingleUrlSchema()" 
+                      style="background: #27AE60; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                💾 Download HTML File
+              </button>
+              <button onclick="testSchemaOrg('singleProductUrl')" 
+                      style="background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                🔍 Test on Schema.org
+              </button>
+              <button onclick="testGoogleRichResults('singleProductUrl')" 
+                      style="background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                🔍 Test on Google Rich Results
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ===================== PRODUCT SCHEMA WORKFLOW ===================== -->
       <section id="product-schema-workflow" style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
 
@@ -8553,6 +8623,539 @@ ${minifiedJson}
       addDebugLog(`\n📥 Export to GitHub Folder:`);
       addDebugLog(`   ❌ Error: ${error.message}`);
     }
+  }
+
+  // Single URL Schema Generation
+  let singleUrlReviewsData = null;
+  let singleUrlProductData = null;
+
+  async function generateSingleUrlSchema() {
+    const urlInput = document.getElementById('singleProductUrl');
+    const reviewsFileInput = document.getElementById('singleUrlReviewsFile');
+    const output = document.getElementById('singleUrlSchemaOutput');
+    const statusDiv = document.getElementById('singleUrlStatus');
+    const progressDiv = document.getElementById('singleUrlProgress');
+    const outputDiv = document.getElementById('singleUrlOutput');
+    const generateBtn = document.getElementById('generateSingleUrlBtn');
+
+    const productUrl = urlInput.value.trim();
+    if (!productUrl) {
+      alert('Please enter a product URL');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(productUrl);
+    } catch (e) {
+      alert('Please enter a valid URL (e.g., https://www.alanranger.com/photo-workshops-uk/product-name)');
+      return;
+    }
+
+    // Show progress
+    generateBtn.disabled = true;
+    progressDiv.style.display = 'block';
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = '🔄 Fetching product data...';
+    updateProgress(progressDiv, 20);
+
+    try {
+      // Step 1: Fetch product page HTML
+      const html = await fetchProductPage(productUrl);
+      updateProgress(progressDiv, 40);
+      statusDiv.textContent = '📄 Extracting product data...';
+
+      // Step 2: Extract product data from HTML
+      const productData = extractProductDataFromHtml(html, productUrl);
+      singleUrlProductData = productData;
+      updateProgress(progressDiv, 60);
+      statusDiv.textContent = '⭐ Loading reviews...';
+
+      // Step 3: Load reviews CSV if provided
+      if (reviewsFileInput.files.length > 0) {
+        await loadReviewsForSingleUrl(reviewsFileInput.files[0]);
+        updateProgress(progressDiv, 80);
+        statusDiv.textContent = '🔗 Matching reviews...';
+      }
+
+      // Step 4: Match reviews to product
+      const matchedReviews = matchReviewsToProduct(productUrl, productData);
+
+      // Step 5: Generate schema
+      updateProgress(progressDiv, 90);
+      statusDiv.textContent = '⚙️ Generating schema...';
+      const schema = generateProductSchemaForSingleUrl(productData, matchedReviews);
+
+      // Step 6: Output schema
+      const htmlOutput = schemaToHtml(schema, productData.name);
+      output.value = htmlOutput;
+      outputDiv.style.display = 'block';
+      updateProgress(progressDiv, 100);
+      statusDiv.textContent = '✅ Schema generated successfully!';
+      statusDiv.style.background = '#d4edda';
+      statusDiv.style.borderColor = '#c3e6cb';
+      statusDiv.style.color = '#155724';
+
+      // Scroll to output
+      outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+      console.error('Error generating schema:', error);
+      statusDiv.textContent = `❌ Error: ${error.message}`;
+      statusDiv.style.background = '#f8d7da';
+      statusDiv.style.borderColor = '#f5c6cb';
+      statusDiv.style.color = '#721c24';
+    } finally {
+      generateBtn.disabled = false;
+    }
+  }
+
+  async function fetchProductPage(url) {
+    try {
+      // Try using CORS proxy first
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      const data = await response.json();
+      return data.contents;
+    } catch (error) {
+      // Fallback: try direct fetch (may fail due to CORS)
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        return await response.text();
+      } catch (e) {
+        throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${e.message}`);
+      }
+    }
+  }
+
+  function extractProductDataFromHtml(html, url) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Extract product name
+    let name = '';
+    const nameSelectors = [
+      'h1.product-title',
+      'h1[data-testid="product-title"]',
+      'h1',
+      'meta[property="og:title"]',
+      'title'
+    ];
+    for (const selector of nameSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        name = element.getAttribute('content') || element.textContent.trim();
+        if (name) break;
+      }
+    }
+
+    // Extract description
+    let description = '';
+    const descSelectors = [
+      'meta[name="description"]',
+      'meta[property="og:description"]',
+      '.product-description',
+      '[data-testid="product-description"]'
+    ];
+    for (const selector of descSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        description = element.getAttribute('content') || element.textContent.trim();
+        if (description) break;
+      }
+    }
+
+    // Extract image
+    let image = '';
+    const imageSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      '.product-image img',
+      '[data-testid="product-image"] img',
+      'img[itemprop="image"]'
+    ];
+    for (const selector of imageSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        image = element.getAttribute('content') || element.getAttribute('src');
+        if (image) {
+          // Ensure HTTPS
+          if (image.startsWith('//')) image = 'https:' + image;
+          else if (image.startsWith('/')) {
+            const urlObj = new URL(url);
+            image = urlObj.origin + image;
+          }
+          break;
+        }
+      }
+    }
+
+    // Extract price
+    let price = '';
+    const priceSelectors = [
+      '.product-price',
+      '[data-testid="product-price"]',
+      '[itemprop="price"]',
+      'meta[property="product:price:amount"]'
+    ];
+    for (const selector of priceSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        price = element.getAttribute('content') || element.textContent.trim();
+        if (price) {
+          // Extract numeric value
+          const match = price.match(/[\d.]+/);
+          if (match) price = match[0];
+          break;
+        }
+      }
+    }
+
+    // Extract SKU
+    let sku = '';
+    const skuSelectors = [
+      '[itemprop="sku"]',
+      '.product-sku',
+      '[data-testid="product-sku"]',
+      'meta[property="product:retailer_item_id"]'
+    ];
+    for (const selector of skuSelectors) {
+      const element = doc.querySelector(selector);
+      if (element) {
+        sku = element.getAttribute('content') || element.textContent.trim();
+        if (sku) break;
+      }
+    }
+
+    // Extract from existing JSON-LD if present
+    const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+    for (const script of jsonLdScripts) {
+      try {
+        const jsonLd = JSON.parse(script.textContent);
+        const schemas = jsonLd['@graph'] || (Array.isArray(jsonLd) ? jsonLd : [jsonLd]);
+        
+        for (const schema of schemas) {
+          if (schema['@type'] && (schema['@type'].includes('Product') || schema['@type'] === 'Product')) {
+            if (!name && schema.name) name = schema.name;
+            if (!description && schema.description) description = schema.description;
+            if (!image && schema.image) {
+              image = Array.isArray(schema.image) ? schema.image[0] : schema.image;
+            }
+            if (!sku && schema.sku) sku = schema.sku;
+            if (!price && schema.offers && schema.offers.price) {
+              price = schema.offers.price;
+            }
+          }
+        }
+      } catch (e) {
+        // Skip invalid JSON-LD
+      }
+    }
+
+    // Generate SKU from URL slug if not found
+    if (!sku) {
+      const urlParts = url.split('/');
+      const slug = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2];
+      if (slug) {
+        sku = slug.toUpperCase().replace(/[^A-Z0-9-]/g, '').substring(0, 40);
+      }
+    }
+
+    return {
+      name: name || 'Product Name',
+      description: description || '',
+      image: image || '',
+      price: price || '0.00',
+      sku: sku || '',
+      url: url
+    };
+  }
+
+  async function loadReviewsForSingleUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        Papa.parse(e.target.result, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            singleUrlReviewsData = results.data;
+            resolve(results.data);
+          },
+          error: (error) => {
+            reject(new Error(`Failed to parse reviews CSV: ${error.message}`));
+          }
+        });
+      };
+      reader.onerror = () => reject(new Error('Failed to read reviews file'));
+      reader.readAsText(file);
+    });
+  }
+
+  function matchReviewsToProduct(productUrl, productData) {
+    if (!singleUrlReviewsData || singleUrlReviewsData.length === 0) {
+      return [];
+    }
+
+    const matchedReviews = [];
+    const urlSlug = productUrl.split('/').pop().toLowerCase();
+    const productNameLower = productData.name.toLowerCase();
+
+    for (const review of singleUrlReviewsData) {
+      let match = false;
+
+      // Match by URL slug
+      if (review.product_slug) {
+        const reviewSlug = review.product_slug.toLowerCase();
+        if (reviewSlug === urlSlug || reviewSlug.includes(urlSlug) || urlSlug.includes(reviewSlug)) {
+          match = true;
+        }
+      }
+
+      // Match by product name
+      if (!match && review.product_name) {
+        const reviewName = review.product_name.toLowerCase();
+        if (reviewName === productNameLower || reviewName.includes(productNameLower) || productNameLower.includes(reviewName)) {
+          match = true;
+        }
+      }
+
+      // Match by URL
+      if (!match && review.product_url) {
+        const reviewUrl = review.product_url.toLowerCase();
+        if (reviewUrl === productUrl.toLowerCase() || reviewUrl.includes(urlSlug)) {
+          match = true;
+        }
+      }
+
+      if (match) {
+        // Filter reviews >= 4 stars
+        const rating = parseFloat(review.rating_numeric || review.rating || review.review_stars || 0);
+        if (rating >= 4) {
+          matchedReviews.push({
+            author: review.reviewer || review.review_username || 'Anonymous',
+            datePublished: review.date || review.review_created_utc || new Date().toISOString(),
+            reviewBody: review.reviewBody || review.review_content || review.review || '',
+            reviewRating: {
+              '@type': 'Rating',
+              ratingValue: rating
+            }
+          });
+        }
+      }
+    }
+
+    return matchedReviews;
+  }
+
+  function generateProductSchemaForSingleUrl(productData, reviews) {
+    // Determine schema type (Product or Product+Course)
+    const isCourse = productData.url.includes('/beginners-photography-lessons/') || 
+                     productData.url.includes('/photo-workshops-uk/') ||
+                     productData.name.toLowerCase().includes('course') ||
+                     productData.name.toLowerCase().includes('workshop');
+    
+    const schemaType = isCourse ? ['Product', 'Course'] : ['Product'];
+
+    // Build product schema
+    const productSchema = {
+      '@type': schemaType,
+      '@id': `${productData.url}#schema`,
+      name: productData.name,
+      sku: productData.sku || '',
+      brand: {
+        '@type': 'Brand',
+        name: 'Alan Ranger Photography'
+      },
+      url: productData.url
+    };
+
+    if (productData.description) {
+      const desc = productData.description.substring(0, 600);
+      productSchema.description = desc;
+    }
+
+    if (productData.image && productData.image.startsWith('https://')) {
+      productSchema.image = productData.image;
+    }
+
+    // Add provider for Course
+    if (isCourse) {
+      productSchema.provider = {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography',
+        sameAs: 'https://www.alanranger.com'
+      };
+    }
+
+    // Add offers
+    const price = parseFloat(productData.price) || 0;
+    productSchema.offers = {
+      '@type': 'Offer',
+      price: price.toFixed(2),
+      priceCurrency: 'GBP',
+      availability: 'https://schema.org/InStock',
+      url: productData.url
+    };
+
+    // Add reviews if available
+    if (reviews.length > 0) {
+      // Calculate aggregate rating
+      const totalRating = reviews.reduce((sum, r) => sum + parseFloat(r.reviewRating.ratingValue || 0), 0);
+      const avgRating = totalRating / reviews.length;
+
+      productSchema.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: avgRating.toFixed(1),
+        reviewCount: reviews.length
+      };
+
+      // Add review snippets (max 5)
+      productSchema.review = reviews.slice(0, 5).map(r => ({
+        '@type': 'Review',
+        author: {
+          '@type': 'Person',
+          name: r.author
+        },
+        datePublished: r.datePublished,
+        reviewBody: r.reviewBody.substring(0, 300),
+        reviewRating: r.reviewRating
+      }));
+    }
+
+    // Build breadcrumbs
+    const urlParts = productData.url.replace('https://www.alanranger.com', '').split('/').filter(p => p);
+    const breadcrumbItems = [
+      { name: 'Home', position: 1, item: 'https://www.alanranger.com' }
+    ];
+
+    let currentPath = 'https://www.alanranger.com';
+    urlParts.forEach((part, index) => {
+      currentPath += '/' + part;
+      const name = part.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      breadcrumbItems.push({
+        name: name,
+        position: index + 2,
+        item: currentPath
+      });
+    });
+
+    const breadcrumbList = {
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbItems.map(item => ({
+        '@type': 'ListItem',
+        position: item.position,
+        name: item.name,
+        item: item.item
+      }))
+    };
+
+    // LocalBusiness
+    const localBusiness = {
+      '@type': 'LocalBusiness',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com',
+      logo: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
+    };
+
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [localBusiness, breadcrumbList, productSchema]
+    };
+  }
+
+  function schemaToHtml(schema, productName) {
+    const schemaJson = JSON.stringify(schema, null, 2);
+    const slug = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
+    
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Schema - ${productName}</title>
+</head>
+<body>
+  <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+  <script>
+    (function() {
+      function suppressSquarespaceSchemas() {
+        const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+        scripts.forEach(function(script) {
+          try {
+            const data = JSON.parse(script.textContent);
+            const schemas = data['@graph'] || (Array.isArray(data) ? data : [data]);
+            
+            schemas.forEach(function(schema) {
+              const types = Array.isArray(schema['@type']) ? schema['@type'] : [schema['@type']];
+              if (types.includes('Product')) {
+                const hasRating = schema.aggregateRating || schema.review;
+                const hasOffers = schema.offers;
+                const hasReturnPolicy = schema.hasMerchantReturnPolicy;
+                const isShort = script.textContent.length < 1500;
+                
+                if (isShort && !hasRating && hasOffers && !hasReturnPolicy) {
+                  script.remove();
+                }
+              }
+            });
+          } catch(e) {
+            // Skip invalid JSON
+          }
+        });
+      }
+      
+      suppressSquarespaceSchemas();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', suppressSquarespaceSchemas);
+      }
+      window.addEventListener('load', suppressSquarespaceSchemas);
+      
+      const observer = new MutationObserver(suppressSquarespaceSchemas);
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+
+  <!-- Product Schema -->
+  <script type="application/ld+json">
+${schemaJson}
+  </script>
+</body>
+</html>`;
+  }
+
+  function updateProgress(progressDiv, percent) {
+    const progressBar = progressDiv.querySelector('.progress-bar');
+    if (progressBar) {
+      progressBar.style.width = percent + '%';
+    }
+  }
+
+  function clearSingleUrlForm() {
+    document.getElementById('singleProductUrl').value = '';
+    document.getElementById('singleUrlReviewsFile').value = '';
+    document.getElementById('singleUrlSchemaOutput').value = '';
+    document.getElementById('singleUrlOutput').style.display = 'none';
+    document.getElementById('singleUrlStatus').style.display = 'none';
+    document.getElementById('singleUrlProgress').style.display = 'none';
+    singleUrlReviewsData = null;
+    singleUrlProductData = null;
+  }
+
+  function downloadSingleUrlSchema() {
+    const output = document.getElementById('singleUrlSchemaOutput');
+    const productName = singleUrlProductData ? singleUrlProductData.name : 'product';
+    const slug = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
+    const filename = `${slug}_schema_squarespace_ready.html`;
+    
+    const blob = new Blob([output.value], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // Product Schema Generation
