@@ -10098,15 +10098,19 @@ ${minifiedJson}
         const finalTypesSet = new Set(finalSchemaTypes);
         const beforeTypesSet = new Set(existingSchemaTypes);
         
-        // Extract schemas by type for comparison
-        const getSchemasByType = (schemas, targetType) => {
-          const result = [];
+        // Create a map of existing schemas by @id or URL for accurate comparison
+        const existingSchemasMap = new Map();
+        existingSchemas.forEach(schema => {
           const processSchema = (s) => {
-            if (!s) return;
+            if (!s || !s['@type']) return;
+            const id = s['@id'] || s.url || s.name || JSON.stringify(s);
             const types = Array.isArray(s['@type']) ? s['@type'] : [s['@type']];
-            if (types.includes(targetType)) {
-              result.push(s);
-            }
+            types.forEach(type => {
+              if (!existingSchemasMap.has(type)) {
+                existingSchemasMap.set(type, []);
+              }
+              existingSchemasMap.get(type).push({ schema: s, id: id });
+            });
             // Check nested objects
             Object.values(s).forEach(val => {
               if (typeof val === 'object' && val !== null && !Array.isArray(val) && val['@type']) {
@@ -10120,11 +10124,38 @@ ${minifiedJson}
               }
             });
           };
-          schemas.forEach(s => processSchema(s));
-          return result;
-        };
+          processSchema(schema);
+        });
         
+        // Create a map of final schemas by @id or URL
+        const finalSchemasMap = new Map();
         const finalSchemas = finalSchema['@graph'] || [finalSchema];
+        finalSchemas.forEach(schema => {
+          const processSchema = (s) => {
+            if (!s || !s['@type']) return;
+            const id = s['@id'] || s.url || s.name || JSON.stringify(s);
+            const types = Array.isArray(s['@type']) ? s['@type'] : [s['@type']];
+            types.forEach(type => {
+              if (!finalSchemasMap.has(type)) {
+                finalSchemasMap.set(type, []);
+              }
+              finalSchemasMap.get(type).push({ schema: s, id: id });
+            });
+            // Check nested objects
+            Object.values(s).forEach(val => {
+              if (typeof val === 'object' && val !== null && !Array.isArray(val) && val['@type']) {
+                processSchema(val);
+              } else if (Array.isArray(val)) {
+                val.forEach(item => {
+                  if (typeof item === 'object' && item !== null && item['@type']) {
+                    processSchema(item);
+                  }
+                });
+              }
+            });
+          };
+          processSchema(schema);
+        });
         
         // Combine all types (before + after) for comparison
         const allTypes = [...new Set([...existingSchemaTypes, ...finalSchemaTypes])];
@@ -10132,66 +10163,86 @@ ${minifiedJson}
         if (allTypes.length > 0) {
           allTypes.forEach(type => {
             const row = document.createElement('tr');
-            const beforeExists = beforeTypesSet.has(type);
-            const afterExists = finalTypesSet.has(type);
+            const beforeSchemas = existingSchemasMap.get(type) || [];
+            const afterSchemas = finalSchemasMap.get(type) || [];
+            const beforeExists = beforeSchemas.length > 0;
+            const afterExists = afterSchemas.length > 0;
             
             let status = '';
             let statusColor = '';
             let enhancementSummary = '';
             
             if (!beforeExists && afterExists) {
+              // New schema type added
               status = '✅ Added';
               statusColor = '#10b981';
-              const afterSchemas = getSchemasByType(finalSchemas, type);
-              if (afterSchemas.length > 0) {
-                const schema = afterSchemas[0];
-                const fields = Object.keys(schema).filter(k => !k.startsWith('@'));
-                enhancementSummary = `New schema with ${fields.length} fields: ${fields.slice(0, 5).join(', ')}${fields.length > 5 ? '...' : ''}`;
-              } else {
-                enhancementSummary = 'New schema type added';
-              }
+              const schema = afterSchemas[0].schema;
+              const fields = Object.keys(schema).filter(k => !k.startsWith('@'));
+              const count = afterSchemas.length > 1 ? ` (${afterSchemas.length} instances)` : '';
+              enhancementSummary = `New schema${count} with ${fields.length} fields: ${fields.slice(0, 4).join(', ')}${fields.length > 4 ? '...' : ''}`;
             } else if (beforeExists && afterExists) {
-              status = '🔧 Enhanced';
-              statusColor = '#3b82f6';
+              // Compare schemas to see if they're the same or new instances
+              const beforeIds = new Set(beforeSchemas.map(s => s.id));
+              const afterIds = new Set(afterSchemas.map(s => s.id));
               
-              // Compare before and after
-              const beforeSchemas = getSchemasByType(existingSchemas, type);
-              const afterSchemas = getSchemasByType(finalSchemas, type);
+              // Find truly new schemas (not in before)
+              const newSchemas = afterSchemas.filter(s => !beforeIds.has(s.id));
+              // Find existing schemas that were enhanced
+              const enhancedSchemas = afterSchemas.filter(s => beforeIds.has(s.id));
               
-              if (beforeSchemas.length > 0 && afterSchemas.length > 0) {
-                const beforeSchema = beforeSchemas[0];
-                const afterSchema = afterSchemas[0];
+              if (newSchemas.length > 0 && enhancedSchemas.length > 0) {
+                status = '🔧 Enhanced + Added';
+                statusColor = '#3b82f6';
+                enhancementSummary = `Enhanced ${enhancedSchemas.length} existing, added ${newSchemas.length} new instance(s)`;
+              } else if (newSchemas.length > 0) {
+                status = '✅ Added';
+                statusColor = '#10b981';
+                enhancementSummary = `Added ${newSchemas.length} new instance(s) (${beforeSchemas.length} already existed)`;
+              } else if (enhancedSchemas.length > 0) {
+                // Compare fields to see what was actually enhanced
+                const beforeSchema = beforeSchemas.find(s => beforeIds.has(enhancedSchemas[0].id))?.schema;
+                const afterSchema = enhancedSchemas[0].schema;
                 
-                const beforeFields = new Set(Object.keys(beforeSchema).filter(k => !k.startsWith('@')));
-                const afterFields = new Set(Object.keys(afterSchema).filter(k => !k.startsWith('@')));
-                
-                const addedFields = [...afterFields].filter(f => !beforeFields.has(f));
-                const improvedFields = [];
-                
-                // Check for field improvements (non-empty values added)
-                beforeFields.forEach(field => {
-                  const beforeVal = beforeSchema[field];
-                  const afterVal = afterSchema[field];
-                  if ((!beforeVal || (typeof beforeVal === 'string' && beforeVal.trim() === '')) && 
-                      afterVal && (typeof afterVal !== 'string' || afterVal.trim() !== '')) {
-                    improvedFields.push(field);
+                if (beforeSchema && afterSchema) {
+                  const beforeFields = new Set(Object.keys(beforeSchema).filter(k => !k.startsWith('@')));
+                  const afterFields = new Set(Object.keys(afterSchema).filter(k => !k.startsWith('@')));
+                  
+                  const addedFields = [...afterFields].filter(f => !beforeFields.has(f));
+                  const improvedFields = [];
+                  
+                  // Check for field improvements (non-empty values added)
+                  beforeFields.forEach(field => {
+                    const beforeVal = beforeSchema[field];
+                    const afterVal = afterSchema[field];
+                    if ((!beforeVal || (typeof beforeVal === 'string' && beforeVal.trim() === '')) && 
+                        afterVal && (typeof afterVal !== 'string' || afterVal.trim() !== '')) {
+                      improvedFields.push(field);
+                    }
+                  });
+                  
+                  const enhancements = [];
+                  if (addedFields.length > 0) {
+                    enhancements.push(`Added: ${addedFields.slice(0, 3).join(', ')}${addedFields.length > 3 ? '...' : ''}`);
                   }
-                });
-                
-                const enhancements = [];
-                if (addedFields.length > 0) {
-                  enhancements.push(`Added: ${addedFields.slice(0, 3).join(', ')}${addedFields.length > 3 ? '...' : ''}`);
+                  if (improvedFields.length > 0) {
+                    enhancements.push(`Improved: ${improvedFields.slice(0, 3).join(', ')}${improvedFields.length > 3 ? '...' : ''}`);
+                  }
+                  if (addedFields.length === 0 && improvedFields.length === 0) {
+                    enhancements.push('Merged/consolidated (no field changes)');
+                  }
+                  
+                  status = '🔧 Enhanced';
+                  statusColor = '#3b82f6';
+                  enhancementSummary = enhancements.length > 0 ? enhancements.join('; ') : 'Merged and normalized';
+                } else {
+                  status = '🔧 Enhanced';
+                  statusColor = '#3b82f6';
+                  enhancementSummary = 'Merged with enhanced schema';
                 }
-                if (improvedFields.length > 0) {
-                  enhancements.push(`Improved: ${improvedFields.slice(0, 3).join(', ')}${improvedFields.length > 3 ? '...' : ''}`);
-                }
-                if (addedFields.length === 0 && improvedFields.length === 0) {
-                  enhancements.push('Merged with canonical Organization/LocalBusiness');
-                }
-                
-                enhancementSummary = enhancements.length > 0 ? enhancements.join('; ') : 'Merged and normalized';
               } else {
-                enhancementSummary = 'Merged with enhanced schema';
+                status = '🔧 Merged';
+                statusColor = '#3b82f6';
+                enhancementSummary = 'Consolidated (no changes detected)';
               }
             } else if (beforeExists && !afterExists) {
               status = '⚠️ Removed';
@@ -10206,10 +10257,10 @@ ${minifiedJson}
             row.innerHTML = `
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; font-weight: 500; color: #1e293b;">${type}</td>
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: center;">
-                ${beforeExists ? '<span style="color: #10b981; font-weight: 600;">✓</span>' : '<span style="color: #94a3b8;">—</span>'}
+                ${beforeExists ? `<span style="color: #10b981; font-weight: 600;">✓</span>${beforeSchemas.length > 1 ? ` <span style="color: #64748b; font-size: 0.75rem;">(${beforeSchemas.length})</span>` : ''}` : '<span style="color: #94a3b8;">—</span>'}
               </td>
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: center;">
-                ${afterExists ? '<span style="color: #10b981; font-weight: 600;">✓</span>' : '<span style="color: #94a3b8;">—</span>'}
+                ${afterExists ? `<span style="color: #10b981; font-weight: 600;">✓</span>${afterSchemas.length > 1 ? ` <span style="color: #64748b; font-size: 0.75rem;">(${afterSchemas.length})</span>` : ''}` : '<span style="color: #94a3b8;">—</span>'}
               </td>
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; color: ${statusColor}; font-weight: 500;">${status}</td>
               <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 0.8125rem; line-height: 1.4;">${enhancementSummary}</td>
@@ -10460,24 +10511,45 @@ ${minifiedJson}
       return;
     }
     
-    navigator.clipboard.writeText(schemaText).then(() => {
-      alert('Schema copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-      // Fallback: select text
-      const range = document.createRange();
-      range.selectNodeContents(outputText);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      try {
-        document.execCommand('copy');
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(schemaText).then(() => {
         alert('Schema copied to clipboard!');
-      } catch (e) {
+      }).catch(err => {
+        console.error('Clipboard API failed:', err);
+        // Fallback to execCommand
+        fallbackCopy(schemaText);
+      });
+    } else {
+      // Fallback for older browsers
+      fallbackCopy(schemaText);
+    }
+  }
+  
+  function fallbackCopy(text) {
+    // Create a temporary textarea
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert('Schema copied to clipboard!');
+      } else {
         alert('Failed to copy. Please select and copy manually.');
       }
-      selection.removeAllRanges();
-    });
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      alert('Failed to copy. Please select and copy manually.');
+    } finally {
+      document.body.removeChild(textarea);
+    }
   }
 
   function testLandingSchemaOrg() {
