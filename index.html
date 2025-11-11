@@ -9578,6 +9578,7 @@ ${minifiedJson}
     if (logContainer && logText) {
       logContainer.style.display = 'block';
       logText.textContent = landingDebugLog;
+      // Scroll to bottom
       logContainer.scrollTop = logContainer.scrollHeight;
     }
     console.log(`[Landing Schema] ${message}`);
@@ -9935,11 +9936,19 @@ ${minifiedJson}
       return;
     }
 
-    progressBar.style.width = '80%';
-
     // Format and display
     try {
       const schemaJson = JSON.stringify(schema, null, 2);
+      if (!outputText) {
+        addLandingDebugLog(`❌ Error: Output text element not found`);
+        alert('Error: Output element not found');
+        return;
+      }
+      if (!outputDiv) {
+        addLandingDebugLog(`❌ Error: Output div element not found`);
+        alert('Error: Output div element not found');
+        return;
+      }
       outputText.textContent = schemaJson;
       outputDiv.style.display = 'block';
       progressBar.style.width = '100%';
@@ -9948,6 +9957,7 @@ ${minifiedJson}
       outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (error) {
       addLandingDebugLog(`❌ Error formatting schema: ${error.message}`);
+      console.error('Error formatting schema:', error);
       alert(`Error formatting schema: ${error.message}`);
       progressBar.style.width = '0%';
     } finally {
