@@ -2158,43 +2158,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         </p>
       </div>
 
-      <!-- Additional fields for Service schema -->
-      <div id="landingServiceFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-        <h4 style="margin-top: 0; color: #0c4a6e; font-size: 1rem;">Service-Specific Fields</h4>
-        <div style="margin-top: 0.75rem;">
-          <label for="serviceAreaServed" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Area Served:</label>
-          <input type="text" id="serviceAreaServed" placeholder="e.g., GB, UK, Coventry" 
-                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
-                 aria-label="Area served input">
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-            Geographic area where the service is available (e.g., "GB", "UK", "Coventry").
-          </p>
-        </div>
-        <div style="margin-top: 0.75rem;">
-          <label for="servicePrice" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Service Price (Optional):</label>
-          <input type="number" id="servicePrice" placeholder="e.g., 50" step="0.01" min="0"
-                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
-                 aria-label="Service price input">
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-            Leave empty if service pricing varies or is not applicable.
-          </p>
-        </div>
-      </div>
-
-      <!-- Additional fields for ItemList schema -->
-      <div id="landingItemListFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
-        <h4 style="margin-top: 0; color: #166534; font-size: 1rem;">ItemList-Specific Fields</h4>
-        <div style="margin-top: 0.75rem;">
-          <label for="itemListItems" style="display: block; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">List Items (one per line):</label>
-          <textarea id="itemListItems" placeholder="https://www.alanranger.com/product-1&#10;https://www.alanranger.com/product-2&#10;https://www.alanranger.com/product-3" 
-                    style="width: 100%; padding: 0.75rem; border: 1px solid #86efac; border-radius: 6px; font-size: 0.875rem; min-height: 100px; font-family: monospace;"
-                    aria-label="Item list URLs input"></textarea>
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-            Enter URLs of items in this list (one per line). Will include first 3-5 items in schema.
-          </p>
-        </div>
-      </div>
-
+      <!-- Schema Type Explanation - Show BEFORE generation -->
       <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
         <h4 style="margin-top: 0; color: #856404;">ℹ️ Understanding Schema Types</h4>
         <div style="margin-top: 0.75rem; color: #856404; font-size: 0.875rem; line-height: 1.6;">
@@ -2237,6 +2201,44 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           Category/list pages → <strong>ItemList</strong></p>
         </div>
       </div>
+
+      <!-- Additional fields for Service schema -->
+      <div id="landingServiceFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+        <h4 style="margin-top: 0; color: #0c4a6e; font-size: 1rem;">Service-Specific Fields</h4>
+        <div style="margin-top: 0.75rem;">
+          <label for="serviceAreaServed" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Area Served:</label>
+          <input type="text" id="serviceAreaServed" placeholder="e.g., GB, UK, Coventry" 
+                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
+                 aria-label="Area served input">
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Geographic area where the service is available (e.g., "GB", "UK", "Coventry").
+          </p>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <label for="servicePrice" style="display: block; font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem;">Service Price (Optional):</label>
+          <input type="number" id="servicePrice" placeholder="e.g., 50" step="0.01" min="0"
+                 style="width: 100%; padding: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem;"
+                 aria-label="Service price input">
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Leave empty if service pricing varies or is not applicable.
+          </p>
+        </div>
+      </div>
+
+      <!-- Additional fields for ItemList schema -->
+      <div id="landingItemListFields" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+        <h4 style="margin-top: 0; color: #166534; font-size: 1rem;">ItemList-Specific Fields</h4>
+        <div style="margin-top: 0.75rem;">
+          <label for="itemListItems" style="display: block; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">List Items (one per line):</label>
+          <textarea id="itemListItems" placeholder="https://www.alanranger.com/product-1&#10;https://www.alanranger.com/product-2&#10;https://www.alanranger.com/product-3" 
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #86efac; border-radius: 6px; font-size: 0.875rem; min-height: 100px; font-family: monospace;"
+                    aria-label="Item list URLs input"></textarea>
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            Enter URLs of items in this list (one per line). Will include first 3-5 items in schema.
+          </p>
+        </div>
+      </div>
+
     </div>
 
     <!-- Step 4: Status & Debug -->
