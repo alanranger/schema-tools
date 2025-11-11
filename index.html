@@ -8975,18 +8975,43 @@ ${minifiedJson}
 
   async function fetchProductPage(url) {
     try {
-      // Try using CORS proxy first
+      // Try using CORS proxy first with timeout
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      const data = await response.json();
-      return data.contents;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.contents) {
+          throw new Error('Proxy returned empty content');
+        }
+        
+        return data.contents;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timed out after 30 seconds. The proxy service may be slow or unavailable.');
+        }
+        throw fetchError;
+      }
     } catch (error) {
       // Fallback: try direct fetch (may fail due to CORS)
       try {
         const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) {
+          throw new Error(`Direct fetch returned ${response.status}`);
+        }
         return await response.text();
       } catch (e) {
-        throw new Error(`Failed to fetch product page. CORS restrictions may prevent fetching external URLs. Error: ${e.message}`);
+        throw new Error(`Failed to fetch page. CORS proxy error: ${error.message}. Direct fetch also failed: ${e.message}. Please try again or enter metadata manually.`);
       }
     }
   }
