@@ -2241,23 +2241,44 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           <textarea id="itemListItems" placeholder="https://www.alanranger.com/product-1&#10;https://www.alanranger.com/product-2&#10;https://www.alanranger.com/product-3" 
                     style="width: 100%; padding: 0.75rem; border: 1px solid #86efac; border-radius: 6px; font-size: 0.875rem; min-height: 100px; font-family: monospace;"
                     aria-label="Item list URLs input"></textarea>
-          <div style="margin-top: 0.75rem; padding: 0.75rem; background: #e0f2fe; border-radius: 6px; border: 1px solid #bae6fd;">
-            <div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <input type="checkbox" id="itemListIncludeAll" style="margin-top: 0.25rem; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
-              <div style="flex: 1;">
-                <label for="itemListIncludeAll" style="font-weight: 600; color: #0c4a6e; cursor: pointer; display: block; margin-bottom: 0.25rem;">
-                  Include all items in schema
+          
+          <!-- Item Selection Panel -->
+          <div id="itemListSelectionPanel" style="margin-top: 0.75rem; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #86efac; display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <div>
+                <label style="font-weight: 600; color: #166534; display: block; margin-bottom: 0.25rem;">
+                  Select items to include in schema:
                 </label>
-                <p style="font-size: 0.8rem; color: #075985; margin: 0; line-height: 1.5;">
-                  <strong>Default:</strong> Only the first 5 items are included (Google's recommended limit for list-type structured data).<br>
-                  <strong>If checked:</strong> All items above will be included in the generated schema.
-                </p>
+                <span id="itemListSelectionCount" style="font-size: 0.875rem; color: #64748b;">0 items selected</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" onclick="selectFirstFiveItems()" 
+                        style="padding: 0.375rem 0.75rem; background: #e0f2fe; color: #0c4a6e; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
+                  Select First 5
+                </button>
+                <button type="button" onclick="selectAllItems()" 
+                        style="padding: 0.375rem 0.75rem; background: #e0f2fe; color: #0c4a6e; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
+                  Select All
+                </button>
+                <button type="button" onclick="deselectAllItems()" 
+                        style="padding: 0.375rem 0.75rem; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
+                  Clear All
+                </button>
               </div>
             </div>
+            <div id="itemListCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.5rem;">
+              <!-- Checkboxes will be populated here -->
+            </div>
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; line-height: 1.5;">
+              💡 <strong>Tip:</strong> Only checked items will be included in the schema. Google recommends up to 5 items for optimal results.
+            </p>
           </div>
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; line-height: 1.5;">
-            💡 <strong>Tip:</strong> You can edit the list above to reorder or remove items. The first items in the list will be prioritized in the schema.
-          </p>
+          
+          <div style="margin-top: 0.75rem; padding: 0.75rem; background: #e0f2fe; border-radius: 6px; border: 1px solid #bae6fd;">
+            <p style="font-size: 0.8rem; color: #075985; margin: 0; line-height: 1.5;">
+              <strong>How it works:</strong> Edit URLs in the textarea above, then use the selection panel to choose which items to include. Google recommends including a representative sample (e.g., first 5 items) rather than the full list.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -11174,25 +11195,121 @@ ${minifiedJson}
     return serviceSchema;
   }
 
-  function generateItemListSchema(title, description, image, url) {
+  // Update ItemList selection checkboxes when textarea changes
+  function updateItemListCheckboxes() {
     const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
-    const allItems = itemsText.split('\n').filter(line => line.trim());
+    const items = itemsText.split('\n').filter(line => line.trim());
+    const panel = document.getElementById('itemListSelectionPanel');
+    const checkboxesContainer = document.getElementById('itemListCheckboxes');
     
-    // Check if user wants to include all items or just first 5 (Google's recommended limit)
-    const includeAll = document.getElementById('itemListIncludeAll')?.checked || false;
-    const items = includeAll ? allItems : allItems.slice(0, 5);
+    if (!panel || !checkboxesContainer) return;
+    
+    if (items.length === 0) {
+      panel.style.display = 'none';
+      return;
+    }
+    
+    // Show panel
+    panel.style.display = 'block';
+    
+    // Clear existing checkboxes
+    checkboxesContainer.innerHTML = '';
+    
+    // Create checkbox for each item
+    items.forEach((url, index) => {
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) return;
+      
+      const itemDiv = document.createElement('div');
+      itemDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; margin-bottom: 0.25rem; background: #f9fafb; border-radius: 4px;';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = `itemListCheckbox_${index}`;
+      checkbox.value = trimmedUrl;
+      checkbox.checked = index < 5; // Default: first 5 checked
+      checkbox.style.cssText = 'width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;';
+      checkbox.addEventListener('change', updateItemListSelectionCount);
+      
+      const label = document.createElement('label');
+      label.htmlFor = `itemListCheckbox_${index}`;
+      label.textContent = trimmedUrl;
+      label.style.cssText = 'flex: 1; cursor: pointer; font-size: 0.875rem; color: #1e293b; font-family: monospace; word-break: break-all;';
+      
+      itemDiv.appendChild(checkbox);
+      itemDiv.appendChild(label);
+      checkboxesContainer.appendChild(itemDiv);
+    });
+    
+    updateItemListSelectionCount();
+  }
+  
+  // Update selection count display
+  function updateItemListSelectionCount() {
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const countSpan = document.getElementById('itemListSelectionCount');
+    if (countSpan) {
+      countSpan.textContent = `${checkedCount} item${checkedCount !== 1 ? 's' : ''} selected`;
+      if (checkedCount > 5) {
+        countSpan.style.color = '#dc2626';
+        countSpan.textContent += ' (Google recommends max 5)';
+      } else {
+        countSpan.style.color = '#64748b';
+      }
+    }
+  }
+  
+  // Button functions
+  function selectFirstFiveItems() {
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    checkboxes.forEach((cb, index) => {
+      cb.checked = index < 5;
+    });
+    updateItemListSelectionCount();
+  }
+  
+  function selectAllItems() {
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+    });
+    updateItemListSelectionCount();
+  }
+  
+  function deselectAllItems() {
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+    });
+    updateItemListSelectionCount();
+  }
+
+  function generateItemListSchema(title, description, image, url) {
+    // Get selected items from checkboxes (if selection panel exists and has checkboxes)
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]:checked');
+    let items = [];
+    
+    if (checkboxes.length > 0) {
+      // Use selected checkboxes
+      items = Array.from(checkboxes).map(cb => cb.value.trim()).filter(url => url);
+      addLandingDebugLog(`📋 Using ${items.length} manually selected item(s) from checkboxes`);
+    } else {
+      // Fallback to textarea (for backwards compatibility)
+      const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
+      const allItems = itemsText.split('\n').filter(line => line.trim());
+      items = allItems.slice(0, 5); // Default: first 5
+      addLandingDebugLog(`📋 Using first 5 items from textarea (no checkboxes found)`);
+    }
 
     // If no items provided, warn but still create ItemList
     if (items.length === 0) {
       addLandingDebugLog(`⚠️ No ItemList items provided - creating empty ItemList`);
     } else {
-      if (includeAll) {
-        addLandingDebugLog(`📋 Including all ${items.length} items in ItemList schema`);
+      if (items.length > 5) {
+        addLandingDebugLog(`⚠️ ${items.length} items selected (Google recommends max 5 for optimal results)`);
       } else {
-        addLandingDebugLog(`📋 Including first 5 items in ItemList schema (Google's recommended limit)`);
-        if (allItems.length > 5) {
-          addLandingDebugLog(`   ℹ️ ${allItems.length - 5} additional item(s) available but not included (check "Include all items" to add them)`);
-        }
+        addLandingDebugLog(`✅ ${items.length} item(s) selected for ItemList schema`);
       }
     }
 
