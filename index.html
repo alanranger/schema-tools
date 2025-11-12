@@ -11253,13 +11253,18 @@ ${minifiedJson}
   // Update ItemList selection checkboxes when textarea changes
   function updateItemListCheckboxes() {
     const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
-    const items = itemsText.split('\n').filter(line => line.trim());
+    const allItems = itemsText.split('\n').filter(line => line.trim());
+    
+    // Filter out invalid/system URLs
+    const validItems = filterInvalidUrls(allItems);
+    const invalidItems = allItems.filter(url => !validItems.includes(url.trim()));
+    
     const panel = document.getElementById('itemListSelectionPanel');
     const checkboxesContainer = document.getElementById('itemListCheckboxes');
     
     if (!panel || !checkboxesContainer) return;
     
-    if (items.length === 0) {
+    if (validItems.length === 0 && invalidItems.length === 0) {
       panel.style.display = 'none';
       return;
     }
@@ -11270,8 +11275,17 @@ ${minifiedJson}
     // Clear existing checkboxes
     checkboxesContainer.innerHTML = '';
     
-    // Create checkbox for each item
-    items.forEach((url, index) => {
+    // Show warning if invalid URLs were filtered out
+    if (invalidItems.length > 0) {
+      const warningDiv = document.createElement('div');
+      warningDiv.style.cssText = 'padding: 0.5rem; margin-bottom: 0.5rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 4px; font-size: 0.75rem; color: #92400e;';
+      const exampleUrl = invalidItems[0].length > 60 ? invalidItems[0].substring(0, 60) + '...' : invalidItems[0];
+      warningDiv.textContent = `⚠️ ${invalidItems.length} invalid/system URL(s) filtered out (e.g., ${exampleUrl})`;
+      checkboxesContainer.appendChild(warningDiv);
+    }
+    
+    // Create checkbox for each valid item
+    validItems.forEach((url, index) => {
       const trimmedUrl = url.trim();
       if (!trimmedUrl) return;
       
