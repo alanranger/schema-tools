@@ -10215,19 +10215,28 @@ ${minifiedJson}
         
         // Only include URLs from the same domain
         if (urlObj.origin === baseDomain) {
-          // Exclude common non-content pages
           const path = urlObj.pathname.toLowerCase();
+          
+          // Exclude common non-content pages and system URLs
           const excludePatterns = [
             '/search', '/tag/', '/category/', '/author/', '/feed', 
             '/rss', '/sitemap', '/admin', '/login', '/signup', '/cart',
             '/checkout', '/account', '/settings', '/privacy', '/terms',
-            '/contact', '/about', '/home', '/index'
+            '/contact', '/about', '/home', '/index',
+            '/cdn-cgi/', '/email-protection', '/_next/', '/api/',
+            '/wp-admin/', '/wp-content/', '/wp-includes/', '/wp-json/',
+            '/static/', '/assets/', '/js/', '/css/', '/images/',
+            '/.well-known/', '/favicon', '/robots.txt'
           ];
           
           const shouldExclude = excludePatterns.some(pattern => path.includes(pattern));
           
-          // Include if it looks like a content page (has meaningful path segments)
-          if (!shouldExclude && path.split('/').filter(p => p && p !== 'index.html').length >= 2) {
+          // Also exclude URLs that are too short or don't look like content pages
+          const pathSegments = path.split('/').filter(p => p && p !== 'index.html');
+          const hasEnoughSegments = pathSegments.length >= 2;
+          
+          // Exclude if it's a system/technical URL or doesn't have enough path segments
+          if (!shouldExclude && hasEnoughSegments) {
             // Remove query params and hash for cleaner URLs
             const cleanUrl = urlObj.origin + urlObj.pathname;
             foundUrls.add(cleanUrl);
@@ -10246,6 +10255,38 @@ ${minifiedJson}
       .sort();
     
     return urlArray;
+  }
+  
+  // Filter out invalid/system URLs from textarea input
+  function filterInvalidUrls(urls) {
+    const excludePatterns = [
+      '/cdn-cgi/', '/email-protection', '/_next/', '/api/',
+      '/wp-admin/', '/wp-content/', '/wp-includes/', '/wp-json/',
+      '/static/', '/assets/', '/js/', '/css/', '/images/',
+      '/.well-known/', '/favicon', '/robots.txt',
+      '/search', '/tag/', '/category/', '/author/', '/feed',
+      '/rss', '/sitemap', '/admin', '/login', '/signup', '/cart',
+      '/checkout', '/account', '/settings'
+    ];
+    
+    return urls.filter(url => {
+      try {
+        const urlObj = new URL(url.trim());
+        const path = urlObj.pathname.toLowerCase();
+        
+        // Check if URL matches any exclude pattern
+        const shouldExclude = excludePatterns.some(pattern => path.includes(pattern));
+        
+        // Also check if it has enough path segments to be a content page
+        const pathSegments = path.split('/').filter(p => p && p !== 'index.html');
+        const hasEnoughSegments = pathSegments.length >= 2;
+        
+        return !shouldExclude && hasEnoughSegments;
+      } catch (e) {
+        // Skip invalid URLs
+        return false;
+      }
+    });
   }
 
   function detectLandingSchemaType(title, description, url) {
@@ -11261,15 +11302,15 @@ ${minifiedJson}
   // Update selection count display
   function updateItemListSelectionCount() {
     const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    const totalCount = checkboxes.length;
     const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const uncheckedCount = totalCount - checkedCount;
     const countSpan = document.getElementById('itemListSelectionCount');
     if (countSpan) {
-      countSpan.textContent = `${checkedCount} item${checkedCount !== 1 ? 's' : ''} selected`;
+      countSpan.innerHTML = `<strong>${totalCount}</strong> total URLs: <strong style="color: #166534;">${checkedCount} selected</strong>, <span style="color: #64748b;">${uncheckedCount} unselected</span>`;
       if (checkedCount > 5) {
         countSpan.style.color = '#dc2626';
-        countSpan.textContent += ' (Google recommends max 5)';
-      } else {
-        countSpan.style.color = '#64748b';
+        countSpan.innerHTML += ' <span style="color: #dc2626;">⚠️ Google recommends max 5</span>';
       }
     }
   }
