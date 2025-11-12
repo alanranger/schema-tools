@@ -11463,6 +11463,15 @@ ${minifiedJson}
         }
       }
     });
+    
+    // Update debug log
+    const selectedRichResults = Array.from(document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]:checked'))
+      .slice(0, 5)
+      .map(cb => cb.value.trim());
+    if (selectedRichResults.length > 0) {
+      addLandingDebugLog(`⭐ Rich Results selection updated: ${selectedRichResults.length} item(s) selected`);
+      addLandingDebugLog(`   Selected: ${selectedRichResults.slice(0, 3).join(', ')}${selectedRichResults.length > 3 ? '...' : ''}`);
+    }
   }
   
   // Update selection count display
@@ -11472,14 +11481,17 @@ ${minifiedJson}
     const totalCount = checkboxes.length;
     const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
     const uncheckedCount = totalCount - checkedCount;
-    const richResultsCount = richResultsCheckboxes.length;
+    const richResultsCount = Math.min(richResultsCheckboxes.length, 5);
     const countSpan = document.getElementById('itemListSelectionCount');
     if (countSpan) {
       countSpan.innerHTML = `<strong>${totalCount}</strong> total URLs: <strong style="color: #166534;">${checkedCount} selected</strong>, <span style="color: #64748b;">${uncheckedCount} unselected</span> | <strong style="color: #f59e0b;">⭐ ${richResultsCount} Rich Results</strong>`;
-      if (richResultsCount > 5) {
+      if (richResultsCheckboxes.length > 5) {
         countSpan.innerHTML += ' <span style="color: #dc2626;">⚠️ Max 5 for Rich Results</span>';
       }
     }
+    
+    // Update debug log
+    addLandingDebugLog(`📋 ItemList selection updated: ${checkedCount}/${totalCount} selected, ${richResultsCount} Rich Results`);
   }
   
   // Button functions
@@ -11539,12 +11551,20 @@ ${minifiedJson}
     
     if (checkboxes.length > 0) {
       // Use all selected items for schema
-      items = Array.from(checkboxes).map(cb => cb.value.trim()).filter(url => url);
+      const allSelectedItems = Array.from(checkboxes).map(cb => cb.value.trim()).filter(url => url);
       // Get Rich Results items (up to 5)
       richResultsItems = Array.from(richResultsCheckboxes).slice(0, 5).map(cb => cb.value.trim()).filter(url => url);
+      
+      // Sort items: Rich Results first, then others
+      const richResultsSet = new Set(richResultsItems);
+      items = [
+        ...richResultsItems, // Rich Results items first
+        ...allSelectedItems.filter(url => !richResultsSet.has(url)) // Then other selected items
+      ];
+      
       addLandingDebugLog(`📋 Using ${items.length} selected item(s) in schema`);
       if (richResultsItems.length > 0) {
-        addLandingDebugLog(`⭐ ${richResultsItems.length} item(s) marked for Rich Results: ${richResultsItems.slice(0, 3).join(', ')}${richResultsItems.length > 3 ? '...' : ''}`);
+        addLandingDebugLog(`⭐ ${richResultsItems.length} item(s) marked for Rich Results (will appear first): ${richResultsItems.slice(0, 3).join(', ')}${richResultsItems.length > 3 ? '...' : ''}`);
       }
     } else {
       // Fallback to textarea (for backwards compatibility)
@@ -11561,12 +11581,9 @@ ${minifiedJson}
     } else {
       addLandingDebugLog(`✅ ${items.length} item(s) included in ItemList schema`);
       if (richResultsItems.length > 0) {
-        addLandingDebugLog(`⭐ ${richResultsItems.length} item(s) prioritized for Rich Results`);
+        addLandingDebugLog(`⭐ ${richResultsItems.length} item(s) prioritized for Rich Results (positions 1-${richResultsItems.length})`);
       }
     }
-    
-    // Note: Schema will include all items, but we track which are for rich results
-    // The schema generator can use this info if needed
 
     const itemListSchema = {
       '@context': 'https://schema.org',
