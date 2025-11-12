@@ -9948,8 +9948,21 @@ ${minifiedJson}
     }
     if (itemListFields) {
       itemListFields.style.display = (schemaType === 'ItemList') ? 'block' : 'none';
+      // Update checkboxes when ItemList fields are shown
+      if (itemListFields.style.display === 'block') {
+        setTimeout(() => updateItemListCheckboxes(), 100);
+      }
     }
   }
+  
+  // Add event listener to textarea to update checkboxes when URLs change
+  document.addEventListener('DOMContentLoaded', function() {
+    const itemListItemsField = document.getElementById('itemListItems');
+    if (itemListItemsField) {
+      itemListItemsField.addEventListener('input', updateItemListCheckboxes);
+      itemListItemsField.addEventListener('blur', updateItemListCheckboxes);
+    }
+  });
 
   async function scanLandingPageMetadata() {
     const urlInput = document.getElementById('landingPageUrl');
@@ -10065,6 +10078,7 @@ ${minifiedJson}
               const itemListItemsField = document.getElementById('itemListItems');
               if (itemListItemsField) {
                 itemListItemsField.value = extractedUrls.join('\n');
+                updateItemListCheckboxes(); // Update checkboxes after populating
                 addLandingDebugLog(`✅ Auto-populated ${extractedUrls.length} URL(s) in ItemList items field`);
                 addLandingDebugLog(`   URLs: ${extractedUrls.slice(0, 3).join(', ')}${extractedUrls.length > 3 ? '...' : ''}`);
               }
