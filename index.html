@@ -11264,6 +11264,8 @@ ${minifiedJson}
     const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
     const allItems = itemsText.split('\n').filter(line => line.trim());
     
+    console.log('updateItemListCheckboxes called, items:', allItems.length);
+    
     // Filter out invalid/system URLs
     const validItems = filterInvalidUrls(allItems);
     const invalidItems = allItems.filter(url => !validItems.includes(url.trim()));
@@ -11271,7 +11273,16 @@ ${minifiedJson}
     const panel = document.getElementById('itemListSelectionPanel');
     const checkboxesContainer = document.getElementById('itemListCheckboxes');
     
-    if (!panel || !checkboxesContainer) return;
+    if (!panel) {
+      console.error('itemListSelectionPanel not found!');
+      return;
+    }
+    if (!checkboxesContainer) {
+      console.error('itemListCheckboxes not found!');
+      return;
+    }
+    
+    console.log('Valid items:', validItems.length, 'Invalid items:', invalidItems.length);
     
     if (validItems.length === 0 && invalidItems.length === 0) {
       panel.style.display = 'none';
@@ -11280,6 +11291,7 @@ ${minifiedJson}
     
     // Show panel
     panel.style.display = 'block';
+    console.log('Panel displayed');
     
     // Clear existing checkboxes
     checkboxesContainer.innerHTML = '';
