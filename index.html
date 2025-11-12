@@ -10498,6 +10498,8 @@ ${minifiedJson}
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     addLandingDebugLog(`🎯 Schema Types Selected: ${selectedTypes.length > 0 ? selectedTypes.join(', ') : 'None (all will be included)'}`);
+    addLandingDebugLog(`🔍 Debug: selectedTypes array = [${selectedTypes.map(t => `'${t}'`).join(', ')}]`);
+    addLandingDebugLog(`🔍 Debug: ItemList in selectedTypes? ${selectedTypes.includes('ItemList')}`);
     
     if (selectedTypes.length === 0) {
       addLandingDebugLog(`⚠️ No schema types selected - will include all detected types`);
@@ -10532,6 +10534,7 @@ ${minifiedJson}
       addLandingDebugLog(`✅ New schema generated successfully`);
       
       // Check if ItemList is selected in checkbox but not generated as main schema
+      addLandingDebugLog(`🔍 Checking ItemList: selectedTypes.includes('ItemList')=${selectedTypes.includes('ItemList')}, actualSchemaType='${actualSchemaType}'`);
       if (selectedTypes.includes('ItemList') && actualSchemaType !== 'ItemList') {
         addLandingDebugLog(`📋 ItemList selected in checkbox - checking for items...`);
         const itemListItemsField = document.getElementById('itemListItems');
