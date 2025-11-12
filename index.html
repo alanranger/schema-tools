@@ -11424,26 +11424,47 @@ ${minifiedJson}
   
   // Button functions
   function selectFirstFiveItems() {
-    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
-    checkboxes.forEach((cb, index) => {
+    // Select first 5 for Rich Results
+    const richResultsCheckboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]');
+    richResultsCheckboxes.forEach((cb, index) => {
       cb.checked = index < 5;
     });
+    // Keep all items selected for schema
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListCheckbox_"]');
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+    });
+    updateRichResultsSelection();
     updateItemListSelectionCount();
   }
   
   function selectAllItems() {
-    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    // Select all items for schema
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListCheckbox_"]');
     checkboxes.forEach(cb => {
       cb.checked = true;
     });
+    // Keep first 5 for Rich Results
+    const richResultsCheckboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]');
+    richResultsCheckboxes.forEach((cb, index) => {
+      cb.checked = index < 5;
+    });
+    updateRichResultsSelection();
     updateItemListSelectionCount();
   }
   
   function deselectAllItems() {
-    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    // Deselect all items
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListCheckbox_"]');
     checkboxes.forEach(cb => {
       cb.checked = false;
     });
+    // Also clear Rich Results
+    const richResultsCheckboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]');
+    richResultsCheckboxes.forEach(cb => {
+      cb.checked = false;
+    });
+    updateRichResultsSelection();
     updateItemListSelectionCount();
   }
 
