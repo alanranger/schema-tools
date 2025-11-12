@@ -10019,6 +10019,25 @@ ${minifiedJson}
         // Show schema type selector panel
         updateSchemaTypeSelector(detectedSchemaTypes);
         addLandingDebugLog('✅ Schema type selector panel displayed');
+        
+        // Auto-scan URLs for ItemList if ItemList is detected/selected
+        setTimeout(() => {
+          const itemListChecked = document.getElementById('schemaType_ItemList')?.checked;
+          if (itemListChecked) {
+            addLandingDebugLog('🔍 ItemList selected - auto-scanning URLs from page...');
+            const extractedUrls = extractUrlsFromPage(html, url);
+            if (extractedUrls.length > 0) {
+              const itemListItemsField = document.getElementById('itemListItems');
+              if (itemListItemsField) {
+                itemListItemsField.value = extractedUrls.join('\n');
+                addLandingDebugLog(`✅ Auto-populated ${extractedUrls.length} URL(s) in ItemList items field`);
+                addLandingDebugLog(`   URLs: ${extractedUrls.slice(0, 3).join(', ')}${extractedUrls.length > 3 ? '...' : ''}`);
+              }
+            } else {
+              addLandingDebugLog(`ℹ️ No relevant URLs found on page for ItemList`);
+            }
+          }
+        }, 200);
       } catch (error) {
         addLandingDebugLog(`⚠️ Could not scan schema types: ${error.message}`);
         // Still show panel with empty detection
@@ -10297,14 +10316,18 @@ ${minifiedJson}
           const itemListFields = document.getElementById('landingItemListFields');
           if (itemListFields) {
             itemListFields.style.display = this.checked ? 'block' : 'none';
+            addLandingDebugLog(`📋 ItemList checkbox ${this.checked ? 'checked' : 'unchecked'} - fields ${this.checked ? 'shown' : 'hidden'}`);
           }
         });
-        // Show fields if checked by default
+        // Show fields if checked by default (use setTimeout to ensure DOM is ready)
         if (checked) {
-          const itemListFields = document.getElementById('landingItemListFields');
-          if (itemListFields) {
-            itemListFields.style.display = 'block';
-          }
+          setTimeout(() => {
+            const itemListFields = document.getElementById('landingItemListFields');
+            if (itemListFields) {
+              itemListFields.style.display = 'block';
+              addLandingDebugLog(`📋 ItemList checked by default - showing fields`);
+            }
+          }, 100);
         }
       }
       
