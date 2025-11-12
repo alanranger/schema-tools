@@ -11622,9 +11622,13 @@ ${minifiedJson}
     document.getElementById('serviceAreaServed').value = '';
     document.getElementById('servicePrice').value = '';
     document.getElementById('itemListItems').value = '';
-    const includeAllCheckbox = document.getElementById('itemListIncludeAll');
-    if (includeAllCheckbox) {
-      includeAllCheckbox.checked = false;
+    const selectionPanel = document.getElementById('itemListSelectionPanel');
+    if (selectionPanel) {
+      selectionPanel.style.display = 'none';
+    }
+    const checkboxesContainer = document.getElementById('itemListCheckboxes');
+    if (checkboxesContainer) {
+      checkboxesContainer.innerHTML = '';
     }
     document.getElementById('landingSchemaOutput').style.display = 'none';
     document.getElementById('landingSchemaResultsPanel').style.display = 'none';
