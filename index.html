@@ -11178,9 +11178,21 @@ ${minifiedJson}
                 enhancementSummary = 'Consolidated (no changes detected)';
               }
             } else if (beforeExists && !afterExists) {
-              status = '⚠️ Removed';
-              statusColor = '#ef4444';
-              enhancementSummary = 'Schema type removed during merge';
+              // Check if this is a nested type that might be merged into parent
+              const nestedTypes = ['ImageObject', 'PostalAddress', 'GeoCoordinates', 'AggregateRating', 'ContactPoint', 'Rating', 'Review'];
+              const isNestedType = nestedTypes.includes(type);
+              
+              if (isNestedType) {
+                // Nested types are merged into parent schemas, not removed
+                status = '🔄 Merged';
+                statusColor = '#3b82f6';
+                enhancementSummary = 'Merged into parent schema (nested type preserved)';
+              } else {
+                // Schema type removed
+                status = '⚠️ Removed';
+                statusColor = '#ef4444';
+                enhancementSummary = 'Schema type removed during merge';
+              }
             } else {
               status = '—';
               statusColor = '#64748b';
