@@ -2267,13 +2267,13 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
     </div>
 
-    <!-- Step 4.5: Schema Type Selector -->
+    <!-- Step 4.5: Schema Type Selector (shown after scanning, before generation) -->
     <div id="schemaTypeSelectorPanel" class="workflow-section" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #0ea5e9;">
         <div style="background: #0ea5e9; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">4.5</div>
         <div>
           <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Schema Types to Include</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">✓ Select which schema types to include in the final output</p>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">✓ Select which schema types to include before generating (appears after scanning)</p>
         </div>
       </div>
 
@@ -9995,6 +9995,29 @@ ${minifiedJson}
         addLandingDebugLog(`✅ Schema type set to: ${detectedType}`);
       }
       
+      // Scan for existing schema types and show selector panel
+      addLandingDebugLog('🔍 Scanning for existing schema types...');
+      try {
+        const existingBlocks = extractJsonLdBlocksFromHtml(html);
+        const detectedSchemaTypes = detectSchemaTypesFromBlocks(existingBlocks);
+        
+        if (detectedSchemaTypes.some(dt => dt.found)) {
+          const foundTypes = detectedSchemaTypes.filter(dt => dt.found).map(dt => dt.type);
+          addLandingDebugLog(`✅ Found schema types: ${foundTypes.join(', ')}`);
+        } else {
+          addLandingDebugLog(`ℹ️ No existing schema types detected`);
+        }
+        
+        // Show schema type selector panel
+        updateSchemaTypeSelector(detectedSchemaTypes);
+        addLandingDebugLog('✅ Schema type selector panel displayed');
+      } catch (error) {
+        addLandingDebugLog(`⚠️ Could not scan schema types: ${error.message}`);
+        // Still show panel with empty detection
+        const emptyDetection = detectSchemaTypesFromBlocks([]);
+        updateSchemaTypeSelector(emptyDetection);
+      }
+      
       progressBar.style.width = '100%';
       addLandingDebugLog('✅ Metadata scan complete!');
     } catch (error) {
@@ -10345,21 +10368,31 @@ ${minifiedJson}
           addLandingDebugLog(`⚠️ Missing fields detected: ${existingAnalysis.missingFields.length}`);
         }
         
-        // Update schema type selector panel
-        updateSchemaTypeSelector(detectedSchemaTypes);
+        // Note: Schema type selector will be shown by scanLandingPageMetadata() if user scans first
+        // If generating without scanning, show selector here
+        if (!document.getElementById('schemaTypeSelectorPanel') || 
+            document.getElementById('schemaTypeSelectorPanel').style.display === 'none') {
+          updateSchemaTypeSelector(detectedSchemaTypes);
+        }
       } else {
         addLandingDebugLog(`ℹ️ No existing schema found on page - will generate new schema`);
         addLandingDebugLog(`   (Searched for <script type="application/ld+json"> tags)`);
-        // Initialize selector with all unchecked
-        detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
-        updateSchemaTypeSelector(detectedSchemaTypes);
+        // Initialize selector with all unchecked (only if panel not already shown)
+        if (!document.getElementById('schemaTypeSelectorPanel') || 
+            document.getElementById('schemaTypeSelectorPanel').style.display === 'none') {
+          detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
+          updateSchemaTypeSelector(detectedSchemaTypes);
+        }
       }
     } catch (error) {
       addLandingDebugLog(`⚠️ Could not fetch page for analysis: ${error.message}`);
       addLandingDebugLog(`   Continuing with new schema generation...`);
-      // Initialize selector with all unchecked
-      detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
-      updateSchemaTypeSelector(detectedSchemaTypes);
+      // Initialize selector with all unchecked (only if panel not already shown)
+      if (!document.getElementById('schemaTypeSelectorPanel') || 
+          document.getElementById('schemaTypeSelectorPanel').style.display === 'none') {
+        detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
+        updateSchemaTypeSelector(detectedSchemaTypes);
+      }
     }
 
     progressBar.style.width = '40%';
