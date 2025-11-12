@@ -10803,7 +10803,39 @@ ${minifiedJson}
     
     if (existingSchemas.length > 0) {
       // Filter existing schemas by selected types
-      const filteredExistingSchemas = existingSchemas.filter(matchesSelectedTypes);
+      // Also preserve schemas that contain nested types that are selected
+      const filteredExistingSchemas = existingSchemas.filter(block => {
+        // Check if block's top-level type matches
+        if (matchesSelectedTypes(block)) {
+          return true;
+        }
+        
+        // Also check if block contains nested types that are selected
+        // This preserves parent schemas that contain selected nested types
+        if (selectedTypes.length > 0) {
+          const hasSelectedNestedType = (obj) => {
+            if (!obj || typeof obj !== 'object') return false;
+            
+            if (obj['@type']) {
+              const nestedTypes = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+              if (nestedTypes.some(t => selectedTypes.includes(t))) {
+                return true;
+              }
+            }
+            
+            return Object.values(obj).some(val => {
+              if (Array.isArray(val)) {
+                return val.some(item => hasSelectedNestedType(item));
+              }
+              return hasSelectedNestedType(val);
+            });
+          };
+          
+          return hasSelectedNestedType(block);
+        }
+        
+        return false;
+      });
       
       if (filteredExistingSchemas.length < existingSchemas.length) {
         const excluded = existingSchemas.length - filteredExistingSchemas.length;
