@@ -10152,6 +10152,7 @@ ${minifiedJson}
   function detectSchemaTypesFromBlocks(jsonLdBlocks) {
     const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
     const detectedTypes = new Set();
+    const otherDetectedTypes = new Set(); // For types not in canonical list (like FAQPage)
     
     // Extract all @type values from blocks
     jsonLdBlocks.forEach(block => {
@@ -10163,6 +10164,9 @@ ${minifiedJson}
           types.forEach(t => {
             if (canonicalTypes.includes(t)) {
               detectedTypes.add(t);
+            } else {
+              // Track other types (like FAQPage) but only if they exist
+              otherDetectedTypes.add(t);
             }
           });
         }
@@ -10184,11 +10188,21 @@ ${minifiedJson}
       }
     });
     
-    // Return standardized structure
-    return canonicalTypes.map(type => ({
+    // Return canonical types (always shown) + other detected types (only if found)
+    const result = canonicalTypes.map(type => ({
       type: type,
       found: detectedTypes.has(type)
     }));
+    
+    // Add other detected types (like FAQPage) - only show if found
+    otherDetectedTypes.forEach(type => {
+      result.push({
+        type: type,
+        found: true // Only add if found
+      });
+    });
+    
+    return result;
   }
 
   // Schema type guidance/hints
@@ -10200,7 +10214,8 @@ ${minifiedJson}
     Event: { hint: 'conditional', icon: '⚠', description: 'For individual workshops or classes - May disable on finder pages' },
     ItemList: { hint: 'conditional', icon: '✅', description: 'For collection/finder pages - Enable on finder pages' },
     Service: { hint: 'recommended', icon: '✅', description: 'For general offerings (workshops, tuition, mentoring) - Keep' },
-    Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' }
+    Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' },
+    FAQPage: { hint: 'existing only', icon: '📋', description: 'Keep existing FAQ schema (cannot add new)' }
   };
 
   // Update schema type selector UI
@@ -10218,7 +10233,13 @@ ${minifiedJson}
     
     // Create checkbox for each schema type
     detectedTypes.forEach(({ type, found }) => {
-      const guidance = SCHEMA_TYPE_GUIDANCE[type] || { hint: 'optional', icon: '☐', description: '' };
+      // For non-canonical types (like FAQPage), only show if found
+      const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+      if (!canonicalTypes.includes(type) && !found) {
+        return; // Skip non-canonical types that weren't found
+      }
+      
+      const guidance = SCHEMA_TYPE_GUIDANCE[type] || { hint: 'optional', icon: '☐', description: 'Existing schema type' };
       const checked = found; // Default to checked if found
       
       const item = document.createElement('div');
@@ -10273,10 +10294,22 @@ ${minifiedJson}
 
   // Get selected schema types from UI
   function getSelectedSchemaTypes() {
-    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
     const selected = [];
     
-    canonicalTypes.forEach(type => {
+    // Get all checkboxes (including non-canonical types like FAQPage)
+    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+    const allTypes = [...canonicalTypes];
+    
+    // Also check for any other types that might be in the UI (like FAQPage)
+    const allCheckboxes = document.querySelectorAll('[id^="schemaType_"]');
+    allCheckboxes.forEach(checkbox => {
+      const type = checkbox.id.replace('schemaType_', '');
+      if (!allTypes.includes(type)) {
+        allTypes.push(type);
+      }
+    });
+    
+    allTypes.forEach(type => {
       const checkbox = document.getElementById(`schemaType_${type}`);
       if (checkbox && checkbox.checked) {
         selected.push(type);
