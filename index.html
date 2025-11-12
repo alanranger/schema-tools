@@ -10078,7 +10078,11 @@ ${minifiedJson}
               const itemListItemsField = document.getElementById('itemListItems');
               if (itemListItemsField) {
                 itemListItemsField.value = extractedUrls.join('\n');
-                updateItemListCheckboxes(); // Update checkboxes after populating
+                // Update checkboxes after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                  updateItemListCheckboxes();
+                  addLandingDebugLog(`✅ Selection panel updated with ${extractedUrls.length} URL(s)`);
+                }, 200);
                 addLandingDebugLog(`✅ Auto-populated ${extractedUrls.length} URL(s) in ItemList items field`);
                 addLandingDebugLog(`   URLs: ${extractedUrls.slice(0, 3).join(', ')}${extractedUrls.length > 3 ? '...' : ''}`);
               }
@@ -10488,6 +10492,11 @@ ${minifiedJson}
                     const extractedUrls = extractUrlsFromPage(html, currentUrl);
                     if (extractedUrls.length > 0) {
                       itemListItemsField.value = extractedUrls.join('\n');
+                      // Update checkboxes after a short delay to ensure DOM is ready
+                      setTimeout(() => {
+                        updateItemListCheckboxes();
+                        addLandingDebugLog(`✅ Selection panel updated with ${extractedUrls.length} URL(s)`);
+                      }, 200);
                       addLandingDebugLog(`✅ Auto-populated ${extractedUrls.length} URL(s) in ItemList items field`);
                       addLandingDebugLog(`   URLs: ${extractedUrls.slice(0, 3).join(', ')}${extractedUrls.length > 3 ? '...' : ''}`);
                     } else {
