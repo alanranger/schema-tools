@@ -10482,7 +10482,14 @@ ${minifiedJson}
             // If checked and field is empty, try to auto-populate URLs
             if (this.checked) {
               const itemListItemsField = document.getElementById('itemListItems');
-              if (itemListItemsField && !itemListItemsField.value.trim()) {
+              if (itemListItemsField && itemListItemsField.value.trim()) {
+                // Field already has content - update checkboxes immediately
+                setTimeout(() => {
+                  updateItemListCheckboxes();
+                  addLandingDebugLog(`✅ Selection panel updated`);
+                }, 100);
+              } else if (itemListItemsField && !itemListItemsField.value.trim()) {
+                // Field is empty - try to auto-populate URLs
                 const urlInput = document.getElementById('landingPageUrl');
                 const currentUrl = urlInput?.value.trim();
                 if (currentUrl) {
@@ -10496,7 +10503,7 @@ ${minifiedJson}
                       setTimeout(() => {
                         updateItemListCheckboxes();
                         addLandingDebugLog(`✅ Selection panel updated with ${extractedUrls.length} URL(s)`);
-                      }, 200);
+                      }, 300);
                       addLandingDebugLog(`✅ Auto-populated ${extractedUrls.length} URL(s) in ItemList items field`);
                       addLandingDebugLog(`   URLs: ${extractedUrls.slice(0, 3).join(', ')}${extractedUrls.length > 3 ? '...' : ''}`);
                     } else {
