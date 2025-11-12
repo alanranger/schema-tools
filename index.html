@@ -2241,8 +2241,22 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
           <textarea id="itemListItems" placeholder="https://www.alanranger.com/product-1&#10;https://www.alanranger.com/product-2&#10;https://www.alanranger.com/product-3" 
                     style="width: 100%; padding: 0.75rem; border: 1px solid #86efac; border-radius: 6px; font-size: 0.875rem; min-height: 100px; font-family: monospace;"
                     aria-label="Item list URLs input"></textarea>
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-            Enter URLs of items in this list (one per line). Will include first 3-5 items in schema.
+          <div style="margin-top: 0.75rem; padding: 0.75rem; background: #e0f2fe; border-radius: 6px; border: 1px solid #bae6fd;">
+            <div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <input type="checkbox" id="itemListIncludeAll" style="margin-top: 0.25rem; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
+              <div style="flex: 1;">
+                <label for="itemListIncludeAll" style="font-weight: 600; color: #0c4a6e; cursor: pointer; display: block; margin-bottom: 0.25rem;">
+                  Include all items in schema
+                </label>
+                <p style="font-size: 0.8rem; color: #075985; margin: 0; line-height: 1.5;">
+                  <strong>Default:</strong> Only the first 5 items are included (Google's recommended limit for list-type structured data).<br>
+                  <strong>If checked:</strong> All items above will be included in the generated schema.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; line-height: 1.5;">
+            💡 <strong>Tip:</strong> You can edit the list above to reorder or remove items. The first items in the list will be prioritized in the schema.
           </p>
         </div>
       </div>
@@ -11162,11 +11176,24 @@ ${minifiedJson}
 
   function generateItemListSchema(title, description, image, url) {
     const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
-    const items = itemsText.split('\n').filter(line => line.trim()).slice(0, 5); // Max 5 items
+    const allItems = itemsText.split('\n').filter(line => line.trim());
+    
+    // Check if user wants to include all items or just first 5 (Google's recommended limit)
+    const includeAll = document.getElementById('itemListIncludeAll')?.checked || false;
+    const items = includeAll ? allItems : allItems.slice(0, 5);
 
     // If no items provided, warn but still create ItemList
     if (items.length === 0) {
       addLandingDebugLog(`⚠️ No ItemList items provided - creating empty ItemList`);
+    } else {
+      if (includeAll) {
+        addLandingDebugLog(`📋 Including all ${items.length} items in ItemList schema`);
+      } else {
+        addLandingDebugLog(`📋 Including first 5 items in ItemList schema (Google's recommended limit)`);
+        if (allItems.length > 5) {
+          addLandingDebugLog(`   ℹ️ ${allItems.length - 5} additional item(s) available but not included (check "Include all items" to add them)`);
+        }
+      }
     }
 
     const itemListSchema = {
