@@ -10291,6 +10291,23 @@ ${minifiedJson}
       item.appendChild(checkbox);
       item.appendChild(label);
       
+      // Add event listener for ItemList checkbox to show/hide fields
+      if (type === 'ItemList') {
+        checkbox.addEventListener('change', function() {
+          const itemListFields = document.getElementById('landingItemListFields');
+          if (itemListFields) {
+            itemListFields.style.display = this.checked ? 'block' : 'none';
+          }
+        });
+        // Show fields if checked by default
+        if (checked) {
+          const itemListFields = document.getElementById('landingItemListFields');
+          if (itemListFields) {
+            itemListFields.style.display = 'block';
+          }
+        }
+      }
+      
       list.appendChild(item);
     });
   }
@@ -10492,6 +10509,8 @@ ${minifiedJson}
     addLandingDebugLog('⚙️ STEP 4: Generating enhanced schema...');
     
     let schema;
+    let additionalSchemas = []; // For schemas requested via checkbox but not in dropdown
+    
     try {
       switch (actualSchemaType) {
         case 'Service':
@@ -10511,6 +10530,19 @@ ${minifiedJson}
           addLandingDebugLog(`⚠️ Unknown schema type, defaulting to Service`);
       }
       addLandingDebugLog(`✅ New schema generated successfully`);
+      
+      // Check if ItemList is selected in checkbox but not generated as main schema
+      if (selectedTypes.includes('ItemList') && actualSchemaType !== 'ItemList') {
+        const itemListItems = document.getElementById('itemListItems').value.trim();
+        if (itemListItems) {
+          addLandingDebugLog(`📋 ItemList selected in checkbox - generating additional ItemList schema`);
+          const itemListSchema = generateItemListSchema(title, finalDescription, image, url);
+          additionalSchemas.push(itemListSchema);
+          addLandingDebugLog(`✅ Additional ItemList schema generated`);
+        } else {
+          addLandingDebugLog(`⚠️ ItemList selected but no items provided in ItemList fields`);
+        }
+      }
     } catch (error) {
       addLandingDebugLog(`❌ Error generating schema: ${error.message}`);
       alert(`Error generating schema: ${error.message}`);
@@ -10555,6 +10587,14 @@ ${minifiedJson}
       } else {
         addLandingDebugLog(`🔍 Excluding new ${actualSchemaType} schema (not in selected types)`);
       }
+      
+      // Add any additional schemas (like ItemList when checked but not main schema type)
+      additionalSchemas.forEach(additionalSchema => {
+        if (matchesSelectedTypes(additionalSchema)) {
+          allBlocks.push(additionalSchema);
+          addLandingDebugLog(`✅ Added additional ${additionalSchema['@type']} schema`);
+        }
+      });
       
       // Enhance schemas before merging - add missing fields, improve data quality
       const enhancedBlocks = allBlocks.map(block => {
@@ -10635,12 +10675,25 @@ ${minifiedJson}
       const schemaMatches = selectedTypes.length === 0 || schemaTypes.some(t => selectedTypes.includes(t));
       
       if (schemaMatches) {
-        finalSchema = schema;
-        addLandingDebugLog(`✅ Using new schema (no existing schema to merge)`);
+        // Combine main schema with additional schemas if any
+        if (additionalSchemas.length > 0) {
+          const allSchemas = [schema, ...additionalSchemas];
+          finalSchema = buildEnhancedSchema(allSchemas, selectedTypes);
+          addLandingDebugLog(`✅ Using new schema with ${additionalSchemas.length} additional schema(s)`);
+        } else {
+          finalSchema = schema;
+          addLandingDebugLog(`✅ Using new schema (no existing schema to merge)`);
+        }
       } else {
-        // Create empty schema structure if new schema type not selected
-        finalSchema = { '@context': 'https://schema.org', '@graph': [] };
-        addLandingDebugLog(`⚠️ New schema type not selected - creating empty schema structure`);
+        // Check if we have additional schemas even if main schema not selected
+        if (additionalSchemas.length > 0) {
+          finalSchema = buildEnhancedSchema(additionalSchemas, selectedTypes);
+          addLandingDebugLog(`✅ Using ${additionalSchemas.length} additional schema(s) only`);
+        } else {
+          // Create empty schema structure if new schema type not selected
+          finalSchema = { '@context': 'https://schema.org', '@graph': [] };
+          addLandingDebugLog(`⚠️ New schema type not selected - creating empty schema structure`);
+        }
       }
     }
 
