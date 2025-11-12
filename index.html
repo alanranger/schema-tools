@@ -10354,7 +10354,7 @@ ${minifiedJson}
 
   // Helper: Detect and normalize schema types from JSON-LD blocks
   function detectSchemaTypesFromBlocks(jsonLdBlocks) {
-    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
     const detectedTypes = new Set();
     const otherDetectedTypes = new Set(); // For types not in canonical list (like FAQPage)
     
@@ -10419,10 +10419,15 @@ ${minifiedJson}
     ItemList: { hint: 'conditional', icon: '✅', description: 'For collection/finder pages - Enable on finder pages' },
     Service: { hint: 'recommended', icon: '✅', description: 'For general offerings (workshops, tuition, mentoring) - Keep' },
     Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' },
+    BreadcrumbList: { hint: 'optional', icon: '🧭', description: 'Navigation breadcrumbs - Keep if present' },
     FAQPage: { hint: 'existing only', icon: '📋', description: 'Keep existing FAQ schema (cannot add new)' },
     Review: { hint: 'existing only', icon: '⭐', description: 'Keep existing review snippets (nested in Product/Service)' },
     Rating: { hint: 'existing only', icon: '⭐', description: 'Keep existing rating data (nested in Review)' },
-    AggregateRating: { hint: 'existing only', icon: '⭐', description: 'Keep existing aggregate rating (nested in Product/Service)' }
+    AggregateRating: { hint: 'existing only', icon: '⭐', description: 'Keep existing aggregate rating (nested in Product/Service)' },
+    ImageObject: { hint: 'existing only', icon: '🖼️', description: 'Keep existing image objects (nested in schemas)' },
+    PostalAddress: { hint: 'existing only', icon: '📍', description: 'Keep existing address data (nested in LocalBusiness/Organization)' },
+    GeoCoordinates: { hint: 'existing only', icon: '🌍', description: 'Keep existing location coordinates (nested in Place)' },
+    ContactPoint: { hint: 'existing only', icon: '📞', description: 'Keep existing contact info (nested in Organization)' }
   };
 
   // Update schema type selector UI
@@ -10441,7 +10446,7 @@ ${minifiedJson}
     // Create checkbox for each schema type
     detectedTypes.forEach(({ type, found }) => {
       // For non-canonical types (like FAQPage), only show if found
-      const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+      const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
       if (!canonicalTypes.includes(type) && !found) {
         return; // Skip non-canonical types that weren't found
       }
