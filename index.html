@@ -2044,9 +2044,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
       
       <div style="margin-bottom: 1rem;">
-        <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 0.5rem;">
-          Page URL:
-        </label>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <label for="landingPageUrl" style="display: block; font-weight: 600; color: #2d3748; margin: 0;">
+            Page URL:
+          </label>
+          <button onclick="clearLandingForm()" 
+                  style="background: #e2e8f0; color: #4a5568; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap;"
+                  onmouseover="this.style.background='#cbd5e0'" onmouseout="this.style.background='#e2e8f0'"
+                  title="Clear all fields and reset form">
+            🔄 Reset
+          </button>
+        </div>
         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
           <input type="text" id="landingPageUrl" placeholder="https://www.alanranger.com/service-page" 
                  style="flex: 1; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;"
@@ -11232,6 +11240,11 @@ ${minifiedJson}
     document.getElementById('landingDebugLogContainer').style.display = 'none';
     document.getElementById('landingScanProgress').style.display = 'none';
     document.getElementById('landingGenerateProgress').style.display = 'none';
+    // Hide schema type selector panel
+    const schemaTypePanel = document.getElementById('schemaTypeSelectorPanel');
+    if (schemaTypePanel) {
+      schemaTypePanel.style.display = 'none';
+    }
     updateLandingSchemaFields();
     updateLandingDescriptionCounter();
     landingPageMetadata = null;
