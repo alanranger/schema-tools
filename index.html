@@ -11320,39 +11320,104 @@ ${minifiedJson}
       const itemDiv = document.createElement('div');
       itemDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; margin-bottom: 0.25rem; background: #f9fafb; border-radius: 4px;';
       
+      // Selection checkbox (include in schema)
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.id = `itemListCheckbox_${index}`;
       checkbox.value = trimmedUrl;
-      checkbox.checked = index < 5; // Default: first 5 checked
+      checkbox.checked = true; // Default: all checked (for full schema)
       checkbox.style.cssText = 'width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;';
       checkbox.addEventListener('change', updateItemListSelectionCount);
+      
+      // Rich Results priority checkbox (max 5)
+      const richResultsCheckbox = document.createElement('input');
+      richResultsCheckbox.type = 'checkbox';
+      richResultsCheckbox.id = `itemListRichResults_${index}`;
+      richResultsCheckbox.value = trimmedUrl;
+      richResultsCheckbox.checked = index < 5; // Default: first 5 for rich results
+      richResultsCheckbox.style.cssText = 'width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;';
+      richResultsCheckbox.addEventListener('change', function() {
+        updateRichResultsSelection();
+        updateItemListSelectionCount();
+      });
+      
+      const labelContainer = document.createElement('div');
+      labelContainer.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 0.25rem;';
+      
+      const labelRow = document.createElement('div');
+      labelRow.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
       
       const label = document.createElement('label');
       label.htmlFor = `itemListCheckbox_${index}`;
       label.textContent = trimmedUrl;
       label.style.cssText = 'flex: 1; cursor: pointer; font-size: 0.875rem; color: #1e293b; font-family: monospace; word-break: break-all;';
       
+      const richResultsLabel = document.createElement('label');
+      richResultsLabel.htmlFor = `itemListRichResults_${index}`;
+      richResultsLabel.style.cssText = 'cursor: pointer; font-size: 0.75rem; color: #64748b; white-space: nowrap;';
+      richResultsLabel.textContent = '⭐ Rich Results';
+      
+      labelRow.appendChild(label);
+      labelRow.appendChild(richResultsLabel);
+      labelContainer.appendChild(labelRow);
+      
       itemDiv.appendChild(checkbox);
-      itemDiv.appendChild(label);
+      itemDiv.appendChild(richResultsCheckbox);
+      itemDiv.appendChild(labelContainer);
       checkboxesContainer.appendChild(itemDiv);
     });
+    
+    updateRichResultsSelection();
     
     updateItemListSelectionCount();
   }
   
+  // Update Rich Results selection (max 5)
+  function updateRichResultsSelection() {
+    const richResultsCheckboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]:checked');
+    const richResultsCount = richResultsCheckboxes.length;
+    
+    // If more than 5 selected, uncheck the last ones
+    if (richResultsCount > 5) {
+      const allRichResults = Array.from(document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]'));
+      const checked = allRichResults.filter(cb => cb.checked);
+      // Uncheck items beyond the first 5
+      checked.slice(5).forEach(cb => {
+        cb.checked = false;
+      });
+    }
+    
+    // Update visual indicators
+    const allRichResults = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]');
+    allRichResults.forEach((cb, index) => {
+      const label = document.querySelector(`label[for="${cb.id}"]`);
+      if (label) {
+        if (cb.checked) {
+          label.style.color = '#f59e0b';
+          label.style.fontWeight = '600';
+          label.textContent = '⭐ Rich Results';
+        } else {
+          label.style.color = '#64748b';
+          label.style.fontWeight = '400';
+          label.textContent = 'Rich Results';
+        }
+      }
+    });
+  }
+  
   // Update selection count display
   function updateItemListSelectionCount() {
-    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[type="checkbox"]');
+    const checkboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListCheckbox_"]');
+    const richResultsCheckboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListRichResults_"]:checked');
     const totalCount = checkboxes.length;
     const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
     const uncheckedCount = totalCount - checkedCount;
+    const richResultsCount = richResultsCheckboxes.length;
     const countSpan = document.getElementById('itemListSelectionCount');
     if (countSpan) {
-      countSpan.innerHTML = `<strong>${totalCount}</strong> total URLs: <strong style="color: #166534;">${checkedCount} selected</strong>, <span style="color: #64748b;">${uncheckedCount} unselected</span>`;
-      if (checkedCount > 5) {
-        countSpan.style.color = '#dc2626';
-        countSpan.innerHTML += ' <span style="color: #dc2626;">⚠️ Google recommends max 5</span>';
+      countSpan.innerHTML = `<strong>${totalCount}</strong> total URLs: <strong style="color: #166534;">${checkedCount} selected</strong>, <span style="color: #64748b;">${uncheckedCount} unselected</span> | <strong style="color: #f59e0b;">⭐ ${richResultsCount} Rich Results</strong>`;
+      if (richResultsCount > 5) {
+        countSpan.innerHTML += ' <span style="color: #dc2626;">⚠️ Max 5 for Rich Results</span>';
       }
     }
   }
