@@ -2267,6 +2267,28 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       </div>
     </div>
 
+    <!-- Step 4.5: Schema Type Selector -->
+    <div id="schemaTypeSelectorPanel" class="workflow-section" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #0ea5e9;">
+        <div style="background: #0ea5e9; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">4.5</div>
+        <div>
+          <h3 style="margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 600;">Schema Types to Include</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #64748b;">✓ Select which schema types to include in the final output</p>
+        </div>
+      </div>
+
+      <div id="schemaTypeSelectorList" style="margin-top: 1rem;">
+        <!-- Schema type checkboxes will be populated here -->
+      </div>
+
+      <div style="margin-top: 1rem; padding: 1rem; background: #e0f2fe; border-radius: 8px; border: 1px solid #bae6fd;">
+        <p style="margin: 0; font-size: 0.875rem; color: #075985; line-height: 1.6;">
+          <strong>💡 Tip:</strong> Only checked schema types will be included in the generated JSON-LD. 
+          Uncheck types you want to exclude (e.g., disable Event on finder pages, enable ItemList for collection pages).
+        </p>
+      </div>
+    </div>
+
     <!-- Step 5: Generate -->
     <div class="workflow-section" style="margin-top: 1.5rem; padding: 1.5rem; background: #fef2f2; border: 2px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0;">
@@ -3598,7 +3620,7 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
   }
 
   // Build a single, cleaned-up, recommended schema graph
-  function buildEnhancedSchema(blocks) {
+  function buildEnhancedSchema(blocks, selectedTypes = []) {
     const graph = [];
     const types = t => Array.isArray(t) ? t : [t].filter(Boolean);
     const seen = new Set();
@@ -3609,7 +3631,14 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
       graph.push(node);
     };
 
-    // Merge Organization/LocalBusiness
+    // Helper to check if schema matches selected types
+    const matchesSelectedTypes = (node) => {
+      if (selectedTypes.length === 0) return true; // Include all if none selected
+      const nodeTypes = types(node['@type']);
+      return nodeTypes.some(t => selectedTypes.includes(t));
+    };
+
+    // Merge Organization/LocalBusiness (only if selected)
     const org = {
       '@type': ['Organization','LocalBusiness'],
       '@id': 'https://www.alanranger.com/#org',
@@ -3627,10 +3656,17 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
         return;
       }
       if (!b['@id'] && (b.url || b.name)) b['@id'] = (b.url || `#${(b.name||'node').toLowerCase().replace(/\s+/g,'-')}`);
-      add(b);
+      
+      // Only add if matches selected types
+      if (matchesSelectedTypes(b)) {
+        add(b);
+      }
     });
 
-    add(org);
+    // Only add org if Organization or LocalBusiness is selected
+    if (selectedTypes.length === 0 || selectedTypes.includes('Organization') || selectedTypes.includes('LocalBusiness')) {
+      add(org);
+    }
 
     return { '@context': 'https://schema.org', '@graph': graph };
   }
@@ -10081,6 +10117,144 @@ ${minifiedJson}
     return 'Service';
   }
 
+  // Helper: Detect and normalize schema types from JSON-LD blocks
+  function detectSchemaTypesFromBlocks(jsonLdBlocks) {
+    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+    const detectedTypes = new Set();
+    
+    // Extract all @type values from blocks
+    jsonLdBlocks.forEach(block => {
+      const extractTypes = (obj) => {
+        if (!obj || typeof obj !== 'object') return;
+        
+        if (obj['@type']) {
+          const types = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+          types.forEach(t => {
+            if (canonicalTypes.includes(t)) {
+              detectedTypes.add(t);
+            }
+          });
+        }
+        
+        // Recursively check nested objects
+        Object.values(obj).forEach(val => {
+          if (Array.isArray(val)) {
+            val.forEach(item => extractTypes(item));
+          } else if (val && typeof val === 'object') {
+            extractTypes(val);
+          }
+        });
+      };
+      
+      if (block['@graph']) {
+        block['@graph'].forEach(item => extractTypes(item));
+      } else {
+        extractTypes(block);
+      }
+    });
+    
+    // Return standardized structure
+    return canonicalTypes.map(type => ({
+      type: type,
+      found: detectedTypes.has(type)
+    }));
+  }
+
+  // Schema type guidance/hints
+  const SCHEMA_TYPE_GUIDANCE = {
+    WebSite: { hint: 'recommended', icon: '✅', description: 'Root domain + SearchAction - Always keep' },
+    Organization: { hint: 'recommended', icon: '✅', description: 'Brand and business identity - Always keep' },
+    LocalBusiness: { hint: 'recommended', icon: '✅', description: 'For physical location SEO - Always keep' },
+    Product: { hint: 'optional', icon: '☐', description: 'For product or gift voucher pages - Only if selling' },
+    Event: { hint: 'conditional', icon: '⚠', description: 'For individual workshops or classes - May disable on finder pages' },
+    ItemList: { hint: 'conditional', icon: '✅', description: 'For collection/finder pages - Enable on finder pages' },
+    Service: { hint: 'recommended', icon: '✅', description: 'For general offerings (workshops, tuition, mentoring) - Keep' },
+    Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' }
+  };
+
+  // Update schema type selector UI
+  function updateSchemaTypeSelector(detectedTypes) {
+    const panel = document.getElementById('schemaTypeSelectorPanel');
+    const list = document.getElementById('schemaTypeSelectorList');
+    
+    if (!panel || !list) return;
+    
+    // Show panel
+    panel.style.display = 'block';
+    
+    // Clear existing content
+    list.innerHTML = '';
+    
+    // Create checkbox for each schema type
+    detectedTypes.forEach(({ type, found }) => {
+      const guidance = SCHEMA_TYPE_GUIDANCE[type] || { hint: 'optional', icon: '☐', description: '' };
+      const checked = found; // Default to checked if found
+      
+      const item = document.createElement('div');
+      item.style.cssText = 'display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 6px; border: 1px solid #e2e8f0;';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = `schemaType_${type}`;
+      checkbox.checked = checked;
+      checkbox.style.cssText = 'margin-top: 0.25rem; width: 18px; height: 18px; cursor: pointer;';
+      
+      const label = document.createElement('label');
+      label.htmlFor = `schemaType_${type}`;
+      label.style.cssText = 'flex: 1; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;';
+      
+      const iconSpan = document.createElement('span');
+      iconSpan.textContent = guidance.icon;
+      iconSpan.style.cssText = 'font-size: 1rem;';
+      
+      const typeSpan = document.createElement('span');
+      typeSpan.textContent = type;
+      typeSpan.style.cssText = 'font-weight: 600; color: #1e293b; font-size: 0.95rem;';
+      
+      const hintSpan = document.createElement('span');
+      hintSpan.textContent = `(${guidance.hint})`;
+      hintSpan.style.cssText = 'font-size: 0.875rem; color: #64748b; font-style: italic;';
+      
+      const descDiv = document.createElement('div');
+      descDiv.textContent = guidance.description;
+      descDiv.style.cssText = 'font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; line-height: 1.4;';
+      
+      const labelContent = document.createElement('div');
+      labelContent.style.cssText = 'display: flex; flex-direction: column; gap: 0.25rem;';
+      
+      const topRow = document.createElement('div');
+      topRow.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+      topRow.appendChild(iconSpan);
+      topRow.appendChild(typeSpan);
+      topRow.appendChild(hintSpan);
+      
+      labelContent.appendChild(topRow);
+      labelContent.appendChild(descDiv);
+      
+      label.appendChild(labelContent);
+      
+      item.appendChild(checkbox);
+      item.appendChild(label);
+      
+      list.appendChild(item);
+    });
+  }
+
+  // Get selected schema types from UI
+  function getSelectedSchemaTypes() {
+    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+    const selected = [];
+    
+    canonicalTypes.forEach(type => {
+      const checkbox = document.getElementById(`schemaType_${type}`);
+      if (checkbox && checkbox.checked) {
+        selected.push(type);
+      }
+    });
+    
+    return selected;
+  }
+
   async function generateLandingSchema() {
     landingDebugLog = '';
     addLandingDebugLog('🚀 Starting enhanced schema generation with analysis...');
@@ -10127,6 +10301,7 @@ ${minifiedJson}
     let existingSchemas = [];
     let existingSchemaTypes = [];
     let existingAnalysis = null;
+    let detectedSchemaTypes = [];
     
     try {
       addLandingDebugLog('');
@@ -10144,6 +10319,9 @@ ${minifiedJson}
         existingSchemas = existingBlocks;
         existingSchemaTypes = extractSchemaTypes(existingBlocks);
         existingAnalysis = analyzeSchemas(existingBlocks, url);
+        
+        // Detect normalized schema types for selector panel
+        detectedSchemaTypes = detectSchemaTypesFromBlocks(existingBlocks);
         
         addLandingDebugLog(`✅ Found ${existingBlocks.length} existing schema block(s)`);
         addLandingDebugLog(`📋 Existing schema types: ${existingSchemaTypes.join(', ') || 'None'}`);
@@ -10166,13 +10344,22 @@ ${minifiedJson}
         if (existingAnalysis.missingFields && existingAnalysis.missingFields.length > 0) {
           addLandingDebugLog(`⚠️ Missing fields detected: ${existingAnalysis.missingFields.length}`);
         }
+        
+        // Update schema type selector panel
+        updateSchemaTypeSelector(detectedSchemaTypes);
       } else {
         addLandingDebugLog(`ℹ️ No existing schema found on page - will generate new schema`);
         addLandingDebugLog(`   (Searched for <script type="application/ld+json"> tags)`);
+        // Initialize selector with all unchecked
+        detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
+        updateSchemaTypeSelector(detectedSchemaTypes);
       }
     } catch (error) {
       addLandingDebugLog(`⚠️ Could not fetch page for analysis: ${error.message}`);
       addLandingDebugLog(`   Continuing with new schema generation...`);
+      // Initialize selector with all unchecked
+      detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
+      updateSchemaTypeSelector(detectedSchemaTypes);
     }
 
     progressBar.style.width = '40%';
@@ -10212,10 +10399,20 @@ ${minifiedJson}
 
     progressBar.style.width = '60%';
 
-    // STEP 3: Generate new/enhanced schema
+    // STEP 3: Get selected schema types from UI
+    const selectedTypes = getSelectedSchemaTypes();
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    addLandingDebugLog('⚙️ STEP 3: Generating enhanced schema...');
+    addLandingDebugLog(`🎯 Schema Types Selected: ${selectedTypes.length > 0 ? selectedTypes.join(', ') : 'None (all will be included)'}`);
+    
+    if (selectedTypes.length === 0) {
+      addLandingDebugLog(`⚠️ No schema types selected - will include all detected types`);
+    }
+
+    // STEP 4: Generate new/enhanced schema
+    addLandingDebugLog('');
+    addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    addLandingDebugLog('⚙️ STEP 4: Generating enhanced schema...');
     
     let schema;
     try {
@@ -10247,17 +10444,40 @@ ${minifiedJson}
 
     progressBar.style.width = '80%';
 
-    // STEP 4: Merge and enhance with existing schemas
+    // STEP 5: Merge and enhance with existing schemas (filtered by selected types)
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    addLandingDebugLog('🔧 STEP 4: Merging and enhancing schemas...');
+    addLandingDebugLog('🔧 STEP 5: Merging and enhancing schemas...');
     
     let finalSchema;
     let improvements = [];
     
+    // Helper function to check if a schema matches selected types
+    const matchesSelectedTypes = (block) => {
+      if (selectedTypes.length === 0) return true; // Include all if none selected
+      
+      const blockTypes = Array.isArray(block['@type']) ? block['@type'] : [block['@type']];
+      return blockTypes.some(t => selectedTypes.includes(t));
+    };
+    
     if (existingSchemas.length > 0) {
+      // Filter existing schemas by selected types
+      const filteredExistingSchemas = existingSchemas.filter(matchesSelectedTypes);
+      
+      if (filteredExistingSchemas.length < existingSchemas.length) {
+        const excluded = existingSchemas.length - filteredExistingSchemas.length;
+        addLandingDebugLog(`🔍 Filtered out ${excluded} schema(s) based on selected types`);
+      }
+      
       // Build enhanced schema graph that merges existing + new AND actually enhances
-      const allBlocks = [...existingSchemas, schema];
+      const allBlocks = [...filteredExistingSchemas];
+      
+      // Only add new schema if its type is selected
+      if (matchesSelectedTypes(schema)) {
+        allBlocks.push(schema);
+      } else {
+        addLandingDebugLog(`🔍 Excluding new ${actualSchemaType} schema (not in selected types)`);
+      }
       
       // Enhance schemas before merging - add missing fields, improve data quality
       const enhancedBlocks = allBlocks.map(block => {
@@ -10300,7 +10520,7 @@ ${minifiedJson}
         return enhanced;
       });
       
-      finalSchema = buildEnhancedSchema(enhancedBlocks);
+      finalSchema = buildEnhancedSchema(enhancedBlocks, selectedTypes);
       
       // Track improvements
       const newSchemaTypes = extractSchemaTypes([schema]);
@@ -10333,15 +10553,24 @@ ${minifiedJson}
       addLandingDebugLog(`✅ Schema merged and enhanced`);
       improvements.forEach(imp => addLandingDebugLog(`   ${imp}`));
     } else {
-      // No existing schema - use new one as-is
-      finalSchema = schema;
-      addLandingDebugLog(`✅ Using new schema (no existing schema to merge)`);
+      // No existing schema - use new one as-is (if selected)
+      const schemaTypes = Array.isArray(schema['@type']) ? schema['@type'] : [schema['@type']];
+      const schemaMatches = selectedTypes.length === 0 || schemaTypes.some(t => selectedTypes.includes(t));
+      
+      if (schemaMatches) {
+        finalSchema = schema;
+        addLandingDebugLog(`✅ Using new schema (no existing schema to merge)`);
+      } else {
+        // Create empty schema structure if new schema type not selected
+        finalSchema = { '@context': 'https://schema.org', '@graph': [] };
+        addLandingDebugLog(`⚠️ New schema type not selected - creating empty schema structure`);
+      }
     }
 
-    // STEP 5: Format and display
+    // STEP 6: Format and display
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    addLandingDebugLog('📄 STEP 5: Formatting final schema...');
+    addLandingDebugLog('📄 STEP 6: Formatting final schema...');
     
     try {
       const schemaJson = JSON.stringify(finalSchema, null, 2);
