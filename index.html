@@ -2778,6 +2778,250 @@
     </div>
   </div>
 
+  <!-- Complete Workflow Tab Content -->
+  <div id="workflowTab" class="tab-content">
+    <div class="instructions" style="max-width: 100%;">
+      <h2>📋 Complete Workflow Guide</h2>
+      <p>This guide shows the complete step-by-step workflow for each schema type, verified against the actual implementation.</p>
+
+      <h3>🛠 Product Schema - Complete Workflow</h3>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
+          <li><strong>Step 0 - Setup Check (Automatic):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Checks your setup and starts local server if needed<br>
+            • File location: <code>inputs-files/workflow/credentials/</code> (for OAuth)<br>
+            • Unlocks Step 1 automatically when ready</span>
+          </li>
+          <li><strong>Step 1 - Export Products from Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • <code>Squarespace → Commerce → Products → Export CSV</code><br>
+            • Upload file: <code>inputs-files/workflow/01 – products_*.csv</code><br>
+            • Step 2 starts automatically after upload</span>
+          </li>
+          <li><strong>Step 2 - Clean and Normalize CSV (Automatic):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Runs automatically after Step 1<br>
+            • Normalizes column names, removes variants, formats data<br>
+            • Output: <code>inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Step 3a starts automatically next</span>
+          </li>
+          <li><strong>Step 3a - Fetch Google Reviews:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Requires OAuth credentials in <code>inputs-files/workflow/credentials/</code><br>
+            • First time: Browser opens for OAuth authorization<br>
+            • Connects to Google My Business API<br>
+            • Output: <code>inputs-files/workflow/03b – google_reviews.csv</code><br>
+            • Step 3b starts automatically next</span>
+          </li>
+          <li><strong>Step 3b - Merge Reviews (Automatic):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Requires: <code>inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist)<br>
+            • Combines Google reviews (from Step 3a) with Trustpilot reviews<br>
+            • Filters reviews below 4★<br>
+            • Matches reviews to products by URL/name<br>
+            • Output: <code>inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Step 4 starts automatically next</span>
+          </li>
+          <li><strong>Step 4 - Generate Product Schema:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Reads: <code>02 – products_cleaned.xlsx</code> and <code>03 – combined_product_reviews.csv</code><br>
+            • Generates JSON-LD Product schema with reviews<br>
+            • Filters products with weak reviews<br>
+            • Includes Schema Suppressor v1.3 to prevent duplicates<br>
+            • Output: <code>outputs/*_schema_squarespace_ready.html</code> (one file per product)</span>
+          </li>
+          <li><strong>Deploy to Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Copy schema from generated HTML files in <code>outputs/</code><br>
+            • Paste into Squarespace product pages (Header Code Injection or Code Block)<br>
+            • Validate using Schema Validator tab</span>
+          </li>
+        </ol>
+      </div>
+
+      <h3>📅 Event Schema - Complete Workflow</h3>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
+          <li><strong>Export Events from Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • <code>Squarespace → Commerce → Events → Export CSV</code><br>
+            • Save as: <code>inputs-files/workflow/events_export.csv</code><br>
+            • Required fields: Event_Title, Start_Date, Start_Time, End_Date, End_Time, Event_URL, Event_Image, Location_Business_Name, Location_Address, Location_City_State_ZIP, Excerpt, Category, Workflow_State</span>
+          </li>
+          <li><strong>Generate Event-Product Mappings:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Run chat-bot ingest app to generate mappings<br>
+            • File: <code>inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            • ⚠️ <strong>Required</strong> - Maps event URLs to product URLs and includes price_gbp<br>
+            • Without this: Events will show price = 0 errors</span>
+          </li>
+          <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Use existing: <code>inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Adds aggregateRating and review snippets to events<br>
+            • Only events with matching product URLs get reviews</span>
+          </li>
+          <li><strong>(Optional) Prepare Products Excel:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Use existing: <code>inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Provides actual SKU values (prevents fallback to URL slug)</span>
+          </li>
+          <li><strong>Upload Files in Event Schema Tab:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Upload Event CSV file<br>
+            • Upload Event-Product Mappings CSV (required)<br>
+            • (Optional) Upload Reviews CSV<br>
+            • (Optional) Upload Products Excel</span>
+          </li>
+          <li><strong>Configure Options:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Enable/disable review enrichment<br>
+            • Set performer name (default: "Alan Ranger")<br>
+            • Configure merchant fields (name, ID, URL)</span>
+          </li>
+          <li><strong>Select Category Filter:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Choose a specific category or "All Categories"<br>
+            • Only events matching the filter will be included</span>
+          </li>
+          <li><strong>Generate Schema:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Generate Event Schema" button<br>
+            • Generates Product+Event hybrid JSON-LD schema<br>
+            • Includes offers, location, performer, organizer</span>
+          </li>
+          <li><strong>Deploy to Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Copy the generated schema<br>
+            • Paste into Squarespace event page (Header Code Injection or Code Block)<br>
+            • Best practice: Paste on main events listing page rather than individual event pages<br>
+            • Validate using Schema Validator tab</span>
+          </li>
+        </ol>
+      </div>
+
+      <h3>📝 Blog Index Schema - Complete Workflow</h3>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
+          <li><strong>Export Blog Posts from Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • <code>Squarespace → Blog → Export CSV</code><br>
+            • File location: <code>inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            • Required fields: Title, Url Id, Full Url, Categories, Tags, Image, Publish On</span>
+          </li>
+          <li><strong>Upload Blog CSV File:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Upload Blog CSV File" in Blog Index Schema tab<br>
+            • Select your exported blog CSV file<br>
+            • File will be validated automatically</span>
+          </li>
+          <li><strong>Generate Blog Index Schema:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Generate Blog Index Schema" button<br>
+            • Generates CollectionPage JSON-LD schema<br>
+            • Includes ItemList structure for blog posts<br>
+            • Review the generated schema and check debug log</span>
+          </li>
+          <li><strong>Save Schema (Optional):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Save to alanranger-schema folder" to save as JSON<br>
+            • Or copy the schema directly</span>
+          </li>
+          <li><strong>Deploy to Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Copy the generated schema<br>
+            • Paste into blog index page header code injection<br>
+            • Or insert as a Code Block on the blog index page<br>
+            • Validate using Schema Validator tab</span>
+          </li>
+        </ol>
+      </div>
+
+      <h3>🌐 Landing / Service Pages - Complete Workflow</h3>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
+          <li><strong>Enter Page URL:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Enter the full URL of the landing/service page<br>
+            • Example: <code>https://www.alanranger.com/service-page</code></span>
+          </li>
+          <li><strong>Auto-Scan Metadata (Optional):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Auto-Scan Metadata" to fetch title, description, and image<br>
+            • Or enter these fields manually in Step 2</span>
+          </li>
+          <li><strong>Select Schema Type:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Choose "Auto-detect" (recommended) or select manually<br>
+            • Options: Service, ItemList, WebPage, Product<br>
+            • Auto-detect analyzes page content to suggest best type</span>
+          </li>
+          <li><strong>Schema Type Selector (Step 4.5):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Appears after scanning the page<br>
+            • Select which schema types to include/exclude<br>
+            • Check types you want to keep, uncheck to remove<br>
+            • For ItemList: Select which URLs to include and prioritize for rich results (first 5)</span>
+          </li>
+          <li><strong>Generate Schema:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Generate Schema" button<br>
+            • Review the generated JSON-LD in the output panel<br>
+            • Check debug log for any warnings or errors</span>
+          </li>
+          <li><strong>Deploy to Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Copy the generated schema<br>
+            • Paste into Squarespace page header code injection<br>
+            • Or insert as a Code Block on the page<br>
+            • Validate using Schema Validator tab</span>
+          </li>
+        </ol>
+      </div>
+
+      <h3>🔍 Schema Validator - Complete Workflow</h3>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
+          <li><strong>Single URL Validation:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Enter a single URL in the input field<br>
+            • Click "Run Validation"<br>
+            • Review validation results in the table</span>
+          </li>
+          <li><strong>Batch CSV Validation:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Upload CSV file with URLs (use template if needed)<br>
+            • Click "Validate URLs"<br>
+            • Review results for all URLs in the table</span>
+          </li>
+          <li><strong>Review Results:</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Check validation status (Pass/Warning/Error)<br>
+            • Review missing fields and enhancement suggestions<br>
+            • Use validator buttons to test on Schema.org or Google Rich Results</span>
+          </li>
+          <li><strong>Download Enhanced Schema (Optional):</strong><br>
+            <span style="color: #64748b; font-size: 0.875rem;">
+            • Click "Export All Enhanced" to download enhanced schemas<br>
+            • Or save individual enhanced schemas to Supabase</span>
+          </li>
+        </ol>
+      </div>
+
+      <h3>📌 Critical File Locations</h3>
+      <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ffc107; margin: 1rem 0;">
+        <ul style="margin: 0; padding-left: 1.5rem; line-height: 2;">
+          <li><strong>Input files:</strong> <code>inputs-files/workflow/</code></li>
+          <li><strong>OAuth credentials:</strong> <code>inputs-files/workflow/credentials/</code> (required for Step 3a)</li>
+          <li><strong>Trustpilot reviews:</strong> <code>inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist before Step 3b)</li>
+          <li><strong>Output files:</strong> <code>outputs/</code> (generated schema HTML files)</li>
+          <li><strong>Saved schemas:</strong> <code>alanranger-schema/</code> (blog, workshops, lessons JSON files)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- Tab Guide Tab Content -->
   <div id="guideTab" class="tab-content">
     <div class="instructions" style="max-width: 100%;">
