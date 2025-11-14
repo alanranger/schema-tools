@@ -1495,7 +1495,7 @@
         <strong style="color: #dc2626;">⚠️ Event-Product Mappings CSV (Required for offers & SKU):</strong><br>
         <input type="file" id="mappingsCsvFile" accept=".csv" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code>event-product-mappings-*.csv</code> (from chat-bot ingest app)<br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">event-product-mappings-*.csv</code> (from chat-bot ingest app)<br>
           Provides: price_gbp, product_url mapping, SKU extraction<br>
           <strong>Without this:</strong> Events will have price = 0 (logged as data error)
         </span>
@@ -1504,8 +1504,8 @@
         <strong>Products Excel (Optional - for actual SKU values):</strong><br>
         <input type="file" id="productsExcelFile" accept=".xlsx,.xls" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code>02 – products_cleaned.xlsx</code><br>
-          Provides: Actual SKU from <code>main_sku</code> column (prevents fallback to URL slug)<br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code><br>
+          Provides: Actual SKU from <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">main_sku</code> column (prevents fallback to URL slug)<br>
           <strong>Without this:</strong> SKU extracted from URL slug (may exceed 40 chars → validation warnings)
         </span>
       </label>
@@ -1513,7 +1513,7 @@
         <strong>Reviews CSV (Optional - for review enrichment):</strong><br>
         <input type="file" id="reviewsCsvFile" accept=".csv" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code>03 – combined_product_reviews.csv</code><br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
           Adds: aggregateRating and review snippets to events with matching product URLs
         </span>
       </label>
@@ -1593,7 +1593,7 @@
             G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema
           </p>
           <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
-            Save <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">lessons-schema.json</code> and <code style="background: #e0e7ff; padding: 2px 4px; border-radius: 2px;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
+            Save <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">lessons-schema.json</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
           </p>
         </div>
         <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-right: 0.5rem;">
@@ -1731,13 +1731,13 @@
           <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;">📋 How to use the desktop app:</p>
           <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
             <li>Open your project folder in a terminal</li>
-            <li>Run: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;">npm run build:desktop</code></li>
-            <li>Navigate to: <code style="background:#edf2f7; padding:2px 6px; border-radius:4px; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
+            <li>Run: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;">npm run build:desktop</code></li>
+            <li>Navigate to: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
             <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
           </ol>
-          <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:0.875rem; color:#2c5282; border-left:3px solid #3182ce;">
-            <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
-            <strong>All input/output files remain in your Dropbox project folder</strong> (<code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">inputs-files/</code> and <code style="background:#cbd5e0; padding:2px 4px; border-radius:3px;">outputs/</code>).
+          <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
+            <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
+            <strong>All input/output files remain in your Dropbox project folder</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">inputs-files/</code> and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">outputs/</code>).
           </p>
         </div>
         
@@ -2575,7 +2575,7 @@
       <label for="blogCsvFile">Upload Blog CSV File:</label>
       <input type="file" id="blogCsvFile" accept=".csv" aria-label="Blog CSV file upload" onchange="handleBlogCsvUpload(event)">
       <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">
-        Expected CSV fields: <code>Title</code>, <code>Url Id</code>, <code>Full Url</code>, <code>Categories</code>, <code>Tags</code>, <code>Image</code>, <code>Publish On</code>
+        Expected CSV fields: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Title</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Url Id</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Full Url</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Categories</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Tags</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Image</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Publish On</code>
       </p>
       
       <div id="blogCsvInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border-left: 3px solid #3182ce;">
@@ -3033,10 +3033,10 @@
       <p><strong>Purpose:</strong> Generate Product+Event hybrid JSON-LD schema for photography workshops and courses.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code>inputs-files/workflow/events_export.csv</code> - Export from Squarespace Events</li>
-        <li><code>inputs-files/workflow/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
-        <li><code>inputs-files/workflow/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
-        <li><code>inputs-files/workflow/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code> - Export from Squarespace Events</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
       </ul>
       <p><strong>Workflow:</strong> Export events → Generate mappings → Upload files → Configure options → Select category → Generate → Deploy</p>
       <p><strong>Output:</strong> JSON-LD schema with Product+Event hybrid type, includes offers, location, performer, organizer</p>
@@ -3046,12 +3046,12 @@
       <p><strong>Purpose:</strong> Generate Product JSON-LD schema with reviews for lessons, vouchers, and services.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code>inputs-files/workflow/01 – products_*.csv</code> - Export from Squarespace Products</li>
-        <li><code>inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
-        <li><code>inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> - Required for Step 3b</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code> - Export from Squarespace Products</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> - Required for Step 3b</li>
       </ul>
       <p><strong>Workflow:</strong> Step 0 (setup) → Step 1 (upload CSV) → Step 2 (clean) → Step 3a (Google reviews) → Step 3b (merge reviews) → Step 4 (generate schema)</p>
-      <p><strong>Output:</strong> <code>outputs/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
+      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
       <p><strong>Features:</strong> ✅ Schema Suppressor v1.3 (removes duplicate Squarespace schemas), filters weak reviews, includes aggregateRating</p>
       <p><strong>Deploy:</strong> Copy schema from HTML files → Paste into Squarespace product pages</p>
 
@@ -3059,7 +3059,7 @@
       <p><strong>Purpose:</strong> Generate CollectionPage schema for blog index/listing page.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code>inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code> - Export from Squarespace Blog</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code> - Export from Squarespace Blog</li>
       </ul>
       <p><strong>Workflow:</strong> Export blog CSV → Upload file → Generate schema → Save (optional) → Deploy</p>
       <p><strong>Output:</strong> CollectionPage JSON-LD schema with ItemList structure for blog posts</p>
@@ -3086,33 +3086,33 @@
       <h3>📌 File Organization</h3>
       <p><strong>Project Structure:</strong></p>
       <ul>
-        <li><code>inputs-files/workflow/</code> - All input CSV/Excel files</li>
-        <li><code>inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews</li>
-        <li><code>outputs/</code> - Generated schema HTML files</li>
-        <li><code>alanranger-schema/</code> - Saved JSON schema files (blog, workshops, lessons)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code> - All input CSV/Excel files</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> - Generated schema HTML files</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> - Saved JSON schema files (blog, workshops, lessons)</li>
       </ul>
 
       <h3>📌 Best Practices</h3>
       <ul>
-        <li><strong>File Naming:</strong> Keep consistent naming conventions (e.g., <code>01 – products_*.csv</code>, <code>02 – products_cleaned.xlsx</code>)</li>
+        <li><strong>File Naming:</strong> Keep consistent naming conventions (e.g., <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">01 – products_*.csv</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code>)</li>
         <li><strong>Schema Placement:</strong> Only insert schema relevant to the page (don't paste every product on every product page)</li>
         <li><strong>Validation:</strong> Always validate using the <strong>Schema Validator</strong> before and after injecting schema</li>
-        <li><strong>Code Format:</strong> Use <code>&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages</li>
-        <li><strong>Backup:</strong> Keep copies of generated schema files in <code>outputs/</code> folder</li>
+        <li><strong>Code Format:</strong> Use <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages</li>
+        <li><strong>Backup:</strong> Keep copies of generated schema files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> folder</li>
       </ul>
 
       <h3>🔧 Common Workflows</h3>
       <p><strong>Weekly Product Schema Update:</strong></p>
       <ol>
-        <li>Export products from Squarespace → <code>01 – products_*.csv</code></li>
+        <li>Export products from Squarespace → <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">01 – products_*.csv</code></li>
         <li>Run Product Schema tab workflow (Steps 0-4)</li>
-        <li>Review generated schemas in <code>outputs/</code></li>
+        <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code></li>
         <li>Deploy to Squarespace product pages</li>
         <li>Validate using Schema Validator tab</li>
       </ol>
       <p><strong>New Event Schema:</strong></p>
       <ol>
-        <li>Export events from Squarespace → <code>events_export.csv</code></li>
+        <li>Export events from Squarespace → <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">events_export.csv</code></li>
         <li>Generate event-product mappings (chat-bot ingest app)</li>
         <li>Upload files in Event Schema tab</li>
         <li>Select category and generate schema</li>
