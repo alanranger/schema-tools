@@ -2557,7 +2557,7 @@
             • Check debug log for any warnings</span>
           </li>
           <li><strong>Save Schema (Optional):</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">• Click "Save to alanranger-schema folder" to save as JSON<br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Save to alanranger-schema folder" to save as JSON<br>
             • Or copy the schema directly</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
@@ -2844,27 +2844,27 @@
       <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
         <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
           <li><strong>Export Events from Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
-            • <code>Squarespace → Commerce → Events → Export CSV</code><br>
-            • Save as: <code>inputs-files/workflow/events_export.csv</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
+            • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Events → Export CSV</code><br>
+            • Save as: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code><br>
             • Required fields: Event_Title, Start_Date, Start_Time, End_Date, End_Time, Event_URL, Event_Image, Location_Business_Name, Location_Address, Location_City_State_ZIP, Excerpt, Category, Workflow_State</span>
           </li>
           <li><strong>Generate Event-Product Mappings:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Run chat-bot ingest app to generate mappings<br>
-            • File: <code>inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code><br>
             • ⚠️ <strong>Required</strong> - Maps event URLs to product URLs and includes price_gbp<br>
             • Without this: Events will show price = 0 errors</span>
           </li>
           <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
-            • Use existing: <code>inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
             • Adds aggregateRating and review snippets to events<br>
             • Only events with matching product URLs get reviews</span>
           </li>
           <li><strong>(Optional) Prepare Products Excel:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
-            • Use existing: <code>inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
             • Provides actual SKU values (prevents fallback to URL slug)</span>
           </li>
           <li><strong>Upload Files in Event Schema Tab:</strong><br>
@@ -2905,31 +2905,31 @@
       <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
         <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
           <li><strong>Export Blog Posts from Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
-            • <code>Squarespace → Blog → Export CSV</code><br>
-            • File location: <code>inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
+            • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
             • Required fields: Title, Url Id, Full Url, Categories, Tags, Image, Publish On</span>
           </li>
           <li><strong>Upload Blog CSV File:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Upload Blog CSV File" in Blog Index Schema tab<br>
             • Select your exported blog CSV file<br>
             • File will be validated automatically</span>
           </li>
           <li><strong>Generate Blog Index Schema:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Generate Blog Index Schema" button<br>
             • Generates CollectionPage JSON-LD schema<br>
             • Includes ItemList structure for blog posts<br>
             • Review the generated schema and check debug log</span>
           </li>
           <li><strong>Save Schema (Optional):</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Save to alanranger-schema folder" to save as JSON<br>
             • Or copy the schema directly</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Copy the generated schema<br>
             • Paste into blog index page header code injection<br>
             • Or insert as a Code Block on the blog index page<br>
@@ -2942,36 +2942,36 @@
       <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin: 1rem 0;">
         <ol style="margin: 0; padding-left: 1.5rem; line-height: 2.5;">
           <li><strong>Enter Page URL:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Enter the full URL of the landing/service page<br>
-            • Example: <code>https://www.alanranger.com/service-page</code></span>
+            • Example: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://www.alanranger.com/service-page</code></span>
           </li>
           <li><strong>Auto-Scan Metadata (Optional):</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Auto-Scan Metadata" to fetch title, description, and image<br>
             • Or enter these fields manually in Step 2</span>
           </li>
           <li><strong>Select Schema Type:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Choose "Auto-detect" (recommended) or select manually<br>
-            • Options: Service, ItemList, WebPage, Product<br>
+            • Options: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Service</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">ItemList</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">WebPage</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Product</code><br>
             • Auto-detect analyzes page content to suggest best type</span>
           </li>
           <li><strong>Schema Type Selector (Step 4.5):</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Appears after scanning the page<br>
             • Select which schema types to include/exclude<br>
             • Check types you want to keep, uncheck to remove<br>
             • For ItemList: Select which URLs to include and prioritize for rich results (first 5)</span>
           </li>
           <li><strong>Generate Schema:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Generate Schema" button<br>
             • Review the generated JSON-LD in the output panel<br>
             • Check debug log for any warnings or errors</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 0.875rem;">
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Copy the generated schema<br>
             • Paste into Squarespace page header code injection<br>
             • Or insert as a Code Block on the page<br>
