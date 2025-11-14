@@ -42,3 +42,4 @@ if products_without:
         print(f"    Slug: {p['slug']}")
         print()
 
+

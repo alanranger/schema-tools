@@ -50,3 +50,4 @@ for idx, row in products.iterrows():
     if pd.notna(row['name']):
         print(f"{row['name']} -> {row['slug']}")
 
+

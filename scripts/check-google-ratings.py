@@ -16,3 +16,4 @@ if 'rating' in google.columns:
     print(f"Unique ratings: {sorted(google['rating'].unique())}")
     print(f"Reviews with rating >= 4: {len(google[pd.to_numeric(google['rating'], errors='coerce') >= 4])}")
 
+

@@ -1,0 +1,144 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "priceRange": "£50–£500",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Professional Black and White Photography Course | Coventry",
+          "item": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Course"
+      ],
+      "name": "Professional Black and White Photography Course | Coventry",
+      "sku": "SQ9709344",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Enter the date of the event on Customer Information Notes Field when you go through the checkout process. Black and White Photography Course for beginners",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b8c2a6b2-9a51-492d-a6c0-b685f5e16cc2/Beginners+Photography+Classes.png",
+      "url": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course",
+      "offers": {
+        "@type": "Offer",
+        "sku": "SQ9709344",
+        "price": "165.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-11-13",
+        "priceValidUntil": "2026-11-13",
+        "url": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course",
+        "@id": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course#offer",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/ReturnShippingFees",
+          "returnShippingFeesAmount": {
+            "@type": "MonetaryAmount",
+            "value": "50.00",
+            "currency": "GBP"
+          }
+        }
+      },
+      "hasCourseInstance": {
+        "@type": "CourseInstance",
+        "courseMode": "InPerson",
+        "startDate": "2025-12-08",
+        "endDate": "2025-12-08",
+        "location": {
+          "@type": "Place",
+          "name": "Coventry"
+        }
+      },
+      "@id": "https://www.alanranger.com/black-and-white-photography-course#schema"
+    }
+  ]
+}
+</script>

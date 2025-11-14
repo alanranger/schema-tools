@@ -262,3 +262,13 @@ Build a **single HTML tool** that can:
 
 Refer to `schema_tools_folder_structure.txt` for current layout.
 
+| Use trusted reviews from real sources    | Don’t insert fabricated reviews or fake ratings    |
+| Validate with both schema.org and Google | Don’t assume one validator is enough               |
+
+---
+
+## 📁 Folder Structure
+
+Refer to `schema_tools_folder_structure.txt` for current layout.
+
+

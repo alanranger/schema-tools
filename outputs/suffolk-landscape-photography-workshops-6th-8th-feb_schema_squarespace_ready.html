@@ -1,0 +1,269 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "priceRange": "£50–£500",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photo Workshops UK",
+          "item": "https://www.alanranger.com/photo-workshops-uk"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Suffolk Landscape Photography Workshops - 6th-8th Feb",
+          "item": "https://www.alanranger.com/photo-workshops-uk/suffolk-landscape-photography-workshops"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product",
+        "Event"
+      ],
+      "name": "SUFFOLK Landscape Photography Workshops - 6th-8th Feb",
+      "sku": "SQ2176971",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "sameAs": "https://www.alanranger.com"
+      },
+      "description": "Join us for an inspiring Suffolk landscape photography workshop, where you'll have the opportunity to create stunning long exposures during breathtaking sunrises and vibrant sunsets. We will explore picturesque quays, serene estuaries, intriguing piers, and tranquil marshes, all while capturing the beauty of charming beach huts and ancient woodlands. Emphasising artistic expression, we'll also delve into the world of black and white photography, allowing you to bring a classic touch to your coastal images.SummaryLocation: Suffolk - East Anglia / Southwold/Aldeburgh AreaDates: Fri 6th 09:30 ...",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1714650055069-5DPM44ERXSX234XAGLA9/Southwold+%2304+-+February+2024.jpg",
+      "url": "https://www.alanranger.com/photo-workshops-uk/suffolk-landscape-photography-workshops",
+      "offers": {
+        "@type": "Offer",
+        "sku": "SQ2176971",
+        "price": "995.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-11-13",
+        "priceValidUntil": "2026-11-13",
+        "priceSpecification": {
+          "price": "995.00",
+          "priceCurrency": "GBP"
+        },
+        "url": "https://www.alanranger.com/photo-workshops-uk/suffolk-landscape-photography-workshops",
+        "@id": "https://www.alanranger.com/photo-workshops-uk/suffolk-landscape-photography-workshops#offer",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/ReturnShippingFees",
+          "returnShippingFeesAmount": {
+            "@type": "MonetaryAmount",
+            "value": "50.00",
+            "currency": "GBP"
+          }
+        }
+      },
+      "startDate": "2026-01-16",
+      "endDate": "2026-01-18",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Dorset",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Coventry",
+          "addressRegion": "West Midlands",
+          "addressCountry": "GB"
+        }
+      },
+      "organizer": {
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "url": "https://www.alanranger.com",
+        "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+        "email": "info@alanranger.com",
+        "telephone": "+44 781 701 7994",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "45 Hathaway Road",
+          "addressLocality": "Coventry",
+          "addressRegion": "West Midlands",
+          "postalCode": "CV4 9HW",
+          "addressCountry": "GB"
+        }
+      },
+      "performer": {
+        "@type": "Person",
+        "name": "Alan Ranger"
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Frederick  Stubbs"
+          },
+          "reviewBody": "Really enjoyable despite the challenges set by Storm Dennis.  Learnt a lot",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Janice Jordan"
+          },
+          "reviewBody": "A great workshop in Suffolk.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "KP"
+          },
+          "reviewBody": "An excellent and enjoyable workshop in Suffolk.   Had a great weekend, stormy conditions didn’t get in the way, with plenty of opportunities to shoot, and support, help and advice where needed. The added photo review was really helpful. Thanks Alan, looking forward to the next one.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Joyce James"
+          },
+          "reviewBody": "Thoroughly enjoyed the latest workshop in Suffolk battling with storm Dennis! Alan worked hard - and long hours -In order to maximise the opportunities to practice our photographic skills and develop our expertise.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Tracey Jones"
+          },
+          "reviewBody": "I had a really lovely day and learned some new techniques.   I would definitely book another one of Alan's workshops and recommend to others.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trustpilot"
+          }
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": 5
+      },
+      "@id": "https://www.alanranger.com/suffolk-landscape-photography-workshops#schema"
+    }
+  ]
+}
+</script>

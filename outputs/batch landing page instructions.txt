@@ -1,0 +1,8 @@
+ok thats a good start but
+
+i want to be able to upload a csv file of urls the way we do with other tabs, so it will need the same design of debug log with copy button
+it will need to be able to output all the json files formatted ready to paste to G:\Dropbox\alan ranger photography\Website Code\Schema Tools\outputs the same way we do for product schema
+when it loads the csv urls it will need a table to show them and show columns for auto detected type and allow manual override via a drop down 
+so it can process them using that schema template in a step 2 function
+
+Can you think of any other enhancements?

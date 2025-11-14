@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+import pandas as pd
+from pathlib import Path
+
+workflow_dir = Path('inputs-files/workflow')
+cleaned_file = workflow_dir / '02 – products_cleaned.xlsx'
+
+df = pd.read_excel(cleaned_file)
+print('Columns:', list(df.columns))
+print('\nSchema type column exists:', 'schema_type' in df.columns)
+
+if 'schema_type' in df.columns:
+    print('\nSchema type value counts:')
+    print(df['schema_type'].value_counts())
+    print('\nFirst 10 products with schema types:')
+    print(df[['name', 'schema_type']].head(10))
+else:
+    print('\nNO schema_type COLUMN FOUND!')
+    print('Available columns:', list(df.columns))
+

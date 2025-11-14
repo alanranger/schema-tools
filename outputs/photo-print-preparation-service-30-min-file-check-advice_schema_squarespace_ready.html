@@ -1,0 +1,128 @@
+<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+
+<script>
+(function(){
+  // Remove Squarespace's built-in, short Product JSON-LD
+  const removeSquarespaceProduct = () => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+      const txt = el.textContent.trim();
+      if (txt.includes('"@type":"Product"')) {
+        try {
+          const j = JSON.parse(txt);
+          const looksLikeSquarespace =
+            txt.length < 1500 &&
+            !j.aggregateRating &&
+            !j.review &&
+            j.offers &&
+            j.name &&
+            !txt.includes('"hasMerchantReturnPolicy"');
+          if (looksLikeSquarespace) el.remove();
+        } catch(e){}
+      }
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  removeSquarespaceProduct();
+  document.addEventListener('DOMContentLoaded', removeSquarespaceProduct);
+  window.addEventListener('load', () => setTimeout(removeSquarespaceProduct, 1000));
+  const obs = new MutationObserver(removeSquarespaceProduct);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com",
+      "logo": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "priceRange": "£50–£500",
+      "email": "info@alanranger.com",
+      "telephone": "+44 781 701 7994",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.alanranger.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Photography Services Near Me",
+          "item": "https://www.alanranger.com/photography-services-near-me"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Photo Print Preparation Service 30-min – File Check & Advice",
+          "item": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "Product"
+      ],
+      "name": "Photo Print Preparation Service 30-min – File Check & Advice",
+      "sku": "SQ5582230",
+      "brand": {
+        "@type": "Brand",
+        "name": "Alan Ranger Photography"
+      },
+      "description": "Book a 30 min Photo Print Preparation Service. I check crop, aspect ratio and DPI, enlarge, retouch, sharpen and supply print-ready image for you to print",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1522495201980-KD6BKH54J01HJR93XXR6/photography-support-Services-1.png",
+      "url": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min",
+      "offers": {
+        "@type": "Offer",
+        "sku": "SQ5582230",
+        "price": "29.00",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "2025-11-13",
+        "priceValidUntil": "2026-11-13",
+        "url": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min",
+        "@id": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min#offer",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "doesNotShip": "http://schema.org/True",
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB"
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "http://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 28,
+          "refundType": "http://schema.org/FullRefund",
+          "applicableCountry": "GB",
+          "returnMethod": "http://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/ReturnShippingFees",
+          "returnShippingFeesAmount": {
+            "@type": "MonetaryAmount",
+            "value": "50.00",
+            "currency": "GBP"
+          }
+        }
+      },
+      "@id": "https://www.alanranger.com/photo-print-preparation-service-30min#schema"
+    }
+  ]
+}
+</script>

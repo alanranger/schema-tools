@@ -79,3 +79,4 @@ for p in products_without_reviews[:30]:
     print(f"    Slug: {p['slug']}")
     print()
 
+

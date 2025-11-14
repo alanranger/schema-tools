@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import pandas as pd
+from pathlib import Path
+import sys
+
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+workflow_dir = Path('inputs-files/workflow')
+cleaned_file = workflow_dir / '02 – products_cleaned.xlsx'
+
+df = pd.read_excel(cleaned_file)
+
+mismatched = [
+    "EXMOOR Photography Workshop",
+    "PEAK DISTRICT HEATHER Photography Workshops",
+    "The Secret of WOODLAND PHOTOGRAPHY"
+]
+
+print("Checking product URLs for mismatched events:")
+print("=" * 80)
+for keyword in mismatched:
+    matches = df[df['name'].str.contains(keyword[:30], case=False, na=False)]
+    if len(matches) > 0:
+        row = matches.iloc[0]
+        print(f"\n{row['name']}")
+        print(f"  URL: {row['url']}")
+        print(f"  Schema Type: {row['schema_type']}")
+        
+        # Check if URL contains workshop path
+        url = str(row['url']).lower()
+        if 'photo-workshops-uk' in url:
+            print("  -> URL contains 'photo-workshops-uk'")
+        elif 'photographic-workshops-near-me' in url:
+            print("  -> URL contains 'photographic-workshops-near-me'")
+        else:
+            print("  -> URL does NOT contain workshop path!")
+

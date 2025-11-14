@@ -439,4 +439,21 @@ See `CHANGELOG.md` for detailed version history and improvements.
   - https://validator.schema.org
   - https://search.google.com/test/rich-results
 
+---This project follows modern JavaScript best practices and meets SonarLint code quality standards:
+
+- ✅ All functions have cognitive complexity ≤ 15
+- ✅ Uses modern JavaScript syntax (`globalThis`, `for...of`, `structuredClone`)
+- ✅ Proper error handling with exception logging
+- ✅ Accessibility attributes included for screen readers
+- ✅ Clean, maintainable code structure
+
+See `CHANGELOG.md` for detailed version history and improvements.
+
+## Notes
+
+- You must not inject multiple schema blocks on unrelated pages. Only paste the matching product's schema on its correct Squarespace page.
+- Always validate your schema after deployment using the Schema Validator Agent or manually:
+  - https://validator.schema.org
+  - https://search.google.com/test/rich-results
+
 ---
