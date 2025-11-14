@@ -5,8 +5,13 @@ import pandas as pd
 from pathlib import Path
 import re
 
-base_path = Path("inputs-files/workflow")
-products_path = base_path / "02 – products_cleaned.xlsx"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
 
 # Load products
 products_df = pd.read_excel(products_path, engine='openpyxl')

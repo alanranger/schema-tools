@@ -5,8 +5,16 @@
 import pandas as pd
 from pathlib import Path
 
-workflow_dir = Path('inputs-files/workflow')
-csv_files = list(workflow_dir.glob('01*products*.csv'))
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+
+# Find raw products CSV (handle original Squarespace export filenames)
+csv_files = list(csv_dir.glob('raw-01-products*.csv'))
+if not csv_files:
+    csv_files = list(csv_dir.glob('*products*.csv'))
 
 if not csv_files:
     print("❌ No 01 products file found")

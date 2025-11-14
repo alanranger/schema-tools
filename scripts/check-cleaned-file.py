@@ -2,8 +2,15 @@ import pandas as pd
 import json
 from pathlib import Path
 
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
 # Check cleaned file
-cleaned_file = Path('inputs-files/workflow/02 – products_cleaned.xlsx')
+cleaned_file = csv_processed_dir / '02 – products_cleaned.xlsx'
 if cleaned_file.exists():
     df_cleaned = pd.read_excel(cleaned_file)
     print("="*60)
@@ -38,8 +45,8 @@ if cleaned_file.exists():
     for i, offer in enumerate(offers):
         print(f"    {i+1}. SKU={offer.get('sku', 'N/A')}, Price=£{offer.get('price', 'N/A')}, Name={offer.get('name', 'N/A')[:50]}")
 
-# Check raw file
-raw_file = Path('inputs-files/workflow/01 - products_Nov-05_04-25-26PM.csv')
+# Check raw file (look for raw products CSV in csv root)
+raw_file = csv_dir / 'raw-01-products-sqsp-export.csv'
 if raw_file.exists():
     print("\n\n" + "="*60)
     print("RAW FILE ANALYSIS")

@@ -5,8 +5,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Read the blog schema file
-const schemaPath = path.join(__dirname, '..', 'alanranger-schema', 'blog-schema.json');
+// Read the blog schema file from shared-resources
+// Updated to use shared-resources structure
+const sharedResourcesDir = path.resolve(__dirname, '../../alan-shared-resources');
+const schemaPath = path.join(sharedResourcesDir, 'outputs', 'schema', 'blog-schema.json');
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
 
 // Fix 1: Add width and height to publisher logo

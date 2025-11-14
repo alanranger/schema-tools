@@ -7,17 +7,17 @@ import sys
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-workflow_dir = Path('inputs-files/workflow')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
 
-# Load workshops
-for possible_name in [
-    "01 – workshops.csv",
-    "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
-]:
-    test_path = workflow_dir / possible_name
-    if test_path.exists():
-        workshops = pd.read_csv(test_path, encoding="utf-8-sig")
-        break
+# Load workshops (handle original Squarespace export filenames)
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+if not workshops_files:
+    workshops_files = list(csv_dir.glob('*workshops*.csv'))
+workshops = pd.read_csv(workshops_files[0], encoding="utf-8-sig") if workshops_files else pd.DataFrame()
 
 product_name = "4 x 2hr Private Photography Classes - Face to Face Coventry"
 product_url = "https://www.alanranger.com/photography-services-near-me/four-private-photography-classes"

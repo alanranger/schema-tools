@@ -4,10 +4,16 @@
 import pandas as pd
 from pathlib import Path
 
-base_path = Path("inputs-files/workflow")
-combined_path = base_path / "03 – combined_product_reviews.csv"
-trustpilot_path = base_path / "03a – trustpilot_historical_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+combined_path = csv_processed_dir / "03 – combined_product_reviews.csv"
+trustpilot_path = csv_dir / "raw-03a-trustpilot-reviews-historical.csv"
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
 
 print("="*80)
 print("ANALYZING UNMATCHED REVIEWS")

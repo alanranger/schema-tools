@@ -1371,17 +1371,25 @@
     <span class="version">v4.3</span>
     <span class="date">Smart Enriched Schema Generator — Event ↔ Series Backlinking</span>
   </div>
-  <h1>Unified Schema Generator - Events & Products</h1>
+  <h1>Unified Schema Generator</h1>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('event')">Event Schema</button>
-    <button class="tab" onclick="switchTab('product')">Product Schema</button>
-    <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
-    <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
-    <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
-    <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
-    <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
-  </div>
+    <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+      <p style="margin: 0; font-weight: 600; color: #1565c0; font-size: 1rem;">
+        📦 <strong>Shared Resources Repository:</strong> All CSV inputs and schema outputs are now in the <code style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">alan-shared-resources</code> repository. 
+        Raw CSV files are in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/csv/</code> (retain original Squarespace export filenames), 
+        processed files in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/</code>, 
+        and schema outputs in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/</code>.
+      </p>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('event')">Event Schema</button>
+      <button class="tab" onclick="switchTab('product')">Product Schema</button>
+      <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
+      <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
+      <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
+      <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
+      <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
+    </div>
 
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content active">
@@ -1401,7 +1409,7 @@
       • <strong>Without this file:</strong> Events will have price = 0 (data error logged)<br><br>
       
       <strong>3. Reviews CSV (Optional - for review enrichment):</strong><br>
-      • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+      • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
       • Adds aggregateRating and review snippets to events<br>
       • Only events with matching product URLs get reviews<br><br>
       
@@ -1419,22 +1427,22 @@
         <ol style="margin: 0; padding-left: 1.5rem; line-height: 2;">
           <li><strong>Export Events from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Events → Export CSV</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">Save as: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code></span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">Save to: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (files retain original Squarespace export filenames like <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 - www-alanranger-com__...__beginners-photography-lessons.csv</code> or <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 - www-alanranger-com__...__photographic-workshops-near-me.csv</code>)</span>
           </li>
           <li><strong>Generate Event-Product Mappings:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Run chat-bot ingest app → event-product-mappings-*.csv</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code><br>
             ⚠️ <strong>Required</strong> - Without this, events will show price = 0 errors</span>
           </li>
           <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Use existing reviews file</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code></span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></span>
           </li>
           <li><strong>Upload Files in This Tab:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Upload Event CSV File" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">events_export.csv</code><br>
             • Click "Event-Product Mappings CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">event-product-mappings-*.csv</code><br>
-            • (Optional) Click "Reviews CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
-            • (Optional) Click "Products Excel" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> (for actual SKU values)</span>
+            • (Optional) Click "Reviews CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
+            • (Optional) Click "Products Excel" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> (for actual SKU values)</span>
           </li>
           <li><strong>Configure Options:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Enable/disable review enrichment<br>
@@ -1479,9 +1487,9 @@
       </ol>
       <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Optional Files:</p>
       <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
-        <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
+        <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
           <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚠️ Without this: SKU will be extracted from URL slug (may exceed 40 chars and cause validation warnings)</span></li>
-        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> for review enrichment</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> for review enrichment</li>
       </ol>
     </div>
 
@@ -1504,7 +1512,7 @@
         <strong>Products Excel (Optional - for actual SKU values):</strong><br>
         <input type="file" id="productsExcelFile" accept=".xlsx,.xls" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code><br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
           Provides: Actual SKU from <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">main_sku</code> column (prevents fallback to URL slug)<br>
           <strong>Without this:</strong> SKU extracted from URL slug (may exceed 40 chars → validation warnings)
         </span>
@@ -1513,7 +1521,7 @@
         <strong>Reviews CSV (Optional - for review enrichment):</strong><br>
         <input type="file" id="reviewsCsvFile" accept=".csv" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
           Adds: aggregateRating and review snippets to events with matching product URLs
         </span>
       </label>
@@ -1677,32 +1685,32 @@
           <li><strong>Step 1 - Export Products from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Products → Export CSV</code><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Upload the CSV file in Step 1 section below<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (raw products CSV with original Squarespace export filename)<br>
             • Step 2 will start automatically after upload</span>
           </li>
           <li><strong>Step 2 - Clean and Normalize CSV:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Runs automatically after Step 1<br>
             • Normalizes column names and formats data<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Step 3a will start automatically next</span>
           </li>
           <li><strong>Step 3a - Fetch Google Reviews:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code><br>
             • First time: Browser opens for OAuth authorization<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03b – google_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code><br>
             • Step 3b will start automatically next</span>
           </li>
           <li><strong>Step 3b - Merge Reviews:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Combines Google reviews with Trustpilot reviews<br>
             • Matches reviews to products by URL<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Step 4 will start automatically next</span>
           </li>
           <li><strong>Step 4 - Generate Product Schema:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
             • Includes Schema Suppressor to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> files</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Copy schema from generated HTML files<br>
@@ -1715,10 +1723,10 @@
       <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 1rem;">
         <strong>⚠️ Important File Locations:</strong><br>
         <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0; line-height: 1.8;">
-          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code></li>
-          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code></li>
-          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code></li>
-          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist before Step 3b)</li>
+          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> (raw CSVs with original Squarespace export filenames)</li>
+          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code></li>
+          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> (products/, workshops/, lessons/, blog/ subfolders)</li>
+          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist before Step 3b)</li>
         </ul>
       </div>
 
@@ -1737,7 +1745,7 @@
           </ol>
           <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
             <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
-            <strong>All input/output files remain in your Dropbox project folder</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">inputs-files/</code> and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">outputs/</code>).
+            <strong>All input/output files are in the shared-resources repository</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv/</code>, <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/</code>, etc.).
           </p>
         </div>
         
@@ -1849,7 +1857,7 @@
                    style="width: 100%; padding: 0.5rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem; margin-bottom: 0.5rem;"
                    aria-label="Reviews CSV file upload for single URL">
             <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-              Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> to include reviews in the schema.
+              Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> to include reviews in the schema.
             </p>
           </div>
           
@@ -1973,9 +1981,9 @@
             <strong>First time:</strong> A browser window will open for OAuth authorization - just approve it.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires valid OAuth JSON in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">/inputs-files/workflow/credentials/</code></li>
+            <li>Requires valid OAuth JSON in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code></li>
             <li>First time: Browser will open for OAuth authorization</li>
-            <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03b – google_reviews.csv</code></li>
+            <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code></li>
           </ul>
           <div id="step3aWebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2000,7 +2008,7 @@
             <strong>You don't need to do anything</strong> - just wait for it to finish. Step 4 will start automatically next.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03a – trustpilot_historical_reviews.csv</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03b – google_reviews.csv</code></li>
+            <li>Requires <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code></li>
             <li>Filters out reviews below 4★</li>
             <li>Automatically maps reviews to product names</li>
             <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code></li>
@@ -2042,11 +2050,11 @@
             <strong>What you need to do:</strong> Nothing - just wait for it to finish. Your schema files will be ready!
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – combined_product_reviews.csv</code></li>
+            <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></li>
             <li>Generates one HTML file per product with embedded reviews</li>
             <li>Includes aggregate ratings and individual review data</li>
             <li>✅ <strong>Automatically includes Schema Suppressor v1.3</strong> - removes duplicate Squarespace Product schemas</li>
-            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/outputs/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
+            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/products/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
           </ul>
           <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2064,7 +2072,7 @@
           </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
-            Files saved in your project folder: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">/outputs/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">/inputs-files/workflow/</code> (combined CSV).
+            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).
           </div>
         </div>
 
@@ -2543,7 +2551,7 @@
           <li><strong>Export Blog Posts from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Export all blog posts as CSV<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code><br>
             • Required fields: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Title</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Url Id</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Full Url</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Categories</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Tags</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Image</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Publish On</code></span>
           </li>
           <li><strong>Upload Blog CSV File:</strong><br>
@@ -2790,50 +2798,50 @@
           <li><strong>Step 0 - Setup Check (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Checks your setup and starts local server if needed<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> (for OAuth)<br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> (for OAuth)<br>
             • Unlocks Step 1 automatically when ready</span>
           </li>
           <li><strong>Step 1 - Export Products from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Products → Export CSV</code><br>
-            • Upload file: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code><br>
+            • Upload file from: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (raw products CSV with original Squarespace export filename)<br>
             • Step 2 starts automatically after upload</span>
           </li>
           <li><strong>Step 2 - Clean and Normalize CSV (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Runs automatically after Step 1<br>
             • Normalizes column names, removes variants, formats data<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Step 3a starts automatically next</span>
           </li>
           <li><strong>Step 3a - Fetch Google Reviews:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code><br>
+            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code><br>
             • First time: Browser opens for OAuth authorization<br>
             • Connects to Google My Business API<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03b – google_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code><br>
             • Step 3b starts automatically next</span>
           </li>
           <li><strong>Step 3b - Merge Reviews (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Requires: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist)<br>
+            • Requires: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist)<br>
             • Combines Google reviews (from Step 3a) with Trustpilot reviews<br>
             • Filters reviews below 4★<br>
             • Matches reviews to products by URL/name<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Step 4 starts automatically next</span>
           </li>
           <li><strong>Step 4 - Generate Product Schema:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Reads: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+            • Reads: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
             • Includes Schema Suppressor v1.3 to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> (one file per product)</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> (one file per product)</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Copy schema from generated HTML files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code><br>
+            • Copy schema from generated HTML files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/</code><br>
             • Paste into Squarespace product pages (Header Code Injection or Code Block)<br>
             • Validate using Schema Validator tab</span>
           </li>
@@ -2846,25 +2854,25 @@
           <li><strong>Export Events from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Events → Export CSV</code><br>
-            • Save as: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code><br>
+            • Save to: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (files retain original Squarespace export filenames)<br>
             • Required fields: Event_Title, Start_Date, Start_Time, End_Date, End_Time, Event_URL, Event_Image, Location_Business_Name, Location_Address, Location_City_State_ZIP, Excerpt, Category, Workflow_State</span>
           </li>
           <li><strong>Generate Event-Product Mappings:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Run chat-bot ingest app to generate mappings<br>
-            • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code><br>
             • ⚠️ <strong>Required</strong> - Maps event URLs to product URLs and includes price_gbp<br>
             • Without this: Events will show price = 0 errors</span>
           </li>
           <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Adds aggregateRating and review snippets to events<br>
             • Only events with matching product URLs get reviews</span>
           </li>
           <li><strong>(Optional) Prepare Products Excel:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Provides actual SKU values (prevents fallback to URL slug)</span>
           </li>
           <li><strong>Upload Files in Event Schema Tab:</strong><br>
@@ -2907,7 +2915,7 @@
           <li><strong>Export Blog Posts from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code><br>
             • Required fields: Title, Url Id, Full Url, Categories, Tags, Image, Publish On</span>
           </li>
           <li><strong>Upload Blog CSV File:</strong><br>
@@ -3012,10 +3020,10 @@
       <h3>📌 Critical File Locations</h3>
       <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ffc107; margin: 1rem 0;">
         <ul style="margin: 0; padding-left: 1.5rem; line-height: 2;">
-          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code></li>
-          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> (required for Step 3a)</li>
-          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist before Step 3b)</li>
-          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> (generated schema HTML files)</li>
+          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> (raw CSVs with original Squarespace export filenames)</li>
+          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> (required for Step 3a)</li>
+          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist before Step 3b)</li>
+          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> (products/, events/, blog/, etc.)</li>
           <li><strong>Saved schemas:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> (blog, workshops, lessons JSON files)</li>
         </ul>
       </div>
@@ -3033,10 +3041,10 @@
       <p><strong>Purpose:</strong> Generate Product+Event hybrid JSON-LD schema for photography workshops and courses.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code> - Export from Squarespace Events</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - Export from Squarespace Events (files retain original export filenames)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
       </ul>
       <p><strong>Workflow:</strong> Export events → Generate mappings → Upload files → Configure options → Select category → Generate → Deploy</p>
       <p><strong>Output:</strong> JSON-LD schema with Product+Event hybrid type, includes offers, location, performer, organizer</p>
@@ -3046,12 +3054,12 @@
       <p><strong>Purpose:</strong> Generate Product JSON-LD schema with reviews for lessons, vouchers, and services.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code> - Export from Squarespace Products</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> - Required for Step 3b</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - Export from Squarespace Products (raw CSV with original export filename)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> - Required for Step 3b</li>
       </ul>
       <p><strong>Workflow:</strong> Step 0 (setup) → Step 1 (upload CSV) → Step 2 (clean) → Step 3a (Google reviews) → Step 3b (merge reviews) → Step 4 (generate schema)</p>
-      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
+      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
       <p><strong>Features:</strong> ✅ Schema Suppressor v1.3 (removes duplicate Squarespace schemas), filters weak reviews, includes aggregateRating</p>
       <p><strong>Deploy:</strong> Copy schema from HTML files → Paste into Squarespace product pages</p>
 
@@ -3059,7 +3067,7 @@
       <p><strong>Purpose:</strong> Generate CollectionPage schema for blog index/listing page.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code> - Export from Squarespace Blog</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code> - Export from Squarespace Blog</li>
       </ul>
       <p><strong>Workflow:</strong> Export blog CSV → Upload file → Generate schema → Save (optional) → Deploy</p>
       <p><strong>Output:</strong> CollectionPage JSON-LD schema with ItemList structure for blog posts</p>
@@ -3086,9 +3094,9 @@
       <h3>📌 File Organization</h3>
       <p><strong>Project Structure:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code> - All input CSV/Excel files</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> - Generated schema HTML files</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - All raw input CSV files (retain original Squarespace export filenames)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/</code> - Processed files and credentials</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> - Generated schema HTML files (products/, events/, blog/, etc.)</li>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> - Saved JSON schema files (blog, workshops, lessons)</li>
       </ul>
 
@@ -3098,7 +3106,7 @@
         <li><strong>Schema Placement:</strong> Only insert schema relevant to the page (don't paste every product on every product page)</li>
         <li><strong>Validation:</strong> Always validate using the <strong>Schema Validator</strong> before and after injecting schema</li>
         <li><strong>Code Format:</strong> Use <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages</li>
-        <li><strong>Backup:</strong> Keep copies of generated schema files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> folder</li>
+        <li><strong>Backup:</strong> Keep copies of generated schema files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> folders</li>
       </ul>
 
       <h3>🔧 Common Workflows</h3>
@@ -3106,7 +3114,7 @@
       <ol>
         <li>Export products from Squarespace → <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">01 – products_*.csv</code></li>
         <li>Run Product Schema tab workflow (Steps 0-4)</li>
-        <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code></li>
+        <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code></li>
         <li>Deploy to Squarespace product pages</li>
         <li>Validate using Schema Validator tab</li>
       </ol>
@@ -4002,7 +4010,7 @@
     summaryHtml += '<div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">';
     summaryHtml += '<p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;">💡 Next Steps:</p>';
     summaryHtml += '<ul style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
-    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">outputs/</code> folder</li>';
+    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">shared-resources/outputs/schema/</code> folders</li>';
     summaryHtml += '<li>Each product has a Squarespace-ready HTML file</li>';
     summaryHtml += '<li>Copy-paste the HTML into Squarespace Code Blocks</li>';
     summaryHtml += '<li>Validate with <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #007bff; text-decoration: underline;">Google Rich Results Test</a></li>';
@@ -12422,7 +12430,7 @@ ${minifiedJson}
     // The Python script will automatically find and use: 03 – combined_product_reviews.csv
     if (isElectronMode && !fileToProcess) {
       console.log("ℹ️ Electron mode: Using automatically created file from Step 3b");
-      console.log("   Expected file: inputs-files/workflow/03 – combined_product_reviews.csv");
+      console.log("   Expected file: shared-resources/csv processed/03 – combined_product_reviews.csv");
     } else if (fileToProcess) {
       const fileName = fileToProcess.name;
       // Check if file needs to be saved to workflow directory first (browser mode only)

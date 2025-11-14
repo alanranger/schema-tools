@@ -4,7 +4,13 @@
 import pandas as pd
 from pathlib import Path
 
-df = pd.read_csv("inputs-files/workflow/03 – combined_product_reviews.csv", encoding="utf-8-sig")
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+df = pd.read_csv(csv_processed_dir / "03 – combined_product_reviews.csv", encoding="utf-8-sig")
 print(f"Total rows: {len(df)}")
 print(f"Columns: {list(df.columns)}")
 

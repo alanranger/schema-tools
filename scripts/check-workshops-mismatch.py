@@ -7,10 +7,16 @@ import sys
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-workflow_dir = Path('inputs-files/workflow')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
 
-# Load workshops CSV
-workshops_files = list(workflow_dir.glob('*workshops*.csv'))
+# Load workshops CSV (handle original Squarespace export filenames)
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+if not workshops_files:
+    workshops_files = list(csv_dir.glob('*workshops*.csv'))
 if workshops_files:
     workshops_df = pd.read_csv(workshops_files[0])
     print(f"Loaded workshops CSV: {workshops_files[0].name}")

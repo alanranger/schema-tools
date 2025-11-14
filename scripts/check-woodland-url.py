@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 import pandas as pd
+from pathlib import Path
 
-df = pd.read_excel('inputs-files/workflow/02 – products_cleaned.xlsx')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+df = pd.read_excel(csv_processed_dir / '02 – products_cleaned.xlsx')
 row = df[df['name'].str.contains('WOODLAND', case=False, na=False)]
 print('Name:', row.iloc[0]['name'])
 print('URL:', row.iloc[0]['url'])

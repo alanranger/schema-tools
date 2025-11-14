@@ -7,7 +7,13 @@ import sys
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-df = pd.read_excel('inputs-files/workflow/02 – products_cleaned.xlsx', engine='openpyxl')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+df = pd.read_excel(csv_processed_dir / '02 – products_cleaned.xlsx', engine='openpyxl')
 
 # Find the 3 courses that are mismatched
 courses_to_find = ['Beginners Photography Course', 'Intermediates Intentions', 'Beginners Portrait Photography']

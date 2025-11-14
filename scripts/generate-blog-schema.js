@@ -18,8 +18,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
-const DEFAULT_INPUT_CSV = path.resolve(__dirname, '../inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv');
-const DEFAULT_OUTPUT_JSON = path.resolve(__dirname, '../outputs/blog-schema.json');
+// Updated to use shared-resources structure
+const sharedResourcesDir = path.resolve(__dirname, '../../alan-shared-resources');
+const DEFAULT_INPUT_CSV = path.resolve(sharedResourcesDir, 'csv/01-blog-posts.csv');
+const DEFAULT_OUTPUT_JSON = path.resolve(sharedResourcesDir, 'outputs/schema/blog-schema.json');
 const BLOG_URL = 'https://www.alanranger.com/blog-on-photography';
 const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
 const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';

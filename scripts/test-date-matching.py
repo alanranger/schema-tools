@@ -7,11 +7,22 @@ from datetime import datetime, timedelta
 import re
 from difflib import SequenceMatcher
 
-base_path = Path("inputs-files/workflow")
-google_path = base_path / "03b – google_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
-events_lessons_path = base_path / "01 – lessons.csv"
-events_workshops_path = base_path / "01 – workshops.csv"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+google_path = csv_dir / "raw-03b-google-reviews.csv"
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
+
+# Handle original Squarespace export filenames
+events_lessons_files = list(csv_dir.glob('*beginners-photography-lessons*.csv'))
+events_lessons_path = events_lessons_files[0] if events_lessons_files else csv_dir / "01 – lessons.csv"
+
+events_workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+events_workshops_path = events_workshops_files[0] if events_workshops_files else csv_dir / "01 – workshops.csv"
 
 print("="*80)
 print("DATE-BASED GOOGLE REVIEW MATCHING")

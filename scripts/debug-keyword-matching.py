@@ -7,9 +7,17 @@ import sys
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-workflow_dir = Path('inputs-files/workflow')
-workshops_file = workflow_dir / '03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv'
-cleaned_file = workflow_dir / '02 – products_cleaned.xlsx'
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+# Load files (handle original Squarespace export filenames)
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+workshops_file = workshops_files[0] if workshops_files else None
+cleaned_file = csv_processed_dir / '02 – products_cleaned.xlsx'
 
 workshops_df = pd.read_csv(workshops_file)
 products_df = pd.read_excel(cleaned_file)

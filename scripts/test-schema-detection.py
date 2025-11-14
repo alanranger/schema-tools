@@ -118,28 +118,28 @@ def detect_schema_type(product_name, product_url, events_df):
     # If no match found, return 'product' (Product only)
     return 'product'
 
-workflow_dir = Path('inputs-files/workflow')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
 
-# Load events (workshops only)
+# Load events (workshops only - handle original Squarespace export filenames)
 events_df = None
 events_list = []
 
-for possible_name in [
-    "01 – workshops.csv",
-    "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
-]:
-    test_path = workflow_dir / possible_name
-    if test_path.exists():
-        workshops = pd.read_csv(test_path, encoding="utf-8-sig")
-        events_list.append(workshops)
-        print(f"Loaded {len(workshops)} workshop events")
-        break
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+if workshops_files:
+    workshops = pd.read_csv(workshops_files[0], encoding="utf-8-sig")
+    events_list.append(workshops)
+    print(f"Loaded {len(workshops)} workshop events")
 
 if events_list:
     events_df = pd.concat(events_list, ignore_index=True)
 
 # Load products
-df = pd.read_excel(workflow_dir / '02 – products_cleaned.xlsx', engine='openpyxl')
+df = pd.read_excel(csv_processed_dir / '02 – products_cleaned.xlsx', engine='openpyxl')
 
 print("\nTesting schema type detection:\n")
 print("="*80)

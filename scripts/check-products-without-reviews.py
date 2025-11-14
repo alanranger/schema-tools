@@ -4,9 +4,14 @@
 import pandas as pd
 from pathlib import Path
 
-base_path = Path("inputs-files/workflow")
-combined_path = base_path / "03 – combined_product_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+combined_path = csv_processed_dir / "03 – combined_product_reviews.csv"
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
 
 products = pd.read_excel(products_path, engine='openpyxl')
 products = products[products['name'].notna() & (products['name'] != '')]

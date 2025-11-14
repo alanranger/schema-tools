@@ -10,11 +10,19 @@ from pathlib import Path
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-workflow_dir = Path('inputs-files/workflow')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
 
-# Load data
-workshops = pd.read_csv(workflow_dir / '03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv')
-mappings = pd.read_csv(workflow_dir / 'event-product-mappings-2025-11-08T21-21-59-228Z.csv')
+# Load data (handle original Squarespace export filenames)
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+workshops = pd.read_csv(workshops_files[0]) if workshops_files else pd.DataFrame()
+
+mappings_files = sorted(csv_processed_dir.glob('event-product-mappings-*.csv'), reverse=True)
+mappings = pd.read_csv(mappings_files[0]) if mappings_files else pd.DataFrame()
 
 def normalize_url(url):
     """Match JavaScript normalizeUrl function exactly"""

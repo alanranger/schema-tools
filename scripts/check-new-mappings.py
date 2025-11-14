@@ -10,13 +10,26 @@ from pathlib import Path
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-workflow_dir = Path('inputs-files/workflow')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
 
-# Load data
-workshops = pd.read_csv(workflow_dir / '03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv')
-lessons = pd.read_csv(workflow_dir / '02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv')
-old_mappings = pd.read_csv(workflow_dir / 'event-product-mappings-2025-11-08T21-21-59-228Z.csv')
-new_mappings = pd.read_csv(workflow_dir / 'event-product-mappings-2025-11-10T11-44-25-698Z.csv')
+# Load data (handle original Squarespace export filenames)
+workshops_files = list(csv_dir.glob('*photographic-workshops-near-me*.csv'))
+workshops = pd.read_csv(workshops_files[0]) if workshops_files else pd.DataFrame()
+
+lessons_files = list(csv_dir.glob('*beginners-photography-lessons*.csv'))
+lessons = pd.read_csv(lessons_files[0]) if lessons_files else pd.DataFrame()
+
+# Load mappings (find most recent files)
+old_mappings_files = sorted(csv_processed_dir.glob('event-product-mappings-2025-11-08*.csv'))
+old_mappings = pd.read_csv(old_mappings_files[0]) if old_mappings_files else pd.DataFrame()
+
+new_mappings_files = sorted(csv_processed_dir.glob('event-product-mappings-2025-11-10*.csv'))
+new_mappings = pd.read_csv(new_mappings_files[0]) if new_mappings_files else pd.DataFrame()
 all_events = pd.concat([workshops, lessons], ignore_index=True)
 
 def normalize_url(url):

@@ -4,10 +4,15 @@
 import pandas as pd
 from pathlib import Path
 
-workflow_dir = Path(__file__).parent.parent / 'inputs-files' / 'workflow'
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
 
 # Load merged reviews
-merged_path = workflow_dir / '03 – combined_product_reviews.csv'
+merged_path = csv_processed_dir / '03 – combined_product_reviews.csv'
 if merged_path.exists():
     merged_df = pd.read_csv(merged_path, encoding='utf-8-sig')
     print(f"Merged file: {len(merged_df)} reviews")
@@ -18,7 +23,7 @@ if merged_path.exists():
     print()
 
 # Check Google reviews file
-google_path = workflow_dir / '03b – google_reviews.csv'
+google_path = csv_dir / 'raw-03b-google-reviews.csv'
 if google_path.exists():
     google_df = pd.read_csv(google_path, encoding='utf-8-sig')
     google_df['date_parsed'] = pd.to_datetime(google_df['date'], errors='coerce')
@@ -56,7 +61,7 @@ if google_path.exists():
     print()
 
 # Check matched Google reviews
-matched_google_path = workflow_dir / '03b_google_matched.csv'
+matched_google_path = csv_processed_dir / '03b_google_matched.csv'
 if matched_google_path.exists():
     matched_df = pd.read_csv(matched_google_path, encoding='utf-8-sig')
     print(f"Matched Google reviews: {len(matched_df)}")

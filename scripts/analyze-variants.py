@@ -1,7 +1,17 @@
 import pandas as pd
 from pathlib import Path
 
-raw_file = Path('inputs-files/workflow/01 - products_Nov-05_04-25-26PM.csv')
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+
+# Find raw products CSV (handle original Squarespace export filenames)
+raw_files = list(csv_dir.glob('raw-01-products*.csv'))
+if not raw_files:
+    raw_files = list(csv_dir.glob('*products*.csv'))
+raw_file = raw_files[0] if raw_files else None
 df_raw = pd.read_csv(raw_file, encoding='utf-8')
 
 print("="*60)

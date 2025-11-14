@@ -4,7 +4,13 @@
 import pandas as pd
 from pathlib import Path
 
-google_path = Path("inputs-files/workflow/03b_google_matched.csv")
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+google_path = csv_processed_dir / "03b_google_matched.csv"
 google = pd.read_csv(google_path, encoding="utf-8-sig")
 
 print("Google reviews analysis:")

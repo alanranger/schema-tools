@@ -8,13 +8,16 @@ Schema Type: ["Product", "Course"] (locked baseline)
 @graph Order: LocalBusiness → BreadcrumbList → Product/Course
 
 Reads:
-  - inputs-files/workflow/02 – products_cleaned.xlsx
-  - inputs-files/workflow/03 – combined_product_reviews.csv
+  - shared-resources/csv processed/02 – products_cleaned.xlsx
+  - shared-resources/csv processed/03 – combined_product_reviews.csv
+  - shared-resources/csv/raw-01-products*.csv or 07-product*.csv (for schema type detection)
+  - shared-resources/csv/*photographic-workshops-near-me*.csv or *photo-workshops-uk-landscape*.csv (for event date matching - handles original Squarespace export filenames)
+  - shared-resources/csv/*beginners-photography-lessons*.csv or *photography-services-courses-mentoring*.csv (for event date matching - handles original Squarespace export filenames)
 
 Outputs:
-  - One HTML file per product: [Product_Slug]_schema_squarespace_ready.html in /outputs/
-  - Combined CSV: inputs-files/workflow/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv
-  - QA Summary CSV: outputs/review_summary.csv
+  - One HTML file per product: [Product_Slug]_schema_squarespace_ready.html in shared-resources/outputs/schema/
+  - Combined CSV: shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv
+  - QA Summary CSV: shared-resources/outputs/schema/review_summary.csv
 
 v6.1 Changes:
   - Locked Product/Course hybrid schema as baseline
@@ -1205,25 +1208,32 @@ def main():
     # Use absolute paths based on script location
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    workflow_dir = project_root / 'inputs-files' / 'workflow'
-    outputs_dir = project_root / 'outputs'
-    outputs_dir.mkdir(exist_ok=True)
+    # Updated to use shared-resources structure
+    shared_resources_dir = project_root.parent / 'alan-shared-resources'
+    csv_dir = shared_resources_dir / 'csv'
+    csv_processed_dir = shared_resources_dir / 'csv processed'
+    outputs_dir = shared_resources_dir / 'outputs' / 'schema'
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    csv_processed_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"📂 Project root: {project_root}")
-    print(f"📂 Workflow directory: {workflow_dir}")
+    print(f"📂 Shared resources: {shared_resources_dir}")
+    print(f"📂 CSV directory: {csv_dir}")
+    print(f"📂 CSV processed directory: {csv_processed_dir}")
     print(f"📂 Outputs directory: {outputs_dir}")
     print()
     
     # Find input files
-    products_file = workflow_dir / '02 – products_cleaned.xlsx'
-    merged_reviews_file = workflow_dir / '03 – combined_product_reviews.csv'
+    products_file = csv_processed_dir / '02 – products_cleaned.xlsx'
+    merged_reviews_file = csv_processed_dir / '03 – combined_product_reviews.csv'
     
     # Try to detect original CSV filename to determine schema type
-    # Look for the original 01 products CSV file
+    # Look for the original products CSV file in shared-resources/csv/ root
     original_csv_files = []
-    csv_patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
+    csv_patterns = ['raw-01-products*.csv', '07-product*.csv']
     for pattern in csv_patterns:
-        original_csv_files.extend(list(workflow_dir.glob(pattern)))
+        if csv_dir.exists():
+            original_csv_files.extend(list(csv_dir.glob(pattern)))
     
     schema_type = 'product'  # Default to Product only
     original_csv_name = None
@@ -1258,27 +1268,27 @@ def main():
     events_workshops_path = None
     events_lessons_path = None
     
-    for possible_name in [
-        "01 – workshops.csv",
-        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
-        "01 - workshops.csv",
-        "workshops.csv"
-    ]:
-        test_path = workflow_dir / possible_name
-        if test_path.exists():
-            events_workshops_path = test_path
-            break
-    
-    for possible_name in [
-        "01 – lessons.csv",
-        "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv",
-        "01 - lessons.csv",
-        "lessons.csv"
-    ]:
-        test_path = workflow_dir / possible_name
-        if test_path.exists():
-            events_lessons_path = test_path
-            break
+    # Look for events CSV files in shared-resources/csv/ root
+    # Handle original Squarespace export filenames (long format with site ID)
+    if csv_dir.exists():
+        # Check for workshop CSVs (matches *photographic-workshops-near-me* or *photo-workshops-uk-landscape*)
+        for csv_file in csv_dir.glob('*.csv'):
+            csv_name_lower = csv_file.name.lower()
+            if ('photographic-workshops-near-me' in csv_name_lower or 
+                'photo-workshops-uk-landscape' in csv_name_lower or
+                ('workshop' in csv_name_lower and 'lesson' not in csv_name_lower and '03' in csv_name_lower)):
+                events_workshops_path = csv_file
+                break
+        
+        # Check for lessons CSVs (matches *beginners-photography-lessons* or *photography-services-courses-mentoring*)
+        if not events_lessons_path:
+            for csv_file in csv_dir.glob('*.csv'):
+                csv_name_lower = csv_file.name.lower()
+                if ('beginners-photography-lessons' in csv_name_lower or
+                    'photography-services-courses-mentoring' in csv_name_lower or
+                    ('lesson' in csv_name_lower and 'workshop' not in csv_name_lower and '02' in csv_name_lower)):
+                    events_lessons_path = csv_file
+                    break
     
     if events_workshops_path and events_workshops_path.exists():
         try:
@@ -2251,7 +2261,7 @@ def main():
     
     # Save combined CSV
     schemas_df = pd.DataFrame(schemas_data)
-    output_csv = workflow_dir / '04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv'
+    output_csv = csv_processed_dir / '04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv'
     
     try:
         schemas_df.to_csv(output_csv, index=False, encoding='utf-8-sig')

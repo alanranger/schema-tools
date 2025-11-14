@@ -4,7 +4,13 @@
 import pandas as pd
 from pathlib import Path
 
-products_path = Path("inputs-files/workflow/02 – products_cleaned.xlsx")
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
 products = pd.read_excel(products_path, engine='openpyxl')
 products['slug'] = products['url'].apply(lambda u: str(u).split('/')[-1].strip() if pd.notna(u) else '')
 
