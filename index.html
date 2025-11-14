@@ -1379,6 +1379,7 @@
     <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
     <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
     <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
+    <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
     <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
   </div>
 
@@ -2823,10 +2824,13 @@
       <h3>🌐 Landing / Service Pages</h3>
       <p><strong>Purpose:</strong> Generate structured data for service, category, and informational landing pages.</p>
       <p><strong>Input:</strong> Page URL (auto-scans metadata) or manual entry</p>
+      <p><strong>Input Files:</strong> None required - uses live page data</p>
       <p><strong>Workflow:</strong> Enter URL → Auto-scan metadata → Select schema type → Choose types to include → Generate → Deploy</p>
       <p><strong>Schema Types:</strong> Service, ItemList, WebPage, Product (auto-detect available)</p>
-      <p><strong>Features:</strong> Smart type detection, manual type selection, schema type selector panel, ItemList URL selection</p>
+      <p><strong>Features:</strong> Smart type detection, manual type selection, schema type selector panel, ItemList URL selection with rich results prioritization</p>
+      <p><strong>Output:</strong> JSON-LD schema tailored to page type (Service, ItemList, WebPage, or Product)</p>
       <p><strong>Deploy:</strong> Copy schema → Paste into Squarespace page header code injection or Code Block</p>
+      <p><strong>See Complete Workflow tab for detailed step-by-step instructions.</strong></p>
 
       <h3>🟡 Schema Validator</h3>
       <p><strong>Purpose:</strong> Validate and enhance existing schema markup on live pages.</p>
@@ -2932,7 +2936,8 @@
       'blog': { tabIndex: 2, contentId: 'blogTab' },
       'landing': { tabIndex: 3, contentId: 'landingTab' },
       'validator': { tabIndex: 4, contentId: 'validatorTab' },
-      'guide': { tabIndex: 5, contentId: 'guideTab' }
+      'workflow': { tabIndex: 5, contentId: 'workflowTab' },
+      'guide': { tabIndex: 6, contentId: 'guideTab' }
     };
     
     const config = tabMap[mode];
