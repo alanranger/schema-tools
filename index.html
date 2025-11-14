@@ -2738,12 +2738,21 @@ Step 8: Paste schema into Squarespace event page (see instructions below)
     };
     
     const config = tabMap[mode];
+    if (!config) {
+      console.error(`[switchTab] Unknown tab mode: ${mode}`);
+      return;
+    }
     if (config && tabs[config.tabIndex] && tabs[config.tabIndex] !== null) {
       tabs[config.tabIndex].classList.add('active');
       const content = document.getElementById(config.contentId);
       if (content) {
         content.classList.add('active');
+        console.log(`[switchTab] Switched to tab: ${mode}, contentId: ${config.contentId}`);
+      } else {
+        console.error(`[switchTab] Content element not found: ${config.contentId}`);
       }
+    } else {
+      console.error(`[switchTab] Tab button not found at index ${config.tabIndex} for mode: ${mode}`);
     }
   }
   
