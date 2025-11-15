@@ -469,6 +469,11 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     "url": product_url,
                     "validFrom": valid_from,
                     "priceValidUntil": price_valid_until,
+                    "seller": {
+                        "@type": "Organization",
+                        "name": "Alan Ranger Photography",
+                        "url": "https://www.alanranger.com"
+                    },
                     "shippingDetails": {
                         "@type": "OfferShippingDetails",
                         "doesNotShip": "http://schema.org/True",
