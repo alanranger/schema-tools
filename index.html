@@ -1629,13 +1629,16 @@
       <div id="schemaExportContent" style="margin-top: 0.75rem;"></div>
       
       <div style="margin-top: 1rem;">
-        <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem;">
-          📥 Export JSON File
+        <button id="exportAndDeployBtn" onclick="exportAndDeploySchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          🚀 Export JSON & Deploy to GitHub
         </button>
-        <button id="deploySchemaBtn" onclick="deploySchemaToGitHub()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; display: none;">
+        <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          📥 Export JSON File Only
+        </button>
+        <button id="deploySchemaBtn" onclick="deploySchemaToGitHub()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; margin-bottom: 0.5rem; display: none;">
           🚀 Deploy to GitHub
         </button>
-        <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+        <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-bottom: 0.5rem;">
           📋 Copy Squarespace Script src Tag
         </button>
       </div>
@@ -9526,6 +9529,85 @@
       alert('Error exporting schema: ' + error.message + '\n\nPlease check the browser console for details.');
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ❌ Export error: ${error.message}`);
+    }
+  }
+
+  // Export and Deploy schema to GitHub in one click (Electron only)
+  async function exportAndDeploySchema() {
+    if (!window.currentEventSchema) {
+      alert('Please generate event schema first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease use "Export JSON File Only" and manually copy to alanranger-schema folder.');
+      return;
+    }
+
+    const csvType = window.currentEventSchemaCsvType || 'unknown';
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+
+    const exportBtn = document.getElementById('exportAndDeployBtn');
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    try {
+      // Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
+      // Generate JSON (minified or formatted based on checkbox)
+      const jsonString = shouldMinify 
+        ? JSON.stringify(window.currentEventSchema, null, 0)  // Minified (no indentation)
+        : JSON.stringify(window.currentEventSchema, null, 2); // Formatted (with indentation, default)
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+
+      addDebugLog(`\n🚀 Export & Deploy:`);
+      addDebugLog(`   📁 Saving to alanranger-schema folder...`);
+
+      // Deploy using Electron API
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+      
+      addDebugLog(`   ✅ ${result.message}`);
+      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
+      addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+
+      // Also trigger download for user's records
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 File saved to: ${result.filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}\n\n📥 File also downloaded to your Downloads folder.`);
+
+    } catch (error) {
+      addDebugLog(`   ❌ Deployment error: ${error.message}`);
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
     }
   }
 
