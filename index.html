@@ -19079,8 +19079,18 @@ exit`;
     // Step 1: File upload detection and auto-trigger Step 2
     document.getElementById('file-step1')?.addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
-        const fileName = e.target.files[0].name;
-        if (fileName.includes('01') && (fileName.includes('products') || fileName.includes('product'))) {
+        const fileName = e.target.files[0].name.toLowerCase();
+        // Accept files that match product CSV patterns:
+        // - Files starting with 01, 04, or 05
+        // - And containing 'product', 'photography', 'courses', 'mentoring', 'workshops', or 'landscape'
+        const isProductFile = (
+          (fileName.includes('01') || fileName.includes('04') || fileName.includes('05')) &&
+          (fileName.includes('product') || fileName.includes('photography') || 
+           fileName.includes('courses') || fileName.includes('mentoring') || 
+           fileName.includes('workshops') || fileName.includes('landscape'))
+        ) || fileName.endsWith('.csv'); // Also accept any CSV file as fallback
+        
+        if (isProductFile) {
           updateStatus(1, 'Uploading raw CSV...', 40);
           setTimeout(() => {
             markComplete(1, 'Step 1 complete – raw file ready');
@@ -19090,6 +19100,9 @@ exit`;
               autoCleanProducts();
             }, 800);
           }, 1200);
+        } else {
+          updateStatus(1, '⚠️ File may not be a valid product CSV', 0);
+          alert('Please upload a product CSV file (e.g., 04-photography-services-courses-mentoring.csv or 05-photo-workshops-uk-landscape.csv)');
         }
       }
     });
