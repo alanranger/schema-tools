@@ -6511,10 +6511,12 @@
 
       for (const product of products) {
         // Generate script tag for this product (split </script> to avoid HTML parser issues)
+        const scriptStart = '<' + 'script type="application/ld+json"';
+        const scriptEnd = '<' + '/script>';
         const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
-          '<script type="application/ld+json"\n' +
+          scriptStart + '\n' +
           '        src="https://schema.alanranger.com/' + product.jsonFileName + '">\n' +
-          '<' + '/script>';
+          scriptEnd;
 
         allScriptTags.push({
           name: product.name,
@@ -6583,10 +6585,12 @@
     }
 
     // Generate script tag (split </script> to avoid HTML parser issues)
+    const scriptStart = '<' + 'script type="application/ld+json"';
+    const scriptEnd = '<' + '/script>';
     const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
-      '<script type="application/ld+json"\n' +
+      scriptStart + '\n' +
       '        src="https://schema.alanranger.com/' + jsonFileName + '">\n' +
-      '<' + '/script>';
+      scriptEnd;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(scriptTag).then(() => {
