@@ -1212,7 +1212,7 @@ def main():
     shared_resources_dir = project_root.parent / 'alan-shared-resources'
     csv_dir = shared_resources_dir / 'csv'
     csv_processed_dir = shared_resources_dir / 'csv processed'
-    outputs_dir = shared_resources_dir / 'outputs' / 'schema'
+    outputs_dir = shared_resources_dir / 'outputs' / 'schema' / 'products'
     outputs_dir.mkdir(parents=True, exist_ok=True)
     csv_processed_dir.mkdir(parents=True, exist_ok=True)
     
@@ -2314,7 +2314,7 @@ def main():
         print(f"❌ Error saving CSV: {e}")
         sys.exit(1)
     
-    # Save QA Summary CSV
+    # Save QA Summary CSV (in products folder)
     summary_df = pd.DataFrame(summary_rows)
     summary_csv = outputs_dir / 'review_summary.csv'
     try:
@@ -2357,8 +2357,8 @@ def main():
             "@graph": unified_graph_items
         }
         
-        # Save unified JSON file
-        unified_json_path = outputs_dir / 'products-schema.json'
+        # Save unified JSON file (in root schema folder, not products subfolder)
+        unified_json_path = shared_resources_dir / 'outputs' / 'schema' / 'products-schema.json'
         try:
             with open(unified_json_path, 'w', encoding='utf-8') as f:
                 json.dump(unified_schema, f, indent=2, ensure_ascii=False)
