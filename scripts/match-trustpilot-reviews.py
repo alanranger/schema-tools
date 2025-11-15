@@ -2,6 +2,13 @@
 """
 Dedicated Trustpilot Review Matcher
 Optimized matching logic specifically for Trustpilot reviews with Reference Id
+
+Reads:
+  - shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv
+  - shared-resources/csv processed/02 – products_cleaned.xlsx
+
+Outputs:
+  - shared-resources/csv processed/03a_trustpilot_matched.csv
 """
 
 import pandas as pd
@@ -9,11 +16,29 @@ from pathlib import Path
 import re
 import sys
 
-# Paths
-base_path = Path(__file__).parent.parent / "inputs-files" / "workflow"
-trustpilot_path = base_path / "03a – trustpilot_historical_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
-output_path = base_path / "03a_trustpilot_matched.csv"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+csv_processed_dir.mkdir(parents=True, exist_ok=True)
+
+# Find Trustpilot reviews CSV
+trustpilot_path = None
+if csv_dir.exists():
+    for csv_file in csv_dir.glob('*trustpilot*.csv'):
+        if 'raw-03a' in csv_file.name.lower() or 'trustpilot' in csv_file.name.lower():
+            trustpilot_path = csv_file
+            break
+
+if not trustpilot_path or not trustpilot_path.exists():
+    print("Error: Trustpilot reviews CSV not found")
+    print(f"   Expected: {csv_dir.absolute()}/raw-03a-trustpilot-reviews-historical.csv")
+    sys.exit(1)
+
+products_path = csv_processed_dir / '02 – products_cleaned.xlsx'
+output_path = csv_processed_dir / "03a_trustpilot_matched.csv"
 
 print("="*80)
 print("TRUSTPILOT REVIEW MATCHER")

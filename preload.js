@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExe: (exePath) => ipcRenderer.invoke('open-exe', exePath),
   getExePath: () => ipcRenderer.invoke('get-exe-path'),
   openDevTools: () => ipcRenderer.invoke('open-devtools'),
+  saveAndDeploySchema: (fileName, jsonContent) => ipcRenderer.invoke('save-and-deploy-schema', { fileName, jsonContent }),
   onServerLog: (callback) => {
     ipcRenderer.on('server-log', (event, data) => callback(data));
   },

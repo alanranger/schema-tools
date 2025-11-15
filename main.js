@@ -347,3 +347,96 @@ ipcMain.handle('open-devtools', async () => {
   return { success: false, error: 'Window not available' };
 });
 
+// IPC handler for saving schema to alanranger-schema folder and deploying
+ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const schemaRepoPath = path.join(__dirname, 'alanranger-schema');
+      const filePath = path.join(schemaRepoPath, fileName);
+      
+      // Ensure directory exists
+      if (!fs.existsSync(schemaRepoPath)) {
+        reject(new Error(`Schema repository folder not found: ${schemaRepoPath}`));
+        return;
+      }
+      
+      // Write file
+      fs.writeFileSync(filePath, jsonContent, 'utf-8');
+      console.log(`✅ Saved schema file: ${filePath}`);
+      
+      // Git operations
+      const isWindows = process.platform === 'win32';
+      const gitCommands = [
+        { cmd: 'git', args: ['add', fileName], desc: 'Stage file' },
+        { cmd: 'git', args: ['commit', '-m', `Update ${fileName}`], desc: 'Commit changes' },
+        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
+      ];
+      
+      let currentStep = 0;
+      const runNextCommand = () => {
+        if (currentStep >= gitCommands.length) {
+          resolve({ 
+            success: true, 
+            message: `✅ Schema saved and deployed successfully!`,
+            filePath: filePath,
+            fileName: fileName
+          });
+          return;
+        }
+        
+        const { cmd, args, desc } = gitCommands[currentStep];
+        console.log(`🔄 Git: ${desc}...`);
+        
+        const gitProcess = spawn(cmd, args, {
+          cwd: schemaRepoPath,
+          shell: isWindows,
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        gitProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+        
+        gitProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        gitProcess.on('close', (code) => {
+          if (code === 0) {
+            console.log(`✅ Git: ${desc} completed`);
+            currentStep++;
+            runNextCommand();
+          } else {
+            // For commit, code 1 might mean "nothing to commit" - that's OK
+            if (currentStep === 1 && code === 1 && stderr.includes('nothing to commit')) {
+              console.log(`ℹ️ Git: No changes to commit (file unchanged)`);
+              currentStep++;
+              runNextCommand();
+            } else {
+              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              console.error(`❌ ${error}`);
+              reject(new Error(error));
+            }
+          }
+        });
+        
+        gitProcess.on('error', (err) => {
+          const error = `Git ${desc} error: ${err.message}`;
+          console.error(`❌ ${error}`);
+          reject(new Error(error));
+        });
+      };
+      
+      // Start git operations
+      runNextCommand();
+      
+    } catch (error) {
+      console.error('❌ Error saving/deploying schema:', error);
+      reject(error);
+    }
+  });
+});
+

@@ -4,8 +4,8 @@
 Squarespace Product Export Normalization Script
 Stage 1: Clean and standardize Squarespace product export CSV
 
-Reads: inputs-files/workflow/01 – products_<date/time>.csv
-Outputs: inputs-files/workflow/02 – products_cleaned.xlsx
+Reads: shared-resources/csv/raw-01-products*.csv or 07-product*.csv
+Outputs: shared-resources/csv processed/02 – products_cleaned.xlsx
 """
 
 import pandas as pd
@@ -134,18 +134,26 @@ def validate_url(url, timeout=5):
         return False, f'Error: {str(e)}'
 
 def main():
-    # Find the input CSV file
-    workflow_dir = Path('inputs-files/workflow')
-    # Try multiple patterns for the dash character
+    # Updated to use shared-resources structure
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    shared_resources_dir = project_root.parent / 'alan-shared-resources'
+    csv_dir = shared_resources_dir / 'csv'
+    csv_processed_dir = shared_resources_dir / 'csv processed'
+    csv_processed_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Find the input CSV file - look for raw products CSV
     csv_files = []
-    patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
-    for pattern in patterns:
-        csv_files.extend(list(workflow_dir.glob(pattern)))
+    if csv_dir.exists():
+        # Look for raw products CSV files
+        patterns = ['raw-01-products*.csv', '07-product*.csv', '01-products*.csv']
+        for pattern in patterns:
+            csv_files.extend(list(csv_dir.glob(pattern)))
     
     if not csv_files:
-        print("Error: No CSV file found matching pattern '01 [dash] products_*.csv'")
-        print(f"   Expected location: {workflow_dir.absolute()}")
-        print(f"   Looking for files starting with '01' and containing 'products'")
+        print("Error: No products CSV file found")
+        print(f"   Expected location: {csv_dir.absolute()}")
+        print(f"   Looking for: raw-01-products*.csv, 07-product*.csv, or 01-products*.csv")
         sys.exit(1)
     
     # Use the most recent file if multiple exist
@@ -259,7 +267,7 @@ def main():
     cleaned_df = pd.DataFrame(cleaned_data)
     
     # Save as Excel
-    output_file = workflow_dir / '02 – products_cleaned.xlsx'
+    output_file = csv_processed_dir / '02 – products_cleaned.xlsx'
     
     # Check if file exists and might be locked
     if output_file.exists():

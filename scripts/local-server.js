@@ -159,7 +159,7 @@ async function startServerOnAvailablePort() {
       }
       
       // Write port to a file so client can discover it
-      const portFile = path.join(__dirname, '..', 'inputs-files', 'workflow', '.server-port');
+      const portFile = path.join(__dirname, '..', '.server-port');
       try {
         const portDir = path.dirname(portFile);
         if (!fs.existsSync(portDir)) {

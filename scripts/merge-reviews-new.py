@@ -19,7 +19,10 @@ if sys.platform == 'win32':
     os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 script_dir = Path(__file__).parent
-base_path = script_dir.parent / "inputs-files" / "workflow"
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+base_path = shared_resources_dir / "csv processed"
+base_path.mkdir(parents=True, exist_ok=True)
 
 print("="*80)
 print("REVIEW MERGER - Step 3b (Using Dedicated Matchers)")

@@ -5,12 +5,12 @@ Product Reviews Merge Script
 Stage 2: Merge cleaned products with review data
 
 Reads:
-  - inputs-files/workflow/02 – products_cleaned.xlsx (from Step 1)
-  - inputs-files/combined product_reviews.csv
-  - inputs-files/event_mappings_with_reviewer.csv
+  - shared-resources/csv processed/02 – products_cleaned.xlsx (from Step 1)
+  - shared-resources/csv processed/03 – combined_product_reviews.csv
+  - shared-resources/csv processed/event-product-mappings-*.csv
 
 Outputs:
-  - inputs-files/workflow/products_with_review_data_final.xlsx
+  - shared-resources/csv processed/products_with_review_data_final.xlsx
 """
 
 import pandas as pd
@@ -94,18 +94,21 @@ def format_reviews_for_product(reviews_list):
         return '[]'
 
 def main():
-    workflow_dir = Path('inputs-files/workflow')
-    inputs_dir = Path('inputs-files')
+    # Updated to use shared-resources structure
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    shared_resources_dir = project_root.parent / 'alan-shared-resources'
+    csv_processed_dir = shared_resources_dir / 'csv processed'
+    csv_processed_dir.mkdir(parents=True, exist_ok=True)
     
     # Find cleaned products file
-    cleaned_files = list(workflow_dir.glob('02*.xlsx'))
-    if not cleaned_files:
+    cleaned_file = csv_processed_dir / '02 – products_cleaned.xlsx'
+    if not cleaned_file.exists():
         print("❌ Error: No cleaned products file found")
-        print(f"   Expected: {workflow_dir.absolute()}/02 – products_cleaned.xlsx")
+        print(f"   Expected: {cleaned_file.absolute()}")
         print(f"   Please run Step 1 first (clean-products-csv.py)")
         sys.exit(1)
     
-    cleaned_file = sorted(cleaned_files)[-1]
     print(f"📂 Reading cleaned products: {cleaned_file.name}")
     
     # Load cleaned products
@@ -118,7 +121,7 @@ def main():
     print(f"✅ Loaded {len(products_df)} products")
     
     # Load reviews
-    reviews_file = inputs_dir / 'combined product_reviews.csv'
+    reviews_file = csv_processed_dir / '03 – combined_product_reviews.csv'
     if not reviews_file.exists():
         print(f"❌ Error: Reviews file not found: {reviews_file}")
         sys.exit(1)
@@ -136,13 +139,15 @@ def main():
     reviews_df = filter_reviews_by_rating(reviews_df, min_rating=4)
     print(f"✅ Filtered to {len(reviews_df)} reviews with rating >= 4★")
     
-    # Load event mappings
-    mappings_file = inputs_dir / 'event_mappings_with_reviewer.csv'
+    # Load event mappings - look for event-product-mappings files
     event_to_reviewer = {}
-    if mappings_file.exists():
-        print(f"📂 Reading event mappings: {mappings_file.name}")
-        event_to_reviewer = load_event_mappings(mappings_file)
-        print(f"✅ Loaded {len(event_to_reviewer)} event mappings")
+    if csv_processed_dir.exists():
+        mapping_files = list(csv_processed_dir.glob('event-product-mappings*.csv'))
+        if mapping_files:
+            mappings_file = sorted(mapping_files)[-1]  # Use most recent
+            print(f"📂 Reading event mappings: {mappings_file.name}")
+            event_to_reviewer = load_event_mappings(mappings_file)
+            print(f"✅ Loaded {len(event_to_reviewer)} event mappings")
     
     # Merge reviews with products
     merged_data = []
@@ -203,10 +208,10 @@ def main():
     
     # Generate output filename with version tag
     date_tag = datetime.now().strftime('%Y%m%d')
-    output_file = workflow_dir / f'products_with_review_data_final_v{date_tag}.xlsx'
+    output_file = csv_processed_dir / f'products_with_review_data_final_v{date_tag}.xlsx'
     
     # Also create a non-versioned file for easy access
-    output_file_main = workflow_dir / 'products_with_review_data_final.xlsx'
+    output_file_main = csv_processed_dir / 'products_with_review_data_final.xlsx'
     
     try:
         merged_df.to_excel(output_file, index=False, engine='openpyxl')

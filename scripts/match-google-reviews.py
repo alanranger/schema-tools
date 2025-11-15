@@ -5,6 +5,15 @@ Optimized matching logic specifically for Google reviews using:
 1. Date-based matching (reviews clustered around event dates)
 2. Text content matching
 3. Alias matching
+
+Reads:
+  - shared-resources/csv/raw-03b-google-reviews.csv
+  - shared-resources/csv processed/02 – products_cleaned.xlsx
+  - shared-resources/csv/*photographic-workshops-near-me*.csv or *photo-workshops-uk-landscape*.csv
+  - shared-resources/csv/*beginners-photography-lessons*.csv or *photography-services-courses-mentoring*.csv
+
+Outputs:
+  - shared-resources/csv processed/03b_google_matched.csv
 """
 
 import pandas as pd
@@ -14,30 +23,53 @@ import sys
 from difflib import SequenceMatcher
 from datetime import timedelta
 
-# Paths
-base_path = Path(__file__).parent.parent / "inputs-files" / "workflow"
-google_path = base_path / "03b – google_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
-# Try multiple possible event file names
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+csv_processed_dir.mkdir(parents=True, exist_ok=True)
+
+# Find Google reviews CSV
+google_path = None
+if csv_dir.exists():
+    for csv_file in csv_dir.glob('*google*.csv'):
+        if 'raw-03b' in csv_file.name.lower() or 'google' in csv_file.name.lower():
+            google_path = csv_file
+            break
+
+if not google_path or not google_path.exists():
+    print("Error: Google reviews CSV not found")
+    print(f"   Expected: {csv_dir.absolute()}/raw-03b-google-reviews.csv")
+    sys.exit(1)
+
+# Products file
+products_path = csv_processed_dir / '02 – products_cleaned.xlsx'
+
+# Find event CSV files using flexible filename matching
 events_workshops_path = None
 events_lessons_path = None
-for possible_name in [
-    "01 – workshops.csv",
-    "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv"
-]:
-    test_path = base_path / possible_name
-    if test_path.exists():
-        events_workshops_path = test_path
-        break
-for possible_name in [
-    "01 – lessons.csv",
-    "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv"
-]:
-    test_path = base_path / possible_name
-    if test_path.exists():
-        events_lessons_path = test_path
-        break
-output_path = base_path / "03b_google_matched.csv"
+if csv_dir.exists():
+    # Check for workshop CSVs
+    for csv_file in csv_dir.glob('*.csv'):
+        csv_name_lower = csv_file.name.lower()
+        if ('photographic-workshops-near-me' in csv_name_lower or
+            'photo-workshops-uk-landscape' in csv_name_lower or
+            ('workshop' in csv_name_lower and 'lesson' not in csv_name_lower and '03' in csv_name_lower)):
+            events_workshops_path = csv_file
+            break
+    
+    # Check for lessons CSVs
+    for csv_file in csv_dir.glob('*.csv'):
+        csv_name_lower = csv_file.name.lower()
+        if ('beginners-photography-lessons' in csv_name_lower or
+            'photography-services-courses-mentoring' in csv_name_lower or
+            ('lesson' in csv_name_lower and 'workshop' not in csv_name_lower and '02' in csv_name_lower)):
+            events_lessons_path = csv_file
+            break
+
+output_path = csv_processed_dir / "03b_google_matched.csv"
 
 print("="*80)
 print("GOOGLE REVIEW MATCHER")

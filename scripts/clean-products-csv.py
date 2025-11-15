@@ -4,8 +4,8 @@
 Squarespace Product Export Normalization Script - v2.0
 Stage 1: Clean and group products with variants into offers arrays
 
-Reads: inputs-files/workflow/01 – products_<date/time>.csv
-Outputs: inputs-files/workflow/02 – products_cleaned.xlsx
+Reads: shared-resources/csv/raw-01-products*.csv or 07-product*.csv
+Outputs: shared-resources/csv processed/02 – products_cleaned.xlsx
 
 New in v2.0:
 - Groups products by Title (main product + variants)
@@ -227,57 +227,66 @@ def detect_schema_type(product_name, product_url, lessons_df, workshops_df):
     return 'product'
 
 def main():
-    # Define workflow directory first
-    workflow_dir = Path('inputs-files/workflow')
+    # Updated to use shared-resources structure
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    shared_resources_dir = project_root.parent / 'alan-shared-resources'
+    csv_dir = shared_resources_dir / 'csv'
+    csv_processed_dir = shared_resources_dir / 'csv processed'
+    csv_processed_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load lessons CSV (for courses)
+    print(f"📂 Shared resources: {shared_resources_dir}")
+    print(f"📂 CSV directory: {csv_dir}")
+    print(f"📂 CSV processed directory: {csv_processed_dir}")
+    print()
+    
+    # Load lessons CSV (for courses) - use flexible filename matching
     lessons_df = None
-    for possible_name in [
-        "01 – lessons.csv",
-        "02 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__beginners-photography-lessons.csv",
-        "01 - lessons.csv",
-        "lessons.csv"
-    ]:
-        test_path = workflow_dir / possible_name
-        if test_path.exists():
-            try:
-                lessons_df = pd.read_csv(test_path, encoding="utf-8-sig")
-                print(f"📅 Loaded {len(lessons_df)} lesson events for course detection")
-                break
-            except Exception as e:
-                print(f"⚠️  Warning: Could not load lesson events: {e}")
+    if csv_dir.exists():
+        for csv_file in csv_dir.glob('*.csv'):
+            csv_name_lower = csv_file.name.lower()
+            if ('beginners-photography-lessons' in csv_name_lower or
+                'photography-services-courses-mentoring' in csv_name_lower or
+                ('lesson' in csv_name_lower and 'workshop' not in csv_name_lower and '02' in csv_name_lower)):
+                try:
+                    lessons_df = pd.read_csv(csv_file, encoding="utf-8-sig")
+                    print(f"📅 Loaded {len(lessons_df)} lesson events for course detection from {csv_file.name}")
+                    break
+                except Exception as e:
+                    print(f"⚠️  Warning: Could not load lesson events from {csv_file.name}: {e}")
     
-    # Load workshops CSV (for events)
+    # Load workshops CSV (for events) - use flexible filename matching
     workshops_df = None
-    for possible_name in [
-        "01 – workshops.csv",
-        "03 - www-alanranger-com__5013f4b2c4aaa4752ac69b17__photographic-workshops-near-me.csv",
-        "01 - workshops.csv",
-        "workshops.csv"
-    ]:
-        test_path = workflow_dir / possible_name
-        if test_path.exists():
-            try:
-                workshops_df = pd.read_csv(test_path, encoding="utf-8-sig")
-                print(f"📅 Loaded {len(workshops_df)} workshop events for event detection")
-                break
-            except Exception as e:
-                print(f"⚠️  Warning: Could not load workshop events: {e}")
+    if csv_dir.exists():
+        for csv_file in csv_dir.glob('*.csv'):
+            csv_name_lower = csv_file.name.lower()
+            if ('photographic-workshops-near-me' in csv_name_lower or
+                'photo-workshops-uk-landscape' in csv_name_lower or
+                ('workshop' in csv_name_lower and 'lesson' not in csv_name_lower and '03' in csv_name_lower)):
+                try:
+                    workshops_df = pd.read_csv(csv_file, encoding="utf-8-sig")
+                    print(f"📅 Loaded {len(workshops_df)} workshop events for event detection from {csv_file.name}")
+                    break
+                except Exception as e:
+                    print(f"⚠️  Warning: Could not load workshop events from {csv_file.name}: {e}")
     
     if lessons_df is None and workshops_df is None:
         print(f"⚠️  No event CSV files found - all products will default to 'product' schema type")
     
     print()
     
-    # Find the input CSV file
+    # Find the input CSV file - look for raw products CSV
     csv_files = []
-    patterns = ['01 – products_*.csv', '01 - products_*.csv', '01–products_*.csv', '01-products_*.csv']
-    for pattern in patterns:
-        csv_files.extend(list(workflow_dir.glob(pattern)))
+    if csv_dir.exists():
+        # Look for raw products CSV files
+        patterns = ['raw-01-products*.csv', '07-product*.csv', '01-products*.csv']
+        for pattern in patterns:
+            csv_files.extend(list(csv_dir.glob(pattern)))
     
     if not csv_files:
-        print("Error: No CSV file found matching pattern '01 [dash] products_*.csv'")
-        print(f"   Expected location: {workflow_dir.absolute()}")
+        print("Error: No products CSV file found")
+        print(f"   Expected location: {csv_dir.absolute()}")
+        print(f"   Looking for: raw-01-products*.csv, 07-product*.csv, or 01-products*.csv")
         sys.exit(1)
     
     input_file = sorted(csv_files)[-1]
@@ -429,7 +438,7 @@ def main():
     cleaned_df = pd.DataFrame(grouped_data)
     
     # Save as Excel
-    output_file = workflow_dir / '02 – products_cleaned.xlsx'
+    output_file = csv_processed_dir / '02 – products_cleaned.xlsx'
     
     # Check if file exists and might be locked
     if output_file.exists():

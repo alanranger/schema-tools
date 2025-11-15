@@ -8,12 +8,28 @@ from pathlib import Path
 import sys
 import os
 
-# Get the script directory and set base path
-script_dir = Path(__file__).parent.parent
-base_path = script_dir / "inputs-files" / "workflow"
-trustpilot_path = base_path / "03a – trustpilot_historical_reviews.csv"
-combined_path = base_path / "03 – combined_product_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+# Find Trustpilot reviews CSV
+trustpilot_path = None
+if csv_dir.exists():
+    for csv_file in csv_dir.glob('*trustpilot*.csv'):
+        if 'raw-03a' in csv_file.name.lower() or 'trustpilot' in csv_file.name.lower():
+            trustpilot_path = csv_file
+            break
+
+if not trustpilot_path or not trustpilot_path.exists():
+    print("Error: Trustpilot reviews CSV not found")
+    print(f"   Expected: {csv_dir.absolute()}/raw-03a-trustpilot-reviews-historical.csv")
+    sys.exit(1)
+
+combined_path = csv_processed_dir / "03 – combined_product_reviews.csv"
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
 
 print("="*80)
 print("TRUSTPILOT REVIEW MAPPING ANALYSIS")

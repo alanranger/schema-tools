@@ -1,15 +1,61 @@
 #!/usr/bin/env python3
-"""Analyze Google reviews dates and products for date-based matching"""
+"""Analyze Google reviews dates and products for date-based matching
+
+Reads:
+  - shared-resources/csv/raw-03b-google-reviews.csv
+  - shared-resources/csv processed/02 – products_cleaned.xlsx
+  - shared-resources/csv/*beginners-photography-lessons*.csv or *photography-services-courses-mentoring*.csv
+  - shared-resources/csv/*photographic-workshops-near-me*.csv or *photo-workshops-uk-landscape*.csv
+"""
 
 import pandas as pd
 from pathlib import Path
 from datetime import timedelta
+import sys
 
-base_path = Path("inputs-files/workflow")
-google_path = base_path / "03b – google_reviews.csv"
-products_path = base_path / "02 – products_cleaned.xlsx"
-events_lessons_path = base_path / "01 – lessons.csv"
-events_workshops_path = base_path / "01 – workshops.csv"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+
+# Find Google reviews CSV
+google_path = None
+if csv_dir.exists():
+    for csv_file in csv_dir.glob('*google*.csv'):
+        if 'raw-03b' in csv_file.name.lower() or 'google' in csv_file.name.lower():
+            google_path = csv_file
+            break
+
+if not google_path or not google_path.exists():
+    print("Error: Google reviews CSV not found")
+    print(f"   Expected: {csv_dir.absolute()}/raw-03b-google-reviews.csv")
+    sys.exit(1)
+
+products_path = csv_processed_dir / "02 – products_cleaned.xlsx"
+
+# Find event CSV files using flexible filename matching
+events_lessons_path = None
+events_workshops_path = None
+if csv_dir.exists():
+    # Check for lessons CSVs
+    for csv_file in csv_dir.glob('*.csv'):
+        csv_name_lower = csv_file.name.lower()
+        if ('beginners-photography-lessons' in csv_name_lower or
+            'photography-services-courses-mentoring' in csv_name_lower or
+            ('lesson' in csv_name_lower and 'workshop' not in csv_name_lower and '02' in csv_name_lower)):
+            events_lessons_path = csv_file
+            break
+    
+    # Check for workshop CSVs
+    for csv_file in csv_dir.glob('*.csv'):
+        csv_name_lower = csv_file.name.lower()
+        if ('photographic-workshops-near-me' in csv_name_lower or
+            'photo-workshops-uk-landscape' in csv_name_lower or
+            ('workshop' in csv_name_lower and 'lesson' not in csv_name_lower and '03' in csv_name_lower)):
+            events_workshops_path = csv_file
+            break
 
 print("="*80)
 print("ANALYZING DATE PATTERNS FOR GOOGLE REVIEW MATCHING")

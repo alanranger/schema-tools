@@ -13,8 +13,6 @@ import sys
 import subprocess
 from pathlib import Path
 
-WORKFLOW = Path("inputs-files/workflow")
-
 TASKS = {
     "clean": Path("scripts/clean-products-csv.py"),
     "fetch": Path("scripts/fetch-google-reviews.py"),

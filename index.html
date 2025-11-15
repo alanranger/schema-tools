@@ -1626,14 +1626,30 @@
         <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem;">
           📥 Export JSON File
         </button>
+        <button id="deploySchemaBtn" onclick="deploySchemaToGitHub()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; display: none;">
+          🚀 Deploy to GitHub
+        </button>
         <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
           📋 Copy Squarespace Script src Tag
         </button>
       </div>
+      
+      <div id="deployButtonInfo" style="margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px; border-left: 3px solid #f59e0b; display: none;">
+        <div style="color: #92400e; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">
+          ⚠️ Deploy Button Available
+        </div>
+        <div style="color: #78350f; font-size: 0.8rem;">
+          The <strong>"🚀 Deploy to GitHub"</strong> button appears after exporting. It automatically saves the schema to the <code>alanranger-schema</code> folder, commits, and pushes to GitHub. <strong>This feature only works in the Electron app version</strong> (not in browser). If running in browser, manually copy the exported file to the alanranger-schema folder and commit/push.
+        </div>
+      </div>
     </div>
 
     <div style="margin-top: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; font-size: 0.9em; color: #6b7280;">
-      Schema auto-hosted via <a href="https://github.com/alanranger/alanranger-schema" target="_blank" style="color: #0369a1;">GitHub Pages</a> • Custom domain: <b>schema.alanranger.com</b> • Auto-sync: <b>Enabled</b>
+      Schema auto-hosted via <a href="https://github.com/alanranger/alanranger-schema" target="_blank" style="color: #0369a1;">GitHub Pages</a> • Custom domain: <b>schema.alanranger.com</b> • 
+      <span id="deploymentModeInfo">
+        <span id="electronMode" style="display: none;"><b>Auto-deploy:</b> <span style="color: #10b981;">Available (Electron app)</span></span>
+        <span id="browserMode"><b>Auto-deploy:</b> <span style="color: #f59e0b;">Manual only (browser mode)</span> - Use Electron app for auto-deployment</span>
+      </span>
     </div>
 
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
@@ -3140,6 +3156,29 @@
 
 <script>
   // Tab switching - MUST be absolutely first, before any other code
+  // Check Electron mode and update UI on page load
+  function checkElectronMode() {
+    const electronMode = document.getElementById('electronMode');
+    const browserMode = document.getElementById('browserMode');
+    
+    if (window.electronAPI && window.electronAPI.isElectron) {
+      // Electron app mode
+      if (electronMode) electronMode.style.display = 'inline';
+      if (browserMode) browserMode.style.display = 'none';
+    } else {
+      // Browser mode
+      if (electronMode) electronMode.style.display = 'none';
+      if (browserMode) browserMode.style.display = 'inline';
+    }
+  }
+  
+  // Run check on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkElectronMode);
+  } else {
+    checkElectronMode();
+  }
+
   function switchTab(mode) {
     // Clear cache and storage when switching tabs
     try {
@@ -9308,6 +9347,55 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      // Store schema data for deployment button
+      window.lastExportedSchema = {
+        fileName: fileName,
+        jsonContent: minifiedJson
+      };
+      
+      // Show deploy button if Electron is available
+      const deployBtn = document.getElementById('deploySchemaBtn');
+      const deployInfo = document.getElementById('deployButtonInfo');
+      const electronMode = document.getElementById('electronMode');
+      const browserMode = document.getElementById('browserMode');
+      
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        // Electron app - show deploy button
+        if (deployBtn) {
+          deployBtn.style.display = 'inline-block';
+        }
+        if (deployInfo) {
+          deployInfo.style.display = 'block';
+        }
+        if (electronMode) electronMode.style.display = 'inline';
+        if (browserMode) browserMode.style.display = 'none';
+      } else {
+        // Browser mode - hide deploy button, show manual instructions
+        if (deployBtn) {
+          deployBtn.style.display = 'none';
+        }
+        if (deployInfo) {
+          deployInfo.style.display = 'block';
+          deployInfo.innerHTML = `
+            <div style="color: #92400e; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">
+              ⚠️ Browser Mode - Manual Deployment Required
+            </div>
+            <div style="color: #78350f; font-size: 0.8rem;">
+              Auto-deployment is only available in the <strong>Electron app version</strong>. In browser mode, you must manually:
+              <ol style="margin: 0.5rem 0 0 1rem; padding-left: 0.5rem;">
+                <li>Copy the exported JSON file to the <code>alanranger-schema</code> folder</li>
+                <li>Run: <code>git add &lt;filename&gt;</code></li>
+                <li>Run: <code>git commit -m "Update &lt;filename&gt;"</code></li>
+                <li>Run: <code>git push</code></li>
+              </ol>
+              <strong>💡 Tip:</strong> Use the Electron app (run <code>npm start</code>) for automatic deployment.
+            </div>
+          `;
+        }
+        if (electronMode) electronMode.style.display = 'none';
+        if (browserMode) browserMode.style.display = 'inline';
+      }
+      
       // Step 4: Log to debug
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ✅ Exported: ${fileName}`);
@@ -9359,6 +9447,90 @@
       alert('Error exporting schema: ' + error.message + '\n\nPlease check the browser console for details.');
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ❌ Export error: ${error.message}`);
+    }
+  }
+
+  // Deploy schema to GitHub (Electron only)
+  async function deploySchemaToGitHub() {
+    if (!window.lastExportedSchema) {
+      alert('Please export the schema first before deploying.');
+      return;
+    }
+    
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy the file to alanranger-schema folder and commit/push.');
+      return;
+    }
+    
+    const { fileName, jsonContent } = window.lastExportedSchema;
+    const deployBtn = document.getElementById('deploySchemaBtn');
+    
+    // Disable button during deployment
+    if (deployBtn) {
+      deployBtn.disabled = true;
+      deployBtn.textContent = '🔄 Deploying...';
+    }
+    
+    addDebugLog(`\n🚀 Deployment:`);
+    addDebugLog(`   📁 Saving to alanranger-schema folder...`);
+    
+    try {
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonContent);
+      
+      addDebugLog(`   ✅ ${result.message}`);
+      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
+      addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+      
+      // Update UI with deployment success
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        const existingContent = exportContent.innerHTML;
+        exportContent.innerHTML = existingContent + `
+          <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 0.75rem;">
+            <strong style="color: #065f46;">🚀 Deployed Successfully!</strong><br>
+            <span style="color: #047857; font-size: 0.875rem;">✅ Saved to alanranger-schema folder</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">✅ Committed and pushed to GitHub</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">⏱️  GitHub Pages deploying (2-5 min)</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">🌐 <a href="https://schema.alanranger.com/${fileName}" target="_blank" style="color: #0369a1;">View live schema</a></span>
+          </div>
+        `;
+      }
+      
+      // Re-enable button
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '✅ Deployed!';
+        setTimeout(() => {
+          deployBtn.textContent = '🚀 Deploy to GitHub';
+        }, 3000);
+      }
+      
+    } catch (error) {
+      addDebugLog(`   ❌ Deployment error: ${error.message}`);
+      addDebugLog(`   💡 You can manually copy the file to alanranger-schema folder and commit/push.`);
+      
+      // Update UI with deployment error
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        const existingContent = exportContent.innerHTML;
+        exportContent.innerHTML = existingContent + `
+          <div style="background: #fef3c7; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #f59e0b; margin-top: 0.75rem;">
+            <strong style="color: #92400e;">⚠️ Deployment Failed</strong><br>
+            <span style="color: #78350f; font-size: 0.875rem;">Error: ${error.message}</span><br>
+            <span style="color: #78350f; font-size: 0.875rem;">💡 You can manually copy the file to alanranger-schema folder and commit/push.</span>
+          </div>
+        `;
+      }
+      
+      // Re-enable button
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '🚀 Deploy to GitHub';
+      }
+      
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
     }
   }
 

@@ -26,10 +26,17 @@ except ImportError:
     print("   Install with: pip install google-auth-oauthlib google-auth google-api-python-client pandas")
     sys.exit(1)
 
-# Paths
-CREDENTIALS_PATH = Path("inputs-files/workflow/credentials/client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json")
-TOKEN_PATH = Path("inputs-files/workflow/credentials/token.json")
-OUTPUT_PATH = Path("inputs-files/workflow/03b – google_reviews.csv")
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_dir = shared_resources_dir / 'csv'
+csv_dir.mkdir(parents=True, exist_ok=True)
+
+# Paths - credentials stay in Schema Tools, output goes to shared-resources
+CREDENTIALS_PATH = script_dir / "credentials" / "client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json"
+TOKEN_PATH = script_dir / "credentials" / "token.json"
+OUTPUT_PATH = csv_dir / "raw-03b-google-reviews.csv"
 
 SCOPES = ["https://www.googleapis.com/auth/business.manage"]
 

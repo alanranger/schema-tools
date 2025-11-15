@@ -2,16 +2,29 @@
 """
 Combined Review Merger
 Merges Trustpilot and Google reviews using dedicated matchers
+
+Reads:
+  - shared-resources/csv processed/03a_trustpilot_matched.csv
+  - shared-resources/csv processed/03b_google_matched.csv
+
+Outputs:
+  - shared-resources/csv processed/03 – combined_product_reviews.csv
 """
 
 import pandas as pd
 from pathlib import Path
 import sys
 
-base_path = Path(__file__).parent.parent / "inputs-files" / "workflow"
-trustpilot_matched_path = base_path / "03a_trustpilot_matched.csv"
-google_matched_path = base_path / "03b_google_matched.csv"
-output_path = base_path / "03 – combined_product_reviews.csv"
+# Updated to use shared-resources structure
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+shared_resources_dir = project_root.parent / 'alan-shared-resources'
+csv_processed_dir = shared_resources_dir / 'csv processed'
+csv_processed_dir.mkdir(parents=True, exist_ok=True)
+
+trustpilot_matched_path = csv_processed_dir / "03a_trustpilot_matched.csv"
+google_matched_path = csv_processed_dir / "03b_google_matched.csv"
+output_path = csv_processed_dir / "03 – combined_product_reviews.csv"
 
 print("="*80)
 print("COMBINED REVIEW MERGER")
