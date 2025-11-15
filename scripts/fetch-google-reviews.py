@@ -31,11 +31,15 @@ script_dir = Path(__file__).parent
 project_root = script_dir.parent
 shared_resources_dir = project_root.parent / 'alan-shared-resources'
 csv_dir = shared_resources_dir / 'csv'
+csv_processed_dir = shared_resources_dir / 'csv processed'
 csv_dir.mkdir(parents=True, exist_ok=True)
+csv_processed_dir.mkdir(parents=True, exist_ok=True)
 
-# Paths - credentials stay in Schema Tools, output goes to shared-resources
-CREDENTIALS_PATH = script_dir / "credentials" / "client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json"
-TOKEN_PATH = script_dir / "credentials" / "token.json"
+# Paths - credentials are in shared-resources/csv processed/credentials/
+credentials_dir = csv_processed_dir / "credentials"
+credentials_dir.mkdir(parents=True, exist_ok=True)
+CREDENTIALS_PATH = credentials_dir / "client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json"
+TOKEN_PATH = credentials_dir / "token.json"
 OUTPUT_PATH = csv_dir / "raw-03b-google-reviews.csv"
 
 SCOPES = ["https://www.googleapis.com/auth/business.manage"]
@@ -46,10 +50,11 @@ def authenticate_google():
     
     if not CREDENTIALS_PATH.exists():
         print(f"⚠️ API credentials missing: {CREDENTIALS_PATH}")
-        print(f"   Please ensure your OAuth credentials file is in the credentials directory.")
+        print(f"   Please ensure your OAuth credentials file is in: {credentials_dir}")
+        print(f"   Expected file: client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json")
         sys.exit(1)
     
-    # Ensure credentials directory exists
+    # Ensure credentials directory exists (already created above, but ensure token directory exists)
     TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
     
     creds = None
