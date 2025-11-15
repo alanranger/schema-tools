@@ -591,3 +591,19 @@ ipcMain.handle('read-file', async (event, filePath) => {
   }
 });
 
+// IPC handler for writing files
+ipcMain.handle('write-file', async (event, { filePath, content }) => {
+  try {
+    // Ensure directory exists
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error writing file:', error);
+    throw error;
+  }
+});
+

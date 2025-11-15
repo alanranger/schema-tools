@@ -6655,7 +6655,7 @@
       // Generate script tags for each product
       let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">📋 Squarespace Script Tags (one per product):</h4>';
       scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
-      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. <strong>Recommended:</strong> Use the "Copy Full Code Block" button below for each product - this ensures proper formatting with actual line breaks. Alternatively, download the JSON file and open it in a text editor to copy the "scriptTag" value for each product. Paste the complete code block (suppressor + script tag) into a Code Block on that product page in Squarespace. The suppressor block removes duplicate Squarespace schemas automatically.';
+      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. <strong>Easiest method:</strong> Individual HTML files have been generated in the products folder (e.g., <code>[product-name]_script_tag.html</code>). Open each file in a text editor and copy the entire contents into a Code Block on that product page in Squarespace. Alternatively, use the "Copy Full Code Block" button below, or download the JSON file. The suppressor block removes duplicate Squarespace schemas automatically.';
       scriptTagsHtml += '</div>';
       scriptTagsHtml += '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">';
       scriptTagsHtml += `<button onclick="downloadProductScriptTagsJSON()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📥 Download JSON</button>`;
@@ -6698,6 +6698,37 @@
 
       // Store data globally for JSON download and copy functions
       window.productScriptTagsData = allScriptTags;
+
+      // Generate individual HTML files for each product (suppressor + script tag)
+      // These can be opened directly and copied into Squarespace
+      if (window.electronAPI && window.electronAPI.writeFile) {
+        const outputsDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
+        let filesWritten = 0;
+        let filesFailed = 0;
+        
+        for (const product of allScriptTags) {
+          try {
+            // Create filename: [json-filename-base]_script_tag.html
+            const baseName = product.jsonFileName.replace('.json', '');
+            const htmlFileName = `${baseName}_script_tag.html`;
+            const htmlFilePath = `${outputsDir}\\${htmlFileName}`;
+            
+            // Write the full code block (suppressor + script tag) to HTML file
+            await window.electronAPI.writeFile(htmlFilePath, product.scriptTag);
+            filesWritten++;
+          } catch (error) {
+            console.error(`Failed to write HTML file for ${product.name}:`, error);
+            filesFailed++;
+          }
+        }
+        
+        if (filesWritten > 0) {
+          console.log(`✅ Generated ${filesWritten} individual HTML files in ${outputsDir}`);
+          if (filesFailed > 0) {
+            console.warn(`⚠️ ${filesFailed} files failed to write`);
+          }
+        }
+      }
 
       if (scriptTagsDiv) {
         scriptTagsDiv.innerHTML = scriptTagsHtml;

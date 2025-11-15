@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveAndDeploySchema: (fileName, jsonContent) => ipcRenderer.invoke('save-and-deploy-schema', { fileName, jsonContent }),
   batchDeploySchemas: (files) => ipcRenderer.invoke('batch-deploy-schemas', { files }),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
   onServerLog: (callback) => {
     ipcRenderer.on('server-log', (event, data) => callback(data));
   },
