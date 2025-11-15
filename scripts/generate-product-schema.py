@@ -976,10 +976,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_slug = slugify(product_name)
         breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
     
+    # For single product pages, put Product first in @graph (primary entity)
+    # This helps Google identify the main entity for rich results
     graph = [
+        product_schema,  # Product first (primary entity)
         LOCAL_BUSINESS,
-        breadcrumb_data,
-        product_schema
+        breadcrumb_data
     ]
     
     # Add @id to product schema - use URL slug, not product name slug
