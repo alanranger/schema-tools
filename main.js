@@ -351,7 +351,14 @@ ipcMain.handle('open-devtools', async () => {
 ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }) => {
   return new Promise((resolve, reject) => {
     try {
-      const schemaRepoPath = path.join(__dirname, 'alanranger-schema');
+      // Use actual project path (not __dirname which points to AppData in built app)
+      // Check if we're in a built app (AppData path) or development (project folder)
+      const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+      const projectRoot = isBuiltApp 
+        ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+        : __dirname;
+      
+      const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
       const filePath = path.join(schemaRepoPath, fileName);
       
       // Ensure directory exists
