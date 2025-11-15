@@ -6655,7 +6655,7 @@
       // Generate script tags for each product
       let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">📋 Squarespace Script Tags (one per product):</h4>';
       scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
-      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag with <strong>embedded JSON</strong> (not external src) for Google compatibility. <strong>Easiest method:</strong> Individual HTML files have been generated in the products folder (e.g., <code>[product-name]_script_tag.html</code>). Open each file in a text editor and copy the entire contents into a Code Block on that product page in Squarespace. Alternatively, use the "Copy Full Code Block" button below. The suppressor block removes duplicate Squarespace schemas automatically.';
+      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. <strong>Easiest method:</strong> Individual HTML files have been generated in the products folder (e.g., <code>[product-name]_script_tag.html</code>). Open each file in a text editor and copy the entire contents into a Code Block on that product page in Squarespace. Alternatively, use the "Copy Full Code Block" button below, or download the JSON file. The suppressor block removes duplicate Squarespace schemas automatically.';
       scriptTagsHtml += '</div>';
       scriptTagsHtml += '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">';
       scriptTagsHtml += `<button onclick="downloadProductScriptTagsJSON()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📥 Download JSON</button>`;
@@ -6663,38 +6663,14 @@
       scriptTagsHtml += '<div style="font-family: monospace; font-size: 0.8rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">';
 
       const allScriptTags = [];
-      const schemaDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
 
       for (const product of products) {
-        // Read the JSON file and embed it directly (Google doesn't fetch external JSON via src)
-        let jsonContent = '';
-        try {
-          const jsonFilePath = `${schemaDir}\\${product.jsonFileName}`;
-          if (window.electronAPI && window.electronAPI.readFile) {
-            const jsonResult = await window.electronAPI.readFile(jsonFilePath);
-            if (jsonResult.success) {
-              // Parse and re-stringify to ensure valid JSON, then embed directly
-              const jsonData = JSON.parse(jsonResult.content);
-              jsonContent = JSON.stringify(jsonData, null, 2);
-            } else {
-              throw new Error(`Failed to read JSON file: ${product.jsonFileName}`);
-            }
-          } else {
-            throw new Error('File reading not available');
-          }
-        } catch (error) {
-          console.error(`Error reading JSON for ${product.name}:`, error);
-          addToCombinedLog(`⚠️ Could not read JSON for ${product.name}: ${error.message}\n`, '4', 'script-tags');
-          // Skip this product if we can't read its JSON
-          continue;
-        }
-
-        // Generate script tag with embedded JSON (split <' + '/script> to avoid HTML parser issues)
-        const scriptStart = '<' + 'script type="application/ld+json">';
+        // Generate script tag for this product (split <' + '/script> to avoid HTML parser issues)
+        const scriptStart = '<' + 'script type="application/ld+json"';
         const scriptEnd = '<' + '/script>';
-        const scriptTagOnly = '<!-- Product Schema - Embedded JSON (Google-compatible) -->\n' +
+        const scriptTagOnly = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
           scriptStart + '\n' +
-          jsonContent + '\n' +
+          '        src="https://schema.alanranger.com/' + product.jsonFileName + '">\n' +
           scriptEnd;
         
         // Combine suppressor block + script tag
