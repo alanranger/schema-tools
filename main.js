@@ -390,11 +390,14 @@ ${jsonContent}
       fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
       console.log(`✅ Saved HTML file: ${htmlFilePath}`);
       
-      // Git operations - add both files
+      // Git operations - add both files separately, then commit with proper message
       const isWindows = process.platform === 'win32';
+      // Use a simpler commit message to avoid parsing issues
+      const commitMessage = `Update ${fileName}`;
       const gitCommands = [
-        { cmd: 'git', args: ['add', fileName, htmlFileName], desc: 'Stage files' },
-        { cmd: 'git', args: ['commit', '-m', `Update ${fileName} and ${htmlFileName}`], desc: 'Commit changes' },
+        { cmd: 'git', args: ['add', fileName], desc: 'Stage JSON file' },
+        { cmd: 'git', args: ['add', htmlFileName], desc: 'Stage HTML file' },
+        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
       
