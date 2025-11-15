@@ -6510,7 +6510,7 @@
       const allScriptTags = [];
 
       for (const product of products) {
-        // Generate script tag for this product (split </script> to avoid HTML parser issues)
+        // Generate script tag for this product (split <' + '/script> to avoid HTML parser issues)
         const scriptStart = '<' + 'script type="application/ld+json"';
         const scriptEnd = '<' + '/script>';
         const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
@@ -6584,7 +6584,7 @@
       return;
     }
 
-    // Generate script tag (split </script> to avoid HTML parser issues)
+    // Generate script tag (split <' + '/script> to avoid HTML parser issues)
     const scriptStart = '<' + 'script type="application/ld+json"';
     const scriptEnd = '<' + '/script>';
     const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
@@ -6719,9 +6719,12 @@
 
     // Extract JSON from script tags (remove <script> wrapper)
     let schemaCode = scriptWrapped.trim();
-    if (schemaCode.startsWith('<script')) {
+    const scriptTagStart = '<' + 'script';
+    if (schemaCode.startsWith(scriptTagStart)) {
       // Remove script tag wrapper - escape forward slash in regex
-      schemaCode = schemaCode.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '').trim();
+      const scriptStartRegex = new RegExp('^<' + 'script[^>]*>');
+      const scriptEndRegex = new RegExp('<' + '/script>$');
+      schemaCode = schemaCode.replace(scriptStartRegex, '').replace(scriptEndRegex, '').trim();
     }
 
     const fileName = 'blog-schema.json';
