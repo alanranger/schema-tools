@@ -6303,24 +6303,41 @@
       const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('file'));
 
       const jsonFiles = [];
+      let parseErrors = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const values = parseCSVLine(lines[i]);
-        if (jsonFileNameIndex >= 0 && values[jsonFileNameIndex]) {
-          const jsonFileName = values[jsonFileNameIndex].replace(/^"|"$/g, '').trim();
-          if (jsonFileName && jsonFileName.endsWith('.json')) {
-            jsonFiles.push({
-              fileName: jsonFileName,
-              url: urlIndex >= 0 ? values[urlIndex].replace(/^"|"$/g, '').trim() : '',
-              name: nameIndex >= 0 ? values[nameIndex].replace(/^"|"$/g, '').trim() : ''
-            });
+        try {
+          const values = parseCSVLine(lines[i]);
+          
+          // Check if we have enough columns
+          if (jsonFileNameIndex >= 0 && values.length > jsonFileNameIndex) {
+            const jsonFileName = values[jsonFileNameIndex].replace(/^"|"$/g, '').trim();
+            if (jsonFileName && jsonFileName.endsWith('.json')) {
+              jsonFiles.push({
+                fileName: jsonFileName,
+                url: urlIndex >= 0 && urlIndex < values.length ? values[urlIndex].replace(/^"|"$/g, '').trim() : '',
+                name: nameIndex >= 0 && nameIndex < values.length ? values[nameIndex].replace(/^"|"$/g, '').trim() : ''
+              });
+            }
           }
+        } catch (error) {
+          parseErrors.push(`Row ${i + 1}: ${error.message}`);
+          console.error(`Error parsing CSV row ${i + 1} in export function:`, error);
         }
       }
 
-      if (jsonFiles.length === 0) {
-        throw new Error('No JSON files found. Make sure Step 4 has completed and generated JSON files.');
+      if (parseErrors.length > 0) {
+        console.warn('CSV parsing errors in export function:', parseErrors.slice(0, 5));
       }
+
+      if (jsonFiles.length === 0) {
+        const errorMsg = parseErrors.length > 0
+          ? `No JSON files found. CSV parsing errors detected. Check console for details. Found ${parseErrors.length} parse errors.`
+          : 'No JSON files found. Make sure Step 4 has completed and generated JSON files.';
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`✅ Successfully parsed ${jsonFiles.length} JSON files from CSV for deployment`);
 
       if (statusDiv) {
         statusDiv.innerHTML = `📁 Found ${jsonFiles.length} product JSON files. Deploying...`;
@@ -6483,25 +6500,50 @@
       }
 
       const products = [];
+      let parseErrors = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, '').trim());
-        const jsonFileName = values[jsonFileNameIndex];
-        const url = urlIndex >= 0 ? values[urlIndex] : '';
-        const name = nameIndex >= 0 ? values[nameIndex] : '';
+        try {
+          const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, '').trim());
+          
+          // Check if we have enough columns
+          if (values.length <= jsonFileNameIndex) {
+            parseErrors.push(`Row ${i + 1}: Not enough columns (expected at least ${jsonFileNameIndex + 1}, got ${values.length})`);
+            continue;
+          }
+          
+          const jsonFileName = values[jsonFileNameIndex];
+          const url = urlIndex >= 0 && urlIndex < values.length ? values[urlIndex] : '';
+          const name = nameIndex >= 0 && nameIndex < values.length ? values[nameIndex] : '';
 
-        if (jsonFileName && jsonFileName.endsWith('.json')) {
-          products.push({
-            name: name || 'Unknown Product',
-            url: url || '',
-            jsonFileName: jsonFileName
-          });
+          if (jsonFileName && jsonFileName.endsWith('.json')) {
+            products.push({
+              name: name || 'Unknown Product',
+              url: url || '',
+              jsonFileName: jsonFileName
+            });
+          } else if (jsonFileName) {
+            // Log products that have a json_file_name but it doesn't end with .json
+            console.warn(`Row ${i + 1}: json_file_name doesn't end with .json: "${jsonFileName}"`);
+          }
+        } catch (error) {
+          parseErrors.push(`Row ${i + 1}: ${error.message}`);
+          console.error(`Error parsing CSV row ${i + 1}:`, error);
         }
       }
 
-      if (products.length === 0) {
-        throw new Error('No products with JSON files found. Make sure Step 4 has completed.');
+      if (parseErrors.length > 0) {
+        console.warn('CSV parsing errors:', parseErrors.slice(0, 5)); // Log first 5 errors
       }
+
+      if (products.length === 0) {
+        const errorMsg = parseErrors.length > 0 
+          ? `No products with JSON files found. CSV parsing errors detected. Check console for details. Found ${parseErrors.length} parse errors.`
+          : 'No products with JSON files found. Make sure Step 4 has completed and generated JSON files.';
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`✅ Successfully parsed ${products.length} products from CSV`);
 
       // Load suppressor block (read from file if available, otherwise use hardcoded version)
       let suppressorBlock = '';
