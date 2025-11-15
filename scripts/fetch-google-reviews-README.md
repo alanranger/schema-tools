@@ -13,7 +13,7 @@ This script fetches all reviews from your Google My Business account and saves t
 2. **OAuth Credentials**
    - Your credentials file should be located at:
      ```
-     /inputs-files/workflow/credentials/client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json
+     shared-resources/csv processed/credentials/client_secret_367492921794-ps8fhbtuf2gb5vhnp5p06qfhhiehlqmu.apps.googleusercontent.com.json
      ```
    - Ensure this file exists before running the script
 
@@ -38,7 +38,7 @@ This script fetches all reviews from your Google My Business account and saves t
 
 The script saves reviews to:
 ```
-/inputs-files/workflow/03b – google_reviews.csv
+shared-resources/csv/raw-03b-google-reviews.csv
 ```
 
 ### CSV Format
@@ -73,7 +73,7 @@ The script saves reviews to:
 ## Next Steps
 
 After fetching Google reviews:
-1. The CSV file will be saved to `/inputs-files/workflow/03b – google_reviews.csv`
+1. The CSV file will be saved to `shared-resources/csv/raw-03b-google-reviews.csv`
 2. Continue with Step 3b: Merge Reviews and Generate Merged Dataset
 3. Merge with Trustpilot reviews and other data sources
 
