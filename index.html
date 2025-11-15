@@ -2688,6 +2688,9 @@
       <div class="button-group" style="margin-bottom: 1rem;">
         <button onclick="testBlogSchemaOrg()">Test on Schema.org Validator</button>
         <button onclick="testBlogGoogleRichResults()" class="secondary">Test on Google Rich Results</button>
+        <button id="exportAndDeployBlogBtn" onclick="exportAndDeployBlogSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          🚀 Export JSON & Deploy to GitHub
+        </button>
         <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save to alanranger-schema folder</button>
         <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema</button>
       </div>
@@ -6108,6 +6111,9 @@
       }
     };
 
+    // Store schema globally for export/deploy
+    window.currentBlogSchema = blogSchema;
+
     // Display the schema
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
@@ -6140,6 +6146,79 @@
     document.getElementById('blogSchemaOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
     console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
+  }
+
+  // Export and Deploy blog schema to GitHub (Electron only)
+  async function exportAndDeployBlogSchema() {
+    if (!window.currentBlogSchema) {
+      alert('Please generate blog schema first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease use "Save to alanranger-schema folder" and manually commit/push.');
+      return;
+    }
+
+    const fileName = 'blog-schema.json';
+
+    const exportBtn = document.getElementById('exportAndDeployBlogBtn');
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    try {
+      // Clean up schema: remove @context from objects inside @graph (if present)
+      const cleanedSchema = cleanupSchemaForExport(window.currentBlogSchema);
+      
+      // Generate JSON (formatted, not minified)
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+
+      blogLog(`\n🚀 Export & Deploy:`);
+      blogLog(`   📁 Saving to alanranger-schema folder...`);
+
+      // Deploy using Electron API
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+      
+      blogLog(`   ✅ ${result.message}`);
+      blogLog(`   📁 File: ${result.filePath}`);
+      blogLog(`   🔄 Git: Committed and pushed to GitHub`);
+      blogLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      blogLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+
+      // Also trigger download for user's records
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 File saved to: ${result.filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}\n\n📥 File also downloaded to your Downloads folder.`);
+
+    } catch (error) {
+      blogLog(`   ❌ Deployment error: ${error.message}`);
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
+    }
   }
 
   function copyBlogSchema() {
