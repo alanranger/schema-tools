@@ -2223,25 +2223,14 @@ def main():
             continue
         
         # Write individual JSON file for this product
+        # JSON should match exactly what's in the HTML script tag (no cleanup needed)
         json_filename = f"{product_name_slug}_schema.json"
         json_path = outputs_dir / json_filename
         json_written = False
         try:
-            # Clean up schema: remove @context from objects inside @graph
-            cleaned_schema = schema_graph.copy()
-            if '@graph' in cleaned_schema and isinstance(cleaned_schema['@graph'], list):
-                cleaned_graph = []
-                for item in cleaned_schema['@graph']:
-                    if isinstance(item, dict) and '@context' in item:
-                        # Remove @context from individual items
-                        item_cleaned = {k: v for k, v in item.items() if k != '@context'}
-                        cleaned_graph.append(item_cleaned)
-                    else:
-                        cleaned_graph.append(item)
-                cleaned_schema['@graph'] = cleaned_graph
-            
+            # Use the exact same schema_graph that goes into HTML - no cleanup
             with open(json_path, 'w', encoding='utf-8') as f:
-                json.dump(cleaned_schema, f, indent=2, ensure_ascii=False)
+                json.dump(schema_graph, f, indent=2, ensure_ascii=False)
             json_written = True
         except PermissionError as e:
             print(f"⚠️ Permission denied when writing {json_filename} (continuing...)")
