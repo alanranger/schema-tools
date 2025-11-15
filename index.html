@@ -6271,43 +6271,69 @@
         throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
       }
 
-      // Parse CSV (handle quoted fields with commas)
-      const parseCSVLine = (line) => {
-        const result = [];
-        let current = '';
+      // Parse CSV properly handling multi-line quoted fields
+      const parseCSV = (csvText) => {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
         let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
+        
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          const nextChar = csvText[i + 1];
+          
           if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-              current += '"';
+            if (inQuotes && nextChar === '"') {
+              // Escaped quote (double quote)
+              currentField += '"';
               i++; // Skip next quote
             } else {
+              // Toggle quote state
               inQuotes = !inQuotes;
             }
           } else if (char === ',' && !inQuotes) {
-            result.push(current.trim());
-            current = '';
+            // Field separator
+            currentRow.push(currentField);
+            currentField = '';
+          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            // Row separator (only if not in quotes)
+            if (char === '\r' && nextChar === '\n') {
+              i++; // Skip \n after \r
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+              currentRow.push(currentField);
+              rows.push(currentRow);
+              currentRow = [];
+              currentField = '';
+            }
           } else {
-            current += char;
+            currentField += char;
           }
         }
-        result.push(current.trim());
-        return result;
+        
+        // Add last field and row
+        if (currentField !== '' || currentRow.length > 0) {
+          currentRow.push(currentField);
+          rows.push(currentRow);
+        }
+        
+        return rows;
       };
 
-      const lines = csvResult.content.split('\n').filter(l => l.trim());
-      const headers = parseCSVLine(lines[0]);
+      const rows = parseCSV(csvResult.content);
+      if (rows.length === 0) {
+        throw new Error('CSV file is empty or could not be parsed.');
+      }
+      const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
       const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
       const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
       const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('file'));
 
       const jsonFiles = [];
       let parseErrors = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
+      for (let i = 1; i < rows.length; i++) {
         try {
-          const values = parseCSVLine(lines[i]);
+          const values = rows[i];
           
           // Check if we have enough columns
           if (jsonFileNameIndex >= 0 && values.length > jsonFileNameIndex) {
@@ -6464,33 +6490,60 @@
         throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
       }
 
-      // Parse CSV (handle quoted fields with commas)
-      const parseCSVLine = (line) => {
-        const result = [];
-        let current = '';
+      // Parse CSV properly handling multi-line quoted fields
+      const parseCSV = (csvText) => {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
         let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
+        
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          const nextChar = csvText[i + 1];
+          
           if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-              current += '"';
+            if (inQuotes && nextChar === '"') {
+              // Escaped quote (double quote)
+              currentField += '"';
               i++; // Skip next quote
             } else {
+              // Toggle quote state
               inQuotes = !inQuotes;
             }
           } else if (char === ',' && !inQuotes) {
-            result.push(current.trim());
-            current = '';
+            // Field separator
+            currentRow.push(currentField);
+            currentField = '';
+          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            // Row separator (only if not in quotes)
+            if (char === '\r' && nextChar === '\n') {
+              i++; // Skip \n after \r
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+              currentRow.push(currentField);
+              rows.push(currentRow);
+              currentRow = [];
+              currentField = '';
+            }
           } else {
-            current += char;
+            currentField += char;
           }
         }
-        result.push(current.trim());
-        return result;
+        
+        // Add last field and row
+        if (currentField !== '' || currentRow.length > 0) {
+          currentRow.push(currentField);
+          rows.push(currentRow);
+        }
+        
+        return rows;
       };
 
-      const lines = csvResult.content.split('\n').filter(l => l.trim());
-      const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+      const rows = parseCSV(csvResult.content);
+      if (rows.length === 0) {
+        throw new Error('CSV file is empty or could not be parsed.');
+      }
+      const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
       const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
       const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
       const nameIndex = headers.findIndex(h => h.toLowerCase().includes('product_name') || (h.toLowerCase().includes('name') && !h.toLowerCase().includes('file')));
@@ -6501,10 +6554,9 @@
 
       const products = [];
       let parseErrors = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
+      for (let i = 1; i < rows.length; i++) {
         try {
-          const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, '').trim());
+          const values = rows[i].map(v => v.replace(/^"|"$/g, '').trim());
           
           // Check if we have enough columns
           if (values.length <= jsonFileNameIndex) {
@@ -6524,7 +6576,7 @@
             });
           } else if (jsonFileName) {
             // Log products that have a json_file_name but it doesn't end with .json
-            console.warn(`Row ${i + 1}: json_file_name doesn't end with .json: "${jsonFileName}"`);
+            console.warn(`Row ${i + 1}: json_file_name doesn't end with .json: "${jsonFileName.substring(0, 50)}..."`);
           }
         } catch (error) {
           parseErrors.push(`Row ${i + 1}: ${error.message}`);
