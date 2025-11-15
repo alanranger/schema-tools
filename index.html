@@ -6519,39 +6519,43 @@
       
       // Fallback to hardcoded suppressor if file read failed
       if (!suppressorBlock) {
-        // Use string concatenation to avoid HTML parser issues with </script>
-        const scriptStart = '<' + 'script>';
-        const scriptEnd = '<' + '/' + 'script>';
-        suppressorBlock = '<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->\n\n' +
-          scriptStart + '\n' +
-          '(function(){\n' +
-          '  // Remove Squarespace\'s built-in, short Product JSON-LD\n' +
-          '  const removeSquarespaceProduct = () => {\n' +
-          '    document.querySelectorAll(\'script[type="application/ld+json"]\').forEach(el => {\n' +
-          '      const txt = el.textContent.trim();\n' +
-          '      if (txt.includes(\'"@type":"Product"\')) {\n' +
-          '        try {\n' +
-          '          const j = JSON.parse(txt);\n' +
-          '          const looksLikeSquarespace =\n' +
-          '            txt.length < 1500 &&\n' +
-          '            !j.aggregateRating &&\n' +
-          '            !j.review &&\n' +
-          '            j.offers &&\n' +
-          '            j.name &&\n' +
-          '            !txt.includes(\'"hasMerchantReturnPolicy"\');\n' +
-          '          if (looksLikeSquarespace) el.remove();\n' +
-          '        } catch(e){}\n' +
-          '      }\n' +
-          '    });\n' +
-          '  };\n' +
-          '  // Run several times to catch async Squarespace hydration\n' +
-          '  removeSquarespaceProduct();\n' +
-          '  document.addEventListener(\'DOMContentLoaded\', removeSquarespaceProduct);\n' +
-          '  window.addEventListener(\'load\', () => setTimeout(removeSquarespaceProduct, 1000));\n' +
-          '  const obs = new MutationObserver(removeSquarespaceProduct);\n' +
-          '  obs.observe(document.documentElement, { childList: true, subtree: true });\n' +
-          '})();\n' +
-          scriptEnd;
+        // Build suppressor block using array join to avoid quote escaping issues
+        const scriptStartTag = '<' + 'script>';
+        const scriptEndTag = '<' + '/' + 'script>';
+        const suppressorLines = [
+          '<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->',
+          '',
+          scriptStartTag,
+          '(function(){',
+          '  // Remove Squarespace\'s built-in, short Product JSON-LD',
+          '  const removeSquarespaceProduct = () => {',
+          '    document.querySelectorAll(\'script[type="application/ld+json"]\').forEach(el => {',
+          '      const txt = el.textContent.trim();',
+          '      if (txt.includes(\'"@type":"Product"\')) {',
+          '        try {',
+          '          const j = JSON.parse(txt);',
+          '          const looksLikeSquarespace =',
+          '            txt.length < 1500 &&',
+          '            !j.aggregateRating &&',
+          '            !j.review &&',
+          '            j.offers &&',
+          '            j.name &&',
+          '            !txt.includes(\'"hasMerchantReturnPolicy"\');',
+          '          if (looksLikeSquarespace) el.remove();',
+          '        } catch(e){}',
+          '      }',
+          '    });',
+          '  };',
+          '  // Run several times to catch async Squarespace hydration',
+          '  removeSquarespaceProduct();',
+          '  document.addEventListener(\'DOMContentLoaded\', removeSquarespaceProduct);',
+          '  window.addEventListener(\'load\', () => setTimeout(removeSquarespaceProduct, 1000));',
+          '  const obs = new MutationObserver(removeSquarespaceProduct);',
+          '  obs.observe(document.documentElement, { childList: true, subtree: true });',
+          '})();',
+          scriptEndTag
+        ];
+        suppressorBlock = suppressorLines.join('\n');
       }
 
       // Generate script tags for each product
