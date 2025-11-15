@@ -6685,7 +6685,9 @@
         });
 
         // Add to CSV (include full code block with suppressor)
-        csvContent += `"${product.name}","${product.url}","${product.jsonFileName}","${fullCodeBlock.replace(/\n/g, '\\n').replace(/"/g, '""')}"\n`;
+        // In CSV, newlines within quoted fields should be actual newlines, not escaped
+        // Only escape double quotes by doubling them
+        csvContent += `"${product.name}","${product.url}","${product.jsonFileName}","${fullCodeBlock.replace(/"/g, '""')}"\n`;
 
         // Add to HTML display
         scriptTagsHtml += `<div style="margin-bottom: 1rem; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 4px;">`;
