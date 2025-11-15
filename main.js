@@ -394,9 +394,11 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
         const { cmd, args, desc } = gitCommands[currentStep];
         console.log(`🔄 Git: ${desc}...`);
         
+        // Use shell: false for git commands to ensure proper argument handling
+        // This prevents commit messages from being interpreted as pathspecs
         const gitProcess = spawn(cmd, args, {
           cwd: schemaRepoPath,
-          shell: isWindows,
+          shell: false,
           stdio: ['ignore', 'pipe', 'pipe']
         });
         
@@ -508,9 +510,11 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
         const { cmd, args, desc } = gitCommands[currentStep];
         console.log(`🔄 Git: ${desc}...`);
         
+        // Use shell: false for git commands to ensure proper argument handling
+        // This prevents commit messages from being interpreted as pathspecs
         const gitProcess = spawn(cmd, args, {
           cwd: schemaRepoPath,
-          shell: isWindows,
+          shell: false,
           stdio: ['ignore', 'pipe', 'pipe']
         });
         
