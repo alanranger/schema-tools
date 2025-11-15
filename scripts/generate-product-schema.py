@@ -1001,6 +1001,13 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_slug = slugify(product_name)
         product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
     
+    # Add mainEntityOfPage (matching events schema format) - helps Google identify the primary entity
+    if product_url:
+        product_schema["mainEntityOfPage"] = {
+            "@type": "WebPage",
+            "@id": product_url
+        }
+    
     return {
         "@context": "https://schema.org",
         "@graph": graph
