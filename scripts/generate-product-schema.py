@@ -211,7 +211,7 @@ def get_breadcrumbs(product_name, product_url):
         parent_category_name = 'Photo Workshops UK'
         parent_category_url = 'https://www.alanranger.com/photo-workshops-uk'
     
-    return {
+    breadcrumb = {
         "@type": "BreadcrumbList",
         "itemListElement": [
             {
@@ -234,6 +234,17 @@ def get_breadcrumbs(product_name, product_url):
             }
         ]
     }
+    
+    # Add @id to breadcrumb (matching lessons schema format)
+    if product_url:
+        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+        url_slug = url_path.split('/')[-1] if url_path else slugify(breadcrumb_name)
+        breadcrumb["@id"] = f"https://www.alanranger.com/{url_slug}#breadcrumbs"
+    else:
+        product_slug = slugify(breadcrumb_name)
+        breadcrumb["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
+    
+    return breadcrumb
 
 def normalize_rating(rating):
     """Normalize rating to numeric value"""
