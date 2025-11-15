@@ -942,6 +942,23 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 {"@type": "ListItem", "position": 3, "name": product_name, "item": product_url}
             ]
         }
+        # Add @id to breadcrumb (matching lessons schema format)
+        if product_url:
+            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+            url_slug = url_path.split('/')[-1] if url_path else slugify(product_name)
+            breadcrumb_data["@id"] = f"https://www.alanranger.com/{url_slug}#breadcrumbs"
+        else:
+            product_slug = slugify(product_name)
+            breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
+    
+    # Add @id to breadcrumb (matching lessons schema format)
+    if product_url:
+        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+        url_slug = url_path.split('/')[-1] if url_path else slugify(product_name)
+        breadcrumb_data["@id"] = f"https://www.alanranger.com/{url_slug}#breadcrumbs"
+    else:
+        product_slug = slugify(product_name)
+        breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
     
     graph = [
         LOCAL_BUSINESS,
