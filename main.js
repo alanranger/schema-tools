@@ -371,32 +371,11 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
       console.log(`✅ Saved schema file: ${filePath}`);
       
-      // Also create HTML file with script tags for Google Rich Results Test
-      const htmlFileName = fileName.replace('.json', '.html');
-      const htmlFilePath = path.join(schemaRepoPath, htmlFileName);
-      const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schema - ${fileName}</title>
-</head>
-<body>
-  <script type="application/ld+json">
-${jsonContent}
-  </script>
-</body>
-</html>`;
-      fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
-      console.log(`✅ Saved HTML file: ${htmlFilePath}`);
-      
-      // Git operations - add both files separately, then commit with proper message
+      // Git operations - stage, commit, and push
       const isWindows = process.platform === 'win32';
-      // Use a simpler commit message to avoid parsing issues
       const commitMessage = `Update ${fileName}`;
       const gitCommands = [
-        { cmd: 'git', args: ['add', fileName], desc: 'Stage JSON file' },
-        { cmd: 'git', args: ['add', htmlFileName], desc: 'Stage HTML file' },
+        { cmd: 'git', args: ['add', fileName], desc: 'Stage file' },
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
@@ -408,9 +387,7 @@ ${jsonContent}
             success: true, 
             message: `✅ Schema saved and deployed successfully!`,
             filePath: filePath,
-            fileName: fileName,
-            htmlFilePath: htmlFilePath,
-            htmlFileName: htmlFileName
+            fileName: fileName
           });
           return;
         }
@@ -436,8 +413,20 @@ ${jsonContent}
         });
         
         gitProcess.on('close', (code) => {
-          if (code === 0) {
-            console.log(`✅ Git: ${desc} completed`);
+          // Check if stderr contains only warnings (not actual errors)
+          const hasOnlyWarnings = stderr && (
+            stderr.includes('LF will be replaced by CRLF') ||
+            stderr.includes('CRLF will be replaced by LF') ||
+            stderr.includes('warning:')
+          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
+          
+          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
+            // Success, or exit code 1 with only warnings (which is OK)
+            if (hasOnlyWarnings) {
+              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
+            } else {
+              console.log(`✅ Git: ${desc} completed`);
+            }
             currentStep++;
             runNextCommand();
           } else {
