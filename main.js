@@ -460,3 +460,132 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
   });
 });
 
+// IPC handler for batch deploying multiple schema files
+ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      // Use actual project path
+      const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+      const projectRoot = isBuiltApp 
+        ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+        : __dirname;
+      
+      const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
+      
+      // Ensure directory exists
+      if (!fs.existsSync(schemaRepoPath)) {
+        reject(new Error(`Schema repository folder not found: ${schemaRepoPath}`));
+        return;
+      }
+
+      // Write all files first
+      const fileNames = [];
+      for (const file of files) {
+        const filePath = path.join(schemaRepoPath, file.fileName);
+        fs.writeFileSync(filePath, file.jsonContent, 'utf-8');
+        fileNames.push(file.fileName);
+        console.log(`✅ Saved schema file: ${filePath}`);
+      }
+
+      // Git operations - stage all files, commit once, push once
+      const isWindows = process.platform === 'win32';
+      const commitMessage = `Update ${fileNames.length} product schema files`;
+      const gitCommands = [
+        { cmd: 'git', args: ['add', ...fileNames], desc: 'Stage all files' },
+        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
+        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
+      ];
+      
+      let currentStep = 0;
+      const runNextCommand = () => {
+        if (currentStep >= gitCommands.length) {
+          resolve({ 
+            success: true, 
+            message: `✅ ${fileNames.length} schema files saved and deployed successfully!`,
+            fileCount: fileNames.length
+          });
+          return;
+        }
+        
+        const { cmd, args, desc } = gitCommands[currentStep];
+        console.log(`🔄 Git: ${desc}...`);
+        
+        const gitProcess = spawn(cmd, args, {
+          cwd: schemaRepoPath,
+          shell: isWindows,
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        gitProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+        
+        gitProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        gitProcess.on('close', (code) => {
+          // Check if stderr contains only warnings (not actual errors)
+          const hasOnlyWarnings = stderr && (
+            stderr.includes('LF will be replaced by CRLF') ||
+            stderr.includes('CRLF will be replaced by LF') ||
+            stderr.includes('warning:')
+          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
+          
+          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
+            // Success, or exit code 1 with only warnings (which is OK)
+            if (hasOnlyWarnings) {
+              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
+            } else {
+              console.log(`✅ Git: ${desc} completed`);
+            }
+            currentStep++;
+            runNextCommand();
+          } else {
+            // For commit, code 1 might mean "nothing to commit" - that's OK
+            if (currentStep === 1 && code === 1 && stderr.includes('nothing to commit')) {
+              console.log(`ℹ️ Git: No changes to commit (files unchanged)`);
+              currentStep++;
+              runNextCommand();
+            } else {
+              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              console.error(`❌ ${error}`);
+              reject(new Error(error));
+            }
+          }
+        });
+        
+        gitProcess.on('error', (err) => {
+          const error = `Git ${desc} error: ${err.message}`;
+          console.error(`❌ ${error}`);
+          reject(new Error(error));
+        });
+      };
+      
+      // Start git operations
+      runNextCommand();
+      
+    } catch (error) {
+      console.error('❌ Error batch deploying schemas:', error);
+      reject(error);
+    }
+  });
+});
+
+// IPC handler for reading files
+ipcMain.handle('read-file', async (event, filePath) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { success: true, content };
+  } catch (error) {
+    console.error('❌ Error reading file:', error);
+    throw error;
+  }
+});
+

@@ -2149,7 +2149,15 @@
           </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
-            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).
+            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).<br><br>
+            <button id="exportAndDeployProductBtn" onclick="exportAndDeployProductSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-top: 0.5rem;">
+              🚀 Export JSON Files & Deploy to GitHub
+            </button>
+            <button id="generateProductScriptTagsBtn" onclick="generateProductScriptTags()" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-top: 0.5rem;">
+              📋 Generate Squarespace Script Tags List
+            </button>
+            <div id="productDeployStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.875rem;"></div>
+            <div id="productScriptTagsList" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; font-size: 0.875rem; max-height: 400px; overflow-y: auto;"></div>
           </div>
         </div>
 
@@ -6220,6 +6228,390 @@
       alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
     }
   }
+
+  // Export and Deploy All Product Schema JSON Files to GitHub (Electron only)
+  async function exportAndDeployProductSchema() {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy individual JSON files from shared-resources/outputs/schema/ to alanranger-schema folder and commit/push.');
+      return;
+    }
+
+    const exportBtn = document.getElementById('exportAndDeployProductBtn');
+    const statusDiv = document.getElementById('productDeployStatus');
+
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.innerHTML = '📁 Reading product schema JSON files...';
+    }
+
+    try {
+      // Read the combined CSV to get list of all products and their JSON filenames
+      const csvPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\csv processed\\04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv';
+      const schemaDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema';
+      
+      if (!window.electronAPI || !window.electronAPI.readFile) {
+        throw new Error('File reading not available. Please ensure you are using the Electron app.');
+      }
+
+      // Read CSV to get list of JSON files
+      const csvResult = await window.electronAPI.readFile(csvPath);
+      if (!csvResult.success) {
+        throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
+      }
+
+      // Parse CSV (handle quoted fields with commas)
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++; // Skip next quote
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const lines = csvResult.content.split('\n').filter(l => l.trim());
+      const headers = parseCSVLine(lines[0]);
+      const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
+      const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
+      const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('file'));
+
+      const jsonFiles = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const values = parseCSVLine(lines[i]);
+        if (jsonFileNameIndex >= 0 && values[jsonFileNameIndex]) {
+          const jsonFileName = values[jsonFileNameIndex].replace(/^"|"$/g, '').trim();
+          if (jsonFileName && jsonFileName.endsWith('.json')) {
+            jsonFiles.push({
+              fileName: jsonFileName,
+              url: urlIndex >= 0 ? values[urlIndex].replace(/^"|"$/g, '').trim() : '',
+              name: nameIndex >= 0 ? values[nameIndex].replace(/^"|"$/g, '').trim() : ''
+            });
+          }
+        }
+      }
+
+      if (jsonFiles.length === 0) {
+        throw new Error('No JSON files found. Make sure Step 4 has completed and generated JSON files.');
+      }
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Found ${jsonFiles.length} product JSON files. Deploying...`;
+      }
+
+      // Read and prepare all JSON files for batch deployment
+      const filesToDeploy = [];
+      let failedCount = 0;
+      const errors = [];
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Reading ${jsonFiles.length} JSON files...`;
+      }
+
+      for (const fileInfo of jsonFiles) {
+        try {
+          const jsonFilePath = `${schemaDir}\\${fileInfo.fileName}`;
+          const fileResult = await window.electronAPI.readFile(jsonFilePath);
+          
+          if (!fileResult.success) {
+            failedCount++;
+            errors.push(`${fileInfo.fileName}: File not found`);
+            continue;
+          }
+
+          const schema = JSON.parse(fileResult.content);
+          const cleanedSchema = cleanupSchemaForExport(schema);
+          const jsonString = JSON.stringify(cleanedSchema, null, 2);
+          
+          filesToDeploy.push({
+            fileName: fileInfo.fileName,
+            jsonContent: jsonString
+          });
+
+          if (statusDiv && filesToDeploy.length % 10 === 0) {
+            statusDiv.innerHTML = `📁 Read ${filesToDeploy.length}/${jsonFiles.length} files...`;
+          }
+        } catch (error) {
+          failedCount++;
+          errors.push(`${fileInfo.fileName}: ${error.message}`);
+        }
+      }
+
+      if (filesToDeploy.length === 0) {
+        throw new Error('No valid JSON files to deploy. Check errors above.');
+      }
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Deploying ${filesToDeploy.length} files in batch...`;
+      }
+
+      // Batch deploy all files in a single commit
+      const result = await window.electronAPI.batchDeploySchemas(filesToDeploy);
+      const deployedCount = filesToDeploy.length;
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `
+          ✅ ${result.message}<br>
+          ${failedCount > 0 ? `⚠️ ${failedCount} files failed to read (check console for details)<br>` : ''}
+          🔄 Git: All files committed in single commit and pushed to GitHub<br>
+          ⏱️  GitHub Pages will auto-deploy in 2-5 minutes<br>
+          🌐 Files available at: <a href="https://schema.alanranger.com/" target="_blank">https://schema.alanranger.com/</a>
+        `;
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.border = '1px solid #c3e6cb';
+        statusDiv.style.color = '#155724';
+      }
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON Files & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      if (failedCount > 0) {
+        console.error('Deployment errors:', errors);
+        alert(`✅ Deployed ${deployedCount} files successfully!\n\n⚠️ ${failedCount} files failed. Check console for details.`);
+      } else {
+        alert(`✅ Successfully deployed ${deployedCount} product schema files!\n\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Files available at: https://schema.alanranger.com/`);
+      }
+
+    } catch (error) {
+      if (statusDiv) {
+        statusDiv.innerHTML = `❌ Deployment error: ${error.message}`;
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.border = '1px solid #f5c6cb';
+        statusDiv.style.color = '#721c24';
+      }
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON Files & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nMake sure Step 4 has completed and generated JSON files.`);
+    }
+  }
+
+  // Generate Squarespace Script Tags List for Products (Individual JSON files)
+  async function generateProductScriptTags() {
+    const scriptTagsBtn = document.getElementById('generateProductScriptTagsBtn');
+    const scriptTagsDiv = document.getElementById('productScriptTagsList');
+
+    if (scriptTagsBtn) {
+      scriptTagsBtn.disabled = true;
+      scriptTagsBtn.textContent = '🔄 Generating...';
+    }
+
+    if (scriptTagsDiv) {
+      scriptTagsDiv.style.display = 'block';
+      scriptTagsDiv.innerHTML = '📋 Reading product data...';
+    }
+
+    try {
+      // Read the combined CSV to get list of all products
+      const csvPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\csv processed\\04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv';
+      
+      if (!window.electronAPI || !window.electronAPI.readFile) {
+        throw new Error('File reading not available. Please ensure you are using the Electron app.');
+      }
+
+      const csvResult = await window.electronAPI.readFile(csvPath);
+      if (!csvResult.success) {
+        throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
+      }
+
+      // Parse CSV (handle quoted fields with commas)
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++; // Skip next quote
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const lines = csvResult.content.split('\n').filter(l => l.trim());
+      const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+      const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
+      const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
+      const nameIndex = headers.findIndex(h => h.toLowerCase().includes('product_name') || (h.toLowerCase().includes('name') && !h.toLowerCase().includes('file')));
+
+      if (jsonFileNameIndex === -1) {
+        throw new Error('JSON file name column not found in CSV. Make sure Step 4 has completed.');
+      }
+
+      const products = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, '').trim());
+        const jsonFileName = values[jsonFileNameIndex];
+        const url = urlIndex >= 0 ? values[urlIndex] : '';
+        const name = nameIndex >= 0 ? values[nameIndex] : '';
+
+        if (jsonFileName && jsonFileName.endsWith('.json')) {
+          products.push({
+            name: name || 'Unknown Product',
+            url: url || '',
+            jsonFileName: jsonFileName
+          });
+        }
+      }
+
+      if (products.length === 0) {
+        throw new Error('No products with JSON files found. Make sure Step 4 has completed.');
+      }
+
+      // Generate script tags for each product
+      let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">📋 Squarespace Script Tags (one per product):</h4>';
+      scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
+      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. Copy the script tag for each product and paste it into a Code Block on that product page in Squarespace.';
+      scriptTagsHtml += '</div>';
+      scriptTagsHtml += '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">';
+      scriptTagsHtml += `<button onclick="downloadProductScriptTagsCSV()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📥 Download CSV</button>`;
+      scriptTagsHtml += '</div>';
+      scriptTagsHtml += '<div style="font-family: monospace; font-size: 0.8rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">';
+
+      let csvContent = 'Product Name,Product URL,JSON File Name,Script Tag\n';
+      const allScriptTags = [];
+
+      for (const product of products) {
+        // Generate script tag for this product
+        const scriptTag = `<!-- Product Schema - Auto-fetches from GitHub Pages -->
+<script type="application/ld+json"
+        src="https://schema.alanranger.com/${product.jsonFileName}">
+</script>`;
+
+        allScriptTags.push({
+          name: product.name,
+          url: product.url,
+          jsonFileName: product.jsonFileName,
+          scriptTag: scriptTag
+        });
+
+        // Add to CSV
+        csvContent += `"${product.name}","${product.url}","${product.jsonFileName}","${scriptTag.replace(/\n/g, '\\n').replace(/"/g, '""')}"\n`;
+
+        // Add to HTML display
+        scriptTagsHtml += `<div style="margin-bottom: 1rem; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 4px;">`;
+        scriptTagsHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem; color: #2d3748;">${product.name}</div>`;
+        scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem; word-break: break-all;">${product.url || 'No URL'}</div>`;
+        scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;">JSON: ${product.jsonFileName}</div>`;
+        scriptTagsHtml += `<pre style="background: #f7fafc; padding: 0.5rem; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word;">${scriptTag}</pre>`;
+        scriptTagsHtml += `<button onclick="copyProductScriptTag(${JSON.stringify(product.jsonFileName)})" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Copy</button>`;
+        scriptTagsHtml += `</div>`;
+      }
+
+      scriptTagsHtml += '</div>';
+
+      // Store data globally for CSV download and copy functions
+      window.productScriptTagsData = allScriptTags;
+      window.productScriptTagsCSV = csvContent;
+
+      if (scriptTagsDiv) {
+        scriptTagsDiv.innerHTML = scriptTagsHtml;
+      }
+
+      if (scriptTagsBtn) {
+        scriptTagsBtn.disabled = false;
+        scriptTagsBtn.textContent = '✅ Generated!';
+        setTimeout(() => {
+          scriptTagsBtn.textContent = '📋 Generate Squarespace Script Tags List';
+        }, 2000);
+      }
+
+    } catch (error) {
+      if (scriptTagsDiv) {
+        scriptTagsDiv.innerHTML = `❌ Error generating script tags: ${error.message}`;
+        scriptTagsDiv.style.background = '#f8d7da';
+        scriptTagsDiv.style.border = '1px solid #f5c6cb';
+        scriptTagsDiv.style.color = '#721c24';
+      }
+      if (scriptTagsBtn) {
+        scriptTagsBtn.disabled = false;
+        scriptTagsBtn.textContent = '📋 Generate Squarespace Script Tags List';
+      }
+      alert(`Failed to generate script tags: ${error.message}\n\nMake sure Step 4 has completed and generated JSON files.`);
+    }
+  }
+
+  // Copy individual product script tag
+  function copyProductScriptTag(jsonFileName) {
+    if (!window.productScriptTagsData) {
+      alert('No script tags generated yet. Please click "Generate Squarespace Script Tags List" first.');
+      return;
+    }
+
+    const product = window.productScriptTagsData.find(p => p.jsonFileName === jsonFileName);
+    if (!product) {
+      alert('Product not found.');
+      return;
+    }
+
+    const scriptTag = `<!-- Product Schema - Auto-fetches from GitHub Pages -->
+<script type="application/ld+json"
+        src="https://schema.alanranger.com/${jsonFileName}">
+</script>`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(scriptTag).then(() => {
+        alert(`✅ Script tag for "${product.name}" copied to clipboard!`);
+      });
+    }
+  }
+
+  // Download CSV file with all script tags
+  function downloadProductScriptTagsCSV() {
+    if (!window.productScriptTagsCSV) {
+      alert('No script tags generated yet. Please click "Generate Squarespace Script Tags List" first.');
+      return;
+    }
+
+    const blob = new Blob([window.productScriptTagsCSV], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product-script-tags.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
 
   function copyBlogSchema() {
     const codeElement = document.getElementById('blogSchemaCode');

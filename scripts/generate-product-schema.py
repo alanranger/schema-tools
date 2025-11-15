@@ -1595,6 +1595,7 @@ def main():
     
     schemas_data = []
     html_files = []
+    all_schema_graphs = []  # Collect all schema graphs for unified JSON output
     nan_count = 0
     products_with_reviews_count = 0
     summary_rows = []
@@ -2188,11 +2189,52 @@ def main():
             print(f"   Skipping this product and continuing with others...")
             continue
         
+        # Write individual JSON file for this product
+        json_filename = f"{product_name_slug}_schema.json"
+        json_path = outputs_dir / json_filename
+        json_written = False
+        try:
+            # Clean up schema: remove @context from objects inside @graph
+            cleaned_schema = schema_graph.copy()
+            if '@graph' in cleaned_schema and isinstance(cleaned_schema['@graph'], list):
+                cleaned_graph = []
+                for item in cleaned_schema['@graph']:
+                    if isinstance(item, dict) and '@context' in item:
+                        # Remove @context from individual items
+                        item_cleaned = {k: v for k, v in item.items() if k != '@context'}
+                        cleaned_graph.append(item_cleaned)
+                    else:
+                        cleaned_graph.append(item)
+                cleaned_schema['@graph'] = cleaned_graph
+            
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(cleaned_schema, f, indent=2, ensure_ascii=False)
+            json_written = True
+        except PermissionError as e:
+            print(f"⚠️ Permission denied when writing {json_filename} (continuing...)")
+        except Exception as e:
+            print(f"⚠️ Error writing {json_filename}: {e} (continuing...)")
+        
         # Only add to lists if file was successfully written
         if html_content is None:
             continue
         
         html_files.append(html_filename)
+        
+        # Collect schema graph for unified JSON output (extract from @graph, remove @context from items)
+        # Remove @context from individual graph items (should only be at root level)
+        unified_schema_graph = schema_graph.copy()
+        if '@graph' in unified_schema_graph and isinstance(unified_schema_graph['@graph'], list):
+            cleaned_graph = []
+            for item in unified_schema_graph['@graph']:
+                if isinstance(item, dict) and '@context' in item:
+                    # Remove @context from individual items
+                    item_cleaned = {k: v for k, v in item.items() if k != '@context'}
+                    cleaned_graph.append(item_cleaned)
+                else:
+                    cleaned_graph.append(item)
+            unified_schema_graph['@graph'] = cleaned_graph
+        all_schema_graphs.append(unified_schema_graph)
         
         # Prepare for combined CSV
         review_count = len(product_reviews)
@@ -2209,7 +2251,8 @@ def main():
             'review_count': review_count,
             'average_rating': avg_rating or '',
             'has_reviews': 'Yes' if review_count > 0 else 'No',
-            'file_name': html_filename
+            'file_name': html_filename,
+            'json_file_name': json_filename if json_written else ''
         })
         
         summary_rows.append({
@@ -2254,10 +2297,11 @@ def main():
         print(f"✅ Cleaned up {removed_count} invalid schema files")
     
     print(f"✅ Generated {len(html_files)} HTML files")
+    print(f"✅ Generated {len(html_files)} JSON files (one per product)")
     
     # Post-generation summary
     valid_products = len(df_products) - nan_count
-    print(f"✅ Final schema files generated: {valid_products}")
+    print(f"✅ Final schema files generated: {valid_products} (HTML + JSON)")
     
     # Save combined CSV
     schemas_df = pd.DataFrame(schemas_data)
@@ -2278,6 +2322,53 @@ def main():
         print(f"📊 Review summary saved to: {summary_csv.name}")
     except Exception as e:
         print(f"⚠️ Could not save review summary: {e}")
+    
+    # Generate unified JSON file with all products in @graph structure
+    if all_schema_graphs:
+        print("\n" + "="*60)
+        print("📦 GENERATING UNIFIED PRODUCT SCHEMA")
+        print("="*60)
+        
+        # Collect all graph items from all schemas
+        unified_graph_items = []
+        seen_urls = set()  # Track URLs to avoid duplicates
+        
+        for schema_graph in all_schema_graphs:
+            if '@graph' in schema_graph and isinstance(schema_graph['@graph'], list):
+                for item in schema_graph['@graph']:
+                    # Only include Product/Course/Event objects (skip LocalBusiness and BreadcrumbList duplicates)
+                    item_type = item.get('@type', [])
+                    if isinstance(item_type, list):
+                        if 'Product' in item_type or 'Course' in item_type or 'Event' in item_type:
+                            # Check for duplicate URLs
+                            item_url = item.get('url', '')
+                            if item_url and item_url not in seen_urls:
+                                unified_graph_items.append(item)
+                                seen_urls.add(item_url)
+                    elif isinstance(item_type, str) and item_type in ['Product', 'Course', 'Event']:
+                        item_url = item.get('url', '')
+                        if item_url and item_url not in seen_urls:
+                            unified_graph_items.append(item)
+                            seen_urls.add(item_url)
+        
+        # Create unified schema with @graph structure
+        unified_schema = {
+            "@context": "https://schema.org",
+            "@graph": unified_graph_items
+        }
+        
+        # Save unified JSON file
+        unified_json_path = outputs_dir / 'products-schema.json'
+        try:
+            with open(unified_json_path, 'w', encoding='utf-8') as f:
+                json.dump(unified_schema, f, indent=2, ensure_ascii=False)
+            file_size_kb = unified_json_path.stat().st_size / 1024
+            print(f"✅ Unified product schema saved: {unified_json_path.name}")
+            print(f"   Products included: {len(unified_graph_items)}")
+            print(f"   File size: {file_size_kb:.2f} KB")
+            print(f"   Location: {unified_json_path.absolute()}")
+        except Exception as e:
+            print(f"⚠️ Could not save unified JSON: {e}")
     
     # Summary
     products_without_reviews = valid_products - products_with_reviews_count
@@ -2450,6 +2541,7 @@ def main():
         print(f"  Newest review date included: {newest_review_date_included}")
     print("")
     print(f"HTML files saved to: {outputs_dir.absolute()}")
+    print(f"JSON files saved to: {outputs_dir.absolute()}")
     print(f"Combined CSV saved to: {output_csv.absolute()}")
     print("="*60)
     print("\n✅ Schema generation complete!")
