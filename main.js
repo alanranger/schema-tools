@@ -367,15 +367,34 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
         return;
       }
       
-      // Write file
+      // Write JSON file
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
       console.log(`✅ Saved schema file: ${filePath}`);
       
-      // Git operations
+      // Also create HTML file with script tags for Google Rich Results Test
+      const htmlFileName = fileName.replace('.json', '.html');
+      const htmlFilePath = path.join(schemaRepoPath, htmlFileName);
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schema - ${fileName}</title>
+</head>
+<body>
+  <script type="application/ld+json">
+${jsonContent}
+  </script>
+</body>
+</html>`;
+      fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
+      console.log(`✅ Saved HTML file: ${htmlFilePath}`);
+      
+      // Git operations - add both files
       const isWindows = process.platform === 'win32';
       const gitCommands = [
-        { cmd: 'git', args: ['add', fileName], desc: 'Stage file' },
-        { cmd: 'git', args: ['commit', '-m', `Update ${fileName}`], desc: 'Commit changes' },
+        { cmd: 'git', args: ['add', fileName, htmlFileName], desc: 'Stage files' },
+        { cmd: 'git', args: ['commit', '-m', `Update ${fileName} and ${htmlFileName}`], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
       
@@ -386,7 +405,9 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
             success: true, 
             message: `✅ Schema saved and deployed successfully!`,
             filePath: filePath,
-            fileName: fileName
+            fileName: fileName,
+            htmlFilePath: htmlFilePath,
+            htmlFileName: htmlFileName
           });
           return;
         }

@@ -9609,10 +9609,16 @@
       const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
       
       addDebugLog(`   ✅ ${result.message}`);
-      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   📁 JSON File: ${result.filePath}`);
+      if (result.htmlFilePath) {
+        addDebugLog(`   📁 HTML File: ${result.htmlFilePath}`);
+      }
       addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
       addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
-      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+      addDebugLog(`   🌐 JSON URL: https://schema.alanranger.com/${fileName}`);
+      if (result.htmlFileName) {
+        addDebugLog(`   🌐 HTML URL (for testing): https://schema.alanranger.com/${result.htmlFileName}`);
+      }
 
       // Also trigger download for user's records
       const blob = new Blob([jsonString], { type: 'application/json' });
@@ -9633,7 +9639,8 @@
         }, 3000);
       }
 
-      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 File saved to: ${result.filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}\n\n📥 File also downloaded to your Downloads folder.`);
+      const htmlUrl = result.htmlFileName ? `\n🌐 HTML URL (for Google Rich Results Test): https://schema.alanranger.com/${result.htmlFileName}` : '';
+      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 JSON File saved to: ${result.filePath}${result.htmlFilePath ? `\n📁 HTML File saved to: ${result.htmlFilePath}` : ''}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 JSON URL: https://schema.alanranger.com/${fileName}${htmlUrl}\n\n📥 File also downloaded to your Downloads folder.`);
 
     } catch (error) {
       addDebugLog(`   ❌ Deployment error: ${error.message}`);
@@ -9673,10 +9680,16 @@
       const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonContent);
       
       addDebugLog(`   ✅ ${result.message}`);
-      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   📁 JSON File: ${result.filePath}`);
+      if (result.htmlFilePath) {
+        addDebugLog(`   📁 HTML File: ${result.htmlFilePath}`);
+      }
       addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
       addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
-      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+      addDebugLog(`   🌐 JSON URL: https://schema.alanranger.com/${fileName}`);
+      if (result.htmlFileName) {
+        addDebugLog(`   🌐 HTML URL (for testing): https://schema.alanranger.com/${result.htmlFileName}`);
+      }
       
       // Update UI with deployment success
       const exportContent = document.getElementById('schemaExportContent');
