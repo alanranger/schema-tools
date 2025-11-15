@@ -432,7 +432,7 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
             runNextCommand();
           } else {
             // For commit, code 1 might mean "nothing to commit" - that's OK
-            if (currentStep === 1 && code === 1 && stderr.includes('nothing to commit')) {
+            if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
               console.log(`ℹ️ Git: No changes to commit (file unchanged)`);
               currentStep++;
               runNextCommand();
@@ -548,7 +548,7 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
             runNextCommand();
           } else {
             // For commit, code 1 might mean "nothing to commit" - that's OK
-            if (currentStep === 1 && code === 1 && stderr.includes('nothing to commit')) {
+            if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
               console.log(`ℹ️ Git: No changes to commit (files unchanged)`);
               currentStep++;
               runNextCommand();
