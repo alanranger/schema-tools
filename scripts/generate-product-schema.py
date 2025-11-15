@@ -2243,20 +2243,8 @@ def main():
         
         html_files.append(html_filename)
         
-        # Collect schema graph for unified JSON output (extract from @graph, remove @context from items)
-        # Remove @context from individual graph items (should only be at root level)
-        unified_schema_graph = schema_graph.copy()
-        if '@graph' in unified_schema_graph and isinstance(unified_schema_graph['@graph'], list):
-            cleaned_graph = []
-            for item in unified_schema_graph['@graph']:
-                if isinstance(item, dict) and '@context' in item:
-                    # Remove @context from individual items
-                    item_cleaned = {k: v for k, v in item.items() if k != '@context'}
-                    cleaned_graph.append(item_cleaned)
-                else:
-                    cleaned_graph.append(item)
-            unified_schema_graph['@graph'] = cleaned_graph
-        all_schema_graphs.append(unified_schema_graph)
+        # Collect schema graph for unified JSON output (use exact same as HTML/individual JSON)
+        all_schema_graphs.append(schema_graph)
         
         # Prepare for combined CSV
         review_count = len(product_reviews)
