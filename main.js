@@ -374,9 +374,10 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       // Git operations - stage, commit, and push
       const isWindows = process.platform === 'win32';
       const commitMessage = `Update ${fileName}`;
+      // Quote commit message to prevent it from being interpreted as pathspecs on Windows
       const gitCommands = [
         { cmd: 'git', args: ['add', fileName], desc: 'Stage file' },
-        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
+        { cmd: 'git', args: ['commit', '-m', `"${commitMessage}"`], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
       
@@ -490,9 +491,10 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
       // Git operations - stage all files, commit once, push once
       const isWindows = process.platform === 'win32';
       const commitMessage = `Update ${fileNames.length} product schema files`;
+      // Quote commit message to prevent it from being interpreted as pathspecs on Windows
       const gitCommands = [
         { cmd: 'git', args: ['add', ...fileNames], desc: 'Stage all files' },
-        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
+        { cmd: 'git', args: ['commit', '-m', `"${commitMessage}"`], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
       
