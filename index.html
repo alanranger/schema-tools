@@ -6701,10 +6701,19 @@
 
       // Generate individual HTML files for each product (suppressor + script tag)
       // These can be opened directly and copied into Squarespace
-      if (window.electronAPI && window.electronAPI.writeFile) {
+      addToCombinedLog('============================================================\n📝 Generating Script Tag HTML Files\n============================================================\n', '4', 'script-tags');
+      
+      if (!window.electronAPI || !window.electronAPI.writeFile) {
+        const errorMsg = '⚠️ Electron API not available - cannot generate HTML files. Please use the Electron app.';
+        addToCombinedLog(errorMsg + '\n', '4', 'script-tags');
+        console.error(errorMsg);
+      } else {
         const outputsDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
         let filesWritten = 0;
         let filesFailed = 0;
+        const errors = [];
+        
+        addToCombinedLog(`📂 Output directory: ${outputsDir}\n📊 Processing ${allScriptTags.length} products...\n`, '4', 'script-tags');
         
         for (const product of allScriptTags) {
           try {
@@ -6714,18 +6723,37 @@
             const htmlFilePath = `${outputsDir}\\${htmlFileName}`;
             
             // Write the full code block (suppressor + script tag) to HTML file
-            await window.electronAPI.writeFile(htmlFilePath, product.scriptTag);
-            filesWritten++;
+            const result = await window.electronAPI.writeFile(htmlFilePath, product.scriptTag);
+            if (result && result.success) {
+              filesWritten++;
+              if (filesWritten <= 3) {
+                addToCombinedLog(`✅ Created: ${htmlFileName}\n`, '4', 'script-tags');
+              }
+            } else {
+              throw new Error('WriteFile returned unsuccessful result');
+            }
           } catch (error) {
-            console.error(`Failed to write HTML file for ${product.name}:`, error);
             filesFailed++;
+            const errorMsg = `❌ Failed to write ${product.jsonFileName}: ${error.message}`;
+            errors.push(errorMsg);
+            addToCombinedLog(errorMsg + '\n', '4', 'script-tags');
+            console.error(`Failed to write HTML file for ${product.name}:`, error);
           }
         }
         
+        const summaryMsg = `\n============================================================\n✅ Script Tag HTML Files Generation Complete\n============================================================\n✅ Files created: ${filesWritten}\n${filesFailed > 0 ? `❌ Files failed: ${filesFailed}\n` : ''}📂 Location: ${outputsDir}\n`;
+        addToCombinedLog(summaryMsg, '4', 'script-tags');
+        
         if (filesWritten > 0) {
           console.log(`✅ Generated ${filesWritten} individual HTML files in ${outputsDir}`);
-          if (filesFailed > 0) {
-            console.warn(`⚠️ ${filesFailed} files failed to write`);
+          if (scriptTagsDiv) {
+            scriptTagsDiv.innerHTML += `<div style="margin-top: 1rem; padding: 0.75rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-size: 0.875rem;">✅ Generated ${filesWritten} HTML files in products folder</div>`;
+          }
+        }
+        if (filesFailed > 0) {
+          console.warn(`⚠️ ${filesFailed} files failed to write`);
+          if (scriptTagsDiv) {
+            scriptTagsDiv.innerHTML += `<div style="margin-top: 1rem; padding: 0.75rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; font-size: 0.875rem;">⚠️ ${filesFailed} files failed to write. Check console for details.</div>`;
           }
         }
       }
