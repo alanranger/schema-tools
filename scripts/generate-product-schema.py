@@ -492,7 +492,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         # Ensure all offers have priceValidUntil set to +12 months
         price_valid_until = (date.today() + timedelta(days=365)).isoformat()
         
-        # Add URL, shipping details, and @id to each offer if missing, and ensure priceValidUntil
+        # Add URL, shipping details, seller, and @id to each offer if missing, and ensure priceValidUntil
         for idx, offer in enumerate(offers_data):
             if 'url' not in offer and product_url:
                 offer['url'] = product_url
@@ -501,6 +501,14 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             if '@id' not in offer and product_url:
                 offer_id_suffix = f"#offer{idx + 1}" if len(offers_data) > 1 else "#offer"
                 offer['@id'] = f"{product_url}{offer_id_suffix}"
+            
+            # Add seller field if missing (required for Merchant listings)
+            if 'seller' not in offer:
+                offer['seller'] = {
+                    "@type": "Organization",
+                    "name": "Alan Ranger Photography",
+                    "url": "https://www.alanranger.com"
+                }
             
             if 'shippingDetails' not in offer:
                 offer['shippingDetails'] = {
