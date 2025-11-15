@@ -9191,8 +9191,11 @@
                      'event-schema.json';
     
     try {
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(schema);
+      
       // Validate JSON structure first
-      const jsonString = JSON.stringify(schema, null, 2);
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       JSON.parse(jsonString); // Validate syntax
       
       // Check if minification is requested (checkbox, off by default)
@@ -9207,15 +9210,15 @@
         // Minification requested - only needed for Squarespace code block limits
         try {
           // Validate schema structure before minification
-          if (!schema || typeof schema !== 'object') {
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
             throw new Error('Invalid schema: not an object');
           }
-          if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
             throw new Error('Invalid schema: @graph is not an array');
           }
           
           // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-          minifiedJson = JSON.stringify(schema, null, 0);
+          minifiedJson = JSON.stringify(cleanedSchema, null, 0);
         
         // Validate minified version parses correctly (catches syntax errors)
         JSON.parse(minifiedJson);
@@ -9368,11 +9371,14 @@
                      'event-schema.json';
 
     try {
-      // Step 1: Validate JSON structure (check for trailing commas, etc.)
-      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      // Step 1: Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Step 2: Validate JSON structure (check for trailing commas, etc.)
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       JSON.parse(jsonString); // Validate it parses correctly
       
-      // Step 2: Check if minification is requested (checkbox, off by default)
+      // Step 3: Check if minification is requested (checkbox, off by default)
       const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
       const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
       
@@ -9384,15 +9390,15 @@
         // Minification requested - only needed for Squarespace code block limits
         try {
           // Validate schema structure before minification
-          if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
             throw new Error('Invalid schema: not an object');
           }
-          if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
             throw new Error('Invalid schema: @graph is not an array');
           }
           
           // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-          finalJson = JSON.stringify(window.currentEventSchema, null, 0);
+          finalJson = JSON.stringify(cleanedSchema, null, 0);
           
           // Validate minified version parses correctly (catches syntax errors)
           JSON.parse(finalJson);
@@ -9533,6 +9539,31 @@
   }
 
   // Export and Deploy schema to GitHub in one click (Electron only)
+  // Cleanup function to remove @context from objects inside @graph array
+  // @context should only be at the root level, not in individual graph items
+  function cleanupSchemaForExport(schema) {
+    if (!schema || typeof schema !== 'object') {
+      return schema;
+    }
+    
+    // Deep clone to avoid mutating the original
+    const cleaned = JSON.parse(JSON.stringify(schema));
+    
+    // If schema has @graph array, remove @context from each item
+    if (cleaned['@graph'] && Array.isArray(cleaned['@graph'])) {
+      cleaned['@graph'] = cleaned['@graph'].map(item => {
+        if (item && typeof item === 'object' && item['@context']) {
+          // Remove @context from this item
+          const { '@context': _, ...rest } = item;
+          return rest;
+        }
+        return item;
+      });
+    }
+    
+    return cleaned;
+  }
+
   async function exportAndDeploySchema() {
     if (!window.currentEventSchema) {
       alert('Please generate event schema first.');
@@ -9556,14 +9587,17 @@
     }
 
     try {
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
       // Check if minification is requested (checkbox, off by default)
       const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
       const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
       
       // Generate JSON (minified or formatted based on checkbox)
       const jsonString = shouldMinify 
-        ? JSON.stringify(window.currentEventSchema, null, 0)  // Minified (no indentation)
-        : JSON.stringify(window.currentEventSchema, null, 2); // Formatted (with indentation, default)
+        ? JSON.stringify(cleanedSchema, null, 0)  // Minified (no indentation)
+        : JSON.stringify(cleanedSchema, null, 2); // Formatted (with indentation, default)
       
       // Validate JSON
       JSON.parse(jsonString);
@@ -9711,14 +9745,17 @@
                        'Event';
 
     try {
-      // Step 1: Validate JSON structure
-      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      // Step 1: Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Step 2: Validate JSON structure
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       const parsed = JSON.parse(jsonString);
 
       const hasContext = parsed['@context'] === 'https://schema.org';
       const hasGraph = Array.isArray(parsed['@graph']);
       
-      // Step 2: Check if minification is requested (checkbox, off by default)
+      // Step 3: Check if minification is requested (checkbox, off by default)
       const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
       const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
       
@@ -9730,15 +9767,15 @@
         // Minification requested - only needed for Squarespace code block limits
         try {
           // Validate schema structure before minification
-          if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
             throw new Error('Invalid schema: not an object');
           }
-          if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
             throw new Error('Invalid schema: @graph is not an array');
           }
           
           // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-          minifiedJson = JSON.stringify(window.currentEventSchema, null, 0);
+          minifiedJson = JSON.stringify(cleanedSchema, null, 0);
         
         // Validate minified version parses correctly (catches syntax errors)
         JSON.parse(minifiedJson);
@@ -9842,14 +9879,17 @@ ${minifiedJson}
                      'event-schema.json';
 
     try {
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
       // Check if minification is requested (checkbox, off by default)
       const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
       const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
       
       // Generate JSON (minified or formatted based on checkbox)
       const jsonString = shouldMinify 
-        ? JSON.stringify(window.currentEventSchema, null, 0)  // Minified (no indentation)
-        : JSON.stringify(window.currentEventSchema, null, 2); // Formatted (with indentation, default)
+        ? JSON.stringify(cleanedSchema, null, 0)  // Minified (no indentation)
+        : JSON.stringify(cleanedSchema, null, 2); // Formatted (with indentation, default)
       
       // Validate JSON
       JSON.parse(jsonString);
