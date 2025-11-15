@@ -6503,10 +6503,61 @@
         throw new Error('No products with JSON files found. Make sure Step 4 has completed.');
       }
 
+      // Load suppressor block (read from file if available, otherwise use hardcoded version)
+      let suppressorBlock = '';
+      try {
+        const suppressorPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\partials\\schema-suppressor-v1.3.html';
+        if (window.electronAPI && window.electronAPI.readFile) {
+          const suppressorResult = await window.electronAPI.readFile(suppressorPath);
+          if (suppressorResult.success) {
+            suppressorBlock = suppressorResult.content.trim();
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load suppressor block from file, using hardcoded version');
+      }
+      
+      // Fallback to hardcoded suppressor if file read failed
+      if (!suppressorBlock) {
+        // Use string concatenation to avoid HTML parser issues with </script>
+        const scriptStart = '<' + 'script>';
+        const scriptEnd = '<' + '/' + 'script>';
+        suppressorBlock = '<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->\n\n' +
+          scriptStart + '\n' +
+          '(function(){\n' +
+          '  // Remove Squarespace\'s built-in, short Product JSON-LD\n' +
+          '  const removeSquarespaceProduct = () => {\n' +
+          '    document.querySelectorAll(\'script[type="application/ld+json"]\').forEach(el => {\n' +
+          '      const txt = el.textContent.trim();\n' +
+          '      if (txt.includes(\'"@type":"Product"\')) {\n' +
+          '        try {\n' +
+          '          const j = JSON.parse(txt);\n' +
+          '          const looksLikeSquarespace =\n' +
+          '            txt.length < 1500 &&\n' +
+          '            !j.aggregateRating &&\n' +
+          '            !j.review &&\n' +
+          '            j.offers &&\n' +
+          '            j.name &&\n' +
+          '            !txt.includes(\'"hasMerchantReturnPolicy"\');\n' +
+          '          if (looksLikeSquarespace) el.remove();\n' +
+          '        } catch(e){}\n' +
+          '      }\n' +
+          '    });\n' +
+          '  };\n' +
+          '  // Run several times to catch async Squarespace hydration\n' +
+          '  removeSquarespaceProduct();\n' +
+          '  document.addEventListener(\'DOMContentLoaded\', removeSquarespaceProduct);\n' +
+          '  window.addEventListener(\'load\', () => setTimeout(removeSquarespaceProduct, 1000));\n' +
+          '  const obs = new MutationObserver(removeSquarespaceProduct);\n' +
+          '  obs.observe(document.documentElement, { childList: true, subtree: true });\n' +
+          '})();\n' +
+          scriptEnd;
+      }
+
       // Generate script tags for each product
       let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">📋 Squarespace Script Tags (one per product):</h4>';
       scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
-      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. Copy the script tag for each product and paste it into a Code Block on that product page in Squarespace.';
+      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. Copy the complete code block (suppressor + script tag) for each product and paste it into a Code Block on that product page in Squarespace. The suppressor block removes duplicate Squarespace schemas automatically.';
       scriptTagsHtml += '</div>';
       scriptTagsHtml += '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">';
       scriptTagsHtml += `<button onclick="downloadProductScriptTagsCSV()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📥 Download CSV</button>`;
@@ -6520,28 +6571,32 @@
         // Generate script tag for this product (split <' + '/script> to avoid HTML parser issues)
         const scriptStart = '<' + 'script type="application/ld+json"';
         const scriptEnd = '<' + '/script>';
-        const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
+        const scriptTagOnly = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
           scriptStart + '\n' +
           '        src="https://schema.alanranger.com/' + product.jsonFileName + '">\n' +
           scriptEnd;
+        
+        // Combine suppressor block + script tag
+        const fullCodeBlock = suppressorBlock + '\n\n' + scriptTagOnly;
 
         allScriptTags.push({
           name: product.name,
           url: product.url,
           jsonFileName: product.jsonFileName,
-          scriptTag: scriptTag
+          scriptTag: fullCodeBlock
         });
 
-        // Add to CSV
-        csvContent += `"${product.name}","${product.url}","${product.jsonFileName}","${scriptTag.replace(/\n/g, '\\n').replace(/"/g, '""')}"\n`;
+        // Add to CSV (include full code block with suppressor)
+        csvContent += `"${product.name}","${product.url}","${product.jsonFileName}","${fullCodeBlock.replace(/\n/g, '\\n').replace(/"/g, '""')}"\n`;
 
         // Add to HTML display
         scriptTagsHtml += `<div style="margin-bottom: 1rem; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 4px;">`;
         scriptTagsHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem; color: #2d3748;">${product.name}</div>`;
         scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem; word-break: break-all;">${product.url || 'No URL'}</div>`;
         scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;">JSON: ${product.jsonFileName}</div>`;
-        scriptTagsHtml += `<pre style="background: #f7fafc; padding: 0.5rem; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word;">${scriptTag}</pre>`;
-        scriptTagsHtml += `<button onclick="copyProductScriptTag(${JSON.stringify(product.jsonFileName)})" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Copy</button>`;
+        scriptTagsHtml += `<div style="background: #e0f2fe; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.7rem; color: #0369a1;">📌 Includes Schema Suppressor v1.3 (removes duplicate Squarespace schemas)</div>`;
+        scriptTagsHtml += `<pre style="background: #f7fafc; padding: 0.5rem; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word;">${fullCodeBlock}</pre>`;
+        scriptTagsHtml += `<button onclick="copyProductScriptTag(${JSON.stringify(product.jsonFileName)})" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Copy Full Code Block</button>`;
         scriptTagsHtml += `</div>`;
       }
 
@@ -6578,7 +6633,7 @@
     }
   }
 
-  // Copy individual product script tag
+  // Copy individual product script tag (includes suppressor block)
   function copyProductScriptTag(jsonFileName) {
     if (!window.productScriptTagsData) {
       alert('No script tags generated yet. Please click "Generate Squarespace Script Tags List" first.');
@@ -6591,16 +6646,11 @@
       return;
     }
 
-    // Generate script tag (split <' + '/script> to avoid HTML parser issues)
-    const scriptStart = '<' + 'script type="application/ld+json"';
-    const scriptEnd = '<' + '/script>';
-    const scriptTag = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
-      scriptStart + '\n' +
-      '        src="https://schema.alanranger.com/' + jsonFileName + '">\n' +
-      scriptEnd;
+    // Use the full code block (suppressor + script tag) that was already generated
+    const fullCodeBlock = product.scriptTag;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(scriptTag).then(() => {
+      navigator.clipboard.writeText(fullCodeBlock).then(() => {
         alert(`✅ Script tag for "${product.name}" copied to clipboard!`);
       });
     }
