@@ -71,7 +71,7 @@ PERFORMER = {
 }
 
 LOCAL_BUSINESS = {
-    "@type": "LocalBusiness",
+    "@type": ["LocalBusiness", "Organization"],
     "@id": "https://www.alanranger.com/#org",
     "name": "Alan Ranger Photography",
     "url": "https://www.alanranger.com",
