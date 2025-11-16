@@ -1142,11 +1142,9 @@ def validate_schema_structure(schema_data, product_name):
     if not isinstance(brand, dict) or brand.get('@type') != 'Brand' or 'name' not in brand:
         errors.append("Product 'brand' must be a Brand object with 'name'")
     
-    # Validate provider structure (only if present)
+    # Provider is NOT valid for Product type - should never be present
     if 'provider' in product_schema:
-        provider = product_schema.get('provider', {})
-        if not isinstance(provider, dict) or provider.get('@type') != 'Organization' or 'name' not in provider or 'sameAs' not in provider:
-            errors.append("Product 'provider' must be an Organization object with 'name' and 'sameAs'")
+        errors.append("Product schema must NOT contain 'provider' property (not valid for Product type - use 'brand' instead)")
     
     # Validate offers structure (can be object or array for multiple variants)
     offers = product_schema.get('offers', {})
