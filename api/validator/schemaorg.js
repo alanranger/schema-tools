@@ -43,83 +43,102 @@ export default async function handler(req, res) {
     
     // Parse HTML to determine status
     // Schema.org validator shows:
-    // - Success: contains "No errors found" or similar success messages
-    // - Warnings: contains warning messages
-    // - Errors: contains error messages or validation failures
+    // - Success: "0 ERRORS 0 WARNINGS" or "No errors found"
+    // - Warnings: "0 ERRORS X WARNINGS" (where X > 0)
+    // - Errors: "X ERRORS" (where X > 0)
     
     let status = 'passed';
     const errors = [];
     const warnings = [];
 
-    // Check for errors (common patterns in Schema.org validator HTML)
-    const errorPatterns = [
-      /error/i,
-      /validation failed/i,
-      /no structured data found/i,
-      /invalid/i,
-      /failed to parse/i
+    // First, check for explicit success patterns (these override everything)
+    const successPatterns = [
+      /0\s+ERRORS?\s+0\s+WARNINGS?/i,  // "0 ERRORS 0 WARNINGS"
+      /no\s+errors?\s+found/i,          // "No errors found"
+      /valid.*structured\s+data/i,      // "Valid structured data"
+      /successfully\s+validated/i       // "Successfully validated"
     ];
 
-    // Check for warnings
+    // Check for explicit error patterns (actual errors, not "0 ERRORS")
+    const errorPatterns = [
+      /[1-9]\d*\s+ERRORS?/i,            // "1 ERROR", "2 ERRORS", etc. (but not "0 ERRORS")
+      /validation\s+failed/i,
+      /no\s+structured\s+data\s+found/i,
+      /failed\s+to\s+parse/i,
+      /invalid\s+json/i
+    ];
+
+    // Check for warning patterns (but not "0 WARNINGS")
     const warningPatterns = [
-      /warning/i,
+      /[1-9]\d*\s+WARNINGS?/i,          // "1 WARNING", "2 WARNINGS", etc. (but not "0 WARNINGS")
       /recommendation/i,
       /suggestion/i
     ];
 
-    // Check for success indicators
-    const successPatterns = [
-      /no errors found/i,
-      /valid/i,
-      /success/i
-    ];
-
-    // Simple heuristic: count error vs warning vs success indicators
-    let errorCount = 0;
-    let warningCount = 0;
-    let successCount = 0;
-
-    errorPatterns.forEach(pattern => {
-      const matches = html.match(new RegExp(pattern, 'gi'));
-      if (matches) errorCount += matches.length;
-    });
-
-    warningPatterns.forEach(pattern => {
-      const matches = html.match(new RegExp(pattern, 'gi'));
-      if (matches) warningCount += matches.length;
-    });
-
-    successPatterns.forEach(pattern => {
-      const matches = html.match(new RegExp(pattern, 'gi'));
-      if (matches) successCount += matches.length;
-    });
-
-    // Determine status based on counts
-    if (errorCount > 0) {
-      status = 'failed';
-      // Try to extract error messages (simple extraction)
-      const errorMatches = html.match(/<[^>]*error[^>]*>([^<]+)<\/[^>]*>/gi);
-      if (errorMatches) {
-        errorMatches.slice(0, 5).forEach(match => {
-          const text = match.replace(/<[^>]*>/g, '').trim();
-          if (text && text.length < 200) errors.push(text);
-        });
+    // Check for success first (most specific)
+    let hasSuccess = false;
+    for (const pattern of successPatterns) {
+      if (pattern.test(html)) {
+        hasSuccess = true;
+        break;
       }
-    } else if (warningCount > 0) {
-      status = 'warnings';
-      // Try to extract warning messages
-      const warningMatches = html.match(/<[^>]*warning[^>]*>([^<]+)<\/[^>]*>/gi);
-      if (warningMatches) {
-        warningMatches.slice(0, 5).forEach(match => {
-          const text = match.replace(/<[^>]*>/g, '').trim();
-          if (text && text.length < 200) warnings.push(text);
-        });
+    }
+
+    // Check for actual errors (not "0 ERRORS")
+    let hasErrors = false;
+    for (const pattern of errorPatterns) {
+      if (pattern.test(html)) {
+        hasErrors = true;
+        // Try to extract error messages
+        const errorMatches = html.match(/<[^>]*error[^>]*>([^<]+)<\/[^>]*>/gi);
+        if (errorMatches) {
+          errorMatches.slice(0, 5).forEach(match => {
+            const text = match.replace(/<[^>]*>/g, '').trim();
+            // Only add if it's not "0 ERRORS" or similar success message
+            if (text && text.length < 200 && !/^0\s+errors?/i.test(text)) {
+              errors.push(text);
+            }
+          });
+        }
+        break;
       }
-    } else if (successCount > 0) {
+    }
+
+    // Check for actual warnings (not "0 WARNINGS")
+    let hasWarnings = false;
+    for (const pattern of warningPatterns) {
+      if (pattern.test(html)) {
+        hasWarnings = true;
+        // Try to extract warning messages
+        const warningMatches = html.match(/<[^>]*warning[^>]*>([^<]+)<\/[^>]*>/gi);
+        if (warningMatches) {
+          warningMatches.slice(0, 5).forEach(match => {
+            const text = match.replace(/<[^>]*>/g, '').trim();
+            // Only add if it's not "0 WARNINGS" or similar success message
+            if (text && text.length < 200 && !/^0\s+warnings?/i.test(text)) {
+              warnings.push(text);
+            }
+          });
+        }
+        break;
+      }
+    }
+
+    // Determine status (success overrides everything)
+    if (hasSuccess && !hasErrors) {
       status = 'passed';
-    } else {
-      // If we can't determine, default to warnings (conservative)
+    } else if (hasErrors) {
+      status = 'failed';
+    } else if (hasWarnings) {
       status = 'warnings';
+    } else {
+      // If we can't determine, check if we found any schema types (indicates success)
+      if (html.includes('@type') || html.includes('schema.org')) {
+        status = 'passed';
+      } else {
+        // Conservative default
+        status = 'warnings';
+      }
     }
 
     // Return response
