@@ -70,9 +70,22 @@ PERFORMER = {
     "name": "Alan Ranger"
 }
 
+# Separate Organization block (standalone, not nested in LocalBusiness)
+ORGANIZATION = {
+    "@type": "Organization",
+    "@id": "https://www.alanranger.com#org",
+    "name": "Alan Ranger Photography",
+    "url": "https://www.alanranger.com/",
+    "logo": ORGANIZER["logo"],
+    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+    "telephone": ORGANIZER["telephone"],
+    "email": ORGANIZER["email"],
+    "address": ORGANIZER["address"]
+}
+
 LOCAL_BUSINESS = {
-    "@type": ["LocalBusiness", "Organization"],
-    "@id": "https://www.alanranger.com/#org",
+    "@type": "LocalBusiness",
+    "@id": "https://www.alanranger.com/#localbusiness",
     "name": "Alan Ranger Photography",
     "url": "https://www.alanranger.com",
     "logo": ORGANIZER["logo"],
@@ -320,15 +333,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     product_description = str(product_row.get('description', '')).strip()
     product_image = str(product_row.get('image', '')).strip()
     
-    # Determine schema @type based on schema_type parameter
-    # Event and Course types now use Product as @type, with nested event/course objects
-    if schema_type == 'event':
-        type_array = ["Product"]  # Event fields will be in nested "event" object
-    elif schema_type == 'course':
-        type_array = ["Product", "Course"]  # Course still uses array type
-    else:
-        # Default: Product only (for prints, vouchers, etc.)
-        type_array = ["Product"]
+    # Product schema MUST be @type: "Product" only (not array, not Course, not Event)
+    # Event and Course information is handled separately, not in Product @type
+    product_type = "Product"  # Always Product only
     
     # Use SKU from input file (main_sku column from cleaned file)
     # Never use title or description as fallback for SKU
@@ -351,9 +358,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         current_year = date.today().year
         sku = f"{product_slug.upper()}-{current_year}"[:40]  # Truncate to 40 chars
     
-    # Build product schema with dynamic @type
+    # Build product schema - MUST be Product type only
     product_schema = {
-        "@type": type_array,
+        "@type": product_type,
         "name": product_name,
         "sku": sku,
         "brand": {
@@ -788,9 +795,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     # Event object creation moved to BEFORE offers processing (see above)
     # Event objects are now added to each offer in the offers loop above
     
-    # Add hasCourseInstance for Course type (optional enhancement)
-    # This boosts chance of Course rich results
-    if schema_type == 'course' and is_course_workshop and product_url:
+    # REMOVED: hasCourseInstance - Product must be Product type only, not Course
+    # Course information should be handled separately if needed
+    if False:  # Disabled - Product is Product only
         # Try to match product to lesson in events CSV to get actual dates
         start_date = None
         end_date = None
@@ -996,8 +1003,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     # Event must be a completely separate JSON-LD block, NOT in Product
     # Do NOT add event to product_schema - it will be generated separately
     
-    # @graph order: LocalBusiness → BreadcrumbList → Product/Course
+    # @graph order: Organization → LocalBusiness → BreadcrumbList → Product
     graph = [
+        ORGANIZATION,
         LOCAL_BUSINESS,
         breadcrumb_data,
         product_schema
@@ -1027,31 +1035,15 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             **event_object_for_offers
         }
     
-    # Add @id to product schema - use URL slug, not product name slug
-    # Extract slug from product URL if available, otherwise use product name slug
+    # Add @id to product schema - MUST be format: <canonical URL>#product
     if product_url:
-        # Extract slug from URL (e.g., https://www.alanranger.com/photo-workshops-uk/batsford-arboretum-photography-workshops)
-        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
-        path_parts = url_path.split('/')
-        if len(path_parts) > 0:
-            # Use the last part of the URL path as the slug
-            url_slug = path_parts[-1]
-            product_schema["@id"] = f"https://www.alanranger.com/{url_slug}#schema"
-        else:
-            # Fallback to product name slug
-            product_slug = slugify(product_name)
-            product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
+        product_schema["@id"] = f"{product_url}#product"
     else:
-        # Fallback to product name slug if no URL
+        # Fallback: construct URL from product name slug
         product_slug = slugify(product_name)
-        product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#schema"
+        product_schema["@id"] = f"https://www.alanranger.com/{product_slug}#product"
     
-    # Add mainEntityOfPage (matching events schema format) - helps Google identify the primary entity
-    if product_url:
-        product_schema["mainEntityOfPage"] = {
-            "@type": "WebPage",
-            "@id": product_url
-        }
+    # mainEntityOfPage removed - Product schema should only contain required fields
     
     # Return complete schema with @graph and separate event schema (if exists)
     schema_result = {
@@ -1075,19 +1067,21 @@ def validate_schema_structure(schema_data, product_name):
         return False, errors
     
     graph = schema_data['@graph']
-    if not isinstance(graph, list) or len(graph) < 3:
-        errors.append(f"@graph must contain at least 3 objects (LocalBusiness, BreadcrumbList, Product/Course)")
+    if not isinstance(graph, list) or len(graph) < 4:
+        errors.append(f"@graph must contain at least 4 objects (Organization, LocalBusiness, BreadcrumbList, Product)")
         return False, errors
     
-    # Find Product/Course/Event object (should be last in graph)
+    # Validate first object is Organization
+    first_obj = graph[0] if len(graph) > 0 else {}
+    first_type = first_obj.get('@type', '')
+    if first_type != 'Organization':
+        errors.append(f"First @graph object must be Organization, got: {first_type}")
+    
+    # Find Product object (should be last in graph)
     product_schema = None
     for obj in graph:
-        obj_type = obj.get('@type', [])
-        if isinstance(obj_type, list):
-            if 'Product' in obj_type:
-                product_schema = obj
-                break
-        elif obj_type == 'Product':
+        obj_type = obj.get('@type', '')
+        if obj_type == 'Product':
             product_schema = obj
             break
     
@@ -1095,22 +1089,10 @@ def validate_schema_structure(schema_data, product_name):
         errors.append("Missing Product/Course/Event object in @graph")
         return False, errors
     
-    # Validate @type - accept Product, Product+Course, or Product (with nested event object)
-    obj_type = product_schema.get('@type', [])
-    if isinstance(obj_type, list):
-        if 'Product' not in obj_type:
-            errors.append(f"Product @type must include 'Product', got: {obj_type}")
-        # Accept Product, Product+Course (Event schemas now use Product with nested "event" object)
-        valid_types = [['Product'], ['Product', 'Course']]
-        if obj_type not in valid_types:
-            errors.append(f"Product @type must be one of {valid_types}, got: {obj_type}")
-        # Check if this is an event schema (has nested "event" object)
-        if 'event' in product_schema:
-            # Event schemas should have @type: ["Product"] with nested event object
-            if obj_type != ['Product']:
-                errors.append(f"Event schemas must have @type: ['Product'] with nested 'event' object, got: {obj_type}")
-    elif obj_type != 'Product':
-        errors.append(f"Product @type must be 'Product' or a list containing 'Product', got: {obj_type}")
+    # Validate @type - MUST be "Product" only (not array, not Course, not Event)
+    obj_type = product_schema.get('@type', '')
+    if obj_type != 'Product':
+        errors.append(f"Product @type must be 'Product' only, got: {obj_type}")
     
     # Validate required fields based on schema type
     required_keys = {
@@ -1139,30 +1121,21 @@ def validate_schema_structure(schema_data, product_name):
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
-    # Event-specific validation (check for event as top-level property of Product)
-    # Event must be at Product level, NOT in offers, NOT as separate @graph node
+    # Validate Product does NOT contain prohibited properties
+    prohibited_properties = ['event', 'provider']
+    for prop in prohibited_properties:
+        if prop in product_schema:
+            errors.append(f"Product schema must NOT contain '{prop}' property")
+    
     # Check offers don't contain event objects
     offers = product_schema.get('offers', [])
     if not isinstance(offers, list):
         offers = [offers] if offers else []
     for offer in offers:
         if 'event' in offer:
-            errors.append("Event object must be at Product level, not nested in Offer objects")
+            errors.append("Offer objects must NOT contain 'event' property")
     
-    # If event exists at Product level, validate it has required fields
-    if 'event' in product_schema:
-        event_obj = product_schema.get('event', {})
-        required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-        for field in required_event_fields:
-            if field not in event_obj:
-                errors.append(f"Missing required Event field in Product's event property: {field}")
-    
-    # Check that Event is NOT a separate @graph node (should be property of Product)
-    for obj in graph:
-        obj_type = obj.get('@type', '')
-        if obj_type == 'Event':
-            errors.append("Event object must be a property of Product, not a separate @graph node")
-            break
+    # Event validation removed - Event must be separate JSON-LD block, not in Product @graph
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
@@ -1227,25 +1200,23 @@ def validate_schema_structure(schema_data, product_name):
                 if review_count != len(reviews):
                     errors.append(f"aggregateRating.reviewCount ({review_count}) does not match review array length ({len(reviews)})")
     
-    # Validate @graph order: LocalBusiness, BreadcrumbList, Product/Course
-    if len(graph) >= 3:
+    # Validate @graph order: Organization, LocalBusiness, BreadcrumbList, Product
+    if len(graph) >= 4:
         first_type = graph[0].get('@type', '')
         second_type = graph[1].get('@type', '')
-        # Handle array format: ["LocalBusiness", "Organization"] or string "LocalBusiness"
-        if isinstance(first_type, list):
-            if 'LocalBusiness' not in first_type:
-                errors.append(f"First @graph object must include LocalBusiness, got: {first_type}")
-        elif first_type != 'LocalBusiness':
-            errors.append(f"First @graph object must be LocalBusiness, got: {first_type}")
-        if second_type != 'BreadcrumbList':
-            errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
+        third_type = graph[2].get('@type', '')
+        if first_type != 'Organization':
+            errors.append(f"First @graph object must be Organization, got: {first_type}")
+        if second_type != 'LocalBusiness':
+            errors.append(f"Second @graph object must be LocalBusiness, got: {second_type}")
+        if third_type != 'BreadcrumbList':
+            errors.append(f"Third @graph object must be BreadcrumbList, got: {third_type}")
     
-    # Ensure Event fields are NOT at Product level (they should be in event object property)
-    # But event itself IS allowed at Product level
+    # Ensure Event fields are NOT at Product level (Event must be separate JSON-LD block)
     forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer']
     for key in forbidden_keys:
         if key in product_schema:
-            errors.append(f"Forbidden Event field found at Product level: {key} (should be in Product's 'event' property)")
+            errors.append(f"Forbidden Event field found at Product level: {key} (Event must be separate JSON-LD block)")
     
     # Validate all objects have @type and url (if applicable)
     for i, obj in enumerate(graph):
