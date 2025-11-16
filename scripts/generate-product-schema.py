@@ -1313,12 +1313,13 @@ def schema_to_html(schema_data, event_schema=None):
     else:
         return result
 
-def schema_to_script_tag_html(json_filename):
-    """Convert schema JSON filename to script_tag HTML with fetch-based inline injection"""
+def schema_to_script_tag_html(json_filename, event_json_filename=None):
+    """Convert schema JSON filename to script_tag HTML with fetch-based inline injection
+    If event_json_filename is provided, also fetches and injects Event schema"""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
-    # Generate fetch-based script that loads JSON and injects it inline
+    # Generate fetch-based script that loads Product JSON and injects it inline
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
@@ -1335,11 +1336,30 @@ fetch("{json_url}")
   .catch(console.error);
 </script>'''
     
-    # Combine suppressor block + fetch script
+    # If Event schema exists, also fetch and inject it
+    event_fetch_script = ""
+    if event_json_filename:
+        event_json_url = f"https://schema.alanranger.com/{event_json_filename}"
+        event_fetch_script = f'''
+<!-- Auto-fetch Event Schema from GitHub and inject inline JSON-LD -->
+<script>
+fetch("{event_json_url}")
+  .then(r => r.json())
+  .then(json => {{
+    const s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.text = JSON.stringify(json);
+    document.head.appendChild(s);
+  }})
+  .catch(console.error);
+</script>'''
+    
+    # Combine suppressor block + Product fetch script + Event fetch script
+    result = fetch_script + event_fetch_script
     if suppressor_block:
-        return suppressor_block + '\n' + fetch_script
+        return suppressor_block + '\n' + result
     else:
-        return fetch_script
+        return result
 
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
@@ -2359,13 +2379,26 @@ def main():
         except Exception as e:
             print(f"⚠️ Error writing {json_filename}: {e} (continuing...)")
         
+        # Write Event schema as separate JSON file if it exists (for fetch-based loading)
+        event_json_filename = None
+        if event_schema:
+            event_json_filename = f"{product_name_slug}_event_schema.json"
+            event_json_path = outputs_dir / event_json_filename
+            try:
+                with open(event_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(event_schema, f, indent=2, ensure_ascii=False)
+            except PermissionError as e:
+                print(f"⚠️ Permission denied when writing {event_json_filename} (continuing...)")
+            except Exception as e:
+                print(f"⚠️ Error writing {event_json_filename}: {e} (continuing...)")
+        
         # Write script_tag HTML file (fetch-based inline injection version - for Squarespace)
         script_tag_html_filename = f"{product_name_slug}_schema_script_tag.html"
         script_tag_html_path = outputs_dir / script_tag_html_filename
         script_tag_html_content = None
         if json_written:  # Only generate script_tag version if JSON was written
             try:
-                script_tag_html_content = schema_to_script_tag_html(json_filename)
+                script_tag_html_content = schema_to_script_tag_html(json_filename, event_json_filename)
                 with open(script_tag_html_path, 'w', encoding='utf-8') as f:
                     f.write(script_tag_html_content)
             except PermissionError as e:
