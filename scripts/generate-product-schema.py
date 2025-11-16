@@ -772,11 +772,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     # If parsing fails, set to +12 months
                     offer['priceValidUntil'] = price_valid_until
             
-            # Add event object to each offer if this is an event schema
-            if event_object_for_offers is not None:
-                # Create a copy of the event object for this offer (each offer can have its own event instance)
-                import copy
-                offer['event'] = copy.deepcopy(event_object_for_offers)
+            # Event objects are NOT added to offers - they are separate @graph nodes
+            # Do NOT add event to offers
         
         # Always use array format for offers (even if single offer) when multiple variants exist
         # This improves price range display chances
@@ -995,13 +992,32 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_slug = slugify(product_name)
         breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
     
-    # @graph order: LocalBusiness → BreadcrumbList → Product/Course
-    # This matches v6.1 baseline validation requirements
+    # @graph order: LocalBusiness → BreadcrumbList → Product/Course → Event (if event schema)
+    # Event must be a separate @graph node, NOT nested in Product or Offer
     graph = [
         LOCAL_BUSINESS,
         breadcrumb_data,
         product_schema
     ]
+    
+    # Add Event as separate @graph node if this is an event schema
+    if schema_type == 'event' and event_object_for_offers is not None:
+        # Add @id to event object
+        if product_url:
+            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+            path_parts = [p for p in url_path.split('/') if p]
+            if len(path_parts) > 0:
+                url_slug = path_parts[-1]
+                event_object_for_offers["@id"] = f"https://www.alanranger.com/{url_slug}#event"
+            else:
+                product_slug = slugify(product_name)
+                event_object_for_offers["@id"] = f"https://www.alanranger.com/{product_slug}#event"
+        else:
+            product_slug = slugify(product_name)
+            event_object_for_offers["@id"] = f"https://www.alanranger.com/{product_slug}#event"
+        
+        # Add Event to @graph as separate node
+        graph.append(event_object_for_offers)
     
     # Add @id to product schema - use URL slug, not product name slug
     # Extract slug from product URL if available, otherwise use product name slug
@@ -1111,25 +1127,33 @@ def validate_schema_structure(schema_data, product_name):
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
-    # Event-specific validation (check for event object in offers)
-    # Event objects should be nested inside each Offer, not at Product level
+    # Event-specific validation (check for Event as separate @graph node)
+    # Event must be a separate @graph node, NOT in Product, NOT in offers
+    event_in_graph = None
+    for obj in graph:
+        obj_type = obj.get('@type', '')
+        if obj_type == 'Event':
+            event_in_graph = obj
+            break
+    
+    # Check that event is NOT at Product level or in offers
+    if 'event' in product_schema:
+        errors.append("Event object must be a separate @graph node, not at Product level")
+    
+    # Check offers don't contain event objects
     offers = product_schema.get('offers', [])
     if not isinstance(offers, list):
         offers = [offers] if offers else []
-    
-    has_event_in_offers = False
     for offer in offers:
         if 'event' in offer:
-            has_event_in_offers = True
-            event_obj = offer.get('event', {})
-            required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-            for field in required_event_fields:
-                if field not in event_obj:
-                    errors.append(f"Missing required Event field in offer: {field}")
+            errors.append("Event object must be a separate @graph node, not nested in Offer objects")
     
-    # Check that event is NOT at Product level (should be in offers)
-    if 'event' in product_schema:
-        errors.append("Event object should be nested inside Offer objects, not at Product level")
+    # If Event node exists in graph, validate it has required fields
+    if event_in_graph:
+        required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+        for field in required_event_fields:
+            if field not in event_in_graph:
+                errors.append(f"Missing required Event field in @graph Event node: {field}")
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
@@ -1205,11 +1229,11 @@ def validate_schema_structure(schema_data, product_name):
         if second_type != 'BreadcrumbList':
             errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
     
-    # Ensure no Event fields are present at Product level (they should be in offers' event objects)
+    # Ensure no Event fields are present at Product level (Event must be separate @graph node)
     forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer', 'event']
     for key in forbidden_keys:
         if key in product_schema:
-            errors.append(f"Forbidden Event field found at Product level: {key} (should be in Offer's 'event' object)")
+            errors.append(f"Forbidden Event field found at Product level: {key} (Event must be a separate @graph node)")
     
     # Validate all objects have @type and url (if applicable)
     for i, obj in enumerate(graph):
