@@ -1313,9 +1313,9 @@ def schema_to_html(schema_data, event_schema=None):
     else:
         return result
 
-def schema_to_script_tag_html(json_filename, event_schema=None):
+def schema_to_script_tag_html(json_filename):
     """Convert schema JSON filename to script_tag HTML with fetch-based inline injection
-    If event_schema is provided, includes Event as inline JSON-LD (separate script tag)"""
+    Only includes Product schema - Event schema is NOT included in script_tag files"""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
@@ -1336,21 +1336,11 @@ fetch("{json_url}")
   .catch(console.error);
 </script>'''
     
-    # If Event schema exists, include it as inline JSON-LD (separate script tag)
-    event_script = ""
-    if event_schema:
-        event_json_str = json.dumps(event_schema, indent=2, ensure_ascii=False)
-        event_script = f'''
-<script type="application/ld+json">
-{event_json_str}
-</script>'''
-    
-    # Combine suppressor block + Product fetch script + Event inline script
-    result = fetch_script + event_script
+    # Combine suppressor block + Product fetch script (Event schema NOT included)
     if suppressor_block:
-        return suppressor_block + '\n' + result
+        return suppressor_block + '\n' + fetch_script
     else:
-        return result
+        return fetch_script
 
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
@@ -2376,7 +2366,7 @@ def main():
         script_tag_html_content = None
         if json_written:  # Only generate script_tag version if JSON was written
             try:
-                script_tag_html_content = schema_to_script_tag_html(json_filename, event_schema)
+                script_tag_html_content = schema_to_script_tag_html(json_filename)
                 with open(script_tag_html_path, 'w', encoding='utf-8') as f:
                     f.write(script_tag_html_content)
             except PermissionError as e:
