@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Product Schema Generation Script - v6.1 Baseline
+Product Schema Generation Script - v6.2.0 Baseline (Restore Point)
 Stage 4: Generate Squarespace-ready HTML schema files with @graph structure
 
-Schema Type: ["Product", "Course"] (locked baseline)
-@graph Order: LocalBusiness → BreadcrumbList → Product/Course
+Schema Type: "Product" only (strict Schema.org Product type)
+@graph Order: Organization → LocalBusiness → BreadcrumbList → Product
 
 Reads:
   - shared-resources/csv processed/02 – products_cleaned.xlsx
@@ -16,14 +16,21 @@ Reads:
 
 Outputs:
   - One HTML file per product: [Product_Slug]_schema_squarespace_ready.html in shared-resources/outputs/schema/
+  - One script tag HTML file per product: [Product_Slug]_schema_script_tag.html (Product schema only, fetch-based)
   - Combined CSV: shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv
   - QA Summary CSV: shared-resources/outputs/schema/review_summary.csv
 
-v6.1 Changes:
-  - Locked Product/Course hybrid schema as baseline
-  - Added comprehensive validation hooks
-  - Ensures 100% Rich Results and Merchant Center compliance
-  - Fails generation if required keys are missing
+v6.2.0 Changes (Baseline Restore Point):
+  - Product @type: "Product" only (not array, not Course, not Event)
+  - Product @id format: <canonical URL>#product
+  - Separate Organization block with @type: "Organization" only
+  - LocalBusiness @type: "LocalBusiness" only (removed Organization from array)
+  - @graph order: Organization → LocalBusiness → BreadcrumbList → Product
+  - Removed prohibited properties: event, provider, mainEntityOfPage from Product
+  - Event schema is separate JSON-LD block (not nested in Product)
+  - Event schema only in _squarespace_ready.html (inline), not in _script_tag.html
+  - Comprehensive validation ensures strict Schema.org compliance
+  - All 52 product schema files regenerated with new structure
 """
 
 import pandas as pd

@@ -18,6 +18,18 @@ This repository contains tools to generate JSON-LD schema markup for **products*
 - Fully structured schema output compliant with Google's Rich Results.
 
 ### 3. `index.html` (Unified Schema Generator v4.3.1)
+
+**Product Schema Generator (v6.2.0 - Latest Baseline)**:
+  - Product schema @type: "Product" only (strict Schema.org compliance)
+  - Separate Organization block with @id: "https://www.alanranger.com#org"
+  - LocalBusiness block with @id: "https://www.alanranger.com/#localbusiness"
+  - @graph order: Organization → LocalBusiness → BreadcrumbList → Product
+  - Product @id format: <canonical URL>#product
+  - Event schema as separate JSON-LD block (not nested in Product)
+  - Event schema only in _squarespace_ready.html (inline), not in _script_tag.html
+  - No prohibited properties (event, provider) in Product schema
+  - Fetch-based inline injection for Product schema in _script_tag.html files
+  - Schema Suppressor v1.3 automatically included in all HTML files
 - Combines both tools into one UI with multiple tabs:
   - **Event Schema**: ✅ Complete - Generate Event schemas from CSV with Product+Event hybrid schema
   - **Product Schema**: ✅ Complete - Generate Product schemas with review support

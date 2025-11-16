@@ -2,6 +2,77 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## [6.2.0] - 2025-01-XX
+
+### Product Schema Generator - Schema Structure Fixes (Baseline Restore Point)
+
+#### Fixed
+- **Product Schema @type**:
+  - Changed from `["Product", "Course"]` or `["Product", "Event"]` arrays to `"Product"` only
+  - Product schema now strictly follows Schema.org Product type requirements
+  - Removed Course and Event from Product @type (handled separately)
+- **Product @id Format**:
+  - Changed from `#schema` to `#product` format: `<canonical URL>#product`
+  - Ensures proper identification and linking
+- **Organization Block**:
+  - Created separate standalone Organization block (removed from LocalBusiness @type array)
+  - Organization has `@type: "Organization"` only (no multiple types)
+  - Organization `@id: "https://www.alanranger.com#org"` (no duplicate URLs)
+  - Organization includes: name, url, logo, image, telephone, email, address
+- **LocalBusiness Block**:
+  - Changed from `["LocalBusiness", "Organization"]` to `"LocalBusiness"` only
+  - LocalBusiness has separate `@id: "https://www.alanranger.com/#localbusiness"`
+  - Prevents duplicate field warnings between Organization and LocalBusiness
+- **@graph Order**:
+  - Updated to: Organization → LocalBusiness → BreadcrumbList → Product
+  - Ensures proper schema hierarchy and validation
+- **Prohibited Properties**:
+  - Removed `event` property from Product schema (Event is separate JSON-LD block)
+  - Removed `provider` property from Product schema (not valid for Product type)
+  - Removed `mainEntityOfPage` from Product schema (not in required fields)
+  - Validation now explicitly checks for and rejects prohibited properties
+- **Event Schema**:
+  - Event schema is now completely separate JSON-LD block (not nested in Product)
+  - Event schema only included in `_squarespace_ready.html` files (inline)
+  - Event schema NOT included in `_script_tag.html` files (Product validation only)
+  - Event schema has its own `@id: "<url>#event"` format
+
+#### Removed
+- **Course Type Support**:
+  - Removed `hasCourseInstance` property from Product schema
+  - Product is Product only, Course information handled separately if needed
+- **Event in Offers**:
+  - Removed event object from inside Offer objects
+  - Offers contain only: @type, price, priceCurrency, availability, url, seller, shippingDetails, hasMerchantReturnPolicy
+- **Separate Event JSON Files**:
+  - Removed generation of separate `_event_schema.json` files
+  - Event schema is inline in HTML only (not fetched separately)
+
+#### Improved
+- **Validation Logic**:
+  - Updated to validate Product @type is "Product" only (not array)
+  - Validates @graph order: Organization → LocalBusiness → BreadcrumbList → Product
+  - Validates Organization is first in @graph
+  - Validates Product has no prohibited properties (event, provider)
+  - Validates Offers have no event property
+- **Schema Structure**:
+  - Product schema contains only valid Product fields: @context, @type, @id, name, description, image, url, sku, brand, offers, review (optional), aggregateRating (optional)
+  - Organization and LocalBusiness are separate blocks with distinct @id values
+  - No duplicate URLs or overlapping type definitions
+
+#### Technical Details
+- `generate_product_schema_graph()` function updated to generate Product with @type: "Product" only
+- `ORGANIZATION` constant created as separate block (not nested in LocalBusiness)
+- `LOCAL_BUSINESS` constant updated to @type: "LocalBusiness" only
+- `schema_to_script_tag_html()` function updated to exclude Event schema (Product only)
+- `schema_to_html()` function generates separate Event JSON-LD block when event_schema exists
+- Validation functions updated to match new structure requirements
+- All 52 product schema files regenerated with new structure
+
+#### Known Issues
+- **Cosmetic Warnings**: Some duplicate field warnings between LocalBusiness and Organization are expected and cosmetic (not affecting functionality)
+- These warnings are acceptable and do not require suppression code changes (would require regenerating 50+ product files)
+
 ## [4.3.1] - 2025-11-10
 
 ### Event Schema Generator - Major Fixes & Enhancements
