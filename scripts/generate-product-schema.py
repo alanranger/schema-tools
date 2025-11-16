@@ -1285,20 +1285,28 @@ def load_suppressor_block():
     _suppressor_block_cache = suppressor_block
     return suppressor_block
 
-def schema_to_html(schema_data):
-    """Convert schema JSON to Squarespace-ready HTML with suppressor block"""
+def schema_to_html(schema_data, event_schema=None):
+    """Convert schema JSON to Squarespace-ready HTML with suppressor block
+    If event_schema is provided, generates two separate script tags"""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
-    # Generate schema script tag
+    # Generate Product schema script tag
     json_str = json.dumps(schema_data, indent=2, ensure_ascii=False)
     schema_script = f'<script type="application/ld+json">\n{json_str}\n</script>'
     
-    # Combine suppressor block + schema script
+    # Generate Event schema script tag if event exists (separate JSON-LD block)
+    event_script = ""
+    if event_schema:
+        event_json_str = json.dumps(event_schema, indent=2, ensure_ascii=False)
+        event_script = f'\n<script type="application/ld+json">\n{event_json_str}\n</script>'
+    
+    # Combine suppressor block + Product schema script + Event schema script
+    result = schema_script + event_script
     if suppressor_block:
-        return suppressor_block + '\n' + schema_script
+        return suppressor_block + '\n' + result
     else:
-        return schema_script
+        return result
 
 def schema_to_script_tag_html(json_filename):
     """Convert schema JSON filename to script_tag HTML with fetch-based inline injection"""
