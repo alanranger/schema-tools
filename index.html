@@ -16561,18 +16561,13 @@ ${minifiedJson}
   
   // Helper: Get API base URL based on current hostname
   function getApiBaseUrl() {
-    // Check if running in Electron (file:// protocol with Electron user agent)
+    // Always use deployed Vercel API for validator endpoints
+    // (local server on port 8000 only handles Python tasks, not API endpoints)
     const isElectron = (window.location.protocol === 'file:') && 
                        (navigator.userAgent.includes('Electron') || window.electronAPI);
     
-    if (isElectron) {
-      // In Electron, use the local server that's running
-      return 'http://localhost:8000';
-    }
-    
-    // If opening HTML file directly in browser (file:// protocol but not Electron)
-    if (window.location.protocol === 'file:') {
-      // Use deployed Vercel API for standalone HTML files
+    // For Electron or standalone HTML files, use deployed API
+    if (isElectron || window.location.protocol === 'file:') {
       return 'https://schema-tools-six.vercel.app';
     }
     
