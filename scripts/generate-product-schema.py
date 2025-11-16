@@ -992,10 +992,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_slug = slugify(product_name)
         breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
     
-    # Add event as top-level property of Product (NOT as separate @graph node, NOT in offers)
-    if schema_type == 'event' and event_object_for_offers is not None:
-        # Add event object as top-level property of Product
-        product_schema["event"] = event_object_for_offers
+    # Event must be a completely separate JSON-LD block, NOT in Product
+    # Do NOT add event to product_schema - it will be generated separately
     
     # @graph order: LocalBusiness → BreadcrumbList → Product/Course
     graph = [
@@ -1003,6 +1001,30 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         breadcrumb_data,
         product_schema
     ]
+    
+    # Return event object separately so it can be generated as separate JSON-LD block
+    # This will be used to generate a separate <script> tag for Event schema
+    event_schema = None
+    if schema_type == 'event' and event_object_for_offers is not None:
+        # Add @id to event object
+        if product_url:
+            url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
+            path_parts = [p for p in url_path.split('/') if p]
+            if len(path_parts) > 0:
+                url_slug = path_parts[-1]
+                event_object_for_offers["@id"] = f"https://www.alanranger.com/{url_slug}#event"
+            else:
+                product_slug = slugify(product_name)
+                event_object_for_offers["@id"] = f"https://www.alanranger.com/{product_slug}#event"
+        else:
+            product_slug = slugify(product_name)
+            event_object_for_offers["@id"] = f"https://www.alanranger.com/{product_slug}#event"
+        
+        # Create standalone Event schema (separate JSON-LD block)
+        event_schema = {
+            "@context": "https://schema.org",
+            **event_object_for_offers
+        }
     
     # Add @id to product schema - use URL slug, not product name slug
     # Extract slug from product URL if available, otherwise use product name slug
@@ -1030,10 +1052,14 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             "@id": product_url
         }
     
-    return {
+    # Return complete schema with @graph and separate event schema (if exists)
+    schema_result = {
         "@context": "https://schema.org",
         "@graph": graph
     }
+    
+    # Return both Product schema and Event schema (if event exists)
+    return schema_result, event_schema
 
 def validate_schema_structure(schema_data, product_name):
     """
@@ -2112,7 +2138,8 @@ def main():
             is_first_variant = True
         
         # Generate schema graph (only first variant per URL gets aggregateRating)
-        schema_graph = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type, events_df=events_df)
+        # Returns tuple: (schema_graph, event_schema)
+        schema_graph, event_schema = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type, events_df=events_df)
         
         # Track schema type counts
         schema_type_counts[product_schema_type] += 1
@@ -2185,22 +2212,18 @@ def main():
                     if field not in product_obj:
                         rich_results_errors.append(f'Missing required field: {field}')
                 
-                # Event-specific validation (check for event as top-level property of Product)
-                # Event must be at Product level, NOT in offers
+                # Event-specific validation (Event must be completely separate, NOT in Product)
+                # Check that event is NOT in Product at all
+                if 'event' in product_obj:
+                    rich_results_errors.append("Product must NOT contain 'event' property (Event must be a separate JSON-LD block)")
+                
+                # Check offers don't contain event objects
                 offers = product_obj.get('offers', [])
                 if not isinstance(offers, list):
                     offers = [offers] if offers else []
                 for offer in offers:
                     if 'event' in offer:
-                        rich_results_errors.append('Event object must be at Product level, not nested in Offer objects')
-                
-                # If event exists at Product level, validate it has required fields
-                if 'event' in product_obj:
-                    event_obj = product_obj.get('event', {})
-                    required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-                    for field in required_event_fields:
-                        if field not in event_obj:
-                            rich_results_errors.append(f'Missing required Event field in Product\'s event property: {field}')
+                        rich_results_errors.append('Event object must be a separate JSON-LD block, not nested in Offer objects')
                 
                 # Check offers
                 if 'offers' in product_obj:
@@ -2293,7 +2316,7 @@ def main():
         # Write HTML file (inline JSON version - for manual copy/paste if needed)
         html_content = None
         try:
-            html_content = schema_to_html(schema_graph)
+            html_content = schema_to_html(schema_graph, event_schema)
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
         except PermissionError as e:
