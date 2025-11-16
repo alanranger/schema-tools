@@ -976,12 +976,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         product_slug = slugify(product_name)
         breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
     
-    # For single product pages, put Product first in @graph (primary entity)
-    # This helps Google identify the main entity for rich results
+    # @graph order: LocalBusiness → BreadcrumbList → Product/Course
+    # This matches v6.1 baseline validation requirements
     graph = [
-        product_schema,  # Product first (primary entity)
         LOCAL_BUSINESS,
-        breadcrumb_data
+        breadcrumb_data,
+        product_schema
     ]
     
     # Add @id to product schema - use URL slug, not product name slug
@@ -1237,6 +1237,34 @@ def schema_to_html(schema_data):
         return suppressor_block + '\n' + schema_script
     else:
         return schema_script
+
+def schema_to_script_tag_html(json_filename):
+    """Convert schema JSON filename to script_tag HTML with fetch-based inline injection"""
+    # Load suppressor block (cached, only loads once)
+    suppressor_block = load_suppressor_block()
+    
+    # Generate fetch-based script that loads JSON and injects it inline
+    # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
+    # Replaces the broken <script src=""> approach with working fetch-based inline injection
+    json_url = f"https://schema.alanranger.com/{json_filename}"
+    fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
+<script>
+fetch("{json_url}")
+  .then(r => r.json())
+  .then(json => {{
+    const s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.text = JSON.stringify(json);
+    document.head.appendChild(s);
+  }})
+  .catch(console.error);
+</script>'''
+    
+    # Combine suppressor block + fetch script
+    if suppressor_block:
+        return suppressor_block + '\n' + fetch_script
+    else:
+        return fetch_script
 
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
@@ -2213,7 +2241,7 @@ def main():
                     print(f"   Skipping this product and continuing with others...")
                     continue
         
-        # Write HTML file
+        # Write HTML file (inline JSON version - for manual copy/paste if needed)
         html_content = None
         try:
             html_content = schema_to_html(schema_graph)
@@ -2245,6 +2273,20 @@ def main():
             print(f"⚠️ Permission denied when writing {json_filename} (continuing...)")
         except Exception as e:
             print(f"⚠️ Error writing {json_filename}: {e} (continuing...)")
+        
+        # Write script_tag HTML file (fetch-based inline injection version - for Squarespace)
+        script_tag_html_filename = f"{product_name_slug}_schema_script_tag.html"
+        script_tag_html_path = outputs_dir / script_tag_html_filename
+        script_tag_html_content = None
+        if json_written:  # Only generate script_tag version if JSON was written
+            try:
+                script_tag_html_content = schema_to_script_tag_html(json_filename)
+                with open(script_tag_html_path, 'w', encoding='utf-8') as f:
+                    f.write(script_tag_html_content)
+            except PermissionError as e:
+                print(f"⚠️ Permission denied when writing {script_tag_html_filename} (continuing...)")
+            except Exception as e:
+                print(f"⚠️ Error writing {script_tag_html_filename}: {e} (continuing...)")
         
         # Only add to lists if file was successfully written
         if html_content is None:

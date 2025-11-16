@@ -6671,13 +6671,20 @@
       const allScriptTags = [];
 
       for (const product of products) {
-        // Generate script tag for this product (split <' + '/script> to avoid HTML parser issues)
-        const scriptStart = '<' + 'script type="application/ld+json"';
-        const scriptEnd = '<' + '/script>';
-        const scriptTagOnly = '<!-- Product Schema - Auto-fetches from GitHub Pages -->\n' +
-          scriptStart + '\n' +
-          '        src="https://schema.alanranger.com/' + product.jsonFileName + '">\n' +
-          scriptEnd;
+        // Generate fetch-based script that loads JSON and injects it inline
+        // This replaces the broken <script src=""> approach with working fetch-based inline injection
+        const scriptTagOnly = '<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->\n' +
+          '<' + 'script>\n' +
+          'fetch("https://schema.alanranger.com/' + product.jsonFileName + '")\n' +
+          '  .then(r => r.json())\n' +
+          '  .then(json => {\n' +
+          '    const s = document.createElement("script");\n' +
+          '    s.type = "application/ld+json";\n' +
+          '    s.text = JSON.stringify(json);\n' +
+          '    document.head.appendChild(s);\n' +
+          '  })\n' +
+          '  .catch(console.error);\n' +
+          '<' + '/script>';
         
         // Combine suppressor block + script tag
         const fullCodeBlock = suppressorBlock + '\n\n' + scriptTagOnly;
@@ -7673,7 +7680,9 @@
   
   // Add debug log entry
   function addDebugLog(message) {
-    window.debugLog = window.debugLog || [];
+    if (!window.debugLog || !Array.isArray(window.debugLog)) {
+      window.debugLog = [];
+    }
     window.debugLog.push(message);
     updateDebugLog();
   }
@@ -13693,37 +13702,55 @@ ${minifiedJson}
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          const urls = [];
-          const headers = results.meta.fields || [];
-          
-          const urlColumn = headers.find(h => 
-            h.toLowerCase() === 'url' || h.toLowerCase() === 'link' || h.toLowerCase() === 'website'
-          );
-          
-          if (!urlColumn) {
-            reject(new Error('No URL column found. Expected column name: URL, Link, or Website'));
-            return;
-          }
-          
-          results.data.forEach((row, index) => {
-            const url = row[urlColumn];
-            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-              const trimmedUrl = url.trim();
-              // Deduplicate URLs - only add if not already in array
-              if (!urls.find(u => u.url === trimmedUrl)) {
-                urls.push({
-                  url: trimmedUrl,
-                  row: urls.length, // Use current array index, not CSV row number
-                  allFields: row
-                });
-              }
+          try {
+            const urls = [];
+            const headers = results.meta.fields || [];
+            
+            // Log headers for debugging
+            console.log('CSV headers found:', headers);
+            
+            const urlColumn = headers.find(h => {
+              const lower = h.toLowerCase().trim();
+              return lower === 'url' || 
+                     lower === 'link' || 
+                     lower === 'website' ||
+                     lower === 'full url' ||
+                     lower === 'fullurl' ||
+                     lower.includes('url') && (lower.includes('full') || lower.includes('page'));
+            });
+            
+            if (!urlColumn) {
+              const availableColumns = headers.join(', ') || 'none';
+              reject(new Error(`No URL column found. Expected column name: URL, Link, or Website. Available columns: ${availableColumns}`));
+              return;
             }
-          });
-          
-          resolve(urls);
+            
+            console.log(`Using URL column: "${urlColumn}"`);
+            
+            results.data.forEach((row, index) => {
+              const url = row[urlColumn];
+              if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                const trimmedUrl = url.trim();
+                // Deduplicate URLs - only add if not already in array
+                if (!urls.find(u => u.url === trimmedUrl)) {
+                  urls.push({
+                    url: trimmedUrl,
+                    row: urls.length, // Use current array index, not CSV row number
+                    allFields: row
+                  });
+                }
+              }
+            });
+            
+            console.log(`Parsed ${urls.length} URLs from CSV`);
+            resolve(urls);
+          } catch (parseError) {
+            reject(new Error(`Error parsing CSV data: ${parseError.message || parseError.toString()}`));
+          }
         },
         error: function(error) {
-          reject(error);
+          const errorMsg = error.message || error.toString() || JSON.stringify(error);
+          reject(new Error(`CSV parsing failed: ${errorMsg}`));
         }
       });
     });
@@ -16534,13 +16561,32 @@ ${minifiedJson}
   
   // Helper: Get API base URL based on current hostname
   function getApiBaseUrl() {
-    // Always use local origin when running locally (try vercel dev first, fallback to production)
+    // Check if running in Electron (file:// protocol with Electron user agent)
+    const isElectron = (window.location.protocol === 'file:') && 
+                       (navigator.userAgent.includes('Electron') || window.electronAPI);
+    
+    if (isElectron) {
+      // In Electron, use the local server that's running
+      return 'http://localhost:8000';
+    }
+    
+    // If opening HTML file directly in browser (file:// protocol but not Electron)
+    if (window.location.protocol === 'file:') {
+      // Use deployed Vercel API for standalone HTML files
+      return 'https://schema-tools-six.vercel.app';
+    }
+    
+    // For web browsers running on localhost
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return window.location.origin; // Try local vercel dev first
     }
+    
+    // For deployed Vercel app
     if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
       return 'https://schema-tools-six.vercel.app';
     }
+    
+    // Fallback: use current origin
     return window.location.origin;
   }
 
@@ -17225,9 +17271,15 @@ ${minifiedJson}
       updateBulkButtons();
       
     } catch (error) {
-      alert('Error: ' + error.message);
+      const errorMsg = error.message || error.toString() || JSON.stringify(error);
+      alert('Error: ' + errorMsg);
       progressDiv.style.display = 'none';
       console.error('Validation error:', error);
+      addDebugLog(`❌ Validation error: ${errorMsg}`);
+      if (error.stack) {
+        console.error('Error stack:', error.stack);
+        addDebugLog(`   Stack: ${error.stack}`);
+      }
     }
   }
   
