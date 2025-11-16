@@ -361,13 +361,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         }
     }
     
-    # Add provider for Course and Event types
-    if schema_type in ['course', 'event']:
-        product_schema["provider"] = {
-            "@type": "Organization",
-            "name": "Alan Ranger Photography",
-            "sameAs": "https://www.alanranger.com"
-        }
+    # Provider removed - not valid for Product type (only for Course/Service)
+    # Event information will be nested inside each Offer object instead
     
     # Add description - limit to 600 chars and strip line breaks
     if product_description:
@@ -406,6 +401,202 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         course_keywords = ['workshop', 'course', 'class', 'lesson', 'tuition', 'mentoring', 'academy']
         if any(keyword in name_lower for keyword in course_keywords):
             is_course_workshop = True
+    
+    # Create event object FIRST (if this is an event schema) so it can be added to each offer
+    event_object_for_offers = None
+    if schema_type == 'event':
+        # Try to match product to event in events CSV to get actual dates
+        start_date = None
+        end_date = None
+        location_name = None
+        
+        # First: Match product to event in events_df by URL slug or title
+        if events_df is not None and len(events_df) > 0:
+            product_name_lower = product_name.lower()
+            product_url_slug = ''
+            if product_url:
+                product_url_slug = product_url.split('/')[-1].strip().lower()
+            
+            # Try to match by Event_URL (most reliable)
+            for _, event_row in events_df.iterrows():
+                event_url = str(event_row.get('Event_URL', '')).strip()
+                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
+                
+                # Match by URL slug (most reliable)
+                if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
+                    if pd.notna(event_row.get('start_date_parsed')):
+                        start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
+                        # Try to get end date
+                        if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
+                            try:
+                                end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
+                                if pd.notna(end_date):
+                                    end_date = end_date.strftime('%Y-%m-%d')
+                                else:
+                                    end_date = start_date  # Use start date if end date invalid
+                            except:
+                                end_date = start_date
+                        else:
+                            end_date = start_date  # Use start date if no end date
+                        
+                        # Extract location from event if available
+                        if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
+                            location_name = str(event_row['Location_Business_Name']).strip()
+                        elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
+                            location_name = str(event_row['Location_Name']).strip()
+                        
+                        break
+            
+            # If no URL match, try to match by Event_Title (fuzzy match)
+            if not start_date:
+                for _, event_row in events_df.iterrows():
+                    event_title = str(event_row.get('Event_Title', '')).lower()
+                    
+                    # Check if key words match (at least 2 significant words)
+                    if event_title and product_name_lower:
+                        event_words = [w for w in event_title.split() if len(w) > 4]
+                        product_words = [w for w in product_name_lower.split() if len(w) > 4]
+                        matches = sum(1 for word in event_words if word in product_name_lower)
+                        if matches >= 2:  # At least 2 significant words match
+                            if pd.notna(event_row.get('start_date_parsed')):
+                                start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
+                                if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
+                                    try:
+                                        end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
+                                        if pd.notna(end_date):
+                                            end_date = end_date.strftime('%Y-%m-%d')
+                                        else:
+                                            end_date = start_date
+                                    except:
+                                        end_date = start_date
+                                else:
+                                    end_date = start_date
+                                
+                                # Extract location from event if available
+                                if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
+                                    location_name = str(event_row['Location_Business_Name']).strip()
+                                elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
+                                    location_name = str(event_row['Location_Name']).strip()
+                                
+                                break
+        
+        # Second: If no match found, try to extract dates from product name
+        if not start_date:
+            date_patterns = [
+                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
+                r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
+                r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
+            ]
+            
+            for pattern in date_patterns:
+                match = re.search(pattern, product_name)
+                if match:
+                    try:
+                        if len(match.groups()) == 4:
+                            if match.group(1).isdigit():
+                                day1, day2, month, year = match.groups()
+                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                            else:
+                                month, day1, day2, year = match.groups()
+                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
+                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
+                        elif len(match.groups()) == 2:
+                            month, year = match.groups()
+                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
+                            end_date = start_date
+                        break
+                    except:
+                        pass
+        
+        # Extract location from product name if not found from event
+        if not location_name:
+            location_keywords = {
+                'coventry': 'Coventry',
+                'lake district': 'Lake District',
+                'peak district': 'Peak District',
+                'yorkshire dales': 'Yorkshire Dales',
+                'snowdonia': 'Snowdonia',
+                'norfolk': 'Norfolk',
+                'devon': 'Devon',
+                'dorset': 'Dorset',
+                'anglesey': 'Anglesey',
+                'northumberland': 'Northumberland',
+                'suffolk': 'Suffolk',
+                'gower': 'Gower',
+                'kerry': 'Kerry',
+                'dartmoor': 'Dartmoor',
+                'exmoor': 'Exmoor',
+                'warwickshire': 'Warwickshire',
+                'worcestershire': 'Worcestershire',
+                'gloucestershire': 'Gloucestershire'
+            }
+            
+            name_lower = product_name.lower()
+            for keyword, location in location_keywords.items():
+                if keyword in name_lower:
+                    location_name = location
+                    break
+        
+        # Ensure we have dates (REQUIRED for Event schemas)
+        if not start_date:
+            print(f"❌ ERROR: Could not find dates for Event '{product_name[:50]}...' - Event schemas require startDate and endDate")
+            print(f"   Product URL: {product_url}")
+            print(f"   Please ensure this product matches an event in the workshops CSV file")
+            # Use error dates (will fail validation but schema will be generated)
+            start_date = "1900-01-01"
+            end_date = "1900-01-01"
+        
+        if not end_date:
+            end_date = start_date
+        
+        # Create nested Event object with all event-specific fields
+        event_object = {
+            "@type": "Event",
+            "name": product_name,
+            "startDate": start_date,
+            "endDate": end_date,
+            "eventStatus": "https://schema.org/EventScheduled",
+            "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
+        }
+        
+        # Add description and image to event object
+        if product_description:
+            event_object["description"] = product_description
+        if product_image and product_image.startswith('https://'):
+            event_object["image"] = product_image
+        
+        # Add location to event object
+        if location_name:
+            event_object["location"] = {
+                "@type": "Place",
+                "name": location_name,
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Coventry",
+                    "addressRegion": "West Midlands",
+                    "addressCountry": "GB"
+                }
+            }
+        else:
+            # Default location
+            event_object["location"] = {
+                "@type": "Place",
+                "name": "United Kingdom",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Coventry",
+                    "addressRegion": "West Midlands",
+                    "addressCountry": "GB"
+                }
+            }
+        
+        # Add organizer and performer to event object (required for Event schemas)
+        event_object["organizer"] = ORGANIZER
+        event_object["performer"] = PERFORMER
+        
+        # Store event object to be added to each offer
+        event_object_for_offers = event_object
     
     # Add offers from cleaned file (JSON array)
     # If offers column exists and contains JSON, parse and use it
@@ -580,6 +771,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 except:
                     # If parsing fails, set to +12 months
                     offer['priceValidUntil'] = price_valid_until
+            
+            # Add event object to each offer if this is an event schema
+            if event_object_for_offers is not None:
+                # Create a copy of the event object for this offer (each offer can have its own event instance)
+                import copy
+                offer['event'] = copy.deepcopy(event_object_for_offers)
         
         # Always use array format for offers (even if single offer) when multiple variants exist
         # This improves price range display chances
@@ -590,193 +787,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             # Use array format (multiple offers OR single offer with variants)
             product_schema["offers"] = offers_data
     
-    # Add Event-specific fields when schema_type is 'event'
-    if schema_type == 'event':
-        # Try to match product to event in events CSV to get actual dates
-        start_date = None
-        end_date = None
-        location_name = None
-        
-        # First: Match product to event in events_df by URL slug or title
-        if events_df is not None and len(events_df) > 0:
-            product_name_lower = product_name.lower()
-            product_url_slug = ''
-            if product_url:
-                product_url_slug = product_url.split('/')[-1].strip().lower()
-            
-            # Try to match by Event_URL (most reliable)
-            for _, event_row in events_df.iterrows():
-                event_url = str(event_row.get('Event_URL', '')).strip()
-                event_url_slug = event_url.split('/')[-1].strip().lower() if event_url else ''
-                
-                # Match by URL slug (most reliable)
-                if product_url_slug and event_url_slug and product_url_slug == event_url_slug:
-                    if pd.notna(event_row.get('start_date_parsed')):
-                        start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
-                        # Try to get end date
-                        if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
-                            try:
-                                end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
-                                if pd.notna(end_date):
-                                    end_date = end_date.strftime('%Y-%m-%d')
-                                else:
-                                    end_date = start_date  # Use start date if end date invalid
-                            except:
-                                end_date = start_date
-                        else:
-                            end_date = start_date  # Use start date if no end date
-                        
-                        # Extract location from event if available
-                        if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
-                            location_name = str(event_row['Location_Business_Name']).strip()
-                        elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
-                            location_name = str(event_row['Location_Name']).strip()
-                        
-                        break
-            
-            # If no URL match, try to match by Event_Title (fuzzy match)
-            if not start_date:
-                for _, event_row in events_df.iterrows():
-                    event_title = str(event_row.get('Event_Title', '')).lower()
-                    
-                    # Check if key words match (at least 2 significant words)
-                    if event_title and product_name_lower:
-                        event_words = [w for w in event_title.split() if len(w) > 4]
-                        product_words = [w for w in product_name_lower.split() if len(w) > 4]
-                        matches = sum(1 for word in event_words if word in product_name_lower)
-                        if matches >= 2:  # At least 2 significant words match
-                            if pd.notna(event_row.get('start_date_parsed')):
-                                start_date = event_row['start_date_parsed'].strftime('%Y-%m-%d')
-                                if 'End_Date' in event_row.index and pd.notna(event_row.get('End_Date')):
-                                    try:
-                                        end_date = pd.to_datetime(event_row['End_Date'], errors='coerce')
-                                        if pd.notna(end_date):
-                                            end_date = end_date.strftime('%Y-%m-%d')
-                                        else:
-                                            end_date = start_date
-                                    except:
-                                        end_date = start_date
-                                else:
-                                    end_date = start_date
-                                
-                                # Extract location from event if available
-                                if 'Location_Business_Name' in event_row.index and pd.notna(event_row.get('Location_Business_Name')):
-                                    location_name = str(event_row['Location_Business_Name']).strip()
-                                elif 'Location_Name' in event_row.index and pd.notna(event_row.get('Location_Name')):
-                                    location_name = str(event_row['Location_Name']).strip()
-                                
-                                break
-        
-        # Second: If no match found, try to extract dates from product name
-        if not start_date:
-            date_patterns = [
-                r'(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})',  # "23-25 Jan 2026"
-                r'([A-Z][a-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(\d{4})',  # "Jan 23-25 2026"
-                r'([A-Z][a-z]+)\s+(\d{4})',  # "Jan 2026"
-            ]
-            
-            for pattern in date_patterns:
-                match = re.search(pattern, product_name)
-                if match:
-                    try:
-                        if len(match.groups()) == 4:
-                            if match.group(1).isdigit():
-                                day1, day2, month, year = match.groups()
-                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
-                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
-                            else:
-                                month, day1, day2, year = match.groups()
-                                start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day1):02d}"
-                                end_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-{int(day2):02d}"
-                        elif len(match.groups()) == 2:
-                            month, year = match.groups()
-                            start_date = f"{year}-{pd.to_datetime(month, format='%B').month:02d}-01"
-                            end_date = start_date
-                        break
-                    except:
-                        pass
-        
-        # Extract location from product name if not found from event
-        if not location_name:
-            location_keywords = {
-                'coventry': 'Coventry',
-                'lake district': 'Lake District',
-                'peak district': 'Peak District',
-                'yorkshire dales': 'Yorkshire Dales',
-                'snowdonia': 'Snowdonia',
-                'norfolk': 'Norfolk',
-                'devon': 'Devon',
-                'dorset': 'Dorset',
-                'anglesey': 'Anglesey',
-                'northumberland': 'Northumberland',
-                'suffolk': 'Suffolk',
-                'gower': 'Gower',
-                'kerry': 'Kerry',
-                'dartmoor': 'Dartmoor',
-                'exmoor': 'Exmoor',
-                'warwickshire': 'Warwickshire',
-                'worcestershire': 'Worcestershire',
-                'gloucestershire': 'Gloucestershire'
-            }
-            
-            name_lower = product_name.lower()
-            for keyword, location in location_keywords.items():
-                if keyword in name_lower:
-                    location_name = location
-                    break
-        
-        # Ensure we have dates (REQUIRED for Event schemas)
-        if not start_date:
-            print(f"❌ ERROR: Could not find dates for Event '{product_name[:50]}...' - Event schemas require startDate and endDate")
-            print(f"   Product URL: {product_url}")
-            print(f"   Please ensure this product matches an event in the workshops CSV file")
-            # Use error dates (will fail validation but schema will be generated)
-            start_date = "1900-01-01"
-            end_date = "1900-01-01"
-        
-        if not end_date:
-            end_date = start_date
-        
-        # Create nested Event object with all event-specific fields
-        event_object = {
-            "@type": "Event",
-            "startDate": start_date,
-            "endDate": end_date,
-            "eventStatus": "https://schema.org/EventScheduled",
-            "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
-        }
-        
-        # Add location to event object
-        if location_name:
-            event_object["location"] = {
-                "@type": "Place",
-                "name": location_name,
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressLocality": "Coventry",
-                    "addressRegion": "West Midlands",
-                    "addressCountry": "GB"
-                }
-            }
-        else:
-            # Default location
-            event_object["location"] = {
-                "@type": "Place",
-                "name": "United Kingdom",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressLocality": "Coventry",
-                    "addressRegion": "West Midlands",
-                    "addressCountry": "GB"
-                }
-            }
-        
-        # Add organizer and performer to event object (required for Event schemas)
-        event_object["organizer"] = ORGANIZER
-        event_object["performer"] = PERFORMER
-        
-        # Add the nested event object to the product schema
-        product_schema["event"] = event_object
+    # Event object creation moved to BEFORE offers processing (see above)
+    # Event objects are now added to each offer in the offers loop above
     
     # Add hasCourseInstance for Course type (optional enhancement)
     # This boosts chance of Course rich results
@@ -1084,13 +1096,8 @@ def validate_schema_structure(schema_data, product_name):
         '@id': 'string'
     }
     
-    # Provider is required for Course and Event types
-    if isinstance(obj_type, list):
-        if 'Course' in obj_type:
-            required_keys['provider'] = 'dict'
-    # Check for nested event object (Event schemas now use Product with nested "event" object)
-    if 'event' in product_schema:
-        required_keys['provider'] = 'dict'
+    # Provider removed - not valid for Product type
+    # Event information is now nested inside each Offer object, not at Product level
     
     for key, expected_type in required_keys.items():
         if key not in product_schema:
@@ -1104,14 +1111,25 @@ def validate_schema_structure(schema_data, product_name):
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
-    # Event-specific validation (check for nested event object)
+    # Event-specific validation (check for event object in offers)
+    # Event objects should be nested inside each Offer, not at Product level
+    offers = product_schema.get('offers', [])
+    if not isinstance(offers, list):
+        offers = [offers] if offers else []
+    
+    has_event_in_offers = False
+    for offer in offers:
+        if 'event' in offer:
+            has_event_in_offers = True
+            event_obj = offer.get('event', {})
+            required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+            for field in required_event_fields:
+                if field not in event_obj:
+                    errors.append(f"Missing required Event field in offer: {field}")
+    
+    # Check that event is NOT at Product level (should be in offers)
     if 'event' in product_schema:
-        # ALL Event fields are REQUIRED for rich results (in nested event object)
-        event_obj = product_schema.get('event', {})
-        required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-        for field in required_event_fields:
-            if field not in event_obj:
-                errors.append(f"Missing required Event field: {field}")
+        errors.append("Event object should be nested inside Offer objects, not at Product level")
     
     # Validate brand structure
     brand = product_schema.get('brand', {})
@@ -1187,13 +1205,11 @@ def validate_schema_structure(schema_data, product_name):
         if second_type != 'BreadcrumbList':
             errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
     
-    # Ensure no Event fields are present for Product-only schemas
-    # Check that event fields are not at top level (they should be in nested "event" object if present)
-    if 'event' not in product_schema:
-        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer']
-        for key in forbidden_keys:
-            if key in product_schema:
-                errors.append(f"Forbidden Event field found at top level in non-Event schema: {key} (should be in nested 'event' object)")
+    # Ensure no Event fields are present at Product level (they should be in offers' event objects)
+    forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer', 'event']
+    for key in forbidden_keys:
+        if key in product_schema:
+            errors.append(f"Forbidden Event field found at Product level: {key} (should be in Offer's 'event' object)")
     
     # Validate all objects have @type and url (if applicable)
     for i, obj in enumerate(graph):
@@ -2164,14 +2180,20 @@ def main():
                     if field not in product_obj:
                         rich_results_errors.append(f'Missing required field: {field}')
                 
-                # Event-specific validation (check for nested event object)
-                if 'event' in product_obj:
-                    # ALL Event fields are REQUIRED for rich results (in nested event object)
-                    event_obj = product_obj.get('event', {})
-                    required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
-                    for field in required_event_fields:
-                        if field not in event_obj:
-                            rich_results_errors.append(f'Missing required Event field: {field}')
+                # Event-specific validation (check for event object in offers)
+                offers = product_obj.get('offers', [])
+                if not isinstance(offers, list):
+                    offers = [offers] if offers else []
+                
+                has_event_in_offers = False
+                for offer in offers:
+                    if 'event' in offer:
+                        has_event_in_offers = True
+                        event_obj = offer.get('event', {})
+                        required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+                        for field in required_event_fields:
+                            if field not in event_obj:
+                                rich_results_errors.append(f'Missing required Event field in offer: {field}')
                 
                 # Check offers
                 if 'offers' in product_obj:
