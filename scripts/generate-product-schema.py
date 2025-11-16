@@ -1231,7 +1231,11 @@ def validate_schema_structure(schema_data, product_name):
     if len(graph) >= 3:
         first_type = graph[0].get('@type', '')
         second_type = graph[1].get('@type', '')
-        if first_type != 'LocalBusiness':
+        # Handle array format: ["LocalBusiness", "Organization"] or string "LocalBusiness"
+        if isinstance(first_type, list):
+            if 'LocalBusiness' not in first_type:
+                errors.append(f"First @graph object must include LocalBusiness, got: {first_type}")
+        elif first_type != 'LocalBusiness':
             errors.append(f"First @graph object must be LocalBusiness, got: {first_type}")
         if second_type != 'BreadcrumbList':
             errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
