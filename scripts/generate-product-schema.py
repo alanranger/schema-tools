@@ -320,10 +320,11 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     product_image = str(product_row.get('image', '')).strip()
     
     # Determine schema @type based on schema_type parameter
+    # Event and Course types now use Product as @type, with nested event/course objects
     if schema_type == 'event':
-        type_array = ["Product", "Event"]
+        type_array = ["Product"]  # Event fields will be in nested "event" object
     elif schema_type == 'course':
-        type_array = ["Product", "Course"]
+        type_array = ["Product", "Course"]  # Course still uses array type
     else:
         # Default: Product only (for prints, vouchers, etc.)
         type_array = ["Product"]
@@ -736,15 +737,18 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
         if not end_date:
             end_date = start_date
         
-        # Add Event-specific fields (REQUIRED for Event schemas)
-        product_schema["startDate"] = start_date
-        product_schema["endDate"] = end_date
-        product_schema["eventStatus"] = "https://schema.org/EventScheduled"
-        product_schema["eventAttendanceMode"] = "https://schema.org/OfflineEventAttendanceMode"
+        # Create nested Event object with all event-specific fields
+        event_object = {
+            "@type": "Event",
+            "startDate": start_date,
+            "endDate": end_date,
+            "eventStatus": "https://schema.org/EventScheduled",
+            "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"
+        }
         
-        # Add location
+        # Add location to event object
         if location_name:
-            product_schema["location"] = {
+            event_object["location"] = {
                 "@type": "Place",
                 "name": location_name,
                 "address": {
@@ -756,7 +760,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             }
         else:
             # Default location
-            product_schema["location"] = {
+            event_object["location"] = {
                 "@type": "Place",
                 "name": "United Kingdom",
                 "address": {
@@ -767,9 +771,12 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                 }
             }
         
-        # Add organizer and performer (required for Event schemas)
-        product_schema["organizer"] = ORGANIZER
-        product_schema["performer"] = PERFORMER
+        # Add organizer and performer to event object (required for Event schemas)
+        event_object["organizer"] = ORGANIZER
+        event_object["performer"] = PERFORMER
+        
+        # Add the nested event object to the product schema
+        product_schema["event"] = event_object
     
     # Add hasCourseInstance for Course type (optional enhancement)
     # This boosts chance of Course rich results
@@ -1048,15 +1055,20 @@ def validate_schema_structure(schema_data, product_name):
         errors.append("Missing Product/Course/Event object in @graph")
         return False, errors
     
-    # Validate @type - accept Product, Product+Course, or Product+Event
+    # Validate @type - accept Product, Product+Course, or Product (with nested event object)
     obj_type = product_schema.get('@type', [])
     if isinstance(obj_type, list):
         if 'Product' not in obj_type:
             errors.append(f"Product @type must include 'Product', got: {obj_type}")
-        # Accept Product, Product+Course, or Product+Event
-        valid_types = [['Product'], ['Product', 'Course'], ['Product', 'Event']]
+        # Accept Product, Product+Course (Event schemas now use Product with nested "event" object)
+        valid_types = [['Product'], ['Product', 'Course']]
         if obj_type not in valid_types:
             errors.append(f"Product @type must be one of {valid_types}, got: {obj_type}")
+        # Check if this is an event schema (has nested "event" object)
+        if 'event' in product_schema:
+            # Event schemas should have @type: ["Product"] with nested event object
+            if obj_type != ['Product']:
+                errors.append(f"Event schemas must have @type: ['Product'] with nested 'event' object, got: {obj_type}")
     elif obj_type != 'Product':
         errors.append(f"Product @type must be 'Product' or a list containing 'Product', got: {obj_type}")
     
@@ -1074,8 +1086,11 @@ def validate_schema_structure(schema_data, product_name):
     
     # Provider is required for Course and Event types
     if isinstance(obj_type, list):
-        if 'Course' in obj_type or 'Event' in obj_type:
+        if 'Course' in obj_type:
             required_keys['provider'] = 'dict'
+    # Check for nested event object (Event schemas now use Product with nested "event" object)
+    if 'event' in product_schema:
+        required_keys['provider'] = 'dict'
     
     for key, expected_type in required_keys.items():
         if key not in product_schema:
@@ -1089,12 +1104,13 @@ def validate_schema_structure(schema_data, product_name):
         elif expected_type == 'string' and not isinstance(product_schema[key], str):
             errors.append(f"Product schema key '{key}' must be a string")
     
-    # Event-specific validation
-    if isinstance(obj_type, list) and 'Event' in obj_type:
-        # ALL Event fields are REQUIRED for rich results
+    # Event-specific validation (check for nested event object)
+    if 'event' in product_schema:
+        # ALL Event fields are REQUIRED for rich results (in nested event object)
+        event_obj = product_schema.get('event', {})
         required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
         for field in required_event_fields:
-            if field not in product_schema:
+            if field not in event_obj:
                 errors.append(f"Missing required Event field: {field}")
     
     # Validate brand structure
@@ -1172,13 +1188,12 @@ def validate_schema_structure(schema_data, product_name):
             errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
     
     # Ensure no Event fields are present for Product-only schemas
-    # Only check this if Event is NOT in the @type
-    obj_type_for_check = product_schema.get('@type', [])
-    if isinstance(obj_type_for_check, list) and 'Event' not in obj_type_for_check:
-        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
+    # Check that event fields are not at top level (they should be in nested "event" object if present)
+    if 'event' not in product_schema:
+        forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer']
         for key in forbidden_keys:
             if key in product_schema:
-                errors.append(f"Forbidden Event field found in non-Event schema: {key}")
+                errors.append(f"Forbidden Event field found at top level in non-Event schema: {key} (should be in nested 'event' object)")
     
     # Validate all objects have @type and url (if applicable)
     for i, obj in enumerate(graph):
@@ -2138,19 +2153,24 @@ def main():
                 # Check required Product fields (provider only required for Course/Event)
                 required_fields = ['name', 'sku', 'brand', 'url', 'offers']
                 obj_type = product_obj.get('@type', [])
-                if isinstance(obj_type, list) and ('Course' in obj_type or 'Event' in obj_type):
+                # Check if Course in @type array, or if event object exists (for Event schemas)
+                if isinstance(obj_type, list) and 'Course' in obj_type:
+                    required_fields.append('provider')
+                elif 'event' in product_obj:
+                    # Event schemas now have nested "event" object instead of Event in @type
                     required_fields.append('provider')
                 
                 for field in required_fields:
                     if field not in product_obj:
                         rich_results_errors.append(f'Missing required field: {field}')
                 
-                # Event-specific validation
-                if isinstance(obj_type, list) and 'Event' in obj_type:
-                    # ALL Event fields are REQUIRED for rich results
+                # Event-specific validation (check for nested event object)
+                if 'event' in product_obj:
+                    # ALL Event fields are REQUIRED for rich results (in nested event object)
+                    event_obj = product_obj.get('event', {})
                     required_event_fields = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location']
                     for field in required_event_fields:
-                        if field not in product_obj:
+                        if field not in event_obj:
                             rich_results_errors.append(f'Missing required Event field: {field}')
                 
                 # Check offers
@@ -2397,16 +2417,17 @@ def main():
         for schema_graph in all_schema_graphs:
             if '@graph' in schema_graph and isinstance(schema_graph['@graph'], list):
                 for item in schema_graph['@graph']:
-                    # Only include Product/Course/Event objects (skip LocalBusiness and BreadcrumbList duplicates)
+                    # Only include Product/Course objects (skip LocalBusiness and BreadcrumbList duplicates)
+                    # Event schemas now use Product with nested "event" object, so we check for Product
                     item_type = item.get('@type', [])
                     if isinstance(item_type, list):
-                        if 'Product' in item_type or 'Course' in item_type or 'Event' in item_type:
+                        if 'Product' in item_type or 'Course' in item_type:
                             # Check for duplicate URLs
                             item_url = item.get('url', '')
                             if item_url and item_url not in seen_urls:
                                 unified_graph_items.append(item)
                                 seen_urls.add(item_url)
-                    elif isinstance(item_type, str) and item_type in ['Product', 'Course', 'Event']:
+                    elif isinstance(item_type, str) and item_type in ['Product', 'Course']:
                         item_url = item.get('url', '')
                         if item_url and item_url not in seen_urls:
                             unified_graph_items.append(item)
