@@ -6350,14 +6350,12 @@
       text = text.replace(pattern, '');
     }
     
-    // Remove standalone "search" from first 500 chars (likely navigation, not content)
-    if (text.length > 0) {
-      const firstPart = text.substring(0, 500);
-      const restPart = text.substring(500);
-      // Remove "search" as standalone word (not part of "research", "searching", etc.)
-      const cleanedFirst = firstPart.replace(/\bsearch\b/gi, '');
-      text = cleanedFirst + restPart;
-    }
+    // Remove "search" only when clearly navigation (not legitimate content)
+    // Only remove if it's: "/search", "search" at start, "searchBack", or "search" followed by "Back"
+    text = text.replace(/\/search\b/gi, '');
+    text = text.replace(/^search\b/gi, '');
+    text = text.replace(/searchBack/gi, 'Back'); // "searchBack" is navigation
+    text = text.replace(/\bsearch\s+Back/gi, 'Back');
     
     // Remove social sharing URLs (anywhere)
     text = text.replace(/https:\/\/www\.(facebook|linkedin|tumblr|pinterest)\.com[^\s]*/gi, '');
