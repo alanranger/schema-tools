@@ -6175,14 +6175,16 @@
   function cleanArticleBodyForDescription(articleBody, title) {
     if (!articleBody) return '';
     let text = articleBody;
-    // If the title appears in the body, drop everything before the first occurrence
-    if (title) {
-      const idx = text.toLowerCase().indexOf(String(title).toLowerCase());
-      if (idx > 0) {
-        text = text.slice(idx);
-      }
-    }
-    // Strip obvious Squarespace navigation fragments
+    
+    // Strip all Squarespace navigation patterns (more aggressive)
+    // Remove patterns like [/cart], [/photography-courses-coventry], etc.
+    text = text.replace(/\[\/[^\]]+\]/g, '');
+    text = text.replace(/\/Cart\s+\d+/gi, '');
+    text = text.replace(/Sign In My Account/gi, '');
+    text = text.replace(/Back\s+[^]*?/gi, '');
+    text = text.replace(/\[.*?\]/g, ''); // Remove any remaining bracket patterns
+    
+    // Strip common navigation fragments
     const NAV_PATTERNS = [
       '/Cart 0',
       'Sign In My Account',
@@ -6194,16 +6196,71 @@
       'Back Book A Free Consultation',
       'Blog [/photography-news-blog',
       'Academy [/free-online-photography-course]',
-      'Recommended Products [/photography-equipment-recommendations]'
+      'Recommended Products [/photography-equipment-recommendations]',
+      '[/cart]',
+      '[/photography-courses-coventry]',
+      '[/course-finder-photography-classes-near-me]',
+      '[/beginners-photography-classes]',
+      '[/free-online-photography-course]',
+      '[/photo-editing-course-coventry]',
+      '[/rps-courses-mentoring-distinctions]',
+      '[/photography-lessons-online-121]',
+      '[/private-photography-lessons]',
+      '[/photography-mentoring-online-assignments]',
+      '[/intentions-course-six-month-photography-project]',
+      '[/photography-workshops]',
+      '[/landscape-photography-workshops]',
+      '[/one-day-landscape-photography-workshops]',
+      '[/photography-workshops-near-me]',
+      '[/photography-tuition-services]',
+      '[/photography-gift-vouchers]',
+      '[/photography-services-near-me/camera-sensor-clean/]',
+      '[/fine-art-prints]',
+      '[/photography-payment-plan]',
+      '[/hire-a-professional-photographer-in-coventry]',
+      '[/professional-commercial-photographer-coventry]',
+      '[/professional-photographer-near-me]',
+      '[/corporate-photography-training]',
+      '[/gallery-image-portfolios]',
+      '[/contact-us-alan-ranger-photography]',
+      '[/photography-news-blog/]',
+      '[/free-online-photography-course]',
+      '[/photography-equipment-recommendations]',
+      '[/about-alan-ranger]',
+      '[/my-ethical-policy]',
+      '[/testimonials-customer-reviews]'
     ];
+    
     for (const frag of NAV_PATTERNS) {
-      const idx = text.indexOf(frag);
-      if (idx === 0) {
-        // Remove leading nav fragment
-        text = text.slice(frag.length);
+      text = text.replace(new RegExp(frag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+    }
+    
+    // If the title appears in the body, drop everything before the first occurrence
+    if (title) {
+      const idx = text.toLowerCase().indexOf(String(title).toLowerCase());
+      if (idx > 0) {
+        text = text.slice(idx);
       }
     }
-    return text.trim();
+    
+    // Find the first real paragraph (after cleaning)
+    // Look for sentences that don't start with navigation patterns
+    const sentences = text.split(/[.!?]\s+/).filter(s => {
+      const trimmed = s.trim();
+      if (!trimmed || trimmed.length < 20) return false;
+      // Skip if it looks like navigation
+      if (/^(back|cart|sign|search|menu)/i.test(trimmed)) return false;
+      return true;
+    });
+    
+    if (sentences.length > 0) {
+      text = sentences[0];
+    }
+    
+    // Clean up whitespace
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
   }
 
   function deriveLearningResourceType(categories, tags, title, text) {
@@ -6298,7 +6355,11 @@
     const entityText = `${title || ''} ${description || ''} ${articleBody || ''} ${chunksText || ''}`;
     const entityInfo = deriveEntitiesFromTextAndTags(entityText, tags);
 
-    // Genre and articleSection in natural language
+    // Derive learningResourceType and educationalLevel BEFORE using them
+    const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
+    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
+
+    // Genre and articleSection mapping based on content type and categories
     let primaryCategory = null;
     if (Array.isArray(categories) && categories.length > 0) {
       primaryCategory = categories[0];
@@ -6306,30 +6367,66 @@
       primaryCategory = categories.trim();
     }
 
-    let articleSection = primaryCategory ? normaliseCategoryLabel(primaryCategory) : null;
-    let genre = articleSection || null;
-
     const lowerEntityText = entityText.toLowerCase();
+    const lowerTitle = (title || '').toLowerCase();
+    const lowerTags = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
+    const lowerCategories = (primaryCategory || '').toLowerCase();
+
+    // Determine articleSection and genre based on content type
+    let articleSection = null;
+    let genre = null;
+
+    // Check for RPS/Distinctions context first
     const hasRpsContext =
       /\brps\b/.test(lowerEntityText) ||
       /\barps\b/.test(lowerEntityText) ||
       /distinction/.test(lowerEntityText) ||
-      /panel/.test(lowerEntityText);
+      /panel/.test(lowerEntityText) ||
+      /rps|distinction/i.test(lowerCategories);
 
-    // Derive learningResourceType and educationalLevel BEFORE using them
-    const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
-    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
-
-    if (hasRpsContext && primaryCategory && /rps|distinction/i.test(String(primaryCategory))) {
+    if (hasRpsContext && /rps|distinction/i.test(lowerCategories)) {
       articleSection = 'RPS Distinctions';
-      if (!genre || genre === articleSection) {
-        genre = 'Photography Case Study';
-      }
+      genre = 'Photography Case Study';
     }
-
-    // Override genre for assignments
-    if (learningResourceType === 'Assignment') {
+    // Assignments
+    else if (learningResourceType === 'Assignment' || /assignment|practice|project|exercise/i.test(lowerTitle + ' ' + lowerTags)) {
+      articleSection = 'Practice Assignment';
       genre = 'Photography Assignment';
+    }
+    // Case Studies
+    else if (learningResourceType === 'CaseStudy' || /case study|case-study/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      articleSection = 'Case Studies';
+      genre = 'Photography Case Study';
+    }
+    // Equipment/Gear Reviews
+    else if (/review|equipment|gear|product|tripod|camera|lens/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      articleSection = 'Gear Reviews';
+      genre = 'Product Review';
+    }
+    // Technical guides
+    else if (/technical|foundation|exposure|aperture|shutter|iso|settings/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      articleSection = 'Technical Foundations';
+      genre = 'Photography Guide';
+    }
+    // Composition/Creative
+    else if (/composition|creative|artistic|design|framing|rule of thirds/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      articleSection = 'Creative Techniques';
+      genre = 'Photography Guide';
+    }
+    // Wildlife/Genre-specific
+    else if (/wildlife|landscape|portrait|macro|seascape|woodland|genre/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      articleSection = 'Genre-Specific';
+      genre = 'Photography Guide';
+    }
+    // Fallback to normalized category
+    else if (primaryCategory) {
+      articleSection = normaliseCategoryLabel(primaryCategory);
+      genre = 'Photography Guide';
+    }
+    // Final fallback
+    else {
+      articleSection = 'Photography Tips';
+      genre = 'Photography Guide';
     }
 
     const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
@@ -6428,17 +6525,29 @@
     // Add hasPart for numbered assignment tasks
     if (learningResourceType === 'Assignment' && articleBody) {
       const taskMatches = [];
-      const taskRegex = /\b([1-9])\.\s+([^*]+?)(?=(?:\s+[1-9]\.\s+)|$)/g;
-      let match;
-      while ((match = taskRegex.exec(articleBody)) !== null) {
-        const taskNumber = match[1];
-        const taskText = match[2].trim();
-        if (!taskText) continue;
-        const name = `Task ${taskNumber} — ${truncate(taskText, 160)}`;
-        taskMatches.push({
-          '@type': 'WebPageElement',
-          name
-        });
+      // Match patterns like "1. Task text", "1) Task text", "ASSIGNMENT TASKS 1. Task text"
+      const taskPatterns = [
+        /\b(?:ASSIGNMENT\s+TASKS?\s+)?([1-9]|[1-9][0-9])\.\s+([^*💡]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\.\s+)|(?:\s*💡)|$)/gi,
+        /\b([1-9]|[1-9][0-9])\)\s+([^*💡]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\)\s+)|(?:\s*💡)|$)/gi
+      ];
+      
+      for (const taskRegex of taskPatterns) {
+        let match;
+        while ((match = taskRegex.exec(articleBody)) !== null) {
+          const taskNumber = match[1];
+          let taskText = match[2].trim();
+          // Clean up task text
+          taskText = taskText.replace(/^\s*[•\-\*]\s*/, '').trim();
+          if (!taskText || taskText.length < 10) continue;
+          // Stop if we hit "Stretch Tasks" or similar
+          if (/stretch|reflection|related|reading/i.test(taskText)) break;
+          const name = `Task ${taskNumber} — ${truncate(taskText, 160)}`;
+          taskMatches.push({
+            '@type': 'WebPageElement',
+            name
+          });
+          if (taskMatches.length >= 10) break;
+        }
         if (taskMatches.length >= 10) break;
       }
       if (taskMatches.length) {
