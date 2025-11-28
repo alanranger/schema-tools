@@ -7204,28 +7204,75 @@
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
     
-    // CRITICAL: Verify BlogPosting objects are valid before proceeding
-    const validPostings = blogPostings.filter(post => {
+    // CRITICAL: Final deduplication and validation - ensure ONE BlogPosting per URL
+    const urlToPosting = new Map();
+    
+    blogPostings.forEach((post, idx) => {
       if (!post || !post['@type'] || post['@type'] !== 'BlogPosting') {
-        blogLog(`⚠️  WARNING: Invalid BlogPosting object detected and filtered out`);
-        return false;
+        blogLog(`⚠️  WARNING: Invalid BlogPosting object at index ${idx} - filtered out`);
+        return;
       }
+      
       if (!post['@id'] || !post.headline || !post.url) {
-        blogLog(`⚠️  WARNING: BlogPosting missing required fields (@id: ${post['@id']}, headline: ${post.headline}, url: ${post.url})`);
-        return false;
+        blogLog(`⚠️  WARNING: BlogPosting at index ${idx} missing required fields - filtered out`);
+        return;
       }
-      return true;
+      
+      // CRITICAL: If URL already exists, REPLACE the previous one (not append)
+      if (urlToPosting.has(post.url)) {
+        blogLog(`⚠️  WARNING: Duplicate URL detected: ${post.url} - REPLACING previous BlogPosting`);
+      }
+      
+      // Ensure mainEntityOfPage is always an object with @id (never a string)
+      if (post.mainEntityOfPage) {
+        if (typeof post.mainEntityOfPage === 'string') {
+          post.mainEntityOfPage = { '@id': post.mainEntityOfPage };
+        } else if (!post.mainEntityOfPage['@id']) {
+          post.mainEntityOfPage = { '@id': `${post.url}#webpage` };
+        }
+      } else {
+        post.mainEntityOfPage = { '@id': `${post.url}#webpage` };
+      }
+      
+      // Ensure readingTime is always ISO 8601 format
+      if (post.readingTime && !post.readingTime.match(/^PT\d+[MH]$/)) {
+        // Convert "8M" to "PT8M"
+        const match = post.readingTime.match(/(\d+)[MH]/);
+        if (match) {
+          post.readingTime = `PT${match[1]}M`;
+          blogLog(`   Fixed readingTime format for ${post.url}: ${post.readingTime}`);
+        } else {
+          post.readingTime = 'PT1M';
+        }
+      }
+      
+      // Ensure isPartOf is always an object with @id
+      if (post.isPartOf) {
+        if (typeof post.isPartOf === 'string') {
+          post.isPartOf = { '@id': post.isPartOf };
+        } else if (!post.isPartOf['@id']) {
+          post.isPartOf = { '@id': `${BLOG_URL_GLOBAL}#blog` };
+        }
+      } else {
+        post.isPartOf = { '@id': `${BLOG_URL_GLOBAL}#blog` };
+      }
+      
+      // Store/update in map (this ensures only one per URL)
+      urlToPosting.set(post.url, post);
     });
     
-    if (validPostings.length !== blogPostings.length) {
-      blogLog(`⚠️  WARNING: Filtered out ${blogPostings.length - validPostings.length} invalid BlogPosting objects`);
+    // Convert map to array (ensures no duplicates)
+    const deduplicatedPostings = Array.from(urlToPosting.values());
+    
+    if (deduplicatedPostings.length !== blogPostings.length) {
+      blogLog(`⚠️  WARNING: Deduplicated ${blogPostings.length} → ${deduplicatedPostings.length} BlogPosting objects`);
     }
     
-    blogLog(`✅ Validated ${validPostings.length} BlogPosting objects ready for schema`);
+    blogLog(`✅ Validated ${deduplicatedPostings.length} unique BlogPosting objects ready for schema`);
     
     // Sample check: log first BlogPosting structure
-    if (validPostings.length > 0) {
-      const sample = validPostings[0];
+    if (deduplicatedPostings.length > 0) {
+      const sample = deduplicatedPostings[0];
       blogLog(`   Sample BlogPosting fields: @type=${sample['@type']}, @id=${sample['@id']}, headline=${sample.headline ? 'YES' : 'NO'}, articleBody=${sample.articleBody ? `${sample.articleBody.length} chars` : 'MISSING'}`);
     }
 
@@ -7241,11 +7288,11 @@
         name: 'Alan Ranger',
         url: 'https://www.alanranger.com/about-alan-ranger'
       },
-      blogPost: validPostings.map(post => ({ '@id': post['@id'] }))
+      blogPost: deduplicatedPostings.map(post => ({ '@id': post['@id'] }))
     };
 
-    // Sort validPostings by datePublished DESC for ItemList
-    const sortedPostings = [...validPostings].sort((a, b) => {
+    // Sort deduplicatedPostings by datePublished DESC for ItemList
+    const sortedPostings = [...deduplicatedPostings].sort((a, b) => {
       const dateA = a.datePublished ? new Date(a.datePublished).getTime() : 0;
       const dateB = b.datePublished ? new Date(b.datePublished).getTime() : 0;
       return dateB - dateA; // DESC order
@@ -7292,7 +7339,7 @@
     };
 
     // Per-post WebPage and Breadcrumb for each BlogPosting (canonical template)
-    const postWebPages = validPostings
+    const postWebPages = deduplicatedPostings
       .filter(post => post && post.url && post.headline)
       .map(post => {
         const webpage = {
@@ -7324,7 +7371,7 @@
         return webpage;
       });
 
-    const postBreadcrumbs = validPostings
+    const postBreadcrumbs = deduplicatedPostings
       .filter(post => post && post.url && post.headline)
       .map(post => ({
         '@type': 'BreadcrumbList',
@@ -7388,16 +7435,16 @@
         webPage,
         ...postWebPages,
         ...postBreadcrumbs,
-        ...validPostings // Add all VALID BlogPosting objects to @graph (CRITICAL: must be full objects, not just @id references)
+        ...deduplicatedPostings // Add all DEDUPLICATED BlogPosting objects to @graph (CRITICAL: must be full objects, not just @id references)
       ]
     };
-    
+
     // VERIFY BlogPosting objects are in graph
     const blogPostingsInGraph = blogSchema['@graph'].filter(obj => obj && obj['@type'] === 'BlogPosting');
-    blogLog(`✅ Verified ${blogPostingsInGraph.length} BlogPosting objects in @graph (expected: ${validPostings.length})`);
+    blogLog(`✅ Verified ${blogPostingsInGraph.length} BlogPosting objects in @graph (expected: ${deduplicatedPostings.length})`);
     
-    if (blogPostingsInGraph.length !== validPostings.length) {
-      blogLog(`❌ ERROR: BlogPosting count mismatch! Expected ${validPostings.length} but found ${blogPostingsInGraph.length} in @graph`);
+    if (blogPostingsInGraph.length !== deduplicatedPostings.length) {
+      blogLog(`❌ ERROR: BlogPosting count mismatch! Expected ${deduplicatedPostings.length} but found ${blogPostingsInGraph.length} in @graph`);
     }
     
     // Verify first BlogPosting has required fields
@@ -7463,8 +7510,8 @@
         webPages = graph.filter(obj => obj['@type'] === 'WebPage');
         breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
         
-        // Limit validation to first 10 posts to avoid hanging on large datasets
-        const postsToValidate = blogPostings.slice(0, 10);
+        // Validate ALL posts to ensure completeness
+        const postsToValidate = blogPostings;
         
         postsToValidate.forEach((post, idx) => {
           postUrls.add(post.url);
@@ -7671,6 +7718,38 @@
     } catch (e) {
       blogLog(`⚠️  Validation error: ${e.message}`);
       blogLog('   Continuing with schema output...');
+    }
+    
+    // CRITICAL: Check for duplicate URLs in BlogPosting objects
+    const urlSet = new Set();
+    const duplicateUrls = [];
+    blogPostingsInGraph.forEach(post => {
+      if (post.url) {
+        if (urlSet.has(post.url)) {
+          duplicateUrls.push(post.url);
+        } else {
+          urlSet.add(post.url);
+        }
+      }
+    });
+    
+    if (duplicateUrls.length > 0) {
+      blogLog(`❌ CRITICAL ERROR: Found ${duplicateUrls.length} duplicate URLs in BlogPosting objects:`);
+      duplicateUrls.slice(0, 10).forEach(url => blogLog(`   ${url}`));
+      if (duplicateUrls.length > 10) {
+        blogLog(`   ... and ${duplicateUrls.length - 10} more duplicates`);
+      }
+    } else {
+      blogLog(`✅ No duplicate URLs found - each URL appears exactly once`);
+    }
+    
+    // Validate JSON structure before output
+    try {
+      const jsonString = JSON.stringify(blogSchema);
+      JSON.parse(jsonString); // Test that it's valid JSON
+      blogLog(`✅ JSON structure is valid (${(jsonString.length / 1024).toFixed(2)} KB)`);
+    } catch (e) {
+      blogLog(`❌ CRITICAL ERROR: Generated schema is not valid JSON: ${e.message}`);
     }
     
     if (!validation.valid) {
