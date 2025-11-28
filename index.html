@@ -6659,9 +6659,17 @@
     const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
     const readingTime = `${readingMinutes}M`;
 
-    // Clean description using helper function
-    const description = createCleanDescription(articleBody, title, rawEntityDescription);
+    // Clean article body for description / nav removal
+    const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
     
+    // Use helper function for clean description
+    const description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
+    
+    // Use cleaned body for downstream analysis
+    if (cleanedForDescription) {
+      articleBody = cleanedForDescription;
+    }
+
     // Classify content using helper function
     const classification = classifyContent(categories, tags, title, articleBody);
     const articleSection = classification.articleSection;
@@ -6686,201 +6694,6 @@
       }
     }
 
-    // Build description following exact rules:
-    // 1) Take first paragraph only
-    // 2) Strip all caps
-    // 3) Remove URLs
-    // 4) Remove repeated headline
-    // 5) Trim to 160 characters
-    // 6) Ensure human readable
-    let description = '';
-    
-    // Try entity description first if available and clean
-    if (rawEntityDescription) {
-      let trimmed = String(rawEntityDescription).trim();
-      // Remove repeated headline
-      if (title && trimmed.toLowerCase() === title.toLowerCase()) {
-        trimmed = '';
-      }
-      if (trimmed && trimmed.length > 20) {
-        // Clean: strip caps, remove URLs, remove nav
-        trimmed = trimmed.replace(/https?:\/\/[^\s]+/g, '');
-        trimmed = trimmed.replace(/\[\/[^\]]+\]/g, '');
-        trimmed = trimmed.replace(/[A-Z]{3,}/g, ''); // Remove all caps words
-        trimmed = trimmed.replace(/\s+/g, ' ').trim();
-        if (trimmed.length > 20) {
-          description = truncate(trimmed, 160);
-        }
-      }
-    }
-    
-    // If no description yet, use first paragraph from cleaned article body
-    if (!description && cleanedForDescription) {
-      // Get first paragraph (first sentence ending with . ! or ?)
-      const firstSentence = cleanedForDescription.match(/^[^.!?]+[.!?]/);
-      if (firstSentence) {
-        let desc = firstSentence[0].trim();
-        // Strip all caps words
-        desc = desc.replace(/[A-Z]{3,}/g, '');
-        // Remove URLs
-        desc = desc.replace(/https?:\/\/[^\s]+/g, '');
-        // Remove repeated headline
-        if (title && desc.toLowerCase().includes(title.toLowerCase())) {
-          desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
-        }
-        // Clean whitespace
-        desc = desc.replace(/\s+/g, ' ').trim();
-        if (desc.length > 20) {
-          description = truncate(desc, 160);
-        }
-      }
-      
-      // Fallback to first 160 chars if no sentence found
-      if (!description && cleanedForDescription) {
-        let desc = cleanedForDescription.substring(0, 200);
-        desc = desc.replace(/[A-Z]{3,}/g, '');
-        desc = desc.replace(/https?:\/\/[^\s]+/g, '');
-        desc = desc.replace(/\s+/g, ' ').trim();
-        description = truncate(desc, 160);
-      }
-    }
-    
-    // Final fallback: truncated title (but not ideal)
-    if (!description && title) {
-      description = truncate(String(title), 160);
-    }
-    
-    // Final cleanup
-    if (description) {
-      description = description.replace(/\[\/[^\]]+\]/g, '');
-      description = description.replace(/https?:\/\/[^\s]+/g, '');
-      description = description.replace(/\s+/g, ' ').trim();
-      description = truncate(description, 160);
-    }
-
-    // Prefer cleaned body for downstream analysis if available
-    if (cleanedForDescription) {
-      articleBody = cleanedForDescription;
-    }
-
-    const entityText = `${title || ''} ${description || ''} ${articleBody || ''} ${chunksText || ''}`;
-    const entityInfo = deriveEntitiesFromTextAndTags(entityText, tags);
-
-    // Derive learningResourceType and educationalLevel BEFORE using them
-    const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
-    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
-
-    // Genre and articleSection mapping based on content type and categories
-    let primaryCategory = null;
-    if (Array.isArray(categories) && categories.length > 0) {
-      primaryCategory = categories[0];
-    } else if (typeof categories === 'string' && categories.trim()) {
-      primaryCategory = categories.trim();
-    }
-
-    const lowerEntityText = entityText.toLowerCase();
-    const lowerTitle = (title || '').toLowerCase();
-    const lowerTags = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
-    const lowerCategories = (primaryCategory || '').toLowerCase();
-
-    // Classification Rules - EXACT IMPLEMENTATION
-    let articleSection = null;
-    let genre = null;
-    
-    const searchText = `${lowerTitle} ${lowerTags} ${lowerCategories} ${lowerEntityText}`;
-    const bodyLower = (articleBody || '').toLowerCase();
-
-    // 1. ASSIGNMENTS: If category contains "assignment"
-    if (lowerCategories.includes('assignment') || lowerTags.includes('assignment')) {
-      articleSection = 'Practice Assignment';
-      genre = 'Photography Assignment';
-      // learningResourceType already set by deriveLearningResourceType
-      // educationalLevel already set by deriveEducationalLevel
-    }
-    // 2. CASE STUDIES: If title contains "Case Study"
-    else if (/case study/i.test(lowerTitle)) {
-      articleSection = 'Case Studies';
-      genre = 'Photography Case Study';
-    }
-    // 3. RPS ARTICLES: If body mentions "RPS", "distinction", "ARPS"
-    else if (/\brps\b/.test(bodyLower) || /distinction/i.test(bodyLower) || /\barps\b/.test(bodyLower)) {
-      articleSection = 'RPS Distinctions';
-      genre = 'RPS Distinctions';
-    }
-    // 4. COMPOSITION / TECHNICAL: If tags include exposure, aperture, shutter speed, composition
-    else if (
-      /exposure/i.test(lowerTags) ||
-      /aperture/i.test(lowerTags) ||
-      /shutter speed/i.test(lowerTags) ||
-      /composition/i.test(lowerTags)
-    ) {
-      articleSection = 'Technical Foundations';
-      genre = 'Photography Guide';
-    }
-    // 5. GENRES: If category matches wildlife, street, portrait, macro, landscape
-    else if (
-      /wildlife|street|portrait|macro|landscape/i.test(lowerCategories)
-    ) {
-      articleSection = 'Genre-Specific';
-      genre = 'Photography Guide';
-    }
-    // 6. Fallback to normalized category
-    else if (primaryCategory) {
-      const normalized = normaliseCategoryLabel(primaryCategory);
-      articleSection = normalized;
-      // Set genre based on normalized category
-      if (/assignment|practice|project/i.test(normalized.toLowerCase())) {
-        genre = 'Photography Assignment';
-      } else if (/case study|case-study/i.test(normalized.toLowerCase())) {
-        genre = 'Photography Case Study';
-      } else if (/review|equipment|gear/i.test(normalized.toLowerCase())) {
-        genre = 'Product Review';
-      } else {
-        genre = 'Photography Guide';
-      }
-    }
-    // 9. Final fallback
-    else {
-      articleSection = 'Photography Tips';
-      genre = 'Photography Guide';
-    }
-
-    // Extract keywords - avoid pollution by only including relevant ones
-    const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
-    
-    // Only add semantic keywords that are actually mentioned in the content
-    const semanticKeywords = [];
-    const contentLower = `${title} ${description} ${articleBody}`.toLowerCase();
-    for (const ent of entityInfo.about) {
-      if (ent && ent.name) {
-        // Only include if the entity name or related terms appear in content
-        const entNameLower = ent.name.toLowerCase();
-        const entWords = entNameLower.split(/\s+/);
-        const isRelevant = entWords.some(word => {
-          if (word.length < 4) return false; // Skip short words
-          return contentLower.includes(word);
-        });
-        if (isRelevant) {
-          semanticKeywords.push(ent.name);
-        }
-      }
-    }
-    
-    // Deduplicate and clean keywords
-    const allKeywordsSet = new Set();
-    const allKeywords = [];
-    for (const kw of [...baseKeywords, ...semanticKeywords]) {
-      const trimmed = String(kw).trim();
-      if (!trimmed || trimmed.length < 2) continue;
-      const lower = trimmed.toLowerCase();
-      // Skip generic photography terms unless they're in the actual content
-      if (allKeywordsSet.has(lower)) continue;
-      // Only add if it's a tag or if it's mentioned in content
-      if (baseKeywords.includes(trimmed) || contentLower.includes(lower.replace(/[()]/g, ''))) {
-        allKeywordsSet.add(lower);
-        allKeywords.push(trimmed);
-      }
-    }
 
     // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED
     const blogPosting = {
