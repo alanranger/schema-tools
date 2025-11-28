@@ -2695,6 +2695,15 @@
         <button onclick="generateBlogIndexSchema()" id="generateBlogBtn" disabled>Generate Blog Index Schema</button>
         <button onclick="clearBlogForm()" class="secondary">Clear</button>
       </div>
+
+      <div id="blogProgress" style="display: none; margin-top: 1rem;">
+        <div id="blogProgressText" style="font-size: 0.85rem; color: #4a5568;">
+          Preparing blog schema...
+        </div>
+        <div style="margin-top: 0.5rem; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+          <div id="blogProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg,#3b82f6,#10b981); transition: width 0.2s ease-out;"></div>
+        </div>
+      </div>
     </div>
 
     <div id="blogSchemaOutput" style="display: none; margin-top: 2rem;">
@@ -2706,7 +2715,8 @@
         <button id="exportAndDeployBlogBtn" onclick="exportAndDeployBlogSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
           🚀 Export JSON & Deploy to GitHub
         </button>
-        <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save to alanranger-schema folder</button>
+        <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save JSON to alanranger-schema folder</button>
+        <button onclick="saveBlogSchemaAsText()" class="secondary">📝 Save Schema as .txt</button>
         <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema</button>
       </div>
       
@@ -5846,6 +5856,69 @@
     console.log(logEntry);
   }
 
+  // Normalise Blog CSV rows
+  async function parseBlogCsv(file) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          if (!results.data || results.data.length === 0) {
+            return reject(new Error('CSV file is empty or could not be parsed.'));
+          }
+
+          const rows = [];
+          for (const rawRow of results.data) {
+            if (!rawRow) {
+              continue;
+            }
+            const title = (rawRow['Title'] || '').trim();
+            const url = (rawRow['Full Url'] || rawRow['Full URL'] || rawRow['Url'] || '').trim();
+            if (!title || !url) {
+              continue;
+            }
+
+            const categoriesRaw = (rawRow['Categories'] || '').trim();
+            const tagsRaw = (rawRow['Tags'] || '').trim();
+            const imageUrl = (rawRow['Image'] || rawRow['Image Url'] || rawRow['Image URL'] || '').trim();
+            const publishOn = (rawRow['Publish On'] || rawRow['Publish Date'] || '').trim();
+
+            const categories = categoriesRaw
+              ? categoriesRaw.split(/[;,|]/).map(p => p.trim()).filter(Boolean)
+              : [];
+            const tags = tagsRaw
+              ? tagsRaw.split(/[;,|]/).map(p => p.trim()).filter(Boolean)
+              : [];
+
+            let publishDate = null;
+            if (publishOn) {
+              const iso = formatDate(publishOn);
+              publishDate = iso || publishOn;
+            }
+
+            rows.push({
+              title,
+              url,
+              categories,
+              tags,
+              imageUrl,
+              publishDate
+            });
+          }
+
+          if (rows.length === 0) {
+            return reject(new Error('No valid blog rows found in CSV.'));
+          }
+
+          resolve(rows);
+        },
+        error: function(error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
   function copyBlogDebugLog() {
     if (!blogDebugLog || blogDebugLog.length === 0) {
       alert('No debug log available to copy.');
@@ -5873,38 +5946,25 @@
     blogDebugLog = [];
     blogLog(`📄 Loading blog CSV file: ${file.name}`);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        if (!results.data || results.data.length === 0) {
-          blogLog('❌ CSV file is empty or could not be parsed', 'error');
-          alert('CSV file is empty or could not be parsed. Please check the file format.');
-          document.getElementById('generateBlogBtn').disabled = true;
-          return;
-        }
-
-        blogPosts = results.data;
-        blogLog(`✅ Loaded ${blogPosts.length} blog posts from CSV`);
-        blogLog(`   Columns found: ${results.meta.fields ? results.meta.fields.join(', ') : 'unknown'}`);
-        
+    parseBlogCsv(file)
+      .then(rows => {
+        blogPosts = rows;
+        blogLog(`✅ Loaded ${blogPosts.length} normalised blog posts from CSV`);
         if (blogPosts.length > 0) {
           blogLog(`   Sample row keys: ${Object.keys(blogPosts[0]).join(', ')}`);
         }
-        
-        // Show info
+
         const infoDiv = document.getElementById('blogCsvInfo');
         const infoText = document.getElementById('blogCsvInfoText');
         infoText.textContent = `✅ Loaded ${blogPosts.length} blog posts. Ready to generate schema.`;
         infoDiv.style.display = 'block';
         document.getElementById('generateBlogBtn').disabled = false;
-      },
-      error: function(error) {
+      })
+      .catch(error => {
         blogLog(`❌ Error parsing CSV file: ${error.message}`, 'error');
         alert('Error parsing CSV file: ' + error.message);
         document.getElementById('generateBlogBtn').disabled = true;
-      }
-    });
+      });
   }
 
   function formatDate(dateStr) {
@@ -5936,6 +5996,87 @@
     return text.substring(0, maxLength - 3) + '...';
   }
 
+  function stripHtmlToText(html) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    
+    // Remove all menus, footers, headers, social icons
+    const removeSelectors = [
+      'script', 'style', 'noscript', 'nav', 'header', 'footer',
+      '.menu', '.navigation', '.nav', '.footer', '.header',
+      '.social', '.social-icons', '.share', '[class*="menu"]',
+      '[class*="nav"]', '[class*="footer"]', '[class*="header"]',
+      '[id*="menu"]', '[id*="nav"]', '[id*="footer"]', '[id*="header"]'
+    ];
+    for (const selector of removeSelectors) {
+      try {
+        const nodes = div.querySelectorAll(selector);
+        for (const node of nodes) {
+          node.remove();
+        }
+      } catch (e) {
+        // Ignore invalid selectors
+      }
+    }
+    
+    // Convert <p> to newline, preserve lists
+    const paragraphs = div.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.innerHTML = '\n' + p.textContent + '\n';
+    });
+    
+    // Preserve list structure
+    const lists = div.querySelectorAll('ul, ol');
+    lists.forEach(list => {
+      const items = list.querySelectorAll('li');
+      let listText = '\n';
+      items.forEach((item, idx) => {
+        listText += `• ${item.textContent}\n`;
+      });
+      list.outerHTML = listText;
+    });
+    
+    // Get text content
+    let text = div.textContent || div.innerText || '';
+    
+    // Remove repeated headers (if title appears multiple times, remove duplicates)
+    if (text) {
+      const lines = text.split('\n');
+      const seen = new Set();
+      const cleaned = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !seen.has(trimmed.toLowerCase())) {
+          seen.add(trimmed.toLowerCase());
+          cleaned.push(trimmed);
+        } else if (!trimmed) {
+          cleaned.push('');
+        }
+      }
+      text = cleaned.join('\n');
+    }
+    
+    // Collapse multiple spaces and newlines
+    text = text.replace(/\n{3,}/g, '\n\n'); // Max 2 consecutive newlines
+    text = text.replace(/[ \t]+/g, ' '); // Collapse spaces
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+  }
+
+  function countWords(text) {
+    if (!text) return 0;
+    const words = text.trim().split(/\s+/);
+    return words.filter(Boolean).length;
+  }
+
+  function estimateReadingTime(wordCount) {
+    if (!wordCount) return null;
+    const minutes = Math.max(1, Math.round(wordCount / 200));
+    return `PT${minutes}M`;
+  }
+
   function getSchemaType(categories) {
     if (!categories) return 'BlogPosting';
     const cats = categories.toLowerCase();
@@ -5945,221 +6086,1091 @@
     return 'BlogPosting';
   }
 
-  function generateBlogIndexSchema() {
+  // Supabase-backed helpers for blog enrichment
+  async function fetchPageEntityForUrl(url) {
+    if (!supabaseAvailable || !supabase || !url) {
+      return null;
+    }
+    try {
+      const query = supabase
+        .from('page_entities')
+        .select('title, page_url, description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
+        .eq('page_url', url)
+        .eq('kind', 'article')
+        .maybeSingle();
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn('page_entities fetch error', url, error);
+        return null;
+      }
+      return data || null;
+    } catch (error) {
+      console.warn('page_entities fetch exception', url, error);
+      return null;
+    }
+  }
+
+  async function fetchPageHtmlForUrl(url) {
+    if (!supabaseAvailable || !supabase || !url) {
+      return null;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('page_html')
+        .select('html_content')
+        .eq('url', url)
+        .maybeSingle();
+      if (error) {
+        console.warn('page_html fetch error', url, error);
+        return null;
+      }
+      return data && data.html_content ? data.html_content : null;
+    } catch (error) {
+      console.warn('page_html fetch exception', url, error);
+      return null;
+    }
+  }
+
+  async function fetchPageChunksForUrl(url, limit = 5) {
+    if (!supabaseAvailable || !supabase || !url) {
+      return [];
+    }
+    try {
+      const query = supabase
+        .from('page_chunks')
+        .select('chunk_text')
+        .eq('url', url)
+        .limit(limit);
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn('page_chunks fetch error', url, error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('page_chunks fetch exception', url, error);
+      return [];
+    }
+  }
+
+  const ENTITY_KEYWORDS = [
+    { match: /exposure/i, name: 'Exposure (photography)' },
+    { match: /aperture/i, name: 'Aperture (photography)' },
+    { match: /shutter speed/i, name: 'Shutter speed' },
+    { match: /composition/i, name: 'Photographic composition' },
+    { match: /landscape/i, name: 'Landscape photography' },
+    { match: /woodland/i, name: 'Woodland photography' },
+    { match: /seascape/i, name: 'Seascape photography' },
+    { match: /beginners?/i, name: 'Photography for beginners' },
+    { match: /lightroom/i, name: 'Adobe Lightroom' },
+    // RPS / distinctions specific entities
+    { match: /\bRPS\b/i, name: 'Royal Photographic Society' },
+    { match: /\bARPS\b/i, name: 'Associate of the Royal Photographic Society (ARPS)' },
+    { match: /distinction/i, name: 'RPS Distinctions' },
+    { match: /panel/i, name: 'Photography panel assessment' }
+  ];
+
+  function deriveEntitiesFromTextAndTags(text, tags) {
+    const about = [];
+    const mentions = [];
+    const haystack = `${text || ''} ${(tags || []).join(' ')}`.toLowerCase();
+    const textLower = (text || '').toLowerCase();
+
+    const existingNames = new Set();
+    const MAX_ENTITIES = 7; // Limit to 5-7 max
+
+    function addEntity(arr, name) {
+      if (!name || existingNames.has(name) || arr.length >= MAX_ENTITIES) return;
+      existingNames.add(name);
+      arr.push({ '@type': 'Thing', name });
+    }
+
+    // Dynamic extraction - only include if explicitly mentioned in article
+    // RPS / ARPS - ONLY if explicitly mentioned
+    if (/\brps\b/.test(textLower) || /royal photographic society/i.test(textLower)) {
+      addEntity(about, 'Royal Photographic Society');
+      addEntity(mentions, 'RPS');
+    }
+    if (/\barps\b/.test(textLower)) {
+      addEntity(about, 'Associate of the Royal Photographic Society (ARPS)');
+      addEntity(mentions, 'ARPS');
+    }
+    if (/distinction/i.test(textLower)) {
+      addEntity(about, 'RPS Distinctions');
+    }
+    if (/panel/i.test(textLower) && /assessment|rps|distinction/i.test(textLower)) {
+      addEntity(about, 'Photography panel assessment');
+    }
+
+    // Lightroom - ONLY if actually referenced
+    if (/lightroom/i.test(textLower) && !/just|only|mention/i.test(textLower)) {
+      addEntity(about, 'Adobe Lightroom');
+      addEntity(mentions, 'Lightroom');
+    }
+
+    // Landscape - ONLY if article is about landscape
+    if (/landscape photography/i.test(textLower) || 
+        (/landscape/i.test(textLower) && /photography|technique|composition|shooting/i.test(textLower))) {
+      addEntity(about, 'Landscape photography');
+    }
+
+    // Technical concepts - only if mentioned in context
+    if (/exposure/i.test(textLower) && /photography|camera|settings/i.test(textLower)) {
+      addEntity(about, 'Exposure (photography)');
+    }
+    if (/aperture/i.test(textLower) && /photography|camera|settings|depth/i.test(textLower)) {
+      addEntity(about, 'Aperture (photography)');
+    }
+    if (/shutter speed/i.test(textLower) && /photography|camera|settings|motion/i.test(textLower)) {
+      addEntity(about, 'Shutter speed');
+    }
+    if (/composition/i.test(textLower) && /photography|photographic|framing|design/i.test(textLower)) {
+      addEntity(about, 'Photographic composition');
+    }
+
+    // Genre-specific - only if article is about that genre
+    if (/woodland photography/i.test(textLower) || 
+        (/woodland/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Woodland photography');
+    }
+    if (/seascape photography/i.test(textLower) || 
+        (/seascape/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Seascape photography');
+    }
+
+    // Beginners - only if article is specifically for beginners
+    if (/beginners?/i.test(textLower) && /photography|guide|tutorial|introduction/i.test(textLower)) {
+      addEntity(about, 'Photography for beginners');
+    }
+
+    // Limit to MAX_ENTITIES
+    if (about.length > MAX_ENTITIES) {
+      about.splice(MAX_ENTITIES);
+    }
+    if (mentions.length > MAX_ENTITIES) {
+      mentions.splice(MAX_ENTITIES);
+    }
+
+    return { about, mentions };
+  }
+
+  function normaliseCategoryLabel(category) {
+    if (!category) return null;
+    const cleaned = String(category).replace(/[-_]+/g, ' ').trim();
+    if (!cleaned) return null;
+    return cleaned
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  const BLOG_URL_GLOBAL = 'https://www.alanranger.com/blog-on-photography';
+
+  function cleanArticleBodyForDescription(articleBody, title) {
+    if (!articleBody) return '';
+    let text = articleBody;
+    
+    // Strip all Squarespace navigation patterns (more aggressive)
+    // Remove patterns like [/cart], [/photography-courses-coventry], etc.
+    text = text.replace(/\[\/[^\]]+\]/g, '');
+    text = text.replace(/\/Cart\s+\d+/gi, '');
+    text = text.replace(/Cart\s+\d+/gi, '');
+    text = text.replace(/Sign In My Account/gi, '');
+    text = text.replace(/My Account/gi, '');
+    text = text.replace(/Back\s+[^]*?/gi, '');
+    text = text.replace(/\[.*?\]/g, ''); // Remove any remaining bracket patterns
+    // Remove "Photography Workshops Coventry" and similar location-based nav
+    text = text.replace(/Photography\s+(Workshops|Courses|Classes|Lessons)\s+(Coventry|Near Me|Online)/gi, '');
+    text = text.replace(/\/\s*photography[-\s]courses[-\s]coventry/gi, '');
+    text = text.replace(/\/\s*cart/gi, '');
+    
+    // Strip common navigation fragments
+    const NAV_PATTERNS = [
+      '/Cart 0',
+      'Sign In My Account',
+      'Back photography courses coventry',
+      'Back Workshops Calendar',
+      'Back Services Summary',
+      'Back Hire A Professional Photographer',
+      'Back Gallery',
+      'Back Book A Free Consultation',
+      'Blog [/photography-news-blog',
+      'Academy [/free-online-photography-course]',
+      'Recommended Products [/photography-equipment-recommendations]',
+      '[/cart]',
+      '[/photography-courses-coventry]',
+      '[/course-finder-photography-classes-near-me]',
+      '[/beginners-photography-classes]',
+      '[/free-online-photography-course]',
+      '[/photo-editing-course-coventry]',
+      '[/rps-courses-mentoring-distinctions]',
+      '[/photography-lessons-online-121]',
+      '[/private-photography-lessons]',
+      '[/photography-mentoring-online-assignments]',
+      '[/intentions-course-six-month-photography-project]',
+      '[/photography-workshops]',
+      '[/landscape-photography-workshops]',
+      '[/one-day-landscape-photography-workshops]',
+      '[/photography-workshops-near-me]',
+      '[/photography-tuition-services]',
+      '[/photography-gift-vouchers]',
+      '[/photography-services-near-me/camera-sensor-clean/]',
+      '[/fine-art-prints]',
+      '[/photography-payment-plan]',
+      '[/hire-a-professional-photographer-in-coventry]',
+      '[/professional-commercial-photographer-coventry]',
+      '[/professional-photographer-near-me]',
+      '[/corporate-photography-training]',
+      '[/gallery-image-portfolios]',
+      '[/contact-us-alan-ranger-photography]',
+      '[/photography-news-blog/]',
+      '[/free-online-photography-course]',
+      '[/photography-equipment-recommendations]',
+      '[/about-alan-ranger]',
+      '[/my-ethical-policy]',
+      '[/testimonials-customer-reviews]'
+    ];
+    
+    for (const frag of NAV_PATTERNS) {
+      text = text.replace(new RegExp(frag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+    }
+    
+    // If the title appears in the body, drop everything before the first occurrence
+    if (title) {
+      const idx = text.toLowerCase().indexOf(String(title).toLowerCase());
+      if (idx > 0) {
+        text = text.slice(idx);
+      }
+    }
+    
+    // Find the first real paragraph (after cleaning)
+    // Look for sentences that don't start with navigation patterns
+    const sentences = text.split(/[.!?]\s+/).filter(s => {
+      const trimmed = s.trim();
+      if (!trimmed || trimmed.length < 20) return false;
+      // Skip if it looks like navigation
+      if (/^(back|cart|sign|search|menu)/i.test(trimmed)) return false;
+      return true;
+    });
+    
+    if (sentences.length > 0) {
+      text = sentences[0];
+    }
+    
+    // Clean up whitespace
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+  }
+
+  function deriveLearningResourceType(categories, tags, title, text) {
+    const haystack = `${categories || ''} ${(tags || []).join(' ')} ${title || ''} ${text || ''}`.toLowerCase();
+    if (haystack.match(/assignment|practice|project|exercise/)) {
+      return 'Assignment';
+    }
+    if (haystack.match(/case study|case-study|case studies/)) {
+      return 'CaseStudy';
+    }
+    if (haystack.match(/tutorial|how[-\s]?to|guide/)) {
+      return 'Tutorial';
+    }
+    return 'Article';
+  }
+
+  function deriveEducationalLevel(categories, tags, title, text) {
+    const haystack = `${categories || ''} ${(tags || []).join(' ')} ${title || ''} ${text || ''}`.toLowerCase();
+    if (haystack.match(/beginner|getting started|introductory|for beginners/)) {
+      return 'Beginner';
+    }
+    if (haystack.match(/advanced|expert|masterclass/)) {
+      return 'Advanced';
+    }
+    return 'Intermediate';
+  }
+
+  // COMPLETELY REWRITTEN - Follows exact canonical template specification
+  // Helper: Clean description following exact rules
+  function createCleanDescription(articleBody, title, rawDescription) {
+    // Rule: Use FIRST PARAGRAPH ONLY from article body
+    // Rule: Remove ALL CAPS, URLs, repeated headline, headers/footers
+    // Rule: Max 160 characters, human-readable, end with full stop
+    
+    let desc = '';
+    
+    // ALWAYS use first paragraph from article body (not raw description)
+    if (articleBody) {
+      // Get first sentence/paragraph - look for first complete sentence
+      const sentences = articleBody.split(/[.!?]\s+/).filter(s => {
+        const trimmed = s.trim();
+        // Must be at least 20 chars, not navigation, not title
+        if (trimmed.length < 20) return false;
+        if (/^(back|cart|sign|search|menu|home|blog)/i.test(trimmed)) return false;
+        if (title && trimmed.toLowerCase() === title.toLowerCase()) return false;
+        return true;
+      });
+      
+      if (sentences.length > 0) {
+        desc = sentences[0].trim();
+      } else {
+        // Fallback: first 200 chars, but find sentence boundary
+        const first200 = articleBody.substring(0, 200);
+        const lastPeriod = first200.lastIndexOf('.');
+        const lastExclamation = first200.lastIndexOf('!');
+        const lastQuestion = first200.lastIndexOf('?');
+        const lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+        if (lastSentenceEnd > 50) {
+          desc = first200.substring(0, lastSentenceEnd + 1).trim();
+        } else {
+          desc = first200.trim();
+        }
+      }
+      
+      // Remove repeated headline (exact match or contains)
+      if (title) {
+        const titleLower = title.toLowerCase();
+        const descLower = desc.toLowerCase();
+        if (descLower === titleLower || descLower.startsWith(titleLower + ' ')) {
+          desc = desc.substring(title.length).trim();
+        }
+        // Remove if title appears anywhere in description
+        desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+      }
+      
+      // Remove ALL CAPS words (3+ consecutive uppercase letters) - but keep proper nouns
+      desc = desc.replace(/\b[A-Z]{3,}\b/g, '');
+      
+      // Remove URLs
+      desc = desc.replace(/https?:\/\/[^\s]+/g, '');
+      
+      // Remove bracket patterns
+      desc = desc.replace(/\[\/[^\]]+\]/g, '');
+      desc = desc.replace(/\[[^\]]+\]/g, '');
+      
+      // Remove navigation fragments
+      desc = desc.replace(/\/Cart\s+\d+/gi, '');
+      desc = desc.replace(/Sign In My Account/gi, '');
+      
+      // Clean whitespace
+      desc = desc.replace(/\s+/g, ' ').trim();
+      
+      // Remove leading/trailing punctuation artifacts
+      desc = desc.replace(/^[.,;:!?\s]+/, '').replace(/[.,;:!?\s]+$/, '');
+    }
+    
+    // If still no description, try raw description as last resort
+    if (!desc && rawDescription) {
+      desc = String(rawDescription).trim();
+      if (title && desc.toLowerCase() === title.toLowerCase()) {
+        desc = '';
+      }
+      desc = desc.replace(/[A-Z]{3,}/g, '');
+      desc = desc.replace(/https?:\/\/[^\s]+/g, '');
+      desc = desc.replace(/\[\/[^\]]+\]/g, '');
+      desc = desc.replace(/\[[^\]]+\]/g, '');
+      desc = desc.replace(/\s+/g, ' ').trim();
+      if (desc.length < 20) desc = '';
+    }
+    
+    // Trim to 160 chars and ensure ends with full stop
+    if (desc) {
+      // Trim to 160, but try to end at word boundary
+      if (desc.length > 160) {
+        const trimmed = desc.substring(0, 157);
+        const lastSpace = trimmed.lastIndexOf(' ');
+        if (lastSpace > 100) {
+          desc = trimmed.substring(0, lastSpace).trim();
+        } else {
+          desc = trimmed.trim();
+        }
+      }
+      
+      // Ensure ends with punctuation
+      if (desc.length > 0) {
+        desc = desc.replace(/[.!?]+$/, '');
+        if (!desc.endsWith('.')) {
+          desc = desc + '.';
+        }
+      }
+      
+      // Final safety check - max 160
+      if (desc.length > 160) {
+        desc = desc.substring(0, 157).trim() + '...';
+      }
+    }
+    
+    // Last resort: use title (truncated)
+    if (!desc || desc.length < 20) {
+      desc = title ? title.substring(0, 160) : '';
+      if (desc && !desc.endsWith('.')) desc = desc + '.';
+    }
+    
+    return desc;
+  }
+  
+  // Helper: Classification logic (exact rules) - ORDER MATTERS: Most specific first
+  function classifyContent(categories, tags, title, articleBody) {
+    const lowerTitle = (title || '').toLowerCase();
+    const lowerTags = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
+    const lowerCats = (Array.isArray(categories) ? categories : [categories]).join(' ').toLowerCase();
+    const lowerBody = (articleBody || '').toLowerCase();
+    const searchText = `${lowerTitle} ${lowerTags} ${lowerCats} ${lowerBody}`;
+    
+    // 1. RPS / DISTINCTIONS (most specific - check first)
+    if (/\brps\b/.test(lowerBody) || /distinction/i.test(lowerBody) || /\barps\b/.test(lowerBody) ||
+        /rps.*distinction|distinction.*rps/i.test(searchText) ||
+        /peter orton|john simpson/i.test(searchText)) {
+      return {
+        articleSection: 'RPS Distinctions',
+        genre: 'Photography Case Study',
+        learningResourceType: 'CaseStudy'
+      };
+    }
+    
+    // 2. CASE STUDIES (check before assignments)
+    if (/case study/i.test(lowerTitle) || 
+        (/case study/i.test(lowerBody) && lowerBody.length > 500)) {
+      return {
+        articleSection: 'Case Studies',
+        genre: 'Photography Case Study',
+        learningResourceType: 'CaseStudy'
+      };
+    }
+    
+    // 3. GEAR REVIEWS (specific product reviews)
+    if (/review|equipment|gear|product|tripod|camera|lens|benro|canon|nikon|fujifilm|sony/i.test(searchText) &&
+        (/review|best|recommend|compare/i.test(lowerTitle) || /review|recommendation|comparison/i.test(lowerBody))) {
+      return {
+        articleSection: 'Gear Reviews',
+        genre: 'Product Review',
+        learningResourceType: 'Article'
+      };
+    }
+    
+    // 4. ASSIGNMENTS (only if explicitly assignment/practice/project/exercise)
+    if ((lowerCats.includes('assignment') || lowerTags.includes('assignment') || 
+         /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle)) &&
+        !/case study|review|guide|tutorial|tips/i.test(lowerTitle)) {
+      return {
+        articleSection: 'Practice Assignment',
+        genre: 'Photography Assignment',
+        learningResourceType: 'Assignment'
+      };
+    }
+    
+    // 5. GENRE-SPECIFIC (wildlife, landscape, street, portrait, macro) - check before generic technical
+    if (/wildlife photography|landscape photography|street photography|portrait photography|macro photography|seascape photography|woodland photography/i.test(searchText) ||
+        (/wildlife|landscape|street|portrait|macro|seascape|woodland/i.test(lowerCats) && 
+         /photography|technique|guide|tips|how to/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Genre-Specific',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 6. TECHNICAL GUIDES (Exposure, Aperture, Shutter, ISO, Histogram) - specific technical topics
+    if ((/what is.*exposure|what is.*aperture|what is.*shutter|what is.*iso|what is.*histogram|what is.*white balance/i.test(lowerTitle)) ||
+        (/exposure|aperture|shutter|iso|histogram|metering|white balance/i.test(searchText) && 
+         /guide|tutorial|explained|how to|master/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Technical Foundations',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 7. CREATIVE TECHNIQUES (composition, leading lines, negative space)
+    if (/composition|leading lines|negative space|rule of thirds|framing|perspective/i.test(searchText) &&
+        /guide|tutorial|tips|technique|how to/i.test(lowerTitle)) {
+      return {
+        articleSection: 'Creative Techniques',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 8. SEASONAL / LOCATION SPECIFIC (autumn, bluebells, etc.)
+    if (/autumn|spring|summer|winter|bluebell|seasonal/i.test(lowerTitle) ||
+        (/autumn|spring|summer|winter|bluebell|seasonal/i.test(searchText) && 
+         /photography|photographing|guide|tips/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Seasonal & Location',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // Default - generic photography content
+    return {
+      articleSection: 'Photography Tips',
+      genre: 'Photography Guide',
+      learningResourceType: 'Article'
+    };
+  }
+  
+  // Helper: Extract entities (3-7 items max, only post-relevant)
+  function extractPostRelevantEntities(articleBody, tags, title) {
+    const about = [];
+    const mentions = [];
+    const textLower = `${title || ''} ${articleBody || ''}`.toLowerCase();
+    const tagsLower = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
+    const MAX_ENTITIES = 7;
+    const MIN_ENTITIES = 3;
+    const seen = new Set();
+    
+    function addEntity(arr, name) {
+      if (!name || seen.has(name.toLowerCase()) || arr.length >= MAX_ENTITIES) return;
+      seen.add(name.toLowerCase());
+      arr.push({ '@type': 'Thing', name });
+    }
+    
+    // Only add entities if explicitly mentioned in article body
+    // RPS / ARPS
+    if (/\brps\b/.test(textLower) || /royal photographic society/i.test(textLower)) {
+      addEntity(about, 'Royal Photographic Society');
+      addEntity(mentions, 'RPS');
+    }
+    if (/\barps\b/.test(textLower)) {
+      addEntity(about, 'Associate of the Royal Photographic Society (ARPS)');
+      addEntity(mentions, 'ARPS');
+    }
+    if (/distinction/i.test(textLower) && /rps|royal photographic/i.test(textLower)) {
+      addEntity(about, 'RPS Distinctions');
+    }
+    
+    // Technical concepts - only if mentioned in context
+    if (/exposure/i.test(textLower) && /photography|camera|settings/i.test(textLower)) {
+      addEntity(about, 'Exposure (photography)');
+    }
+    if (/aperture/i.test(textLower) && /photography|camera|settings|depth/i.test(textLower)) {
+      addEntity(about, 'Aperture (photography)');
+    }
+    if (/shutter speed/i.test(textLower) && /photography|camera|settings|motion/i.test(textLower)) {
+      addEntity(about, 'Shutter speed');
+    }
+    if (/composition/i.test(textLower) && /photography|photographic|framing|design/i.test(textLower)) {
+      addEntity(about, 'Photographic composition');
+    }
+    
+    // Genre-specific - only if article is about that genre
+    if (/landscape photography/i.test(textLower) || 
+        (/landscape/i.test(textLower) && /photography|technique|composition|shooting/i.test(textLower))) {
+      addEntity(about, 'Landscape photography');
+    }
+    if (/woodland photography/i.test(textLower) || 
+        (/woodland/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Woodland photography');
+    }
+    if (/seascape photography/i.test(textLower) || 
+        (/seascape/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Seascape photography');
+    }
+    
+    // Lightroom - ONLY if actually referenced in detail
+    if (/lightroom/i.test(textLower) && /edit|process|workflow|develop/i.test(textLower)) {
+      addEntity(about, 'Adobe Lightroom');
+      addEntity(mentions, 'Lightroom');
+    }
+    
+    // Ensure minimum 3 entities if we have content
+    if (about.length < MIN_ENTITIES && articleBody && articleBody.length > 100) {
+      // Add generic photography concepts only if we have minimal content
+      if (about.length === 0) {
+        addEntity(about, 'Photography');
+      }
+    }
+    
+    return { about: about.slice(0, MAX_ENTITIES), mentions: mentions.slice(0, MAX_ENTITIES) };
+  }
+
+  async function buildEnrichedBlogPosting(csvRow) {
+    const url = csvRow.url;
+    let entity = null;
+    let html = null;
+    let chunks = [];
+
+    if (supabaseAvailable && supabase && url) {
+      const [entityResult, htmlResult, chunksResult] = await Promise.all([
+        fetchPageEntityForUrl(url),
+        fetchPageHtmlForUrl(url),
+        fetchPageChunksForUrl(url, 5)
+      ]);
+      entity = entityResult;
+      html = htmlResult;
+      chunks = chunksResult || [];
+    }
+
+    const title = (entity && entity.title) || csvRow.title;
+    const rawEntityDescription = entity && (entity.description || entity.excerpt);
+    const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
+    const modifiedDate = (entity && entity.update_date) || publishDate || null;
+    const imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
+    const imageWidth = entity && entity.image_width ? entity.image_width : 1200;
+    const imageHeight = entity && entity.image_height ? entity.image_height : 800;
+    const categories = (entity && entity.categories) || csvRow.categories || [];
+    const tags = (entity && entity.tags) || csvRow.tags || [];
+
+    const chunksText = chunks
+      .map(c => (c && c.chunk_text) || '')
+      .filter(Boolean)
+      .join(' ');
+
+    // Extract FULL articleBody (HTML stripped, menus removed)
+    const articleBodySource = html || chunksText || '';
+    let articleBody = stripHtmlToText(articleBodySource);
+    const wordCount = countWords(articleBody);
+    const timeRequired = estimateReadingTime(wordCount);
+    
+    // Calculate readingTime in "XM" format (e.g., "6M")
+    const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
+    const readingTime = `${readingMinutes}M`;
+
+    // Clean article body for description extraction (but KEEP full articleBody for articleBody field)
+    const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
+    
+    // Use helper function for clean description (use cleaned version for description only)
+    const description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
+    
+    // DO NOT replace articleBody - it must contain the FULL article text, not just description
+    // articleBody stays as the full text for the articleBody field
+    // But use cleaned version for classification to avoid nav text affecting classification
+    const classificationBody = cleanedForDescription || articleBody;
+
+    // Classify content using helper function (use cleaned body to avoid nav affecting classification)
+    const classification = classifyContent(categories, tags, title, classificationBody);
+    const articleSection = classification.articleSection;
+    const genre = classification.genre;
+    const learningResourceType = classification.learningResourceType;
+    
+    // Derive educational level
+    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
+    
+    // Extract post-relevant entities (3-7 items max)
+    const entityInfo = extractPostRelevantEntities(articleBody, tags, title);
+    
+    // Build keywords from tags (deduplicated) - FILTER OUT GENERIC KEYWORDS
+    const GENERIC_KEYWORDS = new Set([
+      'shutter speed', 'aperture', 'composition', 'rps', 'lightroom',
+      'exposure', 'iso', 'white balance', 'histogram', 'metering',
+      'photography', 'camera', 'settings', 'technique', 'tips'
+    ]);
+    
+    const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
+    const keywordsSet = new Set();
+    const keywords = [];
+    
+    // Only include keywords that are:
+    // 1. Not generic photography terms
+    // 2. Actually relevant to THIS specific post (mentioned in title or body)
+    const contentText = `${title || ''} ${articleBody || ''}`.toLowerCase();
+    
+    for (const kw of baseKeywords) {
+      const trimmed = String(kw).trim().toLowerCase();
+      if (!trimmed || keywordsSet.has(trimmed)) continue;
+      
+      // Skip generic keywords unless they're specifically relevant to this post
+      if (GENERIC_KEYWORDS.has(trimmed)) {
+        // Only include if it's a core topic of this specific post
+        const isCoreTopic = contentText.includes(trimmed) && 
+                           (contentText.split(trimmed).length - 1) >= 2; // Mentioned 2+ times
+        if (!isCoreTopic) continue;
+      }
+      
+      keywordsSet.add(trimmed);
+      keywords.push(String(kw).trim()); // Keep original case
+    }
+
+
+    // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED
+    const blogPosting = {
+      '@type': 'BlogPosting',
+      '@id': `${url}#blogposting`,
+      headline: title,
+      alternativeHeadline: title ? `${title} | Alan Ranger Photography` : undefined,
+      description: description,
+      url: url,
+      mainEntityOfPage: { '@id': `${url}#webpage` },
+      datePublished: publishDate,
+      dateCreated: publishDate,
+      dateModified: modifiedDate,
+      inLanguage: 'en-GB',
+      articleBody: articleBody,
+      wordCount: wordCount,
+      timeRequired: timeRequired,
+      readingTime: readingTime,
+      genre: genre,
+      articleSection: articleSection,
+      keywords: keywords.length > 0 ? keywords : undefined,
+      learningResourceType: learningResourceType,
+      educationalLevel: educationalLevel,
+      educationalUse: learningResourceType === 'Assignment' ? 'Practice' : undefined,
+      audience: {
+        '@type': 'EducationalAudience',
+        educationalRole: 'Photographer'
+      },
+      educationalAlignment: {
+        '@type': 'AlignmentObject',
+        alignmentType: 'educationalFramework',
+        educationalFramework: 'Photography Skills',
+        targetName: educationalLevel || 'Beginner'
+      },
+      about: entityInfo.about.length > 0 ? entityInfo.about : undefined,
+      mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : undefined,
+      image: imageUrl ? {
+        '@type': 'ImageObject',
+        url: imageUrl,
+        width: imageWidth,
+        height: imageHeight
+      } : undefined,
+      thumbnailUrl: imageUrl || undefined,
+      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined, // References WebPage @id
+      speakable: {
+        '@type': 'SpeakableSpecification',
+        xpath: ['/html/head/title', '//h1'],
+        cssSelector: ['h1', '.intro']
+      },
+      discussionUrl: `${url}#comments`,
+      author: {
+        '@type': 'Person',
+        name: 'Alan Ranger',
+        url: 'https://www.alanranger.com/about-alan-ranger',
+        jobTitle: 'Photographer & Photography Educator'
+      },
+      publisher: { '@id': 'https://www.alanranger.com#organization' },
+      isPartOf: { '@id': `${BLOG_URL_GLOBAL}#blog` }
+    };
+    
+    // Add citation for RPS content
+    if (/\brps\b/.test(articleBody.toLowerCase()) || /royal photographic society/i.test(articleBody.toLowerCase())) {
+      blogPosting.citation = 'Royal Photographic Society';
+    }
+    
+    // Add interactionStatistic (always present)
+    blogPosting.interactionStatistic = {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/CommentAction',
+      userInteractionCount: entity && entity.comment_count ? entity.comment_count : 0
+    };
+
+    // Clean up undefined, null, empty strings, and empty arrays
+    const keys = Object.keys(blogPosting);
+    for (const key of keys) {
+      const value = blogPosting[key];
+      if (value === undefined || value === null || value === '') {
+        delete blogPosting[key];
+      } else if (Array.isArray(value) && value.length === 0) {
+        delete blogPosting[key];
+      } else if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+        delete blogPosting[key];
+      }
+    }
+
+    return blogPosting;
+  }
+
+  async function generateBlogIndexSchema() {
     if (!blogPosts || blogPosts.length === 0) {
       alert('Please upload a blog CSV file first.');
       return;
     }
 
-    blogLog('🔨 Starting blog schema generation...');
+    const generateBtn = document.getElementById('generateBlogBtn');
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Generating...';
+    }
+
+    blogLog('🔨 Starting blog schema generation (Supabase-enriched where available)...');
     blogLog(`   Processing ${blogPosts.length} blog posts`);
 
-    const BLOG_URL = 'https://www.alanranger.com/blog-on-photography';
+    const BLOG_URL = BLOG_URL_GLOBAL;
     const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
     const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
+
+    // Declare IDs before use
+    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
+    const WEBSITE_ID = 'https://www.alanranger.com#website';
 
     blogLog(`   Blog URL: ${BLOG_URL}`);
     blogLog(`   Blog Name: ${BLOG_NAME}`);
 
     const PUBLISHER = {
-      "@type": "Organization",
-      "name": "Alan Ranger Photography",
-      "url": "https://www.alanranger.com",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
-        "width": 800,
-        "height": 800
+      '@type': 'Organization',
+      '@id': ORGANIZATION_ID,
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+        width: 600,
+        height: 60
       },
-      "sameAs": [
-        "https://www.facebook.com/alanrangerphotography",
-        "https://www.instagram.com/alanrangerphoto",
-        "https://www.youtube.com/@AlanRangerPhotography",
-        "https://www.threads.net/@alanrangerphoto"
+      sameAs: [
+        'https://www.facebook.com/alanrangerphotography',
+        'https://www.instagram.com/alanrangerphoto',
+        'https://www.threads.net/@alanrangerphoto'
       ]
     };
 
     const AUTHOR = {
-      "@type": "Person",
-      "name": "Alan Ranger",
-      "url": "https://www.alanranger.com/about-alan-ranger",
-      "jobTitle": "Photographer & Educator",
-      "affiliation": {
-        "@type": "Organization",
-        "name": "Alan Ranger Photography"
+      '@type': 'Person',
+      name: 'Alan Ranger',
+      url: 'https://www.alanranger.com/about-alan-ranger',
+      jobTitle: 'Photographer & Educator',
+      affiliation: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography'
       },
-      "sameAs": [
-        "https://www.alanranger.com",
-        "https://www.linkedin.com/in/alanrangerphotography"
+      sameAs: [
+        'https://www.alanranger.com',
+        'https://www.linkedin.com/in/alanrangerphotography'
       ]
     };
 
-    // Generate blog postings
-    const blogPostings = [];
     const seenUrls = new Set();
-    let skippedCount = 0;
-    let newsArticleCount = 0;
-    let blogPostingCount = 0;
+    const blogPostings = [];
 
-    blogLog('📝 Generating blog postings...');
+    const progressContainer = document.getElementById('blogProgress');
+    const progressText = document.getElementById('blogProgressText');
+    const progressBar = document.getElementById('blogProgressBar');
 
-    for (let i = 0; i < blogPosts.length; i++) {
-      const row = blogPosts[i];
-      const headline = (row['Title'] || '').trim();
-      const url = (row['Full Url'] || '').trim();
-      const image = (row['Image'] || '').trim();
-      const datePublished = formatDate(row['Publish On'] || '');
-      const categories = (row['Categories'] || '').trim();
-      const tags = (row['Tags'] || '').trim();
+    const total = blogPosts.length;
+    let processed = 0;
 
-      // Skip duplicates
-      if (url && seenUrls.has(url)) {
-        blogLog(`   ⚠️ Skipping duplicate URL: ${url}`);
-        skippedCount++;
+    function updateProgress() {
+      if (!progressText || !progressBar || !total) return;
+      const pct = Math.round((processed / total) * 100);
+      progressText.textContent = `Fetching blog data ${processed}/${total} (${pct}%)...`;
+      progressBar.style.width = `${pct}%`;
+    }
+
+    if (progressContainer) {
+      progressContainer.style.display = 'block';
+      processed = 0;
+      updateProgress();
+    }
+
+    for (const row of blogPosts) {
+      if (!row || !row.url || seenUrls.has(row.url)) {
         continue;
       }
-
-      if (!headline || !url) {
-        blogLog(`   ⚠️ Skipping row ${i + 1}: missing headline or URL`);
-        skippedCount++;
-        continue; // Skip rows without required fields
+      seenUrls.add(row.url);
+      const posting = await buildEnrichedBlogPosting(row);
+      blogPostings.push(posting);
+      processed += 1;
+      updateProgress();
+      if (processed === 1 || processed % 5 === 0 || processed === total) {
+        blogLog(`   Fetched and enriched ${processed}/${total} posts (${Math.round((processed / total) * 100)}%)`);
       }
+    }
 
-      if (url) {
-        seenUrls.add(url);
-      }
+    blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
 
-      // Extract first category as articleSection
-      const articleSection = categories ? categories.split(';')[0].trim() : '';
-      
-      // Join tags as keywords
-      const keywords = tags ? tags.split(';').map(t => t.trim()).join(', ') : '';
-      
-      // Generate description (truncate title if needed)
-      const description = truncate(headline, 110);
-      
-      const schemaType = getSchemaType(categories);
-      if (schemaType === 'NewsArticle') {
-        newsArticleCount++;
-      } else {
-        blogPostingCount++;
-      }
-      
-      const blogPosting = {
-        "@type": schemaType,
-        "headline": headline,
-        "url": url,
-        "datePublished": datePublished || new Date().toISOString().replace('Z', '+00:00'),
-        "dateModified": datePublished || new Date().toISOString().replace('Z', '+00:00'),
-        "description": description,
-        "author": {
-          "@type": "Person",
-          "name": "Alan Ranger",
-          "url": "https://www.alanranger.com/about-alan-ranger"
+    const blog = {
+      '@type': 'Blog',
+      '@id': `${BLOG_URL}#blog`,
+      name: 'Alan Ranger Photography Blog',
+      description: 'Photography tutorials, assignments, tips, techniques and case studies.',
+      inLanguage: 'en-GB',
+      publisher: { '@id': ORGANIZATION_ID },
+      author: {
+        '@type': 'Person',
+        name: 'Alan Ranger',
+        url: 'https://www.alanranger.com/about-alan-ranger'
+      },
+      blogPost: blogPostings.map(post => ({ '@id': post['@id'] }))
+    };
+
+    // Sort blogPostings by datePublished DESC for ItemList
+    const sortedPostings = [...blogPostings].sort((a, b) => {
+      const dateA = a.datePublished ? new Date(a.datePublished).getTime() : 0;
+      const dateB = b.datePublished ? new Date(b.datePublished).getTime() : 0;
+      return dateB - dateA; // DESC order
+    });
+
+    const itemList = {
+      '@type': 'ItemList',
+      '@id': `${BLOG_URL}#itemlist`,
+      itemListOrder: 'Descending',
+      itemListElement: sortedPostings.map((post, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: post.url
+      }))
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://www.alanranger.com'
         },
-        "publisher": {
-          "@type": "Organization",
-          "name": "Alan Ranger Photography"
-        },
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": url
-        },
-        "isPartOf": BLOG_URL,
-        "inLanguage": "en-GB",
-        "copyrightHolder": {
-          "@type": "Organization",
-          "name": "Alan Ranger Photography"
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Photography Blog',
+          item: BLOG_URL
         }
-      };
-      
-      // Add image if available
-      if (image) {
-        blogPosting.image = {
-          "@type": "ImageObject",
-          "url": image,
-          "caption": headline
-        };
-        blogPosting.thumbnailUrl = image;
-      }
-      
-      // Add articleSection if available
-      if (articleSection) {
-        blogPosting.articleSection = articleSection;
-      }
-      
-      // Add keywords if available
-      if (keywords) {
-        blogPosting.keywords = keywords;
-      }
-      
-      blogPostings.push({
-        "@type": "ListItem",
-        "position": blogPostings.length + 1,
-        "item": blogPosting
-      });
-    }
+      ]
+    };
 
-    blogLog(`✅ Generated ${blogPostings.length} blog postings`);
-    blogLog(`   - BlogPosting: ${blogPostingCount}`);
-    blogLog(`   - NewsArticle: ${newsArticleCount}`);
-    if (skippedCount > 0) {
-      blogLog(`   - Skipped: ${skippedCount}`);
-    }
-
-    // Generate main Blog schema
-    blogLog('🔨 Building Blog schema structure...');
-    const blogSchema = {
-      "@context": "https://schema.org",
-      "@type": "Blog",
-      "@id": `${BLOG_URL}#blog`,
-      "url": BLOG_URL,
-      "name": BLOG_NAME,
-      "description": BLOG_DESCRIPTION,
-      "publisher": PUBLISHER,
-      "author": AUTHOR,
-      "inLanguage": "en-GB",
-      "mainEntity": {
-        "@type": "ItemList",
-        "itemListOrder": "Descending",
-        "itemListElement": blogPostings
+    const webPage = {
+      '@type': 'WebPage',
+      '@id': `${BLOG_URL}#webpage`,
+      url: BLOG_URL,
+      name: 'Photography Blog',
+      inLanguage: 'en-GB',
+      isPartOf: {
+        '@id': WEBSITE_ID
       }
     };
 
-    // Store schema globally for export/deploy
+    // Per-post WebPage and Breadcrumb for each BlogPosting (canonical template)
+    const postWebPages = blogPostings
+      .filter(post => post && post.url && post.headline)
+      .map(post => {
+        const webpage = {
+          '@type': 'WebPage',
+          '@id': `${post.url}#webpage`,
+          url: post.url,
+          name: post.headline,
+          description: post.description,
+          inLanguage: 'en-GB',
+          isPartOf: { '@id': WEBSITE_ID },
+          mainEntity: { '@id': post['@id'] } // Link to BlogPosting
+        };
+        
+        // Add primaryImageOfPage if image exists
+        if (post.image && post.image.url) {
+          webpage.primaryImageOfPage = {
+            '@type': 'ImageObject',
+            url: post.image.url,
+            width: post.image.width,
+            height: post.image.height
+          };
+        }
+        
+        // Add thumbnailUrl if image exists
+        if (post.thumbnailUrl) {
+          webpage.thumbnailUrl = post.thumbnailUrl;
+        }
+        
+        return webpage;
+      });
+
+    const postBreadcrumbs = blogPostings
+      .filter(post => post && post.url && post.headline)
+      .map(post => ({
+        '@type': 'BreadcrumbList',
+        '@id': `${post.url}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: 'https://www.alanranger.com'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Photography Blog',
+            item: BLOG_URL
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: post.headline,
+            item: post.url
+          }
+        ]
+      }));
+
+    const webSite = {
+      '@type': 'WebSite',
+      '@id': 'https://www.alanranger.com#website',
+      url: 'https://www.alanranger.com',
+      name: 'Alan Ranger Photography',
+      publisher: { '@id': 'https://www.alanranger.com#organization' }
+    };
+
+    const organization = {
+      '@type': 'Organization',
+      '@id': 'https://www.alanranger.com#organization',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+        width: 600,
+        height: 60
+      },
+      sameAs: [
+        'https://www.facebook.com/AlanRangerPhotography',
+        'https://www.instagram.com/alan_ranger_photography',
+        'https://www.linkedin.com/in/alanranger'
+      ]
+    };
+
+    const blogSchema = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        webSite,
+        organization,
+        blog,
+        itemList,
+        webPage,
+        ...postWebPages,
+        ...postBreadcrumbs,
+        ...blogPostings // Add all BlogPosting objects to @graph
+      ]
+    };
+
     window.currentBlogSchema = blogSchema;
 
-    // Display the schema
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
-    
-    // Wrap in script tag for easy pasting
+
     const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
-    
-    blogLog(`✅ Schema generation complete!`);
+
+    blogLog('✅ Schema generation complete!');
     blogLog(`   - Total posts in schema: ${blogPostings.length}`);
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
-    
-    // Display the script-wrapped version
+
     const codeElement = document.getElementById('blogSchemaCode');
     if (codeElement) {
       codeElement.textContent = scriptWrapped;
-      // Set styles only when content is present
       codeElement.style.color = '#fff';
       codeElement.style.backgroundColor = '#000';
-      
-      // Also ensure parent pre has correct styles
       const preElement = codeElement.parentElement;
       if (preElement && preElement.tagName === 'PRE') {
         preElement.style.color = '#fff';
         preElement.style.backgroundColor = '#000';
       }
     }
-    document.getElementById('blogSchemaOutput').style.display = 'block';
-    
-    // Scroll to output
-    document.getElementById('blogSchemaOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    
+    const outputDiv = document.getElementById('blogSchemaOutput');
+    if (outputDiv) {
+      outputDiv.style.display = 'block';
+      outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    if (progressContainer) {
+      progressText.textContent = `Completed ${blogPostings.length}/${total} (100%)`;
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+      }, 1500);
+    }
+
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Blog Index Schema';
+    }
+
     console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
   }
 
@@ -7011,6 +8022,29 @@
       blogLog(`❌ Error saving file: ${error.message}`, 'error');
       alert(`Error saving file: ${error.message}`);
     }
+  }
+
+  // Save the script-wrapped schema into a simple .txt file for manual use
+  function saveBlogSchemaAsText() {
+    const scriptWrapped = document.getElementById('blogSchemaCode').textContent;
+    if (!scriptWrapped || scriptWrapped.trim().length === 0) {
+      alert('No schema generated yet. Please generate the schema first.');
+      return;
+    }
+
+    const fileName = 'blog-schema.txt';
+    const blob = new Blob([scriptWrapped], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    blogLog(`💾 Downloaded ${fileName} (text version of schema)`);
+    alert(`✅ Downloaded ${fileName}\n\nOpen this file in a text editor to copy and paste the schema.`);
   }
 
   // Helper: Validate URL input
