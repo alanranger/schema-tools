@@ -6334,6 +6334,8 @@
       /Sign In My Account/gi,
       /My Account/gi,
       /\/search/gi,
+      /^\/?search\b/gi, // Remove "/search" or "search" at start of line/text
+      /\bsearch\s*$/gi, // Remove "search" at end of line (navigation label)
       /Back\s+photography\s+courses\s+coventry/gi,
       /Back\s+Workshops\s+Calendar/gi,
       /Back\s+Services\s+Summary/gi,
@@ -6346,6 +6348,15 @@
     
     for (const pattern of navPatterns) {
       text = text.replace(pattern, '');
+    }
+    
+    // Remove standalone "search" from first 500 chars (likely navigation, not content)
+    if (text.length > 0) {
+      const firstPart = text.substring(0, 500);
+      const restPart = text.substring(500);
+      // Remove "search" as standalone word (not part of "research", "searching", etc.)
+      const cleanedFirst = firstPart.replace(/\bsearch\b/gi, '');
+      text = cleanedFirst + restPart;
     }
     
     // Remove social sharing URLs (anywhere)
@@ -7023,7 +7034,18 @@
           'https://www.linkedin.com/in/alanrangerphotography'
         ]
       },
-      publisher: { '@id': 'https://www.alanranger.com#organization' },
+      publisher: {
+        '@type': 'Organization',
+        '@id': 'https://www.alanranger.com#organization',
+        name: 'Alan Ranger Photography',
+        url: 'https://www.alanranger.com',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+          width: 600,
+          height: 60
+        }
+      },
       isPartOf: { '@id': `${BLOG_URL_GLOBAL}#blog` },
       copyrightHolder: {
         '@type': 'Organization',
