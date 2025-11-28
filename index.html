@@ -6180,9 +6180,15 @@
     // Remove patterns like [/cart], [/photography-courses-coventry], etc.
     text = text.replace(/\[\/[^\]]+\]/g, '');
     text = text.replace(/\/Cart\s+\d+/gi, '');
+    text = text.replace(/Cart\s+\d+/gi, '');
     text = text.replace(/Sign In My Account/gi, '');
+    text = text.replace(/My Account/gi, '');
     text = text.replace(/Back\s+[^]*?/gi, '');
     text = text.replace(/\[.*?\]/g, ''); // Remove any remaining bracket patterns
+    // Remove "Photography Workshops Coventry" and similar location-based nav
+    text = text.replace(/Photography\s+(Workshops|Courses|Classes|Lessons)\s+(Coventry|Near Me|Online)/gi, '');
+    text = text.replace(/\/\s*photography[-\s]courses[-\s]coventry/gi, '');
+    text = text.replace(/\/\s*cart/gi, '');
     
     // Strip common navigation fragments
     const NAV_PATTERNS = [
@@ -6329,22 +6335,50 @@
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
 
     // Build description with preference order:
-    // 1) Supabase description/excerpt if it is not just a repeat of the headline
-    // 2) First ~200 chars of cleaned articleBody
-    // 3) Fallback: truncated title
+    // 1) Supabase description/excerpt if it is not just a repeat of the headline AND is clean
+    // 2) First paragraph of cleaned articleBody
+    // 3) First ~200 chars of cleaned articleBody
+    // 4) Fallback: truncated title
     let description = '';
+    
+    // Clean raw entity description if it exists
     if (rawEntityDescription) {
-      const trimmed = String(rawEntityDescription).trim();
+      let trimmed = String(rawEntityDescription).trim();
+      // Check if it's just a repeat of the headline
       if (trimmed && trimmed.toLowerCase() !== String(title || '').toLowerCase()) {
-        description = trimmed;
+        // Clean navigation patterns from entity description too
+        trimmed = cleanArticleBodyForDescription(trimmed, title);
+        // Check if it still looks like real content (not just nav)
+        if (trimmed && trimmed.length > 20 && !/^(\/|\[|cart|sign|back|menu)/i.test(trimmed)) {
+          description = trimmed;
+        }
       }
     }
+    
+    // If no clean description yet, use first paragraph from cleaned article body
     if (!description && cleanedForDescription) {
-      description = truncate(cleanedForDescription, 220);
+      // Find first real paragraph (sentence that's substantial)
+      const sentences = cleanedForDescription.split(/[.!?]\s+/).filter(s => {
+        const trimmed = s.trim();
+        return trimmed && trimmed.length >= 30 && !/^(back|cart|sign|menu|search)/i.test(trimmed);
+      });
+      
+      if (sentences.length > 0) {
+        description = truncate(sentences[0], 220);
+      } else {
+        // Fallback to truncated cleaned body
+        description = truncate(cleanedForDescription, 220);
+      }
     }
+    
     // Final fallback: use a truncated version of the title so description is never empty
     if (!description && title) {
       description = truncate(String(title), 160);
+    }
+    
+    // Final cleanup: remove any remaining navigation patterns
+    if (description) {
+      description = description.replace(/\[\/[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
     }
 
     // Prefer cleaned body for downstream analysis if available
@@ -6373,57 +6407,91 @@
     const lowerCategories = (primaryCategory || '').toLowerCase();
 
     // Determine articleSection and genre based on content type
+    // Priority order: RPS > Assignments > Case Studies > Reviews > Technical > Creative > Genre-specific > Category > Default
     let articleSection = null;
     let genre = null;
 
-    // Check for RPS/Distinctions context first
+    const searchText = `${lowerTitle} ${lowerTags} ${lowerCategories} ${lowerEntityText}`;
+
+    // 1. Check for RPS/Distinctions context (highest priority)
     const hasRpsContext =
-      /\brps\b/.test(lowerEntityText) ||
-      /\barps\b/.test(lowerEntityText) ||
-      /distinction/.test(lowerEntityText) ||
-      /panel/.test(lowerEntityText) ||
+      /\brps\b/.test(searchText) ||
+      /\barps\b/.test(searchText) ||
+      /distinction/i.test(searchText) ||
+      /panel/i.test(searchText) ||
       /rps|distinction/i.test(lowerCategories);
 
-    if (hasRpsContext && /rps|distinction/i.test(lowerCategories)) {
+    if (hasRpsContext && (/rps|distinction|panel/i.test(lowerCategories) || /case study/i.test(lowerTitle))) {
       articleSection = 'RPS Distinctions';
       genre = 'Photography Case Study';
     }
-    // Assignments
-    else if (learningResourceType === 'Assignment' || /assignment|practice|project|exercise/i.test(lowerTitle + ' ' + lowerTags)) {
+    // 2. Assignments (check title, tags, and content for assignment keywords)
+    else if (
+      learningResourceType === 'Assignment' ||
+      /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle) ||
+      /assignment|practice|project|exercise/i.test(lowerTags) ||
+      /assignment tasks|before you shoot|the assignment|learning objectives/i.test(lowerEntityText)
+    ) {
       articleSection = 'Practice Assignment';
       genre = 'Photography Assignment';
     }
-    // Case Studies
-    else if (learningResourceType === 'CaseStudy' || /case study|case-study/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+    // 3. Case Studies (but not RPS ones, already handled)
+    else if (
+      learningResourceType === 'CaseStudy' ||
+      /case study|case-study/i.test(lowerTitle) ||
+      /case study/i.test(lowerTags + ' ' + lowerCategories)
+    ) {
       articleSection = 'Case Studies';
       genre = 'Photography Case Study';
     }
-    // Equipment/Gear Reviews
-    else if (/review|equipment|gear|product|tripod|camera|lens/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+    // 4. Equipment/Gear Reviews
+    else if (
+      /review|equipment|gear|product|tripod|camera|lens|benro|canon|nikon|fujifilm|sony/i.test(searchText) &&
+      !/assignment|case study/i.test(searchText)
+    ) {
       articleSection = 'Gear Reviews';
       genre = 'Product Review';
     }
-    // Technical guides
-    else if (/technical|foundation|exposure|aperture|shutter|iso|settings/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+    // 5. Technical guides (exposure, aperture, ISO, settings, etc.)
+    else if (
+      /technical|foundation|exposure|aperture|shutter|iso|settings|metering|focus|white balance/i.test(searchText) &&
+      !/assignment|case study|review/i.test(searchText)
+    ) {
       articleSection = 'Technical Foundations';
       genre = 'Photography Guide';
     }
-    // Composition/Creative
-    else if (/composition|creative|artistic|design|framing|rule of thirds/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+    // 6. Composition/Creative techniques
+    else if (
+      /composition|creative|artistic|design|framing|rule of thirds|leading lines|negative space|perspective/i.test(searchText) &&
+      !/assignment|case study|review|technical/i.test(searchText)
+    ) {
       articleSection = 'Creative Techniques';
       genre = 'Photography Guide';
     }
-    // Wildlife/Genre-specific
-    else if (/wildlife|landscape|portrait|macro|seascape|woodland|genre/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+    // 7. Wildlife/Genre-specific photography
+    else if (
+      /wildlife|landscape|portrait|macro|seascape|woodland|street|urban|architecture|genre-specific/i.test(searchText) &&
+      !/assignment|case study|review|technical|composition/i.test(searchText)
+    ) {
       articleSection = 'Genre-Specific';
       genre = 'Photography Guide';
     }
-    // Fallback to normalized category
+    // 8. Fallback to normalized category
     else if (primaryCategory) {
-      articleSection = normaliseCategoryLabel(primaryCategory);
-      genre = 'Photography Guide';
+      const normalized = normaliseCategoryLabel(primaryCategory);
+      articleSection = normalized;
+      // Set genre based on normalized category
+      if (/assignment|practice|project/i.test(normalized.toLowerCase())) {
+        genre = 'Photography Assignment';
+      } else if (/case study|case-study/i.test(normalized.toLowerCase())) {
+        genre = 'Photography Case Study';
+      } else if (/review|equipment|gear/i.test(normalized.toLowerCase())) {
+        genre = 'Product Review';
+      } else {
+        genre = 'Photography Guide';
+      }
     }
-    // Final fallback
+    // 9. Final fallback
     else {
       articleSection = 'Photography Tips';
       genre = 'Photography Guide';
@@ -6523,34 +6591,64 @@
     };
 
     // Add hasPart for numbered assignment tasks
-    if (learningResourceType === 'Assignment' && articleBody) {
+    // Check if it's an assignment by learningResourceType OR by content patterns
+    const isAssignment = learningResourceType === 'Assignment' || 
+      /assignment|practice assignment|free lesson/i.test(lowerTitle) ||
+      /assignment tasks|before you shoot|the assignment|learning objectives/i.test(articleBody.toLowerCase());
+    
+    if (isAssignment && articleBody) {
       const taskMatches = [];
-      // Match patterns like "1. Task text", "1) Task text", "ASSIGNMENT TASKS 1. Task text"
+      // Multiple patterns to catch different task formats
       const taskPatterns = [
-        /\b(?:ASSIGNMENT\s+TASKS?\s+)?([1-9]|[1-9][0-9])\.\s+([^*💡]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\.\s+)|(?:\s*💡)|$)/gi,
-        /\b([1-9]|[1-9][0-9])\)\s+([^*💡]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\)\s+)|(?:\s*💡)|$)/gi
+        // Pattern 1: "1. Task description" or "ASSIGNMENT TASKS 1. Task description"
+        /\b(?:ASSIGNMENT\s+TASKS?\s*)?([1-9]|[1-9][0-9])\.\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\.\s+)|(?:\s*💡)|(?:\s*Stretch)|(?:\s*REFLECTION)|(?:\s*DO\s*\/)|$)/gi,
+        // Pattern 2: "1) Task description"
+        /\b([1-9]|[1-9][0-9])\)\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\)\s+)|(?:\s*💡)|(?:\s*Stretch)|(?:\s*REFLECTION)|$)/gi,
+        // Pattern 3: "Task 1: Description" or "Step 1: Description"
+        /\b(?:Task|Step)\s+([1-9]|[1-9][0-9]):\s+([^*💡✗✓]+?)(?=(?:\s+(?:Task|Step)\s+(?:[1-9]|[1-9][0-9]):)|(?:\s*💡)|$)/gi
       ];
+      
+      const foundTaskNumbers = new Set();
       
       for (const taskRegex of taskPatterns) {
         let match;
+        // Reset regex lastIndex to avoid issues
+        taskRegex.lastIndex = 0;
         while ((match = taskRegex.exec(articleBody)) !== null) {
           const taskNumber = match[1];
+          // Skip if we've already found this task number
+          if (foundTaskNumbers.has(taskNumber)) continue;
+          
           let taskText = match[2].trim();
-          // Clean up task text
+          // Clean up task text - remove bullet points, dashes, etc.
           taskText = taskText.replace(/^\s*[•\-\*]\s*/, '').trim();
+          taskText = taskText.replace(/\s+/g, ' ').trim();
+          
+          // Skip if too short or looks like navigation
           if (!taskText || taskText.length < 10) continue;
-          // Stop if we hit "Stretch Tasks" or similar
-          if (/stretch|reflection|related|reading/i.test(taskText)) break;
+          if (/^(back|cart|sign|menu|search)/i.test(taskText)) continue;
+          
+          // Stop if we hit "Stretch Tasks", "Reflection", "DO / DON'T", etc.
+          if (/stretch|reflection|related|reading|do\s*\/|don'?t/i.test(taskText)) break;
+          
+          // Clean task text further - remove any remaining brackets/links
+          taskText = taskText.replace(/\[\/[^\]]+\]/g, '').trim();
+          if (!taskText || taskText.length < 10) continue;
+          
           const name = `Task ${taskNumber} — ${truncate(taskText, 160)}`;
           taskMatches.push({
             '@type': 'WebPageElement',
             name
           });
+          foundTaskNumbers.add(taskNumber);
+          
           if (taskMatches.length >= 10) break;
         }
         if (taskMatches.length >= 10) break;
       }
-      if (taskMatches.length) {
+      
+      // If we found tasks, add hasPart
+      if (taskMatches.length > 0) {
         blogPosting.hasPart = taskMatches;
       }
     }
