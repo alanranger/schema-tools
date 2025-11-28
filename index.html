@@ -6000,15 +6000,69 @@
     if (!html) return '';
     const div = document.createElement('div');
     div.innerHTML = html;
-    const removeSelectors = ['script', 'style', 'noscript'];
+    
+    // Remove all menus, footers, headers, social icons
+    const removeSelectors = [
+      'script', 'style', 'noscript', 'nav', 'header', 'footer',
+      '.menu', '.navigation', '.nav', '.footer', '.header',
+      '.social', '.social-icons', '.share', '[class*="menu"]',
+      '[class*="nav"]', '[class*="footer"]', '[class*="header"]',
+      '[id*="menu"]', '[id*="nav"]', '[id*="footer"]', '[id*="header"]'
+    ];
     for (const selector of removeSelectors) {
-      const nodes = div.querySelectorAll(selector);
-      for (const node of nodes) {
-        node.remove();
+      try {
+        const nodes = div.querySelectorAll(selector);
+        for (const node of nodes) {
+          node.remove();
+        }
+      } catch (e) {
+        // Ignore invalid selectors
       }
     }
-    const text = div.textContent || '';
-    return text.replace(/\s+/g, ' ').trim();
+    
+    // Convert <p> to newline, preserve lists
+    const paragraphs = div.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.innerHTML = '\n' + p.textContent + '\n';
+    });
+    
+    // Preserve list structure
+    const lists = div.querySelectorAll('ul, ol');
+    lists.forEach(list => {
+      const items = list.querySelectorAll('li');
+      let listText = '\n';
+      items.forEach((item, idx) => {
+        listText += `• ${item.textContent}\n`;
+      });
+      list.outerHTML = listText;
+    });
+    
+    // Get text content
+    let text = div.textContent || div.innerText || '';
+    
+    // Remove repeated headers (if title appears multiple times, remove duplicates)
+    if (text) {
+      const lines = text.split('\n');
+      const seen = new Set();
+      const cleaned = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !seen.has(trimmed.toLowerCase())) {
+          seen.add(trimmed.toLowerCase());
+          cleaned.push(trimmed);
+        } else if (!trimmed) {
+          cleaned.push('');
+        }
+      }
+      text = cleaned.join('\n');
+    }
+    
+    // Collapse multiple spaces and newlines
+    text = text.replace(/\n{3,}/g, '\n\n'); // Max 2 consecutive newlines
+    text = text.replace(/[ \t]+/g, ' '); // Collapse spaces
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
   }
 
   function countWords(text) {
@@ -6121,40 +6175,82 @@
   function deriveEntitiesFromTextAndTags(text, tags) {
     const about = [];
     const mentions = [];
-    const haystack = `${text || ''} ${(tags || []).join(' ')}`;
+    const haystack = `${text || ''} ${(tags || []).join(' ')}`.toLowerCase();
+    const textLower = (text || '').toLowerCase();
 
     const existingNames = new Set();
+    const MAX_ENTITIES = 7; // Limit to 5-7 max
 
     function addEntity(arr, name) {
-      if (!name || existingNames.has(name)) return;
+      if (!name || existingNames.has(name) || arr.length >= MAX_ENTITIES) return;
       existingNames.add(name);
       arr.push({ '@type': 'Thing', name });
     }
 
-    for (const entry of ENTITY_KEYWORDS) {
-      if (entry.match.test(haystack)) {
-        addEntity(about, entry.name);
-        addEntity(mentions, entry.name);
-      }
+    // Dynamic extraction - only include if explicitly mentioned in article
+    // RPS / ARPS - ONLY if explicitly mentioned
+    if (/\brps\b/.test(textLower) || /royal photographic society/i.test(textLower)) {
+      addEntity(about, 'Royal Photographic Society');
+      addEntity(mentions, 'RPS');
+    }
+    if (/\barps\b/.test(textLower)) {
+      addEntity(about, 'Associate of the Royal Photographic Society (ARPS)');
+      addEntity(mentions, 'ARPS');
+    }
+    if (/distinction/i.test(textLower)) {
+      addEntity(about, 'RPS Distinctions');
+    }
+    if (/panel/i.test(textLower) && /assessment|rps|distinction/i.test(textLower)) {
+      addEntity(about, 'Photography panel assessment');
     }
 
-    // Extra explicit mapping for RPS / distinctions case studies
-    const lowerHaystack = haystack.toLowerCase();
-    const hasRpsContext =
-      /\brps\b/.test(lowerHaystack) ||
-      /\barps\b/.test(lowerHaystack) ||
-      /distinction/.test(lowerHaystack) ||
-      /panel/.test(lowerHaystack);
+    // Lightroom - ONLY if actually referenced
+    if (/lightroom/i.test(textLower) && !/just|only|mention/i.test(textLower)) {
+      addEntity(about, 'Adobe Lightroom');
+      addEntity(mentions, 'Lightroom');
+    }
 
-    if (hasRpsContext) {
-      // about: richer conceptual entities
-      addEntity(about, 'RPS Distinctions');
-      addEntity(about, 'Associate of the Royal Photographic Society (ARPS)');
-      addEntity(about, 'Photography panel assessment');
+    // Landscape - ONLY if article is about landscape
+    if (/landscape photography/i.test(textLower) || 
+        (/landscape/i.test(textLower) && /photography|technique|composition|shooting/i.test(textLower))) {
+      addEntity(about, 'Landscape photography');
+    }
 
-      // mentions: organisation + acronym focus
-      addEntity(mentions, 'Royal Photographic Society');
-      addEntity(mentions, 'ARPS');
+    // Technical concepts - only if mentioned in context
+    if (/exposure/i.test(textLower) && /photography|camera|settings/i.test(textLower)) {
+      addEntity(about, 'Exposure (photography)');
+    }
+    if (/aperture/i.test(textLower) && /photography|camera|settings|depth/i.test(textLower)) {
+      addEntity(about, 'Aperture (photography)');
+    }
+    if (/shutter speed/i.test(textLower) && /photography|camera|settings|motion/i.test(textLower)) {
+      addEntity(about, 'Shutter speed');
+    }
+    if (/composition/i.test(textLower) && /photography|photographic|framing|design/i.test(textLower)) {
+      addEntity(about, 'Photographic composition');
+    }
+
+    // Genre-specific - only if article is about that genre
+    if (/woodland photography/i.test(textLower) || 
+        (/woodland/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Woodland photography');
+    }
+    if (/seascape photography/i.test(textLower) || 
+        (/seascape/i.test(textLower) && /photography|technique|shooting/i.test(textLower))) {
+      addEntity(about, 'Seascape photography');
+    }
+
+    // Beginners - only if article is specifically for beginners
+    if (/beginners?/i.test(textLower) && /photography|guide|tutorial|introduction/i.test(textLower)) {
+      addEntity(about, 'Photography for beginners');
+    }
+
+    // Limit to MAX_ENTITIES
+    if (about.length > MAX_ENTITIES) {
+      about.splice(MAX_ENTITIES);
+    }
+    if (mentions.length > MAX_ENTITIES) {
+      mentions.splice(MAX_ENTITIES);
     }
 
     return { about, mentions };
@@ -6334,81 +6430,76 @@
     // Clean article body for description / nav removal
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
 
-    // Build description with preference order:
-    // 1) Supabase description/excerpt if it is not just a repeat of the headline AND is clean
-    // 2) First paragraph of cleaned articleBody
-    // 3) First ~200 chars of cleaned articleBody
-    // 4) Fallback: truncated title
+    // Build description following exact rules:
+    // 1) Take first paragraph only
+    // 2) Strip all caps
+    // 3) Remove URLs
+    // 4) Remove repeated headline
+    // 5) Trim to 160 characters
+    // 6) Ensure human readable
     let description = '';
     
-    // Clean raw entity description if it exists
+    // Try entity description first if available and clean
     if (rawEntityDescription) {
       let trimmed = String(rawEntityDescription).trim();
-      // Check if it's just a repeat of the headline
-      if (trimmed && trimmed.toLowerCase() !== String(title || '').toLowerCase()) {
-        // Clean navigation patterns from entity description too
-        trimmed = cleanArticleBodyForDescription(trimmed, title);
-        // Check if it still looks like real content (not just nav)
-        if (trimmed && trimmed.length > 20 && !/^(\/|\[|cart|sign|back|menu)/i.test(trimmed)) {
-          description = trimmed;
+      // Remove repeated headline
+      if (title && trimmed.toLowerCase() === title.toLowerCase()) {
+        trimmed = '';
+      }
+      if (trimmed && trimmed.length > 20) {
+        // Clean: strip caps, remove URLs, remove nav
+        trimmed = trimmed.replace(/https?:\/\/[^\s]+/g, '');
+        trimmed = trimmed.replace(/\[\/[^\]]+\]/g, '');
+        trimmed = trimmed.replace(/[A-Z]{3,}/g, ''); // Remove all caps words
+        trimmed = trimmed.replace(/\s+/g, ' ').trim();
+        if (trimmed.length > 20) {
+          description = truncate(trimmed, 160);
         }
       }
     }
     
-    // If no clean description yet, use first paragraph from cleaned article body
+    // If no description yet, use first paragraph from cleaned article body
     if (!description && cleanedForDescription) {
-      // Find first real paragraph (sentence that's substantial)
-      const sentences = cleanedForDescription.split(/[.!?]\s+/).filter(s => {
-        const trimmed = s.trim();
-        return trimmed && trimmed.length >= 30 && !/^(back|cart|sign|menu|search)/i.test(trimmed);
-      });
+      // Get first paragraph (first sentence ending with . ! or ?)
+      const firstSentence = cleanedForDescription.match(/^[^.!?]+[.!?]/);
+      if (firstSentence) {
+        let desc = firstSentence[0].trim();
+        // Strip all caps words
+        desc = desc.replace(/[A-Z]{3,}/g, '');
+        // Remove URLs
+        desc = desc.replace(/https?:\/\/[^\s]+/g, '');
+        // Remove repeated headline
+        if (title && desc.toLowerCase().includes(title.toLowerCase())) {
+          desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+        }
+        // Clean whitespace
+        desc = desc.replace(/\s+/g, ' ').trim();
+        if (desc.length > 20) {
+          description = truncate(desc, 160);
+        }
+      }
       
-      if (sentences.length > 0) {
-        description = truncate(sentences[0], 220);
-      } else {
-        // Fallback to truncated cleaned body
-        description = truncate(cleanedForDescription, 220);
+      // Fallback to first 160 chars if no sentence found
+      if (!description && cleanedForDescription) {
+        let desc = cleanedForDescription.substring(0, 200);
+        desc = desc.replace(/[A-Z]{3,}/g, '');
+        desc = desc.replace(/https?:\/\/[^\s]+/g, '');
+        desc = desc.replace(/\s+/g, ' ').trim();
+        description = truncate(desc, 160);
       }
     }
     
-    // Final fallback: use a truncated version of the title so description is never empty
+    // Final fallback: truncated title (but not ideal)
     if (!description && title) {
       description = truncate(String(title), 160);
     }
     
-    // Final cleanup: remove any remaining navigation patterns
+    // Final cleanup
     if (description) {
-      // Remove all bracket patterns
       description = description.replace(/\[\/[^\]]+\]/g, '');
-      description = description.replace(/\[[^\]]+\]/g, '');
-      // Remove common nav patterns
-      description = description.replace(/\/cart\s+\d+/gi, '');
-      description = description.replace(/cart\s+\d+/gi, '');
-      description = description.replace(/sign\s+in/gi, '');
-      description = description.replace(/my\s+account/gi, '');
-      description = description.replace(/back\s+/gi, '');
-      // Remove any text that starts with / or [ (likely nav)
-      description = description.replace(/^\s*[\/\[\]]+\s*/g, '');
-      // Remove footer/menu patterns
-      description = description.replace(/(lessons|mentoring|blog|workshops|courses|services|gallery|about|contact)[\s\/]*/gi, '');
-      // Clean whitespace
+      description = description.replace(/https?:\/\/[^\s]+/g, '');
       description = description.replace(/\s+/g, ' ').trim();
-      // If description is now too short or still looks like nav, use fallback
-      if (description.length < 20 || /^(\/|\[|cart|sign|back|menu|lessons|mentoring)/i.test(description)) {
-        if (cleanedForDescription) {
-          const fallbackSentences = cleanedForDescription.split(/[.!?]\s+/).filter(s => {
-            const trimmed = s.trim();
-            return trimmed && trimmed.length >= 40 && 
-              !/^(back|cart|sign|menu|search|lessons|mentoring|blog|workshops)/i.test(trimmed) &&
-              !/\[\//.test(trimmed);
-          });
-          if (fallbackSentences.length > 0) {
-            description = truncate(fallbackSentences[0], 220);
-          } else {
-            description = truncate(cleanedForDescription.replace(/\[\/[^\]]+\]/g, '').replace(/\/cart\s+\d+/gi, ''), 220);
-          }
-        }
-      }
+      description = truncate(description, 160);
     }
 
     // Prefer cleaned body for downstream analysis if available
@@ -6436,81 +6527,48 @@
     const lowerTags = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
     const lowerCategories = (primaryCategory || '').toLowerCase();
 
-    // Determine articleSection and genre based on content type
-    // Priority order: RPS > Assignments > Case Studies > Reviews > Technical > Creative > Genre-specific > Category > Default
+    // Classification Rules - EXACT IMPLEMENTATION
     let articleSection = null;
     let genre = null;
-
-    const searchText = `${lowerTitle} ${lowerTags} ${lowerCategories} ${lowerEntityText}`;
-
-    // 1. Check for RPS/Distinctions context (highest priority)
-    const hasRpsContext =
-      /\brps\b/.test(searchText) ||
-      /\barps\b/.test(searchText) ||
-      /distinction/i.test(searchText) ||
-      /panel/i.test(searchText) ||
-      /rps|distinction/i.test(lowerCategories);
-
-    if (hasRpsContext && (/rps|distinction|panel/i.test(lowerCategories) || /case study/i.test(lowerTitle))) {
-      articleSection = 'RPS Distinctions';
-      genre = 'Photography Case Study';
-    }
-    // 2. Assignments (check title, tags, URL, content, and task patterns)
-    const isAssignment = 
-      learningResourceType === 'Assignment' ||
-      /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle) ||
-      /assignment|practice|project|exercise/i.test(lowerTags) ||
-      /assignment|practice|project|exercise/i.test(lowerCategories) ||
-      /assignment/i.test((url || '').toLowerCase()) ||
-      /assignment tasks|before you shoot|the assignment|learning objectives|assignment tasks/i.test(lowerEntityText) ||
-      /\b([1-9]|[1-9][0-9])\.\s+[^*💡]+/i.test(articleBody); // Check for numbered tasks in body
     
-    if (isAssignment) {
+    const searchText = `${lowerTitle} ${lowerTags} ${lowerCategories} ${lowerEntityText}`;
+    const bodyLower = (articleBody || '').toLowerCase();
+
+    // 1. ASSIGNMENTS: If category contains "assignment"
+    if (lowerCategories.includes('assignment') || lowerTags.includes('assignment')) {
       articleSection = 'Practice Assignment';
       genre = 'Photography Assignment';
+      // learningResourceType already set by deriveLearningResourceType
+      // educationalLevel already set by deriveEducationalLevel
     }
-    // 3. Case Studies (but not RPS ones, already handled)
-    else if (
-      learningResourceType === 'CaseStudy' ||
-      /case study|case-study/i.test(lowerTitle) ||
-      /case study/i.test(lowerTags + ' ' + lowerCategories)
-    ) {
+    // 2. CASE STUDIES: If title contains "Case Study"
+    else if (/case study/i.test(lowerTitle)) {
       articleSection = 'Case Studies';
       genre = 'Photography Case Study';
     }
-    // 4. Equipment/Gear Reviews
-    else if (
-      /review|equipment|gear|product|tripod|camera|lens|benro|canon|nikon|fujifilm|sony/i.test(searchText) &&
-      !/assignment|case study/i.test(searchText)
-    ) {
-      articleSection = 'Gear Reviews';
-      genre = 'Product Review';
+    // 3. RPS ARTICLES: If body mentions "RPS", "distinction", "ARPS"
+    else if (/\brps\b/.test(bodyLower) || /distinction/i.test(bodyLower) || /\barps\b/.test(bodyLower)) {
+      articleSection = 'RPS Distinctions';
+      genre = 'RPS Distinctions';
     }
-    // 5. Technical guides (exposure, aperture, ISO, settings, etc.)
+    // 4. COMPOSITION / TECHNICAL: If tags include exposure, aperture, shutter speed, composition
     else if (
-      /technical|foundation|exposure|aperture|shutter|iso|settings|metering|focus|white balance/i.test(searchText) &&
-      !/assignment|case study|review/i.test(searchText)
+      /exposure/i.test(lowerTags) ||
+      /aperture/i.test(lowerTags) ||
+      /shutter speed/i.test(lowerTags) ||
+      /composition/i.test(lowerTags)
     ) {
       articleSection = 'Technical Foundations';
       genre = 'Photography Guide';
     }
-    // 6. Composition/Creative techniques
+    // 5. GENRES: If category matches wildlife, street, portrait, macro, landscape
     else if (
-      /composition|creative|artistic|design|framing|rule of thirds|leading lines|negative space|perspective/i.test(searchText) &&
-      !/assignment|case study|review|technical/i.test(searchText)
-    ) {
-      articleSection = 'Creative Techniques';
-      genre = 'Photography Guide';
-    }
-    // 7. Wildlife/Genre-specific photography
-    else if (
-      /wildlife|landscape|portrait|macro|seascape|woodland|street|urban|architecture|genre-specific/i.test(searchText) &&
-      !/assignment|case study|review|technical|composition/i.test(searchText)
+      /wildlife|street|portrait|macro|landscape/i.test(lowerCategories)
     ) {
       articleSection = 'Genre-Specific';
       genre = 'Photography Guide';
     }
-    // 8. Fallback to normalized category
+    // 6. Fallback to normalized category
     else if (primaryCategory) {
       const normalized = normaliseCategoryLabel(primaryCategory);
       articleSection = normalized;
@@ -6576,7 +6634,6 @@
       alternativeHeadline: title ? `${title} | Alan Ranger Photography` : undefined,
       url: url,
       mainEntityOfPage: url ? {
-        '@type': 'WebPage',
         '@id': `${url}#webpage`
       } : undefined,
       datePublished: publishDate || undefined,
@@ -6607,7 +6664,7 @@
       about: entityInfo.about.length ? entityInfo.about : undefined,
       mentions: entityInfo.mentions.length ? entityInfo.mentions : undefined,
       citation: undefined, // Will be set below if RPS context
-      discussionUrl: url ? `${url}#comments` : undefined,
+      discussionUrl: url ? `${url}#comments` : `${BLOG_URL_GLOBAL}#comments`,
       isPartOf: {
         '@type': 'Blog',
         '@id': `${BLOG_URL_GLOBAL}#blog`
@@ -6627,22 +6684,7 @@
         ]
       },
       publisher: {
-        '@type': 'Organization',
-        '@id': 'https://www.alanranger.com#organization',
-        name: 'Alan Ranger Photography',
-        url: 'https://www.alanranger.com',
-        logo: {
-          '@type': 'ImageObject',
-          url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
-          width: 600,
-          height: 60
-        },
-        sameAs: [
-          'https://www.facebook.com/alanrangerphotography',
-          'https://www.instagram.com/alanrangerphoto',
-          'https://www.youtube.com/@AlanRangerPhotography',
-          'https://www.threads.net/@alanrangerphoto'
-        ]
+        '@id': 'https://www.alanranger.com#organization'
       },
       copyrightHolder: {
         '@type': 'Organization',
@@ -6696,14 +6738,12 @@
       blogPosting.commentCount = entity.comment_count;
     }
     
-    // Add interactionStatistic for engagement
-    if (url) {
-      blogPosting.interactionStatistic = {
-        '@type': 'InteractionCounter',
-        interactionType: 'https://schema.org/CommentAction',
-        userInteractionCount: entity && entity.comment_count ? entity.comment_count : 0
-      };
-    }
+    // Add interactionStatistic for engagement (always present)
+    blogPosting.interactionStatistic = {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/CommentAction',
+      userInteractionCount: entity && entity.comment_count ? entity.comment_count : 0
+    };
     
     // Add backstory if available from entity
     if (entity && entity.backstory) {
@@ -6928,7 +6968,6 @@
       sameAs: [
         'https://www.facebook.com/alanrangerphotography',
         'https://www.instagram.com/alanrangerphoto',
-        'https://www.youtube.com/@AlanRangerPhotography',
         'https://www.threads.net/@alanrangerphoto'
       ]
     };
@@ -6995,15 +7034,22 @@
       description: BLOG_DESCRIPTION,
       publisher: { '@id': ORGANIZATION_ID },
       author: AUTHOR,
-      inLanguage: 'en-GB',
-      blogPost: blogPostings
+      inLanguage: 'en-GB'
+      // Do NOT embed BlogPosting here - they are separate objects in @graph
     };
+
+    // Sort blogPostings by datePublished DESC for ItemList
+    const sortedPostings = [...blogPostings].sort((a, b) => {
+      const dateA = a.datePublished ? new Date(a.datePublished).getTime() : 0;
+      const dateB = b.datePublished ? new Date(b.datePublished).getTime() : 0;
+      return dateB - dateA; // DESC order
+    });
 
     const itemList = {
       '@type': 'ItemList',
       '@id': `${BLOG_URL}#itemlist`,
       itemListOrder: 'Descending',
-      itemListElement: blogPostings.map((post, index) => ({
+      itemListElement: sortedPostings.map((post, index) => ({
         '@type': 'ListItem',
         position: index + 1,
         url: post.url
@@ -7100,7 +7146,6 @@
       sameAs: [
         'https://www.facebook.com/alanrangerphotography',
         'https://www.instagram.com/alanrangerphoto',
-        'https://www.youtube.com/@AlanRangerPhotography',
         'https://www.threads.net/@alanrangerphoto'
       ]
     };
@@ -7114,7 +7159,8 @@
         itemList,
         webPage,
         ...postWebPages,
-        ...postBreadcrumbs
+        ...postBreadcrumbs,
+        ...blogPostings // Add all BlogPosting objects to @graph
       ]
     };
 
