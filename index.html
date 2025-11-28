@@ -6268,6 +6268,73 @@
 
   const BLOG_URL_GLOBAL = 'https://www.alanranger.com/blog-on-photography';
 
+  // Clean FULL articleBody - removes navigation but preserves all content
+  function cleanFullArticleBody(articleBody, title) {
+    if (!articleBody) return '';
+    let text = articleBody;
+    
+    // Remove all Squarespace navigation patterns
+    text = text.replace(/\[\/[^\]]+\]/g, '');
+    text = text.replace(/\/Cart\s+\d+/gi, '');
+    text = text.replace(/Cart\s+\d+/gi, '');
+    text = text.replace(/Sign In My Account/gi, '');
+    text = text.replace(/My Account/gi, '');
+    text = text.replace(/\/search/gi, '');
+    
+    // Remove "Back" navigation patterns
+    text = text.replace(/Back\s+photography\s+courses\s+coventry/gi, '');
+    text = text.replace(/Back\s+Workshops\s+Calendar/gi, '');
+    text = text.replace(/Back\s+Services\s+Summary/gi, '');
+    text = text.replace(/Back\s+Hire\s+A\s+Professional\s+Photographer/gi, '');
+    text = text.replace(/Back\s+Gallery/gi, '');
+    text = text.replace(/Back\s+Book\s+A\s+Free\s+Consultation/gi, '');
+    text = text.replace(/Back\s+[A-Z][^]*?/g, '');
+    
+    // Remove menu items with brackets
+    text = text.replace(/\[.*?\]/g, '');
+    
+    // Remove common navigation fragments (case-insensitive, whole word)
+    const navPatterns = [
+      '/Cart 0',
+      'Sign In My Account',
+      'Blog [/photography-news-blog',
+      'Academy [/free-online-photography-course]',
+      'Recommended Products [/photography-equipment-recommendations]',
+      'Facebook0',
+      'LinkedIn0',
+      'Tumblr',
+      'Pinterest0',
+      '0 Likes',
+      'Genre-Specific',
+      'Alan Ranger',
+      /\d+\s+November\s+\d{4}/g, // Date patterns that are navigation
+    ];
+    
+    for (const pattern of navPatterns) {
+      if (pattern instanceof RegExp) {
+        text = text.replace(pattern, '');
+      } else {
+        text = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+      }
+    }
+    
+    // Remove social sharing patterns
+    text = text.replace(/https:\/\/www\.(facebook|linkedin|tumblr|pinterest)\.com[^\s]*/gi, '');
+    
+    // Remove repeated title if it appears at the start
+    if (title) {
+      const titleRegex = new RegExp('^\\s*' + title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i');
+      text = text.replace(titleRegex, '');
+    }
+    
+    // Clean up excessive whitespace but preserve paragraph structure
+    text = text.replace(/\n{3,}/g, '\n\n');
+    text = text.replace(/[ \t]+/g, ' ');
+    text = text.trim();
+    
+    return text;
+  }
+
   function cleanArticleBodyForDescription(articleBody, title) {
     if (!articleBody) return '';
     let text = articleBody;
@@ -6717,9 +6784,22 @@
       .filter(Boolean)
       .join(' ');
 
-    // Extract FULL articleBody (HTML stripped, menus removed)
+    // Extract FULL articleBody (HTML stripped, then navigation cleaned)
     const articleBodySource = html || chunksText || '';
-    let articleBody = stripHtmlToText(articleBodySource);
+    let articleBodyRaw = stripHtmlToText(articleBodySource);
+    
+    // CRITICAL: Clean articleBody to remove ALL navigation/menu pollution
+    let articleBody = cleanFullArticleBody(articleBodyRaw, title);
+    
+    // If cleaning removed too much, fallback to raw (but still try to clean)
+    if (!articleBody || articleBody.length < 100) {
+      articleBody = articleBodyRaw;
+      // Apply basic cleaning only
+      articleBody = articleBody.replace(/\[\/[^\]]+\]/g, '');
+      articleBody = articleBody.replace(/\/Cart\s+\d+/gi, '');
+      articleBody = articleBody.replace(/Sign In My Account/gi, '');
+    }
+    
     const wordCount = countWords(articleBody);
     const timeRequired = estimateReadingTime(wordCount);
     
@@ -6727,15 +6807,13 @@
     const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
     const readingTime = `${readingMinutes}M`;
 
-    // Clean article body for description extraction (but KEEP full articleBody for articleBody field)
+    // Clean article body for description extraction
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
     
-    // Use helper function for clean description (use cleaned version for description only)
+    // Use helper function for clean description
     const description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
     
-    // DO NOT replace articleBody - it must contain the FULL article text, not just description
-    // articleBody stays as the full text for the articleBody field
-    // But use cleaned version for classification to avoid nav text affecting classification
+    // Use cleaned version for classification to avoid nav text affecting classification
     const classificationBody = cleanedForDescription || articleBody;
 
     // Classify content using helper function (use cleaned body to avoid nav affecting classification)
@@ -6783,6 +6861,59 @@
     }
 
 
+    // Derive additional metadata
+    const publishYear = publishDate ? new Date(publishDate).getFullYear() : new Date().getFullYear();
+    const isAssignment = learningResourceType === 'Assignment';
+    const isCaseStudy = articleSection === 'Case Studies' || /case study/i.test(title || '');
+    
+    // Extract hasPart for assignments (numbered steps/tasks)
+    const hasPart = [];
+    if (isAssignment && articleBody) {
+      const stepMatches = articleBody.match(/(?:^|\n)\s*(\d+)\.\s+([^\n]+(?:\n(?!\d+\.)[^\n]+)*)/gm);
+      if (stepMatches && stepMatches.length > 0) {
+        stepMatches.slice(0, 10).forEach((match, idx) => {
+          const stepText = match.replace(/^\s*\d+\.\s*/, '').trim();
+          if (stepText && stepText.length > 10) {
+            hasPart.push({
+              '@type': 'WebPageElement',
+              name: `Step ${idx + 1} — ${stepText.substring(0, 80)}${stepText.length > 80 ? '...' : ''}`
+            });
+          }
+        });
+      }
+    }
+    
+    // Determine proficiency level
+    let proficiencyLevel = 'Beginner';
+    if (educationalLevel === 'Advanced' || /advanced|expert|professional/i.test(title || '')) {
+      proficiencyLevel = 'Advanced';
+    } else if (educationalLevel === 'Intermediate' || /intermediate|experienced/i.test(title || '')) {
+      proficiencyLevel = 'Intermediate';
+    }
+    
+    // Determine typical age range (photography education is typically adult)
+    const typicalAgeRange = '18-99';
+    
+    // Estimate cost (free for blog posts)
+    const estimatedCost = {
+      '@type': 'MonetaryAmount',
+      currency: 'GBP',
+      value: '0'
+    };
+    
+    // Content tier/quality rating
+    const contentTier = isCaseStudy ? 'Premium' : 'Standard';
+    
+    // Build related links (internal links to related posts)
+    const relatedLink = [];
+    // Could be enhanced with actual related post detection, but for now use blog index
+    if (url.includes('blog-on-photography')) {
+      relatedLink.push({
+        '@type': 'WebPage',
+        url: 'https://www.alanranger.com/blog-on-photography'
+      });
+    }
+    
     // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED
     const blogPosting = {
       '@type': 'BlogPosting',
@@ -6805,10 +6936,14 @@
       keywords: keywords.length > 0 ? keywords : undefined,
       learningResourceType: learningResourceType,
       educationalLevel: educationalLevel,
+      proficiencyLevel: proficiencyLevel,
+      typicalAgeRange: typicalAgeRange,
       educationalUse: learningResourceType === 'Assignment' ? 'Practice' : undefined,
+      estimatedCost: estimatedCost,
       audience: {
         '@type': 'EducationalAudience',
-        educationalRole: 'Photographer'
+        educationalRole: 'Photographer',
+        audienceType: 'Student'
       },
       educationalAlignment: {
         '@type': 'AlignmentObject',
@@ -6818,14 +6953,16 @@
       },
       about: entityInfo.about.length > 0 ? entityInfo.about : undefined,
       mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : undefined,
+      hasPart: hasPart.length > 0 ? hasPart : undefined,
       image: imageUrl ? {
         '@type': 'ImageObject',
         url: imageUrl,
         width: imageWidth,
-        height: imageHeight
+        height: imageHeight,
+        caption: title || undefined
       } : undefined,
       thumbnailUrl: imageUrl || undefined,
-      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined, // References WebPage @id
+      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined,
       speakable: {
         '@type': 'SpeakableSpecification',
         xpath: ['/html/head/title', '//h1'],
@@ -6836,10 +6973,27 @@
         '@type': 'Person',
         name: 'Alan Ranger',
         url: 'https://www.alanranger.com/about-alan-ranger',
-        jobTitle: 'Photographer & Photography Educator'
+        jobTitle: 'Photographer & Photography Educator',
+        sameAs: [
+          'https://www.alanranger.com',
+          'https://www.linkedin.com/in/alanrangerphotography'
+        ]
       },
       publisher: { '@id': 'https://www.alanranger.com#organization' },
-      isPartOf: { '@id': `${BLOG_URL_GLOBAL}#blog` }
+      isPartOf: { '@id': `${BLOG_URL_GLOBAL}#blog` },
+      copyrightHolder: {
+        '@type': 'Organization',
+        '@id': 'https://www.alanranger.com#organization',
+        name: 'Alan Ranger Photography'
+      },
+      copyrightYear: publishYear,
+      sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : undefined,
+      relatedLink: relatedLink.length > 0 ? relatedLink : undefined,
+      subjectOf: {
+        '@type': 'Blog',
+        '@id': `${BLOG_URL_GLOBAL}#blog`
+      },
+      isRelatedTo: relatedLink.length > 0 ? relatedLink : undefined
     };
     
     // Add citation for RPS content
@@ -6847,12 +7001,32 @@
       blogPosting.citation = 'Royal Photographic Society';
     }
     
+    // Add backstory for case studies
+    if (isCaseStudy && articleBody) {
+      const backstoryMatch = articleBody.match(/(?:background|context|story|case study)[^.]*\./i);
+      if (backstoryMatch && backstoryMatch[0]) {
+        blogPosting.backstory = backstoryMatch[0].substring(0, 500);
+      }
+    }
+    
+    // Add funding information (none for blog posts, but field present for consistency)
+    blogPosting.funding = {
+      '@type': 'MonetaryGrant',
+      funder: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography'
+      }
+    };
+    
     // Add interactionStatistic (always present)
     blogPosting.interactionStatistic = {
       '@type': 'InteractionCounter',
       interactionType: 'https://schema.org/CommentAction',
       userInteractionCount: entity && entity.comment_count ? entity.comment_count : 0
     };
+    
+    // Add commentCount
+    blogPosting.commentCount = entity && entity.comment_count ? entity.comment_count : 0;
 
     // Clean up undefined, null, empty strings, and empty arrays
     const keys = Object.keys(blogPosting);
@@ -7233,30 +7407,89 @@
         postsToValidate.forEach((post, idx) => {
           postUrls.add(post.url);
           
-          // Required fields check
+          // CORE REQUIRED FIELDS
           if (!post['@id']) errors.push(`BlogPosting ${idx + 1}: Missing @id`);
           if (!post.headline) errors.push(`BlogPosting ${idx + 1}: Missing headline`);
           if (!post.url) errors.push(`BlogPosting ${idx + 1}: Missing url`);
-          if (!post.datePublished) warnings.push(`BlogPosting ${idx + 1}: Missing datePublished`);
+          if (!post.datePublished) errors.push(`BlogPosting ${idx + 1}: Missing datePublished`);
+          if (!post.dateModified) warnings.push(`BlogPosting ${idx + 1}: Missing dateModified`);
+          if (!post.inLanguage) warnings.push(`BlogPosting ${idx + 1}: Missing inLanguage`);
+          
+          // CONTENT FIELDS
           if (!post.articleBody || post.articleBody.trim().length === 0) {
             errors.push(`BlogPosting ${idx + 1}: Missing or empty articleBody`);
+          } else {
+            // Check for navigation pollution in articleBody
+            const navPatterns = ['/Cart', 'Sign In My Account', '[/cart]', 'Back photography'];
+            const hasNavPollution = navPatterns.some(pattern => post.articleBody.includes(pattern));
+            if (hasNavPollution) {
+              errors.push(`BlogPosting ${idx + 1}: articleBody contains navigation pollution`);
+            }
           }
+          
           if (!post.description || post.description.length === 0) {
-            warnings.push(`BlogPosting ${idx + 1}: Missing description`);
-          }
-          if (post.description && post.description.length > 160) {
+            errors.push(`BlogPosting ${idx + 1}: Missing description`);
+          } else if (post.description.length > 160) {
             warnings.push(`BlogPosting ${idx + 1}: Description too long (${post.description.length} chars)`);
           }
+          
+          if (!post.wordCount || post.wordCount === 0) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or zero wordCount`);
+          }
+          
+          if (!post.timeRequired) {
+            errors.push(`BlogPosting ${idx + 1}: Missing timeRequired`);
+          }
+          
+          // STRUCTURAL FIELDS
           if (!post.mainEntityOfPage || !post.mainEntityOfPage['@id']) {
             errors.push(`BlogPosting ${idx + 1}: Missing or invalid mainEntityOfPage`);
           }
-          if (!post.genre) warnings.push(`BlogPosting ${idx + 1}: Missing genre`);
-          if (!post.articleSection) warnings.push(`BlogPosting ${idx + 1}: Missing articleSection`);
+          
+          if (!post.isPartOf || !post.isPartOf['@id']) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or invalid isPartOf`);
+          }
+          
+          // CLASSIFICATION FIELDS
+          if (!post.genre) errors.push(`BlogPosting ${idx + 1}: Missing genre`);
+          if (!post.articleSection) errors.push(`BlogPosting ${idx + 1}: Missing articleSection`);
+          if (!post.learningResourceType) warnings.push(`BlogPosting ${idx + 1}: Missing learningResourceType`);
+          if (!post.educationalLevel) warnings.push(`BlogPosting ${idx + 1}: Missing educationalLevel`);
+          
+          // EDUCATIONAL FIELDS
+          if (!post.proficiencyLevel) warnings.push(`BlogPosting ${idx + 1}: Missing proficiencyLevel`);
+          if (!post.typicalAgeRange) warnings.push(`BlogPosting ${idx + 1}: Missing typicalAgeRange`);
+          if (!post.estimatedCost) warnings.push(`BlogPosting ${idx + 1}: Missing estimatedCost`);
+          if (!post.audience) errors.push(`BlogPosting ${idx + 1}: Missing audience`);
+          if (!post.educationalAlignment) warnings.push(`BlogPosting ${idx + 1}: Missing educationalAlignment`);
+          
+          // AUTHORSHIP FIELDS
+          if (!post.author) errors.push(`BlogPosting ${idx + 1}: Missing author`);
           if (!post.publisher || !post.publisher['@id']) {
             errors.push(`BlogPosting ${idx + 1}: Missing or invalid publisher`);
           }
+          if (!post.copyrightHolder) warnings.push(`BlogPosting ${idx + 1}: Missing copyrightHolder`);
+          if (!post.copyrightYear) warnings.push(`BlogPosting ${idx + 1}: Missing copyrightYear`);
+          
+          // ENTITY FIELDS
+          if (!post.about || !Array.isArray(post.about) || post.about.length === 0) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing or empty about entities`);
+          }
+          
+          // INTERACTION FIELDS
           if (!post.interactionStatistic) {
-            warnings.push(`BlogPosting ${idx + 1}: Missing interactionStatistic`);
+            errors.push(`BlogPosting ${idx + 1}: Missing interactionStatistic`);
+          }
+          if (post.commentCount === undefined) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing commentCount`);
+          }
+          
+          // LINKING FIELDS
+          if (!post.discussionUrl) warnings.push(`BlogPosting ${idx + 1}: Missing discussionUrl`);
+          
+          // ASSIGNMENT-SPECIFIC FIELDS
+          if (post.learningResourceType === 'Assignment' && (!post.hasPart || post.hasPart.length === 0)) {
+            warnings.push(`BlogPosting ${idx + 1}: Assignment missing hasPart`);
           }
           
           // Check for corresponding WebPage
@@ -7303,6 +7536,47 @@
           });
         }
         
+        // COMPREHENSIVE CHECK: Validate ALL posts for critical fields (quick check)
+        let postsWithAllCriticalFields = 0;
+        blogPostings.forEach((post, idx) => {
+          // Critical fields that must exist in ALL posts
+          const criticalFields = ['@id', 'headline', 'url', 'datePublished', 'articleBody', 'description', 'wordCount', 'timeRequired', 'mainEntityOfPage', 'publisher', 'author'];
+          let hasAllFields = true;
+          
+          criticalFields.forEach(field => {
+            if (field === 'mainEntityOfPage' || field === 'publisher') {
+              if (!post[field] || !post[field]['@id']) {
+                hasAllFields = false;
+                if (idx < 10) { // Only log first 10 to avoid spam
+                  errors.push(`BlogPosting ${idx + 1}: Missing critical field ${field}`);
+                }
+              }
+            } else if (field === 'articleBody') {
+              if (!post[field] || post[field].trim().length === 0) {
+                hasAllFields = false;
+                if (idx < 10) {
+                  errors.push(`BlogPosting ${idx + 1}: Missing or empty ${field}`);
+                }
+              }
+            } else {
+              if (!post[field]) {
+                hasAllFields = false;
+                if (idx < 10) {
+                  errors.push(`BlogPosting ${idx + 1}: Missing critical field ${field}`);
+                }
+              }
+            }
+          });
+          
+          if (hasAllFields) {
+            postsWithAllCriticalFields++;
+          }
+        });
+        
+        if (postsWithAllCriticalFields !== blogPostings.length) {
+          warnings.push(`${blogPostings.length - postsWithAllCriticalFields} BlogPosting objects missing one or more critical fields`);
+        }
+        
         // JSON validation (quick check - just try to stringify)
         try {
           JSON.stringify(schema);
@@ -7322,7 +7596,8 @@
           totalObjects: graph.length,
           blogPostings: blogPostings.length,
           webPages: webPages.length,
-          breadcrumbs: breadcrumbs.length
+          breadcrumbs: breadcrumbs.length,
+          postsWithAllCriticalFields: postsWithAllCriticalFields || 0
         }
       };
     }
@@ -7357,6 +7632,13 @@
         }
       }
       blogLog(`   Stats: ${validation.stats.totalObjects} objects, ${validation.stats.blogPostings} posts, ${validation.stats.webPages} web pages, ${validation.stats.breadcrumbs} breadcrumbs`);
+      if (validation.stats.postsWithAllCriticalFields !== undefined) {
+        const completeness = Math.round((validation.stats.postsWithAllCriticalFields / validation.stats.blogPostings) * 100);
+        blogLog(`   Completeness: ${validation.stats.postsWithAllCriticalFields}/${validation.stats.blogPostings} posts (${completeness}%) have all critical fields`);
+        if (completeness < 100) {
+          blogLog(`   ⚠️  ${validation.stats.blogPostings - validation.stats.postsWithAllCriticalFields} posts are missing critical fields`);
+        }
+      }
     }
 
     window.currentBlogSchema = blogSchema;
@@ -20974,3 +21256,4 @@ exit`;
 
 </body>
 </html>
+
