@@ -6967,6 +6967,31 @@
     }
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
+    
+    // CRITICAL: Verify BlogPosting objects are valid before proceeding
+    const validPostings = blogPostings.filter(post => {
+      if (!post || !post['@type'] || post['@type'] !== 'BlogPosting') {
+        blogLog(`⚠️  WARNING: Invalid BlogPosting object detected and filtered out`);
+        return false;
+      }
+      if (!post['@id'] || !post.headline || !post.url) {
+        blogLog(`⚠️  WARNING: BlogPosting missing required fields (@id: ${post['@id']}, headline: ${post.headline}, url: ${post.url})`);
+        return false;
+      }
+      return true;
+    });
+    
+    if (validPostings.length !== blogPostings.length) {
+      blogLog(`⚠️  WARNING: Filtered out ${blogPostings.length - validPostings.length} invalid BlogPosting objects`);
+    }
+    
+    blogLog(`✅ Validated ${validPostings.length} BlogPosting objects ready for schema`);
+    
+    // Sample check: log first BlogPosting structure
+    if (validPostings.length > 0) {
+      const sample = validPostings[0];
+      blogLog(`   Sample BlogPosting fields: @type=${sample['@type']}, @id=${sample['@id']}, headline=${sample.headline ? 'YES' : 'NO'}, articleBody=${sample.articleBody ? `${sample.articleBody.length} chars` : 'MISSING'}`);
+    }
 
     const blog = {
       '@type': 'Blog',
@@ -6980,11 +7005,11 @@
         name: 'Alan Ranger',
         url: 'https://www.alanranger.com/about-alan-ranger'
       },
-      blogPost: blogPostings.map(post => ({ '@id': post['@id'] }))
+      blogPost: validPostings.map(post => ({ '@id': post['@id'] }))
     };
 
-    // Sort blogPostings by datePublished DESC for ItemList
-    const sortedPostings = [...blogPostings].sort((a, b) => {
+    // Sort validPostings by datePublished DESC for ItemList
+    const sortedPostings = [...validPostings].sort((a, b) => {
       const dateA = a.datePublished ? new Date(a.datePublished).getTime() : 0;
       const dateB = b.datePublished ? new Date(b.datePublished).getTime() : 0;
       return dateB - dateA; // DESC order
@@ -7031,7 +7056,7 @@
     };
 
     // Per-post WebPage and Breadcrumb for each BlogPosting (canonical template)
-    const postWebPages = blogPostings
+    const postWebPages = validPostings
       .filter(post => post && post.url && post.headline)
       .map(post => {
         const webpage = {
@@ -7063,7 +7088,7 @@
         return webpage;
       });
 
-    const postBreadcrumbs = blogPostings
+    const postBreadcrumbs = validPostings
       .filter(post => post && post.url && post.headline)
       .map(post => ({
         '@type': 'BreadcrumbList',
@@ -7116,6 +7141,7 @@
       ]
     };
 
+    // CRITICAL: Ensure BlogPosting objects are included in @graph
     const blogSchema = {
       '@context': 'https://schema.org',
       '@graph': [
@@ -7126,9 +7152,30 @@
         webPage,
         ...postWebPages,
         ...postBreadcrumbs,
-        ...blogPostings // Add all BlogPosting objects to @graph
+        ...validPostings // Add all VALID BlogPosting objects to @graph (CRITICAL: must be full objects, not just @id references)
       ]
     };
+    
+    // VERIFY BlogPosting objects are in graph
+    const blogPostingsInGraph = blogSchema['@graph'].filter(obj => obj && obj['@type'] === 'BlogPosting');
+    blogLog(`✅ Verified ${blogPostingsInGraph.length} BlogPosting objects in @graph (expected: ${validPostings.length})`);
+    
+    if (blogPostingsInGraph.length !== validPostings.length) {
+      blogLog(`❌ ERROR: BlogPosting count mismatch! Expected ${validPostings.length} but found ${blogPostingsInGraph.length} in @graph`);
+    }
+    
+    // Verify first BlogPosting has required fields
+    if (blogPostingsInGraph.length > 0) {
+      const firstPost = blogPostingsInGraph[0];
+      const hasHeadline = !!firstPost.headline;
+      const hasArticleBody = !!firstPost.articleBody;
+      const hasDatePublished = !!firstPost.datePublished;
+      blogLog(`   First BlogPosting check: headline=${hasHeadline ? 'YES' : 'NO'}, articleBody=${hasArticleBody ? 'YES' : 'NO'}, datePublished=${hasDatePublished ? 'YES' : 'NO'}`);
+      
+      if (!hasHeadline || !hasArticleBody || !hasDatePublished) {
+        blogLog(`❌ ERROR: First BlogPosting is missing critical fields! This indicates BlogPosting objects are incomplete.`);
+      }
+    }
 
     // SELF-TESTING: Validate schema before output
     function validateBlogSchema(schema) {
@@ -7320,7 +7367,7 @@
     const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
 
     blogLog('✅ Schema generation complete!');
-    blogLog(`   - Total posts in schema: ${blogPostings.length}`);
+    blogLog(`   - Total BlogPosting objects in @graph: ${blogPostingsInGraph.length}`);
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
 
     const codeElement = document.getElementById('blogSchemaCode');
