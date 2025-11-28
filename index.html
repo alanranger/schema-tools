@@ -2695,6 +2695,15 @@
         <button onclick="generateBlogIndexSchema()" id="generateBlogBtn" disabled>Generate Blog Index Schema</button>
         <button onclick="clearBlogForm()" class="secondary">Clear</button>
       </div>
+
+      <div id="blogProgress" style="display: none; margin-top: 1rem;">
+        <div id="blogProgressText" style="font-size: 0.85rem; color: #4a5568;">
+          Preparing blog schema...
+        </div>
+        <div style="margin-top: 0.5rem; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+          <div id="blogProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg,#3b82f6,#10b981); transition: width 0.2s ease-out;"></div>
+        </div>
+      </div>
     </div>
 
     <div id="blogSchemaOutput" style="display: none; margin-top: 2rem;">
@@ -6163,6 +6172,8 @@
       .join(' ');
   }
 
+  const BLOG_URL_GLOBAL = 'https://www.alanranger.com/blog-on-photography';
+
   async function buildEnrichedBlogPosting(csvRow) {
     const url = csvRow.url;
     let entity = null;
@@ -6205,6 +6216,10 @@
     }
     if (!description && articleBody) {
       description = truncate(articleBody, 200);
+    }
+    // Final fallback: use a truncated version of the title so description is never empty
+    if (!description && title) {
+      description = truncate(String(title), 160);
     }
 
     const entityText = `${title || ''} ${description || ''} ${articleBody || ''}`;
@@ -6253,6 +6268,18 @@
       articleSection: articleSection || undefined,
       about: entityInfo.about.length ? entityInfo.about : undefined,
       mentions: entityInfo.mentions.length ? entityInfo.mentions : undefined,
+      inLanguage: 'en-GB',
+      isPartOf: BLOG_URL_GLOBAL
+        ? {
+            '@type': 'Blog',
+            '@id': `${BLOG_URL_GLOBAL}#blog`
+          }
+        : undefined,
+      author: {
+        '@type': 'Person',
+        name: 'Alan Ranger',
+        url: 'https://www.alanranger.com/about-alan-ranger'
+      },
       publisher: {
         '@type': 'Organization',
         name: 'Alan Ranger Photography',
@@ -6308,10 +6335,16 @@
       return;
     }
 
+    const generateBtn = document.getElementById('generateBlogBtn');
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Generating...';
+    }
+
     blogLog('🔨 Starting blog schema generation (Supabase-enriched where available)...');
     blogLog(`   Processing ${blogPosts.length} blog posts`);
 
-    const BLOG_URL = 'https://www.alanranger.com/blog-on-photography';
+    const BLOG_URL = BLOG_URL_GLOBAL;
     const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
     const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
 
@@ -6354,6 +6387,26 @@
     const seenUrls = new Set();
     const blogPostings = [];
 
+    const progressContainer = document.getElementById('blogProgress');
+    const progressText = document.getElementById('blogProgressText');
+    const progressBar = document.getElementById('blogProgressBar');
+
+    const total = blogPosts.length;
+    let processed = 0;
+
+    function updateProgress() {
+      if (!progressText || !progressBar || !total) return;
+      const pct = Math.round((processed / total) * 100);
+      progressText.textContent = `Fetching blog data ${processed}/${total} (${pct}%)...`;
+      progressBar.style.width = `${pct}%`;
+    }
+
+    if (progressContainer) {
+      progressContainer.style.display = 'block';
+      processed = 0;
+      updateProgress();
+    }
+
     for (const row of blogPosts) {
       if (!row || !row.url || seenUrls.has(row.url)) {
         continue;
@@ -6361,6 +6414,11 @@
       seenUrls.add(row.url);
       const posting = await buildEnrichedBlogPosting(row);
       blogPostings.push(posting);
+      processed += 1;
+      updateProgress();
+      if (processed === 1 || processed % 5 === 0 || processed === total) {
+        blogLog(`   Fetched and enriched ${processed}/${total} posts (${Math.round((processed / total) * 100)}%)`);
+      }
     }
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
@@ -6414,8 +6472,25 @@
         preElement.style.backgroundColor = '#000';
       }
     }
-    document.getElementById('blogSchemaOutput').style.display = 'block';
-    document.getElementById('blogSchemaOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const outputDiv = document.getElementById('blogSchemaOutput');
+    if (outputDiv) {
+      outputDiv.style.display = 'block';
+      outputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    if (progressContainer) {
+      progressText.textContent = `Completed ${blogPostings.length}/${total} (100%)`;
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+      }, 1500);
+    }
+
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Blog Index Schema';
+    }
+
     console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
   }
 
