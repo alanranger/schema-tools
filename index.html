@@ -6273,59 +6273,52 @@
     if (!articleBody) return '';
     let text = articleBody;
     
-    // Remove all Squarespace navigation patterns
+    // Strategy: Navigation text is typically at the START of the articleBody
+    // Find where the actual content begins and remove everything before it
+    
+    // First, remove all bracket patterns (these are definitely navigation)
     text = text.replace(/\[\/[^\]]+\]/g, '');
-    text = text.replace(/\/Cart\s+\d+/gi, '');
-    text = text.replace(/Cart\s+\d+/gi, '');
-    text = text.replace(/Sign In My Account/gi, '');
-    text = text.replace(/My Account/gi, '');
-    text = text.replace(/\/search/gi, '');
-    
-    // Remove "Back" navigation patterns
-    text = text.replace(/Back\s+photography\s+courses\s+coventry/gi, '');
-    text = text.replace(/Back\s+Workshops\s+Calendar/gi, '');
-    text = text.replace(/Back\s+Services\s+Summary/gi, '');
-    text = text.replace(/Back\s+Hire\s+A\s+Professional\s+Photographer/gi, '');
-    text = text.replace(/Back\s+Gallery/gi, '');
-    text = text.replace(/Back\s+Book\s+A\s+Free\s+Consultation/gi, '');
-    text = text.replace(/Back\s+[A-Z][^]*?/g, '');
-    
-    // Remove menu items with brackets
     text = text.replace(/\[.*?\]/g, '');
     
-    // Remove common navigation fragments (case-insensitive, whole word)
-    const navPatterns = [
-      '/Cart 0',
-      'Sign In My Account',
-      'Blog [/photography-news-blog',
-      'Academy [/free-online-photography-course]',
-      'Recommended Products [/photography-equipment-recommendations]',
-      'Facebook0',
-      'LinkedIn0',
-      'Tumblr',
-      'Pinterest0',
-      '0 Likes',
-      'Genre-Specific',
-      'Alan Ranger',
-      /\d+\s+November\s+\d{4}/g, // Date patterns that are navigation
+    // Remove common navigation patterns (these appear at start)
+    const startNavPatterns = [
+      /^\/Cart\s+\d+/gim,
+      /^Cart\s+\d+/gim,
+      /^Sign In My Account/gim,
+      /^My Account/gim,
+      /^\/search/gim,
+      /^Back\s+photography\s+courses\s+coventry/gim,
+      /^Back\s+Workshops\s+Calendar/gim,
+      /^Back\s+Services\s+Summary/gim,
+      /^Back\s+Hire\s+A\s+Professional\s+Photographer/gim,
+      /^Back\s+Gallery/gim,
+      /^Back\s+Book\s+A\s+Free\s+Consultation/gim,
+      /^Back\s+[A-Z][^\n]*/gim,
     ];
     
-    for (const pattern of navPatterns) {
-      if (pattern instanceof RegExp) {
-        text = text.replace(pattern, '');
-      } else {
-        text = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+    for (const pattern of startNavPatterns) {
+      text = text.replace(pattern, '');
+    }
+    
+    // Find the actual content start - look for the title or first meaningful sentence
+    if (title) {
+      const titleWords = title.split(/\s+/).slice(0, 3); // First 3 words of title
+      const titlePattern = new RegExp(titleWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'i');
+      const titleIndex = text.search(titlePattern);
+      if (titleIndex > 0 && titleIndex < 500) {
+        // If title found within first 500 chars, remove everything before it
+        text = text.substring(titleIndex);
       }
     }
     
-    // Remove social sharing patterns
+    // Remove social sharing URLs (these are at the end)
     text = text.replace(/https:\/\/www\.(facebook|linkedin|tumblr|pinterest)\.com[^\s]*/gi, '');
     
-    // Remove repeated title if it appears at the start
-    if (title) {
-      const titleRegex = new RegExp('^\\s*' + title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i');
-      text = text.replace(titleRegex, '');
-    }
+    // Remove social sharing text patterns (Facebook0, LinkedIn0, etc.) - only if at end
+    text = text.replace(/\s+(Facebook0|LinkedIn0|Tumblr|Pinterest0|0\s+Likes)\s*$/gi, '');
+    
+    // Remove author/date patterns at the end (Alan Ranger, date, social links)
+    text = text.replace(/\s*Alan Ranger\s*\/blog-on-photography[^\n]*\n.*\d+\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}.*$/gim, '');
     
     // Clean up excessive whitespace but preserve paragraph structure
     text = text.replace(/\n{3,}/g, '\n\n');
@@ -6869,15 +6862,21 @@
     // Extract hasPart for assignments (numbered steps/tasks)
     const hasPart = [];
     if (isAssignment && articleBody) {
-      const stepMatches = articleBody.match(/(?:^|\n)\s*(\d+)\.\s+([^\n]+(?:\n(?!\d+\.)[^\n]+)*)/gm);
+      // Match numbered steps: "1. Step text" or "1) Step text"
+      const stepMatches = articleBody.match(/(?:^|\n)\s*(\d+)[\.\)]\s+([^\n]+(?:\n(?!\d+[\.\)])[^\n]+)*)/gm);
       if (stepMatches && stepMatches.length > 0) {
-        stepMatches.slice(0, 10).forEach((match, idx) => {
-          const stepText = match.replace(/^\s*\d+\.\s*/, '').trim();
-          if (stepText && stepText.length > 10) {
-            hasPart.push({
-              '@type': 'WebPageElement',
-              name: `Step ${idx + 1} — ${stepText.substring(0, 80)}${stepText.length > 80 ? '...' : ''}`
-            });
+        stepMatches.slice(0, 10).forEach((match) => {
+          // Extract step number and text
+          const stepMatch = match.match(/(\d+)[\.\)]\s+(.+)/);
+          if (stepMatch && stepMatch.length >= 3) {
+            const stepNum = stepMatch[1];
+            const stepText = stepMatch[2].trim();
+            if (stepText && stepText.length > 10) {
+              hasPart.push({
+                '@type': 'WebPageElement',
+                name: `Step ${stepNum} — ${stepText.substring(0, 80)}${stepText.length > 80 ? '...' : ''}`
+              });
+            }
           }
         });
       }
