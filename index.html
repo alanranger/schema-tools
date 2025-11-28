@@ -6907,6 +6907,10 @@
     const BLOG_NAME = 'Alan Ranger Blog on Photography – Tips, Offers & News';
     const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
 
+    // Declare IDs before use
+    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
+    const WEBSITE_ID = 'https://www.alanranger.com#website';
+
     blogLog(`   Blog URL: ${BLOG_URL}`);
     blogLog(`   Blog Name: ${BLOG_NAME}`);
 
@@ -6982,9 +6986,6 @@
     }
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
-
-    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
-    const WEBSITE_ID = 'https://www.alanranger.com#website';
 
     const blog = {
       '@type': 'Blog',
