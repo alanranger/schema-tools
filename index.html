@@ -6040,7 +6040,7 @@
     try {
       const query = supabase
         .from('page_entities')
-        .select('title, page_url, description, excerpt, categories, tags, publish_date, update_date, image_url, image_width, image_height, json_ld_data')
+        .select('title, page_url, description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
         .eq('page_url', url)
         .eq('kind', 'article')
         .maybeSingle();
@@ -6064,14 +6064,14 @@
     try {
       const { data, error } = await supabase
         .from('page_html')
-        .select('html')
+        .select('html_content')
         .eq('url', url)
         .maybeSingle();
       if (error) {
         console.warn('page_html fetch error', url, error);
         return null;
       }
-      return data && data.html ? data.html : null;
+      return data && data.html_content ? data.html_content : null;
     } catch (error) {
       console.warn('page_html fetch exception', url, error);
       return null;
@@ -6316,6 +6316,10 @@
       /distinction/.test(lowerEntityText) ||
       /panel/.test(lowerEntityText);
 
+    // Derive learningResourceType and educationalLevel BEFORE using them
+    const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
+    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
+
     if (hasRpsContext && primaryCategory && /rps|distinction/i.test(String(primaryCategory))) {
       articleSection = 'RPS Distinctions';
       if (!genre || genre === articleSection) {
@@ -6327,9 +6331,6 @@
     if (learningResourceType === 'Assignment') {
       genre = 'Photography Assignment';
     }
-
-    const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
-    const educationalLevel = deriveEducationalLevel(categories, tags, title, articleBody);
 
     const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
     const semanticKeywords = [];
