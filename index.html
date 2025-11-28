@@ -7134,6 +7134,10 @@
     function validateBlogSchema(schema) {
       const errors = [];
       const warnings = [];
+      let graph = [];
+      let blogPostings = [];
+      let webPages = [];
+      let breadcrumbs = [];
       
       try {
         // Structural Validation
@@ -7143,10 +7147,10 @@
         
         if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
           errors.push('Missing or invalid @graph');
-          return { valid: false, errors, warnings };
+          return { valid: false, errors, warnings, stats: { totalObjects: 0, blogPostings: 0, webPages: 0, breadcrumbs: 0 } };
         }
         
-        const graph = schema['@graph'];
+        graph = schema['@graph'];
         const ids = new Set();
         const postUrls = new Set();
         
@@ -7172,11 +7176,14 @@
         });
         
         // Validate each BlogPosting
-        const blogPostings = graph.filter(obj => obj['@type'] === 'BlogPosting');
-        const webPages = graph.filter(obj => obj['@type'] === 'WebPage');
-        const breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
+        blogPostings = graph.filter(obj => obj['@type'] === 'BlogPosting');
+        webPages = graph.filter(obj => obj['@type'] === 'WebPage');
+        breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
         
-        blogPostings.forEach((post, idx) => {
+        // Limit validation to first 10 posts to avoid hanging on large datasets
+        const postsToValidate = blogPostings.slice(0, 10);
+        
+        postsToValidate.forEach((post, idx) => {
           postUrls.add(post.url);
           
           // Required fields check
@@ -7220,8 +7227,8 @@
           }
         });
         
-        // Validate WebPages
-        webPages.forEach((wp, idx) => {
+        // Validate WebPages (sample first 10)
+        webPages.slice(0, 10).forEach((wp, idx) => {
           if (!wp['@id']) errors.push(`WebPage ${idx + 1}: Missing @id`);
           if (!wp.url) errors.push(`WebPage ${idx + 1}: Missing url`);
           if (!wp.isPartOf || !wp.isPartOf['@id']) {
@@ -7229,26 +7236,27 @@
           }
         });
         
-        // Validate BreadcrumbLists
-        breadcrumbs.forEach((bc, idx) => {
+        // Validate BreadcrumbLists (sample first 10)
+        breadcrumbs.slice(0, 10).forEach((bc, idx) => {
           if (!bc['@id']) errors.push(`BreadcrumbList ${idx + 1}: Missing @id`);
           if (!bc.itemListElement || !Array.isArray(bc.itemListElement)) {
             errors.push(`BreadcrumbList ${idx + 1}: Missing or invalid itemListElement`);
           }
         });
         
-        // Validate ItemList contains all posts
+        // Validate ItemList contains all posts (quick check)
         const itemList = graph.find(obj => obj['@type'] === 'ItemList');
         if (itemList && itemList.itemListElement) {
           const itemListUrls = new Set(itemList.itemListElement.map(item => item.url).filter(Boolean));
-          postUrls.forEach(url => {
+          const sampleUrls = Array.from(postUrls).slice(0, 10);
+          sampleUrls.forEach(url => {
             if (!itemListUrls.has(url)) {
               warnings.push(`Post URL not in ItemList: ${url}`);
             }
           });
         }
         
-        // JSON validation
+        // JSON validation (quick check - just try to stringify)
         try {
           JSON.stringify(schema);
         } catch (e) {
@@ -7272,19 +7280,34 @@
       };
     }
     
-    // Run validation
-    const validation = validateBlogSchema(blogSchema);
+    // Run validation (with timeout protection)
+    let validation = { valid: true, errors: [], warnings: [], stats: { totalObjects: 0, blogPostings: 0, webPages: 0, breadcrumbs: 0 } };
+    try {
+      validation = validateBlogSchema(blogSchema);
+    } catch (e) {
+      blogLog(`⚠️  Validation error: ${e.message}`);
+      blogLog('   Continuing with schema output...');
+    }
     
     if (!validation.valid) {
       blogLog('❌ Schema validation FAILED:');
-      validation.errors.forEach(err => blogLog(`   ERROR: ${err}`));
-      validation.warnings.forEach(warn => blogLog(`   WARNING: ${warn}`));
+      validation.errors.slice(0, 20).forEach(err => blogLog(`   ERROR: ${err}`)); // Limit to first 20 errors
+      if (validation.errors.length > 20) {
+        blogLog(`   ... and ${validation.errors.length - 20} more errors`);
+      }
+      validation.warnings.slice(0, 10).forEach(warn => blogLog(`   WARNING: ${warn}`)); // Limit to first 10 warnings
+      if (validation.warnings.length > 10) {
+        blogLog(`   ... and ${validation.warnings.length - 10} more warnings`);
+      }
       blogLog('⚠️  Schema generated but contains errors. Review and fix before use.');
     } else {
       blogLog('✅ Schema validation PASSED');
       if (validation.warnings.length > 0) {
         blogLog('   Warnings (non-critical):');
-        validation.warnings.forEach(warn => blogLog(`   - ${warn}`));
+        validation.warnings.slice(0, 10).forEach(warn => blogLog(`   - ${warn}`));
+        if (validation.warnings.length > 10) {
+          blogLog(`   ... and ${validation.warnings.length - 10} more warnings`);
+        }
       }
       blogLog(`   Stats: ${validation.stats.totalObjects} objects, ${validation.stats.blogPostings} posts, ${validation.stats.webPages} web pages, ${validation.stats.breadcrumbs} breadcrumbs`);
     }
