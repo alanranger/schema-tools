@@ -6531,58 +6531,104 @@
       genre = 'Photography Guide';
     }
 
+    // Extract keywords - avoid pollution by only including relevant ones
     const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
+    
+    // Only add semantic keywords that are actually mentioned in the content
     const semanticKeywords = [];
+    const contentLower = `${title} ${description} ${articleBody}`.toLowerCase();
     for (const ent of entityInfo.about) {
       if (ent && ent.name) {
-        semanticKeywords.push(ent.name);
+        // Only include if the entity name or related terms appear in content
+        const entNameLower = ent.name.toLowerCase();
+        const entWords = entNameLower.split(/\s+/);
+        const isRelevant = entWords.some(word => {
+          if (word.length < 4) return false; // Skip short words
+          return contentLower.includes(word);
+        });
+        if (isRelevant) {
+          semanticKeywords.push(ent.name);
+        }
       }
     }
+    
+    // Deduplicate and clean keywords
     const allKeywordsSet = new Set();
     const allKeywords = [];
     for (const kw of [...baseKeywords, ...semanticKeywords]) {
       const trimmed = String(kw).trim();
-      if (!trimmed) continue;
+      if (!trimmed || trimmed.length < 2) continue;
       const lower = trimmed.toLowerCase();
+      // Skip generic photography terms unless they're in the actual content
       if (allKeywordsSet.has(lower)) continue;
-      allKeywordsSet.add(lower);
-      allKeywords.push(trimmed);
+      // Only add if it's a tag or if it's mentioned in content
+      if (baseKeywords.includes(trimmed) || contentLower.includes(lower.replace(/[()]/g, ''))) {
+        allKeywordsSet.add(lower);
+        allKeywords.push(trimmed);
+      }
     }
 
+    // Build comprehensive BlogPosting object with all required fields
     const blogPosting = {
       '@type': 'BlogPosting',
+      '@id': url ? `${url}#blogposting` : undefined,
       headline: title,
+      alternativeHeadline: title ? `${title} | Alan Ranger Photography` : undefined,
       url: url,
-      mainEntityOfPage: url,
+      mainEntityOfPage: url ? {
+        '@type': 'WebPage',
+        '@id': `${url}#webpage`
+      } : undefined,
       datePublished: publishDate || undefined,
       dateCreated: publishDate || undefined,
       dateModified: modifiedDate || undefined,
+      inLanguage: 'en-GB',
       description: description || undefined,
       articleBody: articleBody || undefined,
       wordCount: wordCount || undefined,
       timeRequired: timeRequired || undefined,
-      learningResourceType: learningResourceType || undefined,
-      educationalLevel: educationalLevel || undefined,
-      discussionUrl: url ? `${url}#comments` : undefined,
-      keywords: allKeywords.length ? allKeywords : undefined,
+      readingTime: timeRequired || undefined, // Alias for compatibility
       genre: genre || undefined,
       articleSection: articleSection || undefined,
+      keywords: allKeywords.length ? allKeywords : undefined,
+      learningResourceType: learningResourceType || undefined,
+      educationalLevel: educationalLevel || undefined,
+      educationalUse: learningResourceType === 'Assignment' ? 'Practice assignment' : undefined,
+      audience: learningResourceType ? {
+        '@type': 'EducationalAudience',
+        educationalRole: 'Photographer'
+      } : undefined,
+      educationalAlignment: learningResourceType === 'Assignment' ? {
+        '@type': 'AlignmentObject',
+        alignmentType: 'educationalFramework',
+        educationalFramework: 'Photography Skills',
+        targetName: educationalLevel || 'Beginner'
+      } : undefined,
       about: entityInfo.about.length ? entityInfo.about : undefined,
       mentions: entityInfo.mentions.length ? entityInfo.mentions : undefined,
-      inLanguage: 'en-GB',
-      isPartOf: BLOG_URL_GLOBAL
-        ? {
-            '@type': 'Blog',
-            '@id': `${BLOG_URL_GLOBAL}#blog`
-          }
-        : undefined,
+      citation: undefined, // Will be set below if RPS context
+      discussionUrl: url ? `${url}#comments` : undefined,
+      isPartOf: {
+        '@type': 'Blog',
+        '@id': `${BLOG_URL_GLOBAL}#blog`
+      },
       author: {
         '@type': 'Person',
         name: 'Alan Ranger',
-        url: 'https://www.alanranger.com/about-alan-ranger'
+        url: 'https://www.alanranger.com/about-alan-ranger',
+        jobTitle: 'Photographer & Photography Educator',
+        affiliation: {
+          '@type': 'Organization',
+          name: 'Alan Ranger Photography'
+        },
+        sameAs: [
+          'https://www.alanranger.com',
+          'https://www.linkedin.com/in/alanrangerphotography'
+        ]
       },
       publisher: {
         '@type': 'Organization',
+        '@id': 'https://www.alanranger.com#organization',
         name: 'Alan Ranger Photography',
         url: 'https://www.alanranger.com',
         logo: {
@@ -6590,18 +6636,38 @@
           url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
           width: 600,
           height: 60
-        }
-      }
+        },
+        sameAs: [
+          'https://www.facebook.com/alanrangerphotography',
+          'https://www.instagram.com/alanrangerphoto',
+          'https://www.youtube.com/@AlanRangerPhotography',
+          'https://www.threads.net/@alanrangerphoto'
+        ]
+      },
+      copyrightHolder: {
+        '@type': 'Organization',
+        name: 'Alan Ranger Photography'
+      },
+      copyrightYear: publishDate ? new Date(publishDate).getFullYear() : new Date().getFullYear()
     };
 
     if (imageUrl) {
       blogPosting.image = {
         '@type': 'ImageObject',
-        url: imageUrl
+        url: imageUrl,
+        width: imageWidth || 1200,
+        height: imageHeight || 800,
+        caption: title || undefined
       };
-      // Prefer explicit dimensions from Supabase, else fall back to sensible defaults
-      blogPosting.image.width = imageWidth || 1200;
-      blogPosting.image.height = imageHeight || 800;
+      // Add thumbnailUrl (same as main image for now)
+      blogPosting.thumbnailUrl = imageUrl;
+      // Add primaryImageOfPage
+      blogPosting.primaryImageOfPage = {
+        '@type': 'ImageObject',
+        url: imageUrl,
+        width: imageWidth || 1200,
+        height: imageHeight || 800
+      };
     }
 
     // Optional citation for RPS / assessment related content
@@ -6618,11 +6684,54 @@
       blogPosting.citation = 'Royal Photographic Society';
     }
 
-    // Add speakable markup (same for all posts)
+    // Add speakable markup with both xpath and cssSelector
     blogPosting.speakable = {
       '@type': 'SpeakableSpecification',
-      xpath: ['/html/head/title', '//h1']
+      xpath: ['/html/head/title', '//h1'],
+      cssSelector: ['head title', 'h1']
     };
+    
+    // Add commentCount and interactionStatistic (if available from entity)
+    if (entity && entity.comment_count) {
+      blogPosting.commentCount = entity.comment_count;
+    }
+    
+    // Add interactionStatistic for engagement
+    if (url) {
+      blogPosting.interactionStatistic = {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/CommentAction',
+        userInteractionCount: entity && entity.comment_count ? entity.comment_count : 0
+      };
+    }
+    
+    // Add backstory if available from entity
+    if (entity && entity.backstory) {
+      blogPosting.backstory = entity.backstory;
+    }
+    
+    // Add relatedLink array (extract from articleBody or entity)
+    const relatedLinks = [];
+    if (articleBody) {
+      // Extract internal blog links from articleBody
+      const linkMatches = articleBody.match(/https?:\/\/www\.alanranger\.com\/blog-on-photography\/[^\s\)]+/g);
+      if (linkMatches) {
+        const uniqueLinks = [...new Set(linkMatches)];
+        for (const link of uniqueLinks.slice(0, 5)) { // Limit to 5 related links
+          if (link !== url) {
+            relatedLinks.push(link);
+          }
+        }
+      }
+    }
+    if (relatedLinks.length > 0) {
+      blogPosting.relatedLink = relatedLinks;
+    }
+    
+    // Add sameAs for BlogPosting if entity has social links
+    if (entity && entity.same_as && Array.isArray(entity.same_as) && entity.same_as.length > 0) {
+      blogPosting.sameAs = entity.same_as;
+    }
 
     // Add hasPart for numbered assignment tasks
     // Use the same assignment detection logic as genre mapping
@@ -6701,21 +6810,77 @@
         blogPosting.hasPart = taskMatches;
       }
     }
-
-    // Optional educationalAlignment for assignments
-    if (learningResourceType === 'Assignment') {
-      const level = educationalLevel || 'Beginner';
-      blogPosting.educationalAlignment = {
-        '@type': 'AlignmentObject',
-        alignmentType: 'educationalFramework',
-        educationalFramework: 'Photography Skills',
-        targetName: level
+    
+    // Add FAQPage to hasPart if FAQ content detected in articleBody
+    if (articleBody) {
+      const faqPattern = /(?:FAQ|Frequently Asked Questions|Questions? and Answers?)[\s\S]*?(?:Q:|Question\s+\d+:|What|How|Why|When|Where|Who)[\s\S]*?(?:A:|Answer\s+\d+:|[A-Z][^.!?]*[.!?])/i;
+      const faqMatch = articleBody.match(faqPattern);
+      if (faqMatch) {
+        // Extract FAQ pairs
+        const qaPattern = /(?:Q:|Question\s+\d+:)\s*([^?]+\?)/gi;
+        const aPattern = /(?:A:|Answer\s+\d+:)\s*([^Q]+?)(?=(?:Q:|Question|$))/gi;
+        let qMatch, aMatch;
+        const questions = [];
+        const answers = [];
+        
+        while ((qMatch = qaPattern.exec(articleBody)) !== null) {
+          questions.push(qMatch[1].trim());
+        }
+        while ((aMatch = aPattern.exec(articleBody)) !== null) {
+          answers.push(aMatch[1].trim());
+        }
+        
+        if (questions.length > 0 && answers.length > 0) {
+          const faqItems = [];
+          const minLength = Math.min(questions.length, answers.length);
+          for (let i = 0; i < minLength && i < 10; i++) {
+            faqItems.push({
+              '@type': 'Question',
+              name: questions[i],
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: truncate(answers[i], 500)
+              }
+            });
+          }
+          
+          if (faqItems.length > 0) {
+            const faqPage = {
+              '@type': 'FAQPage',
+              mainEntity: faqItems
+            };
+            // Merge with existing hasPart if it exists
+            if (blogPosting.hasPart) {
+              if (Array.isArray(blogPosting.hasPart)) {
+                blogPosting.hasPart.push(faqPage);
+              } else {
+                blogPosting.hasPart = [blogPosting.hasPart, faqPage];
+              }
+            } else {
+              blogPosting.hasPart = [faqPage];
+            }
+          }
+        }
+      }
+    }
+    
+    // Add funding/sponsor for academy/workshop posts
+    if (/academy|workshop|course|mentoring/i.test(lowerTitle + ' ' + lowerTags + ' ' + lowerCategories)) {
+      blogPosting.funding = {
+        '@type': 'Organization',
+        name: 'Alan Ranger Academy'
       };
     }
 
+    // Clean up undefined, null, empty strings, and empty arrays
     const keys = Object.keys(blogPosting);
     for (const key of keys) {
-      if (blogPosting[key] === undefined || blogPosting[key] === null || blogPosting[key] === '') {
+      const value = blogPosting[key];
+      if (value === undefined || value === null || value === '') {
+        delete blogPosting[key];
+      } else if (Array.isArray(value) && value.length === 0) {
+        delete blogPosting[key];
+      } else if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
         delete blogPosting[key];
       }
     }
@@ -6747,13 +6912,14 @@
 
     const PUBLISHER = {
       '@type': 'Organization',
+      '@id': ORGANIZATION_ID,
       name: 'Alan Ranger Photography',
       url: 'https://www.alanranger.com',
       logo: {
         '@type': 'ImageObject',
         url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
-        width: 800,
-        height: 800
+        width: 600,
+        height: 60
       },
       sameAs: [
         'https://www.facebook.com/alanrangerphotography',
@@ -6826,7 +6992,7 @@
       url: BLOG_URL,
       name: BLOG_NAME,
       description: BLOG_DESCRIPTION,
-      publisher: PUBLISHER,
+      publisher: { '@id': ORGANIZATION_ID },
       author: AUTHOR,
       inLanguage: 'en-GB',
       blogPost: blogPostings
@@ -6923,7 +7089,19 @@
       '@type': 'Organization',
       '@id': ORGANIZATION_ID,
       name: 'Alan Ranger Photography',
-      url: 'https://www.alanranger.com'
+      url: 'https://www.alanranger.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+        width: 600,
+        height: 60
+      },
+      sameAs: [
+        'https://www.facebook.com/alanrangerphotography',
+        'https://www.instagram.com/alanrangerphoto',
+        'https://www.youtube.com/@AlanRangerPhotography',
+        'https://www.threads.net/@alanrangerphoto'
+      ]
     };
 
     const blogSchema = {
