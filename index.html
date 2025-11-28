@@ -6378,7 +6378,37 @@
     
     // Final cleanup: remove any remaining navigation patterns
     if (description) {
-      description = description.replace(/\[\/[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+      // Remove all bracket patterns
+      description = description.replace(/\[\/[^\]]+\]/g, '');
+      description = description.replace(/\[[^\]]+\]/g, '');
+      // Remove common nav patterns
+      description = description.replace(/\/cart\s+\d+/gi, '');
+      description = description.replace(/cart\s+\d+/gi, '');
+      description = description.replace(/sign\s+in/gi, '');
+      description = description.replace(/my\s+account/gi, '');
+      description = description.replace(/back\s+/gi, '');
+      // Remove any text that starts with / or [ (likely nav)
+      description = description.replace(/^\s*[\/\[\]]+\s*/g, '');
+      // Remove footer/menu patterns
+      description = description.replace(/(lessons|mentoring|blog|workshops|courses|services|gallery|about|contact)[\s\/]*/gi, '');
+      // Clean whitespace
+      description = description.replace(/\s+/g, ' ').trim();
+      // If description is now too short or still looks like nav, use fallback
+      if (description.length < 20 || /^(\/|\[|cart|sign|back|menu|lessons|mentoring)/i.test(description)) {
+        if (cleanedForDescription) {
+          const fallbackSentences = cleanedForDescription.split(/[.!?]\s+/).filter(s => {
+            const trimmed = s.trim();
+            return trimmed && trimmed.length >= 40 && 
+              !/^(back|cart|sign|menu|search|lessons|mentoring|blog|workshops)/i.test(trimmed) &&
+              !/\[\//.test(trimmed);
+          });
+          if (fallbackSentences.length > 0) {
+            description = truncate(fallbackSentences[0], 220);
+          } else {
+            description = truncate(cleanedForDescription.replace(/\[\/[^\]]+\]/g, '').replace(/\/cart\s+\d+/gi, ''), 220);
+          }
+        }
+      }
     }
 
     // Prefer cleaned body for downstream analysis if available
@@ -6425,13 +6455,17 @@
       articleSection = 'RPS Distinctions';
       genre = 'Photography Case Study';
     }
-    // 2. Assignments (check title, tags, and content for assignment keywords)
-    else if (
+    // 2. Assignments (check title, tags, URL, content, and task patterns)
+    const isAssignment = 
       learningResourceType === 'Assignment' ||
       /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle) ||
       /assignment|practice|project|exercise/i.test(lowerTags) ||
-      /assignment tasks|before you shoot|the assignment|learning objectives/i.test(lowerEntityText)
-    ) {
+      /assignment|practice|project|exercise/i.test(lowerCategories) ||
+      /assignment/i.test((url || '').toLowerCase()) ||
+      /assignment tasks|before you shoot|the assignment|learning objectives|assignment tasks/i.test(lowerEntityText) ||
+      /\b([1-9]|[1-9][0-9])\.\s+[^*💡]+/i.test(articleBody); // Check for numbered tasks in body
+    
+    if (isAssignment) {
       articleSection = 'Practice Assignment';
       genre = 'Photography Assignment';
     }
@@ -6591,21 +6625,36 @@
     };
 
     // Add hasPart for numbered assignment tasks
-    // Check if it's an assignment by learningResourceType OR by content patterns
-    const isAssignment = learningResourceType === 'Assignment' || 
-      /assignment|practice assignment|free lesson/i.test(lowerTitle) ||
-      /assignment tasks|before you shoot|the assignment|learning objectives/i.test(articleBody.toLowerCase());
+    // Use the same assignment detection logic as genre mapping
+    const isAssignmentForHasPart = 
+      learningResourceType === 'Assignment' ||
+      /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle) ||
+      /assignment|practice|project|exercise/i.test(lowerTags) ||
+      /assignment|practice|project|exercise/i.test(lowerCategories) ||
+      /assignment/i.test((url || '').toLowerCase()) ||
+      /assignment tasks|before you shoot|the assignment|learning objectives|assignment tasks/i.test(lowerEntityText) ||
+      /\b([1-9]|[1-9][0-9])\.\s+[^*💡]+/i.test(articleBody);
     
-    if (isAssignment && articleBody) {
+    if (isAssignmentForHasPart && articleBody) {
       const taskMatches = [];
+      
+      // Try to find the "ASSIGNMENT TASKS" section first
+      let searchBody = articleBody;
+      const assignmentTasksMatch = articleBody.match(/ASSIGNMENT\s+TASKS?[^\n]*\n([\s\S]*?)(?=(?:💡|Stretch|REFLECTION|DO\s*\/|DON'?T|$))/i);
+      if (assignmentTasksMatch && assignmentTasksMatch[1]) {
+        searchBody = assignmentTasksMatch[1];
+      }
+      
       // Multiple patterns to catch different task formats
       const taskPatterns = [
-        // Pattern 1: "1. Task description" or "ASSIGNMENT TASKS 1. Task description"
-        /\b(?:ASSIGNMENT\s+TASKS?\s*)?([1-9]|[1-9][0-9])\.\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\.\s+)|(?:\s*💡)|(?:\s*Stretch)|(?:\s*REFLECTION)|(?:\s*DO\s*\/)|$)/gi,
+        // Pattern 1: "1. Task description" - most common format
+        /\b([1-9]|[1-9][0-9])\.\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\.\s+)|(?:\s*💡)|(?:\s*Stretch)|(?:\s*REFLECTION)|(?:\s*DO\s*\/)|(?:\s*DON'?T)|$)/gi,
         // Pattern 2: "1) Task description"
         /\b([1-9]|[1-9][0-9])\)\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\)\s+)|(?:\s*💡)|(?:\s*Stretch)|(?:\s*REFLECTION)|$)/gi,
         // Pattern 3: "Task 1: Description" or "Step 1: Description"
-        /\b(?:Task|Step)\s+([1-9]|[1-9][0-9]):\s+([^*💡✗✓]+?)(?=(?:\s+(?:Task|Step)\s+(?:[1-9]|[1-9][0-9]):)|(?:\s*💡)|$)/gi
+        /\b(?:Task|Step)\s+([1-9]|[1-9][0-9]):\s+([^*💡✗✓]+?)(?=(?:\s+(?:Task|Step)\s+(?:[1-9]|[1-9][0-9]):)|(?:\s*💡)|$)/gi,
+        // Pattern 4: "1 - Task description" or "1 – Task description" (with dash/emdash)
+        /\b([1-9]|[1-9][0-9])\s*[–-]\s+([^*💡✗✓]+?)(?=(?:\s+(?:[1-9]|[1-9][0-9])\s*[–-]\s+)|(?:\s*💡)|(?:\s*Stretch)|$)/gi
       ];
       
       const foundTaskNumbers = new Set();
@@ -6614,7 +6663,7 @@
         let match;
         // Reset regex lastIndex to avoid issues
         taskRegex.lastIndex = 0;
-        while ((match = taskRegex.exec(articleBody)) !== null) {
+        while ((match = taskRegex.exec(searchBody)) !== null) {
           const taskNumber = match[1];
           // Skip if we've already found this task number
           if (foundTaskNumbers.has(taskNumber)) continue;
