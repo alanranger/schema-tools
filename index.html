@@ -6280,45 +6280,83 @@
     text = text.replace(/\[\/[^\]]+\]/g, '');
     text = text.replace(/\[.*?\]/g, '');
     
-    // Remove common navigation patterns (these appear at start)
-    const startNavPatterns = [
-      /^\/Cart\s+\d+/gim,
-      /^Cart\s+\d+/gim,
-      /^Sign In My Account/gim,
-      /^My Account/gim,
-      /^\/search/gim,
-      /^Back\s+photography\s+courses\s+coventry/gim,
-      /^Back\s+Workshops\s+Calendar/gim,
-      /^Back\s+Services\s+Summary/gim,
-      /^Back\s+Hire\s+A\s+Professional\s+Photographer/gim,
-      /^Back\s+Gallery/gim,
-      /^Back\s+Book\s+A\s+Free\s+Consultation/gim,
-      /^Back\s+[A-Z][^\n]*/gim,
-    ];
-    
-    for (const pattern of startNavPatterns) {
-      text = text.replace(pattern, '');
-    }
-    
-    // Find the actual content start - look for the title or first meaningful sentence
+    // Find where actual content starts by looking for title (case-insensitive, anywhere in first 2000 chars)
+    let contentStart = 0;
     if (title) {
-      const titleWords = title.split(/\s+/).slice(0, 3); // First 3 words of title
-      const titlePattern = new RegExp(titleWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'i');
-      const titleIndex = text.search(titlePattern);
-      if (titleIndex > 0 && titleIndex < 500) {
-        // If title found within first 500 chars, remove everything before it
-        text = text.substring(titleIndex);
+      // Try exact title match (uppercase version often appears)
+      const titleUpper = title.toUpperCase();
+      const titleIndex = text.indexOf(titleUpper);
+      if (titleIndex > 0 && titleIndex < 2000) {
+        contentStart = titleIndex;
+      } else {
+        // Try case-insensitive match
+        const titlePattern = new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        const match = text.match(titlePattern);
+        if (match && match.index !== undefined && match.index < 2000) {
+          contentStart = match.index;
+        } else {
+          // Try key words from title
+          const titleWords = title.split(/\s+/).filter(w => w.length > 4).slice(0, 2);
+          if (titleWords.length >= 2) {
+            const wordsPattern = new RegExp(titleWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^a-z]*'), 'i');
+            const wordsMatch = text.match(wordsPattern);
+            if (wordsMatch && wordsMatch.index !== undefined && wordsMatch.index < 2000) {
+              contentStart = wordsMatch.index;
+            }
+          }
+        }
       }
     }
     
-    // Remove social sharing URLs (these are at the end)
+    // If we found content start, use it
+    if (contentStart > 0) {
+      text = text.substring(contentStart);
+    } else {
+      // Look for content markers (LEARNING OBJECTIVES, THE ASSIGNMENT, etc.)
+      const contentMarkers = [
+        /(LEARNING OBJECTIVES|THE ASSIGNMENT|BEFORE YOU|TECHNICAL FOCUS|CREATIVE FOCUS|ASSIGNMENT TASKS|DO\s*\/\s*DON'T|REFLECTION QUESTIONS)/i,
+        /This (assignment|article|post|guide|tutorial)/i,
+      ];
+      
+      for (const marker of contentMarkers) {
+        const match = text.match(marker);
+        if (match && match.index !== undefined && match.index < 2000) {
+          text = text.substring(match.index);
+          break;
+        }
+      }
+    }
+    
+    // Remove navigation patterns (aggressive - anywhere in text, not just start)
+    const navPatterns = [
+      /\/Cart\s+\d+/gi,
+      /Cart\s+\d+/gi,
+      /Sign In My Account/gi,
+      /My Account/gi,
+      /\/search/gi,
+      /Back\s+photography\s+courses\s+coventry/gi,
+      /Back\s+Workshops\s+Calendar/gi,
+      /Back\s+Services\s+Summary/gi,
+      /Back\s+Hire\s+A\s+Professional\s+Photographer/gi,
+      /Back\s+Gallery/gi,
+      /Back\s+Book\s+A\s+Free\s+Consultation/gi,
+      /Back\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g, // "Back Something"
+      /Genre-Specific/gi,
+    ];
+    
+    for (const pattern of navPatterns) {
+      text = text.replace(pattern, '');
+    }
+    
+    // Remove social sharing URLs (anywhere)
     text = text.replace(/https:\/\/www\.(facebook|linkedin|tumblr|pinterest)\.com[^\s]*/gi, '');
     
-    // Remove social sharing text patterns (Facebook0, LinkedIn0, etc.) - only if at end
-    text = text.replace(/\s+(Facebook0|LinkedIn0|Tumblr|Pinterest0|0\s+Likes)\s*$/gi, '');
+    // Remove social sharing text patterns (Facebook0, LinkedIn0, etc.) - anywhere
+    text = text.replace(/\s+(Facebook0|LinkedIn0|Tumblr|Pinterest0|0\s+Likes)\s*/gi, ' ');
     
-    // Remove author/date patterns at the end (Alan Ranger, date, social links)
-    text = text.replace(/\s*Alan Ranger\s*\/blog-on-photography[^\n]*\n.*\d+\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}.*$/gim, '');
+    // Remove author/date footer patterns
+    text = text.replace(/Alan Ranger\s*\/blog-on-photography[^\n]*/gi, '');
+    text = text.replace(/\d+\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\s*(Facebook|LinkedIn|Tumblr|Pinterest|Likes|Genre)/gi, '');
     
     // Clean up excessive whitespace but preserve paragraph structure
     text = text.replace(/\n{3,}/g, '\n\n');
