@@ -6834,9 +6834,9 @@
     const wordCount = countWords(articleBody);
     const timeRequired = estimateReadingTime(wordCount);
     
-    // Calculate readingTime in "XM" format (e.g., "6M")
-    const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
-    const readingTime = `${readingMinutes}M`;
+    // Calculate readingTime in ISO 8601 duration format (e.g., "PT6M")
+    const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 1;
+    const readingTime = `PT${readingMinutes}M`;
 
     // Clean article body for description extraction
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
@@ -6951,31 +6951,32 @@
       });
     }
     
-    // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED
+    // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED (NO CONDITIONALS)
+    // CRITICAL: All fields must always be present - never undefined
     const blogPosting = {
       '@type': 'BlogPosting',
       '@id': `${url}#blogposting`,
-      headline: title,
-      alternativeHeadline: title ? `${title} | Alan Ranger Photography` : undefined,
-      description: description,
+      headline: title || '',
+      alternativeHeadline: title ? `${title} | Alan Ranger Photography` : '',
+      description: description || '',
       url: url,
       mainEntityOfPage: { '@id': `${url}#webpage` },
-      datePublished: publishDate,
-      dateCreated: publishDate,
-      dateModified: modifiedDate,
+      datePublished: publishDate || '',
+      dateCreated: publishDate || '',
+      dateModified: modifiedDate || publishDate || '',
       inLanguage: 'en-GB',
-      articleBody: articleBody,
-      wordCount: wordCount,
-      timeRequired: timeRequired,
-      readingTime: readingTime,
-      genre: genre,
-      articleSection: articleSection,
-      keywords: keywords.length > 0 ? keywords : undefined,
-      learningResourceType: learningResourceType,
-      educationalLevel: educationalLevel,
-      proficiencyLevel: proficiencyLevel,
-      typicalAgeRange: typicalAgeRange,
-      educationalUse: learningResourceType === 'Assignment' ? 'Practice' : undefined,
+      articleBody: articleBody || '',
+      wordCount: wordCount || 0,
+      timeRequired: timeRequired || 'PT1M',
+      readingTime: readingTime || 'PT1M',
+      genre: genre || 'Photography Guide',
+      articleSection: articleSection || 'Photography',
+      keywords: keywords.length > 0 ? keywords : [],
+      learningResourceType: learningResourceType || 'Article',
+      educationalLevel: educationalLevel || 'Beginner',
+      proficiencyLevel: proficiencyLevel || 'Beginner',
+      typicalAgeRange: typicalAgeRange || '18-99',
+      educationalUse: learningResourceType === 'Assignment' ? 'Practice' : 'Learning',
       estimatedCost: estimatedCost,
       audience: {
         '@type': 'EducationalAudience',
@@ -6988,18 +6989,24 @@
         educationalFramework: 'Photography Skills',
         targetName: educationalLevel || 'Beginner'
       },
-      about: entityInfo.about.length > 0 ? entityInfo.about : undefined,
-      mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : undefined,
-      hasPart: hasPart.length > 0 ? hasPart : undefined,
+      about: entityInfo.about.length > 0 ? entityInfo.about : [],
+      mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [],
+      hasPart: hasPart.length > 0 ? hasPart : [],
       image: imageUrl ? {
         '@type': 'ImageObject',
         url: imageUrl,
         width: imageWidth,
         height: imageHeight,
-        caption: title || undefined
-      } : undefined,
-      thumbnailUrl: imageUrl || undefined,
-      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined,
+        caption: title || ''
+      } : {
+        '@type': 'ImageObject',
+        url: '',
+        width: 1200,
+        height: 800,
+        caption: ''
+      },
+      thumbnailUrl: imageUrl || '',
+      primaryImageOfPage: { '@id': `${url}#webpage` },
       speakable: {
         '@type': 'SpeakableSpecification',
         xpath: ['/html/head/title', '//h1'],
@@ -7024,13 +7031,13 @@
         name: 'Alan Ranger Photography'
       },
       copyrightYear: publishYear,
-      sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : undefined,
-      relatedLink: relatedLink.length > 0 ? relatedLink : undefined,
+      sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : [],
+      relatedLink: relatedLink.length > 0 ? relatedLink : [],
       subjectOf: {
         '@type': 'Blog',
         '@id': `${BLOG_URL_GLOBAL}#blog`
       },
-      isRelatedTo: relatedLink.length > 0 ? relatedLink : undefined
+      isRelatedTo: relatedLink.length > 0 ? relatedLink : []
     };
     
     // Add citation for RPS content
@@ -7065,9 +7072,27 @@
     // Add commentCount
     blogPosting.commentCount = entity && entity.comment_count ? entity.comment_count : 0;
 
-    // Clean up undefined, null, empty strings, and empty arrays
+    // Clean up ONLY truly optional fields - NEVER remove required fields
+    // Required fields that must ALWAYS be present (even if empty):
+    const REQUIRED_FIELDS = new Set([
+      '@type', '@id', 'headline', 'alternativeHeadline', 'description', 'url', 'mainEntityOfPage',
+      'datePublished', 'dateCreated', 'dateModified', 'inLanguage', 'articleBody', 'wordCount',
+      'timeRequired', 'readingTime', 'genre', 'articleSection', 'keywords', 'learningResourceType',
+      'educationalLevel', 'proficiencyLevel', 'typicalAgeRange', 'educationalUse', 'estimatedCost',
+      'audience', 'educationalAlignment', 'about', 'mentions', 'hasPart', 'image', 'thumbnailUrl',
+      'primaryImageOfPage', 'speakable', 'discussionUrl', 'author', 'publisher', 'isPartOf',
+      'copyrightHolder', 'copyrightYear', 'sameAs', 'relatedLink', 'subjectOf', 'isRelatedTo',
+      'interactionStatistic', 'commentCount', 'funding'
+    ]);
+    
     const keys = Object.keys(blogPosting);
     for (const key of keys) {
+      // NEVER remove required fields
+      if (REQUIRED_FIELDS.has(key)) {
+        continue;
+      }
+      
+      // Only clean up optional fields (citation, backstory, etc.)
       const value = blogPosting[key];
       if (value === undefined || value === null || value === '') {
         delete blogPosting[key];
