@@ -6393,75 +6393,123 @@
   // COMPLETELY REWRITTEN - Follows exact canonical template specification
   // Helper: Clean description following exact rules
   function createCleanDescription(articleBody, title, rawDescription) {
-    // Rule: Use first valid paragraph of article body
+    // Rule: Use FIRST PARAGRAPH ONLY from article body
     // Rule: Remove ALL CAPS, URLs, repeated headline, headers/footers
     // Rule: Max 160 characters, human-readable, end with full stop
     
     let desc = '';
     
-    // Try raw description first if available and clean
-    if (rawDescription) {
+    // ALWAYS use first paragraph from article body (not raw description)
+    if (articleBody) {
+      // Get first sentence/paragraph - look for first complete sentence
+      const sentences = articleBody.split(/[.!?]\s+/).filter(s => {
+        const trimmed = s.trim();
+        // Must be at least 20 chars, not navigation, not title
+        if (trimmed.length < 20) return false;
+        if (/^(back|cart|sign|search|menu|home|blog)/i.test(trimmed)) return false;
+        if (title && trimmed.toLowerCase() === title.toLowerCase()) return false;
+        return true;
+      });
+      
+      if (sentences.length > 0) {
+        desc = sentences[0].trim();
+      } else {
+        // Fallback: first 200 chars, but find sentence boundary
+        const first200 = articleBody.substring(0, 200);
+        const lastPeriod = first200.lastIndexOf('.');
+        const lastExclamation = first200.lastIndexOf('!');
+        const lastQuestion = first200.lastIndexOf('?');
+        const lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+        if (lastSentenceEnd > 50) {
+          desc = first200.substring(0, lastSentenceEnd + 1).trim();
+        } else {
+          desc = first200.trim();
+        }
+      }
+      
+      // Remove repeated headline (exact match or contains)
+      if (title) {
+        const titleLower = title.toLowerCase();
+        const descLower = desc.toLowerCase();
+        if (descLower === titleLower || descLower.startsWith(titleLower + ' ')) {
+          desc = desc.substring(title.length).trim();
+        }
+        // Remove if title appears anywhere in description
+        desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+      }
+      
+      // Remove ALL CAPS words (3+ consecutive uppercase letters) - but keep proper nouns
+      desc = desc.replace(/\b[A-Z]{3,}\b/g, '');
+      
+      // Remove URLs
+      desc = desc.replace(/https?:\/\/[^\s]+/g, '');
+      
+      // Remove bracket patterns
+      desc = desc.replace(/\[\/[^\]]+\]/g, '');
+      desc = desc.replace(/\[[^\]]+\]/g, '');
+      
+      // Remove navigation fragments
+      desc = desc.replace(/\/Cart\s+\d+/gi, '');
+      desc = desc.replace(/Sign In My Account/gi, '');
+      
+      // Clean whitespace
+      desc = desc.replace(/\s+/g, ' ').trim();
+      
+      // Remove leading/trailing punctuation artifacts
+      desc = desc.replace(/^[.,;:!?\s]+/, '').replace(/[.,;:!?\s]+$/, '');
+    }
+    
+    // If still no description, try raw description as last resort
+    if (!desc && rawDescription) {
       desc = String(rawDescription).trim();
-      // Remove repeated headline
       if (title && desc.toLowerCase() === title.toLowerCase()) {
         desc = '';
       }
-      // Remove ALL CAPS words (3+ consecutive uppercase letters)
       desc = desc.replace(/[A-Z]{3,}/g, '');
-      // Remove URLs
       desc = desc.replace(/https?:\/\/[^\s]+/g, '');
-      // Remove bracket patterns
       desc = desc.replace(/\[\/[^\]]+\]/g, '');
       desc = desc.replace(/\[[^\]]+\]/g, '');
-      // Clean whitespace
       desc = desc.replace(/\s+/g, ' ').trim();
-      
       if (desc.length < 20) desc = '';
-    }
-    
-    // If no clean description, use first paragraph from article body
-    if (!desc && articleBody) {
-      // Get first sentence/paragraph
-      const firstMatch = articleBody.match(/^[^.!?]+[.!?]/);
-      if (firstMatch) {
-        desc = firstMatch[0].trim();
-      } else {
-        // Fallback: first 200 chars
-        desc = articleBody.substring(0, 200).trim();
-      }
-      
-      // Remove repeated headline
-      if (title && desc.toLowerCase().includes(title.toLowerCase())) {
-        desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
-      }
-      // Remove ALL CAPS words
-      desc = desc.replace(/[A-Z]{3,}/g, '');
-      // Remove URLs
-      desc = desc.replace(/https?:\/\/[^\s]+/g, '');
-      // Remove bracket patterns
-      desc = desc.replace(/\[\/[^\]]+\]/g, '');
-      desc = desc.replace(/\[[^\]]+\]/g, '');
-      // Clean whitespace
-      desc = desc.replace(/\s+/g, ' ').trim();
     }
     
     // Trim to 160 chars and ensure ends with full stop
     if (desc) {
-      desc = desc.substring(0, 160).trim();
-      if (desc.length > 0 && !desc.endsWith('.')) {
-        // Remove trailing punctuation and add full stop
-        desc = desc.replace(/[.!?]+$/, '') + '.';
+      // Trim to 160, but try to end at word boundary
+      if (desc.length > 160) {
+        const trimmed = desc.substring(0, 157);
+        const lastSpace = trimmed.lastIndexOf(' ');
+        if (lastSpace > 100) {
+          desc = trimmed.substring(0, lastSpace).trim();
+        } else {
+          desc = trimmed.trim();
+        }
       }
-      // Final trim to 160
+      
+      // Ensure ends with punctuation
+      if (desc.length > 0) {
+        desc = desc.replace(/[.!?]+$/, '');
+        if (!desc.endsWith('.')) {
+          desc = desc + '.';
+        }
+      }
+      
+      // Final safety check - max 160
       if (desc.length > 160) {
         desc = desc.substring(0, 157).trim() + '...';
       }
     }
     
-    return desc || (title ? title.substring(0, 160) : '');
+    // Last resort: use title (truncated)
+    if (!desc || desc.length < 20) {
+      desc = title ? title.substring(0, 160) : '';
+      if (desc && !desc.endsWith('.')) desc = desc + '.';
+    }
+    
+    return desc;
   }
   
-  // Helper: Classification logic (exact rules)
+  // Helper: Classification logic (exact rules) - ORDER MATTERS: Most specific first
   function classifyContent(categories, tags, title, articleBody) {
     const lowerTitle = (title || '').toLowerCase();
     const lowerTags = (Array.isArray(tags) ? tags : [tags]).join(' ').toLowerCase();
@@ -6469,27 +6517,10 @@
     const lowerBody = (articleBody || '').toLowerCase();
     const searchText = `${lowerTitle} ${lowerTags} ${lowerCats} ${lowerBody}`;
     
-    // 1. ASSIGNMENTS
-    if (lowerCats.includes('assignment') || lowerTags.includes('assignment') || 
-        /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle)) {
-      return {
-        articleSection: 'Practice Assignment',
-        genre: 'Photography Assignment',
-        learningResourceType: 'Assignment'
-      };
-    }
-    
-    // 2. CASE STUDIES
-    if (/case study/i.test(lowerTitle)) {
-      return {
-        articleSection: 'Case Studies',
-        genre: 'Photography Case Study',
-        learningResourceType: 'CaseStudy'
-      };
-    }
-    
-    // 3. RPS / DISTINCTIONS
-    if (/\brps\b/.test(lowerBody) || /distinction/i.test(lowerBody) || /\barps\b/.test(lowerBody)) {
+    // 1. RPS / DISTINCTIONS (most specific - check first)
+    if (/\brps\b/.test(lowerBody) || /distinction/i.test(lowerBody) || /\barps\b/.test(lowerBody) ||
+        /rps.*distinction|distinction.*rps/i.test(searchText) ||
+        /peter orton|john simpson/i.test(searchText)) {
       return {
         articleSection: 'RPS Distinctions',
         genre: 'Photography Case Study',
@@ -6497,36 +6528,19 @@
       };
     }
     
-    // 4. TECHNICAL GUIDES (Exposure, Aperture, Shutter, ISO, Histogram)
-    if (/exposure|aperture|shutter|iso|histogram|metering|white balance/i.test(searchText)) {
+    // 2. CASE STUDIES (check before assignments)
+    if (/case study/i.test(lowerTitle) || 
+        (/case study/i.test(lowerBody) && lowerBody.length > 500)) {
       return {
-        articleSection: 'Technical Foundations',
-        genre: 'Photography Guide',
-        learningResourceType: 'Guide'
+        articleSection: 'Case Studies',
+        genre: 'Photography Case Study',
+        learningResourceType: 'CaseStudy'
       };
     }
     
-    // 5. CREATIVE TECHNIQUES (composition, leading lines, negative space)
-    if (/composition|leading lines|negative space|rule of thirds|framing|perspective/i.test(searchText)) {
-      return {
-        articleSection: 'Creative Techniques',
-        genre: 'Photography Guide',
-        learningResourceType: 'Guide'
-      };
-    }
-    
-    // 6. GENRE-SPECIFIC (wildlife, landscape, street, portrait, macro)
-    if (/wildlife|landscape|street|portrait|macro|seascape|woodland/i.test(lowerCats) ||
-        /wildlife|landscape|street|portrait|macro|seascape|woodland/i.test(lowerTags)) {
-      return {
-        articleSection: 'Genre-Specific',
-        genre: 'Photography Guide',
-        learningResourceType: 'Guide'
-      };
-    }
-    
-    // 7. GEAR REVIEWS
-    if (/review|equipment|gear|product|tripod|camera|lens|benro|canon|nikon|fujifilm|sony/i.test(searchText)) {
+    // 3. GEAR REVIEWS (specific product reviews)
+    if (/review|equipment|gear|product|tripod|camera|lens|benro|canon|nikon|fujifilm|sony/i.test(searchText) &&
+        (/review|best|recommend|compare/i.test(lowerTitle) || /review|recommendation|comparison/i.test(lowerBody))) {
       return {
         articleSection: 'Gear Reviews',
         genre: 'Product Review',
@@ -6534,7 +6548,61 @@
       };
     }
     
-    // Default
+    // 4. ASSIGNMENTS (only if explicitly assignment/practice/project/exercise)
+    if ((lowerCats.includes('assignment') || lowerTags.includes('assignment') || 
+         /assignment|practice assignment|free lesson|project assignment|exercise/i.test(lowerTitle)) &&
+        !/case study|review|guide|tutorial|tips/i.test(lowerTitle)) {
+      return {
+        articleSection: 'Practice Assignment',
+        genre: 'Photography Assignment',
+        learningResourceType: 'Assignment'
+      };
+    }
+    
+    // 5. GENRE-SPECIFIC (wildlife, landscape, street, portrait, macro) - check before generic technical
+    if (/wildlife photography|landscape photography|street photography|portrait photography|macro photography|seascape photography|woodland photography/i.test(searchText) ||
+        (/wildlife|landscape|street|portrait|macro|seascape|woodland/i.test(lowerCats) && 
+         /photography|technique|guide|tips|how to/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Genre-Specific',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 6. TECHNICAL GUIDES (Exposure, Aperture, Shutter, ISO, Histogram) - specific technical topics
+    if ((/what is.*exposure|what is.*aperture|what is.*shutter|what is.*iso|what is.*histogram|what is.*white balance/i.test(lowerTitle)) ||
+        (/exposure|aperture|shutter|iso|histogram|metering|white balance/i.test(searchText) && 
+         /guide|tutorial|explained|how to|master/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Technical Foundations',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 7. CREATIVE TECHNIQUES (composition, leading lines, negative space)
+    if (/composition|leading lines|negative space|rule of thirds|framing|perspective/i.test(searchText) &&
+        /guide|tutorial|tips|technique|how to/i.test(lowerTitle)) {
+      return {
+        articleSection: 'Creative Techniques',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // 8. SEASONAL / LOCATION SPECIFIC (autumn, bluebells, etc.)
+    if (/autumn|spring|summer|winter|bluebell|seasonal/i.test(lowerTitle) ||
+        (/autumn|spring|summer|winter|bluebell|seasonal/i.test(searchText) && 
+         /photography|photographing|guide|tips/i.test(lowerTitle))) {
+      return {
+        articleSection: 'Seasonal & Location',
+        genre: 'Photography Guide',
+        learningResourceType: 'Guide'
+      };
+    }
+    
+    // Default - generic photography content
     return {
       articleSection: 'Photography Tips',
       genre: 'Photography Guide',
@@ -6659,19 +6727,19 @@
     const readingMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
     const readingTime = `${readingMinutes}M`;
 
-    // Clean article body for description / nav removal
+    // Clean article body for description extraction (but KEEP full articleBody for articleBody field)
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
     
-    // Use helper function for clean description
+    // Use helper function for clean description (use cleaned version for description only)
     const description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
     
-    // Use cleaned body for downstream analysis
-    if (cleanedForDescription) {
-      articleBody = cleanedForDescription;
-    }
+    // DO NOT replace articleBody - it must contain the FULL article text, not just description
+    // articleBody stays as the full text for the articleBody field
+    // But use cleaned version for classification to avoid nav text affecting classification
+    const classificationBody = cleanedForDescription || articleBody;
 
-    // Classify content using helper function
-    const classification = classifyContent(categories, tags, title, articleBody);
+    // Classify content using helper function (use cleaned body to avoid nav affecting classification)
+    const classification = classifyContent(categories, tags, title, classificationBody);
     const articleSection = classification.articleSection;
     const genre = classification.genre;
     const learningResourceType = classification.learningResourceType;
@@ -6682,16 +6750,36 @@
     // Extract post-relevant entities (3-7 items max)
     const entityInfo = extractPostRelevantEntities(articleBody, tags, title);
     
-    // Build keywords from tags (deduplicated)
+    // Build keywords from tags (deduplicated) - FILTER OUT GENERIC KEYWORDS
+    const GENERIC_KEYWORDS = new Set([
+      'shutter speed', 'aperture', 'composition', 'rps', 'lightroom',
+      'exposure', 'iso', 'white balance', 'histogram', 'metering',
+      'photography', 'camera', 'settings', 'technique', 'tips'
+    ]);
+    
     const baseKeywords = Array.isArray(tags) ? tags.slice() : (typeof tags === 'string' && tags ? [tags] : []);
     const keywordsSet = new Set();
     const keywords = [];
+    
+    // Only include keywords that are:
+    // 1. Not generic photography terms
+    // 2. Actually relevant to THIS specific post (mentioned in title or body)
+    const contentText = `${title || ''} ${articleBody || ''}`.toLowerCase();
+    
     for (const kw of baseKeywords) {
-      const trimmed = String(kw).trim();
-      if (trimmed && !keywordsSet.has(trimmed.toLowerCase())) {
-        keywordsSet.add(trimmed.toLowerCase());
-        keywords.push(trimmed);
+      const trimmed = String(kw).trim().toLowerCase();
+      if (!trimmed || keywordsSet.has(trimmed)) continue;
+      
+      // Skip generic keywords unless they're specifically relevant to this post
+      if (GENERIC_KEYWORDS.has(trimmed)) {
+        // Only include if it's a core topic of this specific post
+        const isCoreTopic = contentText.includes(trimmed) && 
+                           (contentText.split(trimmed).length - 1) >= 2; // Mentioned 2+ times
+        if (!isCoreTopic) continue;
       }
+      
+      keywordsSet.add(trimmed);
+      keywords.push(String(kw).trim()); // Keep original case
     }
 
 
@@ -6737,7 +6825,7 @@
         height: imageHeight
       } : undefined,
       thumbnailUrl: imageUrl || undefined,
-      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined, // References WebPage, not ImageObject
+      primaryImageOfPage: imageUrl ? { '@id': `${url}#webpage` } : undefined, // References WebPage @id
       speakable: {
         '@type': 'SpeakableSpecification',
         xpath: ['/html/head/title', '//h1'],
@@ -6945,20 +7033,35 @@
     // Per-post WebPage and Breadcrumb for each BlogPosting (canonical template)
     const postWebPages = blogPostings
       .filter(post => post && post.url && post.headline)
-      .map(post => ({
-        '@type': 'WebPage',
-        '@id': `${post.url}#webpage`,
-        url: post.url,
-        name: post.headline,
-        description: post.description,
-        inLanguage: 'en-GB',
-        isPartOf: { '@id': WEBSITE_ID },
-        primaryImageOfPage: post.image ? {
-          '@type': 'ImageObject',
-          url: post.image.url
-        } : undefined
-      }))
-      .filter(wp => wp.primaryImageOfPage !== undefined || wp.description); // Only include if has image or description
+      .map(post => {
+        const webpage = {
+          '@type': 'WebPage',
+          '@id': `${post.url}#webpage`,
+          url: post.url,
+          name: post.headline,
+          description: post.description,
+          inLanguage: 'en-GB',
+          isPartOf: { '@id': WEBSITE_ID },
+          mainEntity: { '@id': post['@id'] } // Link to BlogPosting
+        };
+        
+        // Add primaryImageOfPage if image exists
+        if (post.image && post.image.url) {
+          webpage.primaryImageOfPage = {
+            '@type': 'ImageObject',
+            url: post.image.url,
+            width: post.image.width,
+            height: post.image.height
+          };
+        }
+        
+        // Add thumbnailUrl if image exists
+        if (post.thumbnailUrl) {
+          webpage.thumbnailUrl = post.thumbnailUrl;
+        }
+        
+        return webpage;
+      });
 
     const postBreadcrumbs = blogPostings
       .filter(post => post && post.url && post.headline)
@@ -7026,6 +7129,165 @@
         ...blogPostings // Add all BlogPosting objects to @graph
       ]
     };
+
+    // SELF-TESTING: Validate schema before output
+    function validateBlogSchema(schema) {
+      const errors = [];
+      const warnings = [];
+      
+      try {
+        // Structural Validation
+        if (!schema['@context'] || schema['@context'] !== 'https://schema.org') {
+          errors.push('Missing or invalid @context');
+        }
+        
+        if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
+          errors.push('Missing or invalid @graph');
+          return { valid: false, errors, warnings };
+        }
+        
+        const graph = schema['@graph'];
+        const ids = new Set();
+        const postUrls = new Set();
+        
+        // Check for required top-level objects
+        const hasWebSite = graph.some(obj => obj['@type'] === 'WebSite');
+        const hasOrganization = graph.some(obj => obj['@type'] === 'Organization');
+        const hasBlog = graph.some(obj => obj['@type'] === 'Blog');
+        const hasItemList = graph.some(obj => obj['@type'] === 'ItemList');
+        
+        if (!hasWebSite) errors.push('Missing WebSite object');
+        if (!hasOrganization) errors.push('Missing Organization object');
+        if (!hasBlog) errors.push('Missing Blog object');
+        if (!hasItemList) errors.push('Missing ItemList object');
+        
+        // Check for duplicate @id values
+        graph.forEach(obj => {
+          if (obj['@id']) {
+            if (ids.has(obj['@id'])) {
+              errors.push(`Duplicate @id: ${obj['@id']}`);
+            }
+            ids.add(obj['@id']);
+          }
+        });
+        
+        // Validate each BlogPosting
+        const blogPostings = graph.filter(obj => obj['@type'] === 'BlogPosting');
+        const webPages = graph.filter(obj => obj['@type'] === 'WebPage');
+        const breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
+        
+        blogPostings.forEach((post, idx) => {
+          postUrls.add(post.url);
+          
+          // Required fields check
+          if (!post['@id']) errors.push(`BlogPosting ${idx + 1}: Missing @id`);
+          if (!post.headline) errors.push(`BlogPosting ${idx + 1}: Missing headline`);
+          if (!post.url) errors.push(`BlogPosting ${idx + 1}: Missing url`);
+          if (!post.datePublished) warnings.push(`BlogPosting ${idx + 1}: Missing datePublished`);
+          if (!post.articleBody || post.articleBody.trim().length === 0) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or empty articleBody`);
+          }
+          if (!post.description || post.description.length === 0) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing description`);
+          }
+          if (post.description && post.description.length > 160) {
+            warnings.push(`BlogPosting ${idx + 1}: Description too long (${post.description.length} chars)`);
+          }
+          if (!post.mainEntityOfPage || !post.mainEntityOfPage['@id']) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or invalid mainEntityOfPage`);
+          }
+          if (!post.genre) warnings.push(`BlogPosting ${idx + 1}: Missing genre`);
+          if (!post.articleSection) warnings.push(`BlogPosting ${idx + 1}: Missing articleSection`);
+          if (!post.publisher || !post.publisher['@id']) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or invalid publisher`);
+          }
+          if (!post.interactionStatistic) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing interactionStatistic`);
+          }
+          
+          // Check for corresponding WebPage
+          const webpageId = `${post.url}#webpage`;
+          const hasWebPage = webPages.some(wp => wp['@id'] === webpageId);
+          if (!hasWebPage) {
+            errors.push(`BlogPosting ${idx + 1}: Missing corresponding WebPage (${webpageId})`);
+          }
+          
+          // Check for corresponding BreadcrumbList
+          const breadcrumbId = `${post.url}#breadcrumb`;
+          const hasBreadcrumb = breadcrumbs.some(bc => bc['@id'] === breadcrumbId);
+          if (!hasBreadcrumb) {
+            errors.push(`BlogPosting ${idx + 1}: Missing corresponding BreadcrumbList (${breadcrumbId})`);
+          }
+        });
+        
+        // Validate WebPages
+        webPages.forEach((wp, idx) => {
+          if (!wp['@id']) errors.push(`WebPage ${idx + 1}: Missing @id`);
+          if (!wp.url) errors.push(`WebPage ${idx + 1}: Missing url`);
+          if (!wp.isPartOf || !wp.isPartOf['@id']) {
+            errors.push(`WebPage ${idx + 1}: Missing or invalid isPartOf`);
+          }
+        });
+        
+        // Validate BreadcrumbLists
+        breadcrumbs.forEach((bc, idx) => {
+          if (!bc['@id']) errors.push(`BreadcrumbList ${idx + 1}: Missing @id`);
+          if (!bc.itemListElement || !Array.isArray(bc.itemListElement)) {
+            errors.push(`BreadcrumbList ${idx + 1}: Missing or invalid itemListElement`);
+          }
+        });
+        
+        // Validate ItemList contains all posts
+        const itemList = graph.find(obj => obj['@type'] === 'ItemList');
+        if (itemList && itemList.itemListElement) {
+          const itemListUrls = new Set(itemList.itemListElement.map(item => item.url).filter(Boolean));
+          postUrls.forEach(url => {
+            if (!itemListUrls.has(url)) {
+              warnings.push(`Post URL not in ItemList: ${url}`);
+            }
+          });
+        }
+        
+        // JSON validation
+        try {
+          JSON.stringify(schema);
+        } catch (e) {
+          errors.push(`Invalid JSON: ${e.message}`);
+        }
+        
+      } catch (e) {
+        errors.push(`Validation error: ${e.message}`);
+      }
+      
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+        stats: {
+          totalObjects: graph.length,
+          blogPostings: blogPostings.length,
+          webPages: webPages.length,
+          breadcrumbs: breadcrumbs.length
+        }
+      };
+    }
+    
+    // Run validation
+    const validation = validateBlogSchema(blogSchema);
+    
+    if (!validation.valid) {
+      blogLog('❌ Schema validation FAILED:');
+      validation.errors.forEach(err => blogLog(`   ERROR: ${err}`));
+      validation.warnings.forEach(warn => blogLog(`   WARNING: ${warn}`));
+      blogLog('⚠️  Schema generated but contains errors. Review and fix before use.');
+    } else {
+      blogLog('✅ Schema validation PASSED');
+      if (validation.warnings.length > 0) {
+        blogLog('   Warnings (non-critical):');
+        validation.warnings.forEach(warn => blogLog(`   - ${warn}`));
+      }
+      blogLog(`   Stats: ${validation.stats.totalObjects} objects, ${validation.stats.blogPostings} posts, ${validation.stats.webPages} web pages, ${validation.stats.breadcrumbs} breadcrumbs`);
+    }
 
     window.currentBlogSchema = blogSchema;
 
