@@ -1371,17 +1371,25 @@
     <span class="version">v4.3</span>
     <span class="date">Smart Enriched Schema Generator — Event ↔ Series Backlinking</span>
   </div>
-  <h1>Unified Schema Generator - Events & Products</h1>
+  <h1>Unified Schema Generator</h1>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('event')">Event Schema</button>
-    <button class="tab" onclick="switchTab('product')">Product Schema</button>
-    <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
-    <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
-    <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
-    <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
-    <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
-  </div>
+    <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+      <p style="margin: 0; font-weight: 600; color: #1565c0; font-size: 1rem;">
+        📦 <strong>Shared Resources Repository:</strong> All CSV inputs and schema outputs are now in the <code style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">alan-shared-resources</code> repository. 
+        Raw CSV files are in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/csv/</code> (retain original Squarespace export filenames), 
+        processed files in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/</code>, 
+        and schema outputs in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/</code>.
+      </p>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('event')">Event Schema</button>
+      <button class="tab" onclick="switchTab('product')">Product Schema</button>
+      <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
+      <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
+      <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
+      <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
+      <button class="tab" onclick="switchTab('guide')">🧠 Tab Guide</button>
+    </div>
 
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content active">
@@ -1401,7 +1409,7 @@
       • <strong>Without this file:</strong> Events will have price = 0 (data error logged)<br><br>
       
       <strong>3. Reviews CSV (Optional - for review enrichment):</strong><br>
-      • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+      • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
       • Adds aggregateRating and review snippets to events<br>
       • Only events with matching product URLs get reviews<br><br>
       
@@ -1419,22 +1427,22 @@
         <ol style="margin: 0; padding-left: 1.5rem; line-height: 2;">
           <li><strong>Export Events from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Events → Export CSV</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">Save as: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code></span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">Save to: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (files retain original Squarespace export filenames like <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 - www-alanranger-com__...__beginners-photography-lessons.csv</code> or <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 - www-alanranger-com__...__photographic-workshops-near-me.csv</code>)</span>
           </li>
           <li><strong>Generate Event-Product Mappings:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Run chat-bot ingest app → event-product-mappings-*.csv</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code><br>
             ⚠️ <strong>Required</strong> - Without this, events will show price = 0 errors</span>
           </li>
           <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Use existing reviews file</code><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code></span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></span>
           </li>
           <li><strong>Upload Files in This Tab:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Upload Event CSV File" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">events_export.csv</code><br>
             • Click "Event-Product Mappings CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">event-product-mappings-*.csv</code><br>
-            • (Optional) Click "Reviews CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
-            • (Optional) Click "Products Excel" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> (for actual SKU values)</span>
+            • (Optional) Click "Reviews CSV" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
+            • (Optional) Click "Products Excel" → Select <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> (for actual SKU values)</span>
           </li>
           <li><strong>Configure Options:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Enable/disable review enrichment<br>
@@ -1479,9 +1487,9 @@
       </ol>
       <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Optional Files:</p>
       <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
-        <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
+        <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
           <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚠️ Without this: SKU will be extracted from URL slug (may exceed 40 chars and cause validation warnings)</span></li>
-        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> for review enrichment</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> for review enrichment</li>
       </ol>
     </div>
 
@@ -1504,7 +1512,7 @@
         <strong>Products Excel (Optional - for actual SKU values):</strong><br>
         <input type="file" id="productsExcelFile" accept=".xlsx,.xls" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code><br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
           Provides: Actual SKU from <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">main_sku</code> column (prevents fallback to URL slug)<br>
           <strong>Without this:</strong> SKU extracted from URL slug (may exceed 40 chars → validation warnings)
         </span>
@@ -1513,7 +1521,7 @@
         <strong>Reviews CSV (Optional - for review enrichment):</strong><br>
         <input type="file" id="reviewsCsvFile" accept=".csv" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
-          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+          File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
           Adds: aggregateRating and review snippets to events with matching product URLs
         </span>
       </label>
@@ -1580,52 +1588,77 @@
       <div id="summaryContent" style="font-size: 0.875rem; line-height: 1.6;"></div>
     </div>
     
+    <!-- GitHub Hosting Verification Panel - Always Visible -->
+    <div id="githubHostingVerification" style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+      <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #1f2937;">🔍 GitHub Schema Hosting Verification</h4>
+      <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 4px; border-left: 3px solid #0369a1;">
+        <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location:</strong></p>
+        <p style="margin: 0; font-size: 0.8rem; color: #1e3a8a; font-family: monospace; word-break: break-all;">
+          G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema
+        </p>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
+          Save <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">lessons-schema.json</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
+        </p>
+      </div>
+      <div style="margin-bottom: 0.75rem; padding: 0.5rem; background: #f9fafb; border-radius: 4px;">
+        <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.875rem; color: #374151;">
+          <input type="checkbox" id="minifyJsonCheckbox" style="margin-right: 0.5rem; cursor: pointer;">
+          <span>Minify JSON (only needed for Squarespace code block limits - off by default)</span>
+        </label>
+      </div>
+      <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-right: 0.5rem;">
+        🚀 Ping GitHub
+      </button>
+      <button id="exportToGitHubFolderBtn" onclick="exportUnminifiedToGitHubFolder()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-right: 0.5rem;">
+        🚀 Export JSON & Deploy to GitHub (Electron only)
+      </button>
+      <div id="pingResults" style="margin-top: 10px; font-family: monospace; font-size: 0.875rem; color: #374151; line-height: 1.6;"></div>
+      <div id="schemaLinks" style="margin-top: 15px; display: none;">
+        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #1f2937; font-size: 0.875rem;"><strong>Validation Links:</strong></p>
+        <ul style="margin: 0; padding-left: 1.5rem; color: #374151; font-size: 0.875rem;">
+          <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/lessons-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Lessons Schema Validator</a></li>
+          <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/workshops-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Workshops Schema Validator</a></li>
+          <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/beginners-photography-lessons" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Lessons</a></li>
+          <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/photographic-workshops-near-me" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Workshops</a></li>
+        </ul>
+      </div>
+    </div>
+    
     <div id="schemaExportContainer" style="display:none; margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
       <h4 style="margin-top: 0; color: #0369a1;">📦 Schema Export & Squarespace Integration</h4>
       <div id="schemaExportContent" style="margin-top: 0.75rem;"></div>
       
-      <!-- GitHub Hosting Verification Panel -->
-      <div id="githubHostingVerification" style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
-        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #1f2937;">🔍 GitHub Schema Hosting Verification</h4>
-        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 4px; border-left: 3px solid #0369a1;">
-          <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location:</strong></p>
-          <p style="margin: 0; font-size: 0.8rem; color: #1e3a8a; font-family: monospace; word-break: break-all;">
-            G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema
-          </p>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
-            Save <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">lessons-schema.json</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
-          </p>
-        </div>
-        <button id="pingGitHub" style="padding: 0.5rem 1rem; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-right: 0.5rem;">
-          🚀 Ping GitHub
-        </button>
-        <button id="exportToGitHubFolderBtn" onclick="exportUnminifiedToGitHubFolder()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
-          📥 Export Unminified JSON to GitHub Folder
-        </button>
-        <div id="pingResults" style="margin-top: 10px; font-family: monospace; font-size: 0.875rem; color: #374151; line-height: 1.6;"></div>
-        <div id="schemaLinks" style="margin-top: 15px; display: none;">
-          <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #1f2937; font-size: 0.875rem;"><strong>Validation Links:</strong></p>
-          <ul style="margin: 0; padding-left: 1.5rem; color: #374151; font-size: 0.875rem;">
-            <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/lessons-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Lessons Schema Validator</a></li>
-            <li style="margin-bottom: 0.25rem;"><a href="https://validator.schema.org/#url=https://schema.alanranger.com/workshops-schema.json" target="_blank" style="color: #0369a1; text-decoration: none;">Workshops Schema Validator</a></li>
-            <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/beginners-photography-lessons" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Lessons</a></li>
-            <li style="margin-bottom: 0.25rem;"><a href="https://search.google.com/test/rich-results?url=https://www.alanranger.com/photographic-workshops-near-me" target="_blank" style="color: #0369a1; text-decoration: none;">Google Rich Results – Workshops</a></li>
-          </ul>
-        </div>
-      </div>
-      
       <div style="margin-top: 1rem;">
-        <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem;">
-          📥 Export JSON File
+        <button id="exportAndDeployBtn" onclick="exportAndDeploySchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          🚀 Export JSON & Deploy to GitHub
         </button>
-        <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+        <button id="exportSchemaJsonBtn" onclick="exportSchemaToJson()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          📥 Export JSON File Only
+        </button>
+        <button id="deploySchemaBtn" onclick="deploySchemaToGitHub()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 0.5rem; margin-bottom: 0.5rem; display: none;">
+          🚀 Deploy to GitHub
+        </button>
+        <button id="copySquarespaceScriptBtn" onclick="copySquarespaceScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-bottom: 0.5rem;">
           📋 Copy Squarespace Script src Tag
         </button>
+      </div>
+      
+      <div id="deployButtonInfo" style="margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px; border-left: 3px solid #f59e0b; display: none;">
+        <div style="color: #92400e; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">
+          ⚠️ Deploy Button Available
+        </div>
+        <div style="color: #78350f; font-size: 0.8rem;">
+          The <strong>"🚀 Deploy to GitHub"</strong> button appears after exporting. It automatically saves the schema to the <code>alanranger-schema</code> folder, commits, and pushes to GitHub. <strong>This feature only works in the Electron app version</strong> (not in browser). If running in browser, manually copy the exported file to the alanranger-schema folder and commit/push.
+        </div>
       </div>
     </div>
 
     <div style="margin-top: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; font-size: 0.9em; color: #6b7280;">
-      Schema auto-hosted via <a href="https://github.com/alanranger/alanranger-schema" target="_blank" style="color: #0369a1;">GitHub Pages</a> • Custom domain: <b>schema.alanranger.com</b> • Auto-sync: <b>Enabled</b>
+      Schema auto-hosted via <a href="https://github.com/alanranger/alanranger-schema" target="_blank" style="color: #0369a1;">GitHub Pages</a> • Custom domain: <b>schema.alanranger.com</b> • 
+      <span id="deploymentModeInfo">
+        <span id="electronMode" style="display: none;"><b>Auto-deploy:</b> <span style="color: #10b981;">Available (Electron app)</span></span>
+        <span id="browserMode"><b>Auto-deploy:</b> <span style="color: #f59e0b;">Manual only (browser mode)</span> - Use Electron app for auto-deployment</span>
+      </span>
     </div>
 
     <div id="merchantFeedContainer" style="display:none; margin-top: 1rem;">
@@ -1634,7 +1667,7 @@
       </button>
     </div>
 
-    <div class="test-url-section">
+      <div class="test-url-section">
       <h4>Test Generated Schema:</h4>
       <p>Paste a URL containing your schema to validate it:</p>
       <label for="eventTestUrl">Test URL:</label>
@@ -1643,6 +1676,58 @@
         <button onclick="testSchemaOrg('eventTestUrl')">Test on Schema.org Validator</button>
         <button onclick="testGoogleRichResults('eventTestUrl')" class="secondary">Test on Google Rich Results</button>
       </div>
+    </div>
+
+    <!-- Desktop App Launch Button (Web Mode Only) -->
+    <div id="desktop-launch-event" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6;">
+      <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">💻 Want Auto-Deployment?</h3>
+      <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">The desktop app enables automatic deployment to GitHub. Build the app to use the "🚀 Deploy to GitHub" button.</p>
+      
+      <div style="background:#f7fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; border:1px solid #e2e8f0;">
+        <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;">📋 How to use the desktop app:</p>
+        <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
+          <li>Open your project folder in a terminal</li>
+          <li>Run: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;">npm run build:desktop</code></li>
+          <li>Navigate to: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;" id="exePathDisplayEvent">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
+          <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
+        </ol>
+        <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
+          <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
+          <strong>All input/output files are in the shared-resources repository</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv/</code>, <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/</code>, etc.).
+        </p>
+      </div>
+      
+      <div style="text-align:center;">
+        <button id="copyPathBtnEvent" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+          📋 Copy Build Command
+        </button>
+        <button id="openFolderBtnEvent" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+          📁 Open PowerShell Here
+        </button>
+        <button id="showInstructionsBtnEvent" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+          ℹ️ Show Full Path
+        </button>
+        <button id="openExeBtnWebEvent" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#9b59b6; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-bottom:0.5rem;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
+          ▶️ Open Electron App (if built)
+        </button>
+      </div>
+    </div>
+
+    <!-- Build Desktop App Section (Electron Mode Only) -->
+    <div id="build-desktop-section-event" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px solid #27AE60; border-radius:12px; background:#f0fdf4;">
+      <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;">🔨 Build Desktop App</h3>
+      <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">Build the Windows .exe file directly from this app.</p>
+      
+      <div style="text-align:center; margin-bottom:1rem;">
+        <button id="buildDesktopBtnEvent" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+          🔨 Build Desktop App (npm run build:desktop)
+        </button>
+        <button id="openExeBtnEvent" style="display:none; padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-left:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+          ▶️ Open Built App (SchemaTools.exe)
+        </button>
+      </div>
+      
+      <div id="buildOutputEvent" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
     </div>
   </div>
 
@@ -1677,32 +1762,32 @@
           <li><strong>Step 1 - Export Products from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Products → Export CSV</code><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Upload the CSV file in Step 1 section below<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (raw products CSV with original Squarespace export filename)<br>
             • Step 2 will start automatically after upload</span>
           </li>
           <li><strong>Step 2 - Clean and Normalize CSV:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Runs automatically after Step 1<br>
             • Normalizes column names and formats data<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Step 3a will start automatically next</span>
           </li>
           <li><strong>Step 3a - Fetch Google Reviews:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code><br>
             • First time: Browser opens for OAuth authorization<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03b – google_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code><br>
             • Step 3b will start automatically next</span>
           </li>
           <li><strong>Step 3b - Merge Reviews:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Combines Google reviews with Trustpilot reviews<br>
             • Matches reviews to products by URL<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Step 4 will start automatically next</span>
           </li>
           <li><strong>Step 4 - Generate Product Schema:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
             • Includes Schema Suppressor to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> files</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Copy schema from generated HTML files<br>
@@ -1715,10 +1800,10 @@
       <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 1rem;">
         <strong>⚠️ Important File Locations:</strong><br>
         <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0; line-height: 1.8;">
-          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code></li>
-          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code></li>
-          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code></li>
-          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist before Step 3b)</li>
+          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> (raw CSVs with original Squarespace export filenames)</li>
+          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code></li>
+          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> (products/, workshops/, lessons/, blog/ subfolders)</li>
+          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist before Step 3b)</li>
         </ul>
       </div>
 
@@ -1737,7 +1822,7 @@
           </ol>
           <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
             <strong>ℹ️ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
-            <strong>All input/output files remain in your Dropbox project folder</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">inputs-files/</code> and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">outputs/</code>).
+            <strong>All input/output files are in the shared-resources repository</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv/</code>, <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/</code>, etc.).
           </p>
         </div>
         
@@ -1849,7 +1934,7 @@
                    style="width: 100%; padding: 0.5rem; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.875rem; margin-bottom: 0.5rem;"
                    aria-label="Reviews CSV file upload for single URL">
             <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-              Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> to include reviews in the schema.
+              Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> to include reviews in the schema.
             </p>
           </div>
           
@@ -1929,6 +2014,13 @@
             <strong>What to do:</strong> Export your products from Squarespace → <strong>Commerce → Products → Export CSV</strong>.<br>
             Then upload the CSV file below. <strong>After upload, Step 2 will start automatically.</strong>
           </p>
+          <div style="margin-top: 0.75rem; padding: 0.75rem; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; font-size: 0.875rem; color: #1565c0;">
+            <strong>📁 Upload this file:</strong><br>
+            <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.875rem; font-weight: 600; display: inline-block; margin-top: 0.5rem;">raw-01-products-sqsp-export.csv</code><br>
+            <span style="display: block; margin-top: 0.5rem; font-size: 0.8125rem; color: #1976d2;">
+              <strong>Path:</strong> <code style="background: #fff; padding: 2px 6px; border-radius: 3px;">shared-resources/csv/</code>
+            </span>
+          </div>
           <input type="file" id="file-step1" accept=".csv" style="margin-top: 0.75rem; display: block; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed;" disabled />
           <p id="step1LockMessage" style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; font-style: italic;">
             ⏳ Step 0 is checking your setup... this will unlock automatically.
@@ -1973,9 +2065,9 @@
             <strong>First time:</strong> A browser window will open for OAuth authorization - just approve it.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires valid OAuth JSON in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">/inputs-files/workflow/credentials/</code></li>
+            <li>Requires valid OAuth JSON in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code></li>
             <li>First time: Browser will open for OAuth authorization</li>
-            <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03b – google_reviews.csv</code></li>
+            <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code></li>
           </ul>
           <div id="step3aWebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2000,7 +2092,7 @@
             <strong>You don't need to do anything</strong> - just wait for it to finish. Step 4 will start automatically next.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03a – trustpilot_historical_reviews.csv</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03b – google_reviews.csv</code></li>
+            <li>Requires <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code></li>
             <li>Filters out reviews below 4★</li>
             <li>Automatically maps reviews to product names</li>
             <li>Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code></li>
@@ -2042,11 +2134,11 @@
             <strong>What you need to do:</strong> Nothing - just wait for it to finish. Your schema files will be ready!
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
-            <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">03 – combined_product_reviews.csv</code></li>
+            <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></li>
             <li>Generates one HTML file per product with embedded reviews</li>
             <li>Includes aggregate ratings and individual review data</li>
             <li>✅ <strong>Automatically includes Schema Suppressor v1.3</strong> - removes duplicate Squarespace Product schemas</li>
-            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">/outputs/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
+            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/products/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
           </ul>
           <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ️ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2064,7 +2156,15 @@
           </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
-            Files saved in your project folder: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">/outputs/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">/inputs-files/workflow/</code> (combined CSV).
+            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).<br><br>
+            <button id="exportAndDeployProductBtn" onclick="exportAndDeployProductSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-top: 0.5rem;">
+              🚀 Export JSON Files & Deploy to GitHub
+            </button>
+            <button id="generateProductScriptTagsBtn" onclick="generateProductScriptTags()" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-top: 0.5rem;">
+              📋 Generate Squarespace Script Tags List
+            </button>
+            <div id="productDeployStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.875rem;"></div>
+            <div id="productScriptTagsList" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; font-size: 0.875rem; max-height: 400px; overflow-y: auto;"></div>
           </div>
         </div>
 
@@ -2543,7 +2643,7 @@
           <li><strong>Export Blog Posts from Squarespace:</strong><br>
             <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Export all blog posts as CSV<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code><br>
             • Required fields: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Title</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Url Id</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Full Url</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Categories</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Tags</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Image</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Publish On</code></span>
           </li>
           <li><strong>Upload Blog CSV File:</strong><br>
@@ -2603,6 +2703,9 @@
       <div class="button-group" style="margin-bottom: 1rem;">
         <button onclick="testBlogSchemaOrg()">Test on Schema.org Validator</button>
         <button onclick="testBlogGoogleRichResults()" class="secondary">Test on Google Rich Results</button>
+        <button id="exportAndDeployBlogBtn" onclick="exportAndDeployBlogSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+          🚀 Export JSON & Deploy to GitHub
+        </button>
         <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save to alanranger-schema folder</button>
         <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema</button>
       </div>
@@ -2790,50 +2893,50 @@
           <li><strong>Step 0 - Setup Check (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Checks your setup and starts local server if needed<br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> (for OAuth)<br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> (for OAuth)<br>
             • Unlocks Step 1 automatically when ready</span>
           </li>
           <li><strong>Step 1 - Export Products from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Products → Export CSV</code><br>
-            • Upload file: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code><br>
+            • Upload file: <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 0.9rem;">raw-01-products-sqsp-export.csv</code> from: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder<br>
             • Step 2 starts automatically after upload</span>
           </li>
           <li><strong>Step 2 - Clean and Normalize CSV (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Runs automatically after Step 1<br>
             • Normalizes column names, removes variants, formats data<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Step 3a starts automatically next</span>
           </li>
           <li><strong>Step 3a - Fetch Google Reviews:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code><br>
+            • Requires OAuth credentials in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code><br>
             • First time: Browser opens for OAuth authorization<br>
             • Connects to Google My Business API<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03b – google_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03b-google-reviews.csv</code><br>
             • Step 3b starts automatically next</span>
           </li>
           <li><strong>Step 3b - Merge Reviews (Automatic):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Requires: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist)<br>
+            • Requires: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist)<br>
             • Combines Google reviews (from Step 3a) with Trustpilot reviews<br>
             • Filters reviews below 4★<br>
             • Matches reviews to products by URL/name<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Step 4 starts automatically next</span>
           </li>
           <li><strong>Step 4 - Generate Product Schema:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Reads: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code><br>
+            • Reads: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
             • Includes Schema Suppressor v1.3 to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> (one file per product)</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> (one file per product)</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Copy schema from generated HTML files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code><br>
+            • Copy schema from generated HTML files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/</code><br>
             • Paste into Squarespace product pages (Header Code Injection or Code Block)<br>
             • Validate using Schema Validator tab</span>
           </li>
@@ -2846,25 +2949,25 @@
           <li><strong>Export Events from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Commerce → Events → Export CSV</code><br>
-            • Save as: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code><br>
+            • Save to: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> folder (files retain original Squarespace export filenames)<br>
             • Required fields: Event_Title, Start_Date, Start_Time, End_Date, End_Time, Event_URL, Event_Image, Location_Business_Name, Location_Address, Location_City_State_ZIP, Excerpt, Category, Workflow_State</span>
           </li>
           <li><strong>Generate Event-Product Mappings:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Run chat-bot ingest app to generate mappings<br>
-            • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code><br>
+            • File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code><br>
             • ⚠️ <strong>Required</strong> - Maps event URLs to product URLs and includes price_gbp<br>
             • Without this: Events will show price = 0 errors</span>
           </li>
           <li><strong>(Optional) Prepare Reviews CSV:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code><br>
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Adds aggregateRating and review snippets to events<br>
             • Only events with matching product URLs get reviews</span>
           </li>
           <li><strong>(Optional) Prepare Products Excel:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code><br>
+            • Use existing: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
             • Provides actual SKU values (prevents fallback to URL slug)</span>
           </li>
           <li><strong>Upload Files in Event Schema Tab:</strong><br>
@@ -2907,7 +3010,7 @@
           <li><strong>Export Blog Posts from Squarespace:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
-            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code><br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code><br>
             • Required fields: Title, Url Id, Full Url, Categories, Tags, Image, Publish On</span>
           </li>
           <li><strong>Upload Blog CSV File:</strong><br>
@@ -3012,10 +3115,10 @@
       <h3>📌 Critical File Locations</h3>
       <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ffc107; margin: 1rem 0;">
         <ul style="margin: 0; padding-left: 1.5rem; line-height: 2;">
-          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code></li>
-          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> (required for Step 3a)</li>
-          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> (must exist before Step 3b)</li>
-          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> (generated schema HTML files)</li>
+          <li><strong>Input files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> (raw CSVs with original Squarespace export filenames)</li>
+          <li><strong>OAuth credentials:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> (required for Step 3a)</li>
+          <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist before Step 3b)</li>
+          <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> (products/, events/, blog/, etc.)</li>
           <li><strong>Saved schemas:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> (blog, workshops, lessons JSON files)</li>
         </ul>
       </div>
@@ -3033,10 +3136,10 @@
       <p><strong>Purpose:</strong> Generate Product+Event hybrid JSON-LD schema for photography workshops and courses.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/events_export.csv</code> - Export from Squarespace Events</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - Export from Squarespace Events (files retain original export filenames)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/event-product-mappings-*.csv</code> - ⚠️ Required for offers & SKU</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> - Optional, for review enrichment</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> - Optional, for actual SKU values</li>
       </ul>
       <p><strong>Workflow:</strong> Export events → Generate mappings → Upload files → Configure options → Select category → Generate → Deploy</p>
       <p><strong>Output:</strong> JSON-LD schema with Product+Event hybrid type, includes offers, location, performer, organizer</p>
@@ -3046,12 +3149,12 @@
       <p><strong>Purpose:</strong> Generate Product JSON-LD schema with reviews for lessons, vouchers, and services.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01 – products_*.csv</code> - Export from Squarespace Products</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/03a – trustpilot_historical_reviews.csv</code> - Required for Step 3b</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - Export from Squarespace Products (raw CSV with original export filename)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/credentials/</code> - OAuth credentials for Google Reviews (Step 3a)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> - Required for Step 3b</li>
       </ul>
       <p><strong>Workflow:</strong> Step 0 (setup) → Step 1 (upload CSV) → Step 2 (clean) → Step 3a (Google reviews) → Step 3b (merge reviews) → Step 4 (generate schema)</p>
-      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
+      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
       <p><strong>Features:</strong> ✅ Schema Suppressor v1.3 (removes duplicate Squarespace schemas), filters weak reviews, includes aggregateRating</p>
       <p><strong>Deploy:</strong> Copy schema from HTML files → Paste into Squarespace product pages</p>
 
@@ -3059,7 +3162,7 @@
       <p><strong>Purpose:</strong> Generate CollectionPage schema for blog index/listing page.</p>
       <p><strong>Input Files:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/01-Alan Ranger Blog On Photography - Tips, Offers and News-CSV.csv</code> - Export from Squarespace Blog</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code> - Export from Squarespace Blog</li>
       </ul>
       <p><strong>Workflow:</strong> Export blog CSV → Upload file → Generate schema → Save (optional) → Deploy</p>
       <p><strong>Output:</strong> CollectionPage JSON-LD schema with ItemList structure for blog posts</p>
@@ -3086,9 +3189,9 @@
       <h3>📌 File Organization</h3>
       <p><strong>Project Structure:</strong></p>
       <ul>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/</code> - All input CSV/Excel files</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">inputs-files/workflow/credentials/</code> - OAuth credentials for Google Reviews</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> - Generated schema HTML files</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - All raw input CSV files (retain original Squarespace export filenames)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/</code> - Processed files and credentials</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> - Generated schema HTML files (products/, events/, blog/, etc.)</li>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> - Saved JSON schema files (blog, workshops, lessons)</li>
       </ul>
 
@@ -3098,7 +3201,7 @@
         <li><strong>Schema Placement:</strong> Only insert schema relevant to the page (don't paste every product on every product page)</li>
         <li><strong>Validation:</strong> Always validate using the <strong>Schema Validator</strong> before and after injecting schema</li>
         <li><strong>Code Format:</strong> Use <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;script type="application/ld+json"&gt;</code> inside a code block on Squarespace pages</li>
-        <li><strong>Backup:</strong> Keep copies of generated schema files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code> folder</li>
+        <li><strong>Backup:</strong> Keep copies of generated schema files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> folders</li>
       </ul>
 
       <h3>🔧 Common Workflows</h3>
@@ -3106,7 +3209,7 @@
       <ol>
         <li>Export products from Squarespace → <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">01 – products_*.csv</code></li>
         <li>Run Product Schema tab workflow (Steps 0-4)</li>
-        <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">outputs/</code></li>
+        <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code></li>
         <li>Deploy to Squarespace product pages</li>
         <li>Validate using Schema Validator tab</li>
       </ol>
@@ -3132,6 +3235,29 @@
 
 <script>
   // Tab switching - MUST be absolutely first, before any other code
+  // Check Electron mode and update UI on page load
+  function checkElectronMode() {
+    const electronMode = document.getElementById('electronMode');
+    const browserMode = document.getElementById('browserMode');
+    
+    if (window.electronAPI && window.electronAPI.isElectron) {
+      // Electron app mode
+      if (electronMode) electronMode.style.display = 'inline';
+      if (browserMode) browserMode.style.display = 'none';
+    } else {
+      // Browser mode
+      if (electronMode) electronMode.style.display = 'none';
+      if (browserMode) browserMode.style.display = 'inline';
+    }
+  }
+  
+  // Run check on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkElectronMode);
+  } else {
+    checkElectronMode();
+  }
+
   function switchTab(mode) {
     // Clear cache and storage when switching tabs
     try {
@@ -4002,7 +4128,7 @@
     summaryHtml += '<div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">';
     summaryHtml += '<p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;">💡 Next Steps:</p>';
     summaryHtml += '<ul style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
-    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">outputs/</code> folder</li>';
+    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">shared-resources/outputs/schema/</code> folders</li>';
     summaryHtml += '<li>Each product has a Squarespace-ready HTML file</li>';
     summaryHtml += '<li>Copy-paste the HTML into Squarespace Code Blocks</li>';
     summaryHtml += '<li>Validate with <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #007bff; text-decoration: underline;">Google Rich Results Test</a></li>';
@@ -6000,6 +6126,9 @@
       }
     };
 
+    // Store schema globally for export/deploy
+    window.currentBlogSchema = blogSchema;
+
     // Display the schema
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
@@ -6033,6 +6162,690 @@
     
     console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
   }
+
+  // Export and Deploy blog schema to GitHub (Electron only)
+  async function exportAndDeployBlogSchema() {
+    if (!window.currentBlogSchema) {
+      alert('Please generate blog schema first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease use "Save to alanranger-schema folder" and manually commit/push.');
+      return;
+    }
+
+    const fileName = 'blog-schema.json';
+
+    const exportBtn = document.getElementById('exportAndDeployBlogBtn');
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    try {
+      // Clean up schema: remove @context from objects inside @graph (if present)
+      const cleanedSchema = cleanupSchemaForExport(window.currentBlogSchema);
+      
+      // Generate JSON (formatted, not minified)
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+
+      blogLog(`\n🚀 Export & Deploy:`);
+      blogLog(`   📁 Saving to alanranger-schema folder...`);
+
+      // Deploy using Electron API
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+      
+      blogLog(`   ✅ ${result.message}`);
+      blogLog(`   📁 File: ${result.filePath}`);
+      blogLog(`   🔄 Git: Committed and pushed to GitHub`);
+      blogLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      blogLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+
+      // Also trigger download for user's records
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 File saved to: ${result.filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}\n\n📥 File also downloaded to your Downloads folder.`);
+
+    } catch (error) {
+      blogLog(`   ❌ Deployment error: ${error.message}`);
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
+    }
+  }
+
+  // Export and Deploy All Product Schema JSON Files to GitHub (Electron only)
+  async function exportAndDeployProductSchema() {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy individual JSON files from shared-resources/outputs/schema/ to alanranger-schema folder and commit/push.');
+      return;
+    }
+
+    const exportBtn = document.getElementById('exportAndDeployProductBtn');
+    const statusDiv = document.getElementById('productDeployStatus');
+
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.innerHTML = '📁 Reading product schema JSON files...';
+    }
+
+    try {
+      // Read the combined CSV to get list of all products and their JSON filenames
+      const csvPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\csv processed\\04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv';
+      const schemaDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
+      
+      if (!window.electronAPI || !window.electronAPI.readFile) {
+        throw new Error('File reading not available. Please ensure you are using the Electron app.');
+      }
+
+      // Read CSV to get list of JSON files
+      const csvResult = await window.electronAPI.readFile(csvPath);
+      if (!csvResult.success) {
+        throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
+      }
+
+      // Parse CSV properly handling multi-line quoted fields
+      const parseCSV = (csvText) => {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          const nextChar = csvText[i + 1];
+          
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+              // Escaped quote (double quote)
+              currentField += '"';
+              i++; // Skip next quote
+            } else {
+              // Toggle quote state
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            // Field separator
+            currentRow.push(currentField);
+            currentField = '';
+          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            // Row separator (only if not in quotes)
+            if (char === '\r' && nextChar === '\n') {
+              i++; // Skip \n after \r
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+              currentRow.push(currentField);
+              rows.push(currentRow);
+              currentRow = [];
+              currentField = '';
+            }
+          } else {
+            currentField += char;
+          }
+        }
+        
+        // Add last field and row
+        if (currentField !== '' || currentRow.length > 0) {
+          currentRow.push(currentField);
+          rows.push(currentRow);
+        }
+        
+        return rows;
+      };
+
+      const rows = parseCSV(csvResult.content);
+      if (rows.length === 0) {
+        throw new Error('CSV file is empty or could not be parsed.');
+      }
+      const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
+      const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
+      const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
+      const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('file'));
+
+      const jsonFiles = [];
+      let parseErrors = [];
+      for (let i = 1; i < rows.length; i++) {
+        try {
+          const values = rows[i];
+          
+          // Check if we have enough columns
+          if (jsonFileNameIndex >= 0 && values.length > jsonFileNameIndex) {
+            const jsonFileName = values[jsonFileNameIndex].replace(/^"|"$/g, '').trim();
+            if (jsonFileName && jsonFileName.endsWith('.json')) {
+              jsonFiles.push({
+                fileName: jsonFileName,
+                url: urlIndex >= 0 && urlIndex < values.length ? values[urlIndex].replace(/^"|"$/g, '').trim() : '',
+                name: nameIndex >= 0 && nameIndex < values.length ? values[nameIndex].replace(/^"|"$/g, '').trim() : ''
+              });
+            }
+          }
+        } catch (error) {
+          parseErrors.push(`Row ${i + 1}: ${error.message}`);
+          console.error(`Error parsing CSV row ${i + 1} in export function:`, error);
+        }
+      }
+
+      if (parseErrors.length > 0) {
+        console.warn('CSV parsing errors in export function:', parseErrors.slice(0, 5));
+      }
+
+      if (jsonFiles.length === 0) {
+        const errorMsg = parseErrors.length > 0
+          ? `No JSON files found. CSV parsing errors detected. Check console for details. Found ${parseErrors.length} parse errors.`
+          : 'No JSON files found. Make sure Step 4 has completed and generated JSON files.';
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`✅ Successfully parsed ${jsonFiles.length} JSON files from CSV for deployment`);
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Found ${jsonFiles.length} product JSON files. Deploying...`;
+      }
+
+      // Read and prepare all JSON files for batch deployment
+      const filesToDeploy = [];
+      let failedCount = 0;
+      const errors = [];
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Reading ${jsonFiles.length} JSON files...`;
+      }
+
+      for (const fileInfo of jsonFiles) {
+        try {
+          const jsonFilePath = `${schemaDir}\\${fileInfo.fileName}`;
+          const fileResult = await window.electronAPI.readFile(jsonFilePath);
+          
+          if (!fileResult.success) {
+            failedCount++;
+            errors.push(`${fileInfo.fileName}: File not found`);
+            continue;
+          }
+
+          const schema = JSON.parse(fileResult.content);
+          const cleanedSchema = cleanupSchemaForExport(schema);
+          const jsonString = JSON.stringify(cleanedSchema, null, 2);
+          
+          filesToDeploy.push({
+            fileName: fileInfo.fileName,
+            jsonContent: jsonString
+          });
+
+          if (statusDiv && filesToDeploy.length % 10 === 0) {
+            statusDiv.innerHTML = `📁 Read ${filesToDeploy.length}/${jsonFiles.length} files...`;
+          }
+        } catch (error) {
+          failedCount++;
+          errors.push(`${fileInfo.fileName}: ${error.message}`);
+        }
+      }
+
+      if (filesToDeploy.length === 0) {
+        throw new Error('No valid JSON files to deploy. Check errors above.');
+      }
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `📁 Deploying ${filesToDeploy.length} files in batch...`;
+      }
+
+      // Batch deploy all files in a single commit
+      const result = await window.electronAPI.batchDeploySchemas(filesToDeploy);
+      const deployedCount = filesToDeploy.length;
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `
+          ✅ ${result.message}<br>
+          ${failedCount > 0 ? `⚠️ ${failedCount} files failed to read (check console for details)<br>` : ''}
+          🔄 Git: All files committed in single commit and pushed to GitHub<br>
+          ⏱️  GitHub Pages will auto-deploy in 2-5 minutes<br>
+          🌐 Files available at: <a href="https://schema.alanranger.com/" target="_blank">https://schema.alanranger.com/</a>
+        `;
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.border = '1px solid #c3e6cb';
+        statusDiv.style.color = '#155724';
+      }
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON Files & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      if (failedCount > 0) {
+        console.error('Deployment errors:', errors);
+        alert(`✅ Deployed ${deployedCount} files successfully!\n\n⚠️ ${failedCount} files failed. Check console for details.`);
+      } else {
+        alert(`✅ Successfully deployed ${deployedCount} product schema files!\n\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Files available at: https://schema.alanranger.com/`);
+      }
+
+    } catch (error) {
+      if (statusDiv) {
+        statusDiv.innerHTML = `❌ Deployment error: ${error.message}`;
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.border = '1px solid #f5c6cb';
+        statusDiv.style.color = '#721c24';
+      }
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON Files & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nMake sure Step 4 has completed and generated JSON files.`);
+    }
+  }
+
+  // Generate Squarespace Script Tags List for Products (Individual JSON files)
+  async function generateProductScriptTags() {
+    const scriptTagsBtn = document.getElementById('generateProductScriptTagsBtn');
+    const scriptTagsDiv = document.getElementById('productScriptTagsList');
+
+    if (scriptTagsBtn) {
+      scriptTagsBtn.disabled = true;
+      scriptTagsBtn.textContent = '🔄 Generating...';
+    }
+
+    if (scriptTagsDiv) {
+      scriptTagsDiv.style.display = 'block';
+      scriptTagsDiv.innerHTML = '📋 Reading product data...';
+    }
+
+    try {
+      // Read the combined CSV to get list of all products
+      const csvPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\csv processed\\04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv';
+      
+      if (!window.electronAPI || !window.electronAPI.readFile) {
+        throw new Error('File reading not available. Please ensure you are using the Electron app.');
+      }
+
+      const csvResult = await window.electronAPI.readFile(csvPath);
+      if (!csvResult.success) {
+        throw new Error('Failed to read products CSV file. Make sure Step 4 has completed.');
+      }
+
+      // Parse CSV properly handling multi-line quoted fields
+      const parseCSV = (csvText) => {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          const nextChar = csvText[i + 1];
+          
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+              // Escaped quote (double quote)
+              currentField += '"';
+              i++; // Skip next quote
+            } else {
+              // Toggle quote state
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            // Field separator
+            currentRow.push(currentField);
+            currentField = '';
+          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            // Row separator (only if not in quotes)
+            if (char === '\r' && nextChar === '\n') {
+              i++; // Skip \n after \r
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+              currentRow.push(currentField);
+              rows.push(currentRow);
+              currentRow = [];
+              currentField = '';
+            }
+          } else {
+            currentField += char;
+          }
+        }
+        
+        // Add last field and row
+        if (currentField !== '' || currentRow.length > 0) {
+          currentRow.push(currentField);
+          rows.push(currentRow);
+        }
+        
+        return rows;
+      };
+
+      const rows = parseCSV(csvResult.content);
+      if (rows.length === 0) {
+        throw new Error('CSV file is empty or could not be parsed.');
+      }
+      const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
+      const jsonFileNameIndex = headers.findIndex(h => h.includes('json_file_name') || h.includes('json'));
+      const urlIndex = headers.findIndex(h => h.toLowerCase().includes('url'));
+      const nameIndex = headers.findIndex(h => h.toLowerCase().includes('product_name') || (h.toLowerCase().includes('name') && !h.toLowerCase().includes('file')));
+
+      if (jsonFileNameIndex === -1) {
+        throw new Error('JSON file name column not found in CSV. Make sure Step 4 has completed.');
+      }
+
+      const products = [];
+      let parseErrors = [];
+      for (let i = 1; i < rows.length; i++) {
+        try {
+          const values = rows[i].map(v => v.replace(/^"|"$/g, '').trim());
+          
+          // Check if we have enough columns
+          if (values.length <= jsonFileNameIndex) {
+            parseErrors.push(`Row ${i + 1}: Not enough columns (expected at least ${jsonFileNameIndex + 1}, got ${values.length})`);
+            continue;
+          }
+          
+          const jsonFileName = values[jsonFileNameIndex];
+          const url = urlIndex >= 0 && urlIndex < values.length ? values[urlIndex] : '';
+          const name = nameIndex >= 0 && nameIndex < values.length ? values[nameIndex] : '';
+
+          if (jsonFileName && jsonFileName.endsWith('.json')) {
+            products.push({
+              name: name || 'Unknown Product',
+              url: url || '',
+              jsonFileName: jsonFileName
+            });
+          } else if (jsonFileName) {
+            // Log products that have a json_file_name but it doesn't end with .json
+            console.warn(`Row ${i + 1}: json_file_name doesn't end with .json: "${jsonFileName.substring(0, 50)}..."`);
+          }
+        } catch (error) {
+          parseErrors.push(`Row ${i + 1}: ${error.message}`);
+          console.error(`Error parsing CSV row ${i + 1}:`, error);
+        }
+      }
+
+      if (parseErrors.length > 0) {
+        console.warn('CSV parsing errors:', parseErrors.slice(0, 5)); // Log first 5 errors
+      }
+
+      if (products.length === 0) {
+        const errorMsg = parseErrors.length > 0 
+          ? `No products with JSON files found. CSV parsing errors detected. Check console for details. Found ${parseErrors.length} parse errors.`
+          : 'No products with JSON files found. Make sure Step 4 has completed and generated JSON files.';
+        throw new Error(errorMsg);
+      }
+      
+      console.log(`✅ Successfully parsed ${products.length} products from CSV`);
+
+      // Load suppressor block (read from file if available, otherwise use hardcoded version)
+      let suppressorBlock = '';
+      try {
+        const suppressorPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\partials\\schema-suppressor-v1.3.html';
+        if (window.electronAPI && window.electronAPI.readFile) {
+          const suppressorResult = await window.electronAPI.readFile(suppressorPath);
+          if (suppressorResult.success) {
+            suppressorBlock = suppressorResult.content.trim();
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load suppressor block from file, using hardcoded version');
+      }
+      
+      // Fallback to hardcoded suppressor if file read failed
+      if (!suppressorBlock) {
+        // Build suppressor block using array join to avoid quote escaping issues
+        const scriptStartTag = '<' + 'script>';
+        const scriptEndTag = '<' + '/' + 'script>';
+        const suppressorLines = [
+          '<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->',
+          '',
+          scriptStartTag,
+          '(function(){',
+          '  // Remove Squarespace\'s built-in, short Product JSON-LD',
+          '  const removeSquarespaceProduct = () => {',
+          '    document.querySelectorAll(\'script[type="application/ld+json"]\').forEach(el => {',
+          '      const txt = el.textContent.trim();',
+          '      if (txt.includes(\'"@type":"Product"\')) {',
+          '        try {',
+          '          const j = JSON.parse(txt);',
+          '          const looksLikeSquarespace =',
+          '            txt.length < 1500 &&',
+          '            !j.aggregateRating &&',
+          '            !j.review &&',
+          '            j.offers &&',
+          '            j.name &&',
+          '            !txt.includes(\'"hasMerchantReturnPolicy"\');',
+          '          if (looksLikeSquarespace) el.remove();',
+          '        } catch(e){}',
+          '      }',
+          '    });',
+          '  };',
+          '  // Run several times to catch async Squarespace hydration',
+          '  removeSquarespaceProduct();',
+          '  document.addEventListener(\'DOMContentLoaded\', removeSquarespaceProduct);',
+          '  window.addEventListener(\'load\', () => setTimeout(removeSquarespaceProduct, 1000));',
+          '  const obs = new MutationObserver(removeSquarespaceProduct);',
+          '  obs.observe(document.documentElement, { childList: true, subtree: true });',
+          '})();',
+          scriptEndTag
+        ];
+        suppressorBlock = suppressorLines.join('\n');
+      }
+
+      // Generate script tags for each product
+      let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;">📋 Squarespace Script Tags (one per product):</h4>';
+      scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
+      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. <strong>Easiest method:</strong> Individual HTML files have been generated in the products folder (e.g., <code>[product-name]_script_tag.html</code>). Open each file in a text editor and copy the entire contents into a Code Block on that product page in Squarespace. Alternatively, use the "Copy Full Code Block" button below, or download the JSON file. The suppressor block removes duplicate Squarespace schemas automatically.';
+      scriptTagsHtml += '</div>';
+      scriptTagsHtml += '<div style="background: #eff6ff; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #1e40af; border-left: 3px solid #3b82f6;">';
+      scriptTagsHtml += '<strong>🧪 Testing & Validation:</strong><br>';
+      scriptTagsHtml += '• <strong>Test JSON file:</strong> Use <a href="https://validator.schema.org/" target="_blank" style="color: #0369a1; text-decoration: underline;">Schema.org Validator</a> with URL: <code>https://schema.alanranger.com/[product-name]_schema.json</code><br>';
+      scriptTagsHtml += '• <strong>Test page URL:</strong> After adding script tag to Squarespace, test the actual product page URL in <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #0369a1; text-decoration: underline;">Google Rich Results Test</a> (e.g., <code>https://www.alanranger.com/photography-services-near-me/product-name</code>)<br>';
+      scriptTagsHtml += '• <strong>Note:</strong> Rich Results Test may not fetch external JSON, but Google\'s crawler does. Check Google Search Console after crawling.';
+      scriptTagsHtml += '</div>';
+      scriptTagsHtml += '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">';
+      scriptTagsHtml += `<button onclick="downloadProductScriptTagsJSON()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">📥 Download JSON</button>`;
+      scriptTagsHtml += '</div>';
+      scriptTagsHtml += '<div style="font-family: monospace; font-size: 0.8rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">';
+
+      const allScriptTags = [];
+
+      for (const product of products) {
+        // Generate fetch-based script that loads JSON and injects it inline
+        // This replaces the broken <script src=""> approach with working fetch-based inline injection
+        const scriptTagOnly = '<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->\n' +
+          '<' + 'script>\n' +
+          'fetch("https://schema.alanranger.com/' + product.jsonFileName + '")\n' +
+          '  .then(r => r.json())\n' +
+          '  .then(json => {\n' +
+          '    const s = document.createElement("script");\n' +
+          '    s.type = "application/ld+json";\n' +
+          '    s.text = JSON.stringify(json);\n' +
+          '    document.head.appendChild(s);\n' +
+          '  })\n' +
+          '  .catch(console.error);\n' +
+          '<' + '/script>';
+        
+        // Combine suppressor block + script tag
+        const fullCodeBlock = suppressorBlock + '\n\n' + scriptTagOnly;
+
+        allScriptTags.push({
+          name: product.name,
+          url: product.url,
+          jsonFileName: product.jsonFileName,
+          scriptTag: fullCodeBlock
+        });
+
+        // HTML-escape the code block for safe display in the UI
+        const escapedCodeBlock = fullCodeBlock
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+        
+        // Add to HTML display
+        scriptTagsHtml += `<div style="margin-bottom: 1rem; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 4px;">`;
+        scriptTagsHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem; color: #2d3748;">${product.name}</div>`;
+        scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem; word-break: break-all;">${product.url || 'No URL'}</div>`;
+        scriptTagsHtml += `<div style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;">JSON: ${product.jsonFileName}</div>`;
+        scriptTagsHtml += `<div style="background: #e0f2fe; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.7rem; color: #0369a1;">📌 Includes Schema Suppressor v1.3 (removes duplicate Squarespace schemas)</div>`;
+        scriptTagsHtml += `<pre style="background: #f7fafc; padding: 0.5rem; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word;">${escapedCodeBlock}</pre>`;
+        scriptTagsHtml += `<button onclick="copyProductScriptTag(${JSON.stringify(product.jsonFileName)})" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Copy Full Code Block</button>`;
+        scriptTagsHtml += `</div>`;
+      }
+
+      scriptTagsHtml += '</div>';
+
+      // Store data globally for JSON download and copy functions
+      window.productScriptTagsData = allScriptTags;
+
+      // Generate individual HTML files for each product (suppressor + script tag)
+      // These can be opened directly and copied into Squarespace
+      addToCombinedLog('============================================================\n📝 Generating Script Tag HTML Files\n============================================================\n', '4', 'script-tags');
+      
+      if (!window.electronAPI || !window.electronAPI.writeFile) {
+        const errorMsg = '⚠️ Electron API not available - cannot generate HTML files. Please use the Electron app.';
+        addToCombinedLog(errorMsg + '\n', '4', 'script-tags');
+        console.error(errorMsg);
+      } else {
+        const outputsDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
+        let filesWritten = 0;
+        let filesFailed = 0;
+        const errors = [];
+        
+        addToCombinedLog(`📂 Output directory: ${outputsDir}\n📊 Processing ${allScriptTags.length} products...\n`, '4', 'script-tags');
+        
+        for (const product of allScriptTags) {
+          try {
+            // Create filename: [json-filename-base]_script_tag.html
+            const baseName = product.jsonFileName.replace('.json', '');
+            const htmlFileName = `${baseName}_script_tag.html`;
+            const htmlFilePath = `${outputsDir}\\${htmlFileName}`;
+            
+            // Write the full code block (suppressor + script tag) to HTML file
+            const result = await window.electronAPI.writeFile(htmlFilePath, product.scriptTag);
+            if (result && result.success) {
+              filesWritten++;
+              if (filesWritten <= 3) {
+                addToCombinedLog(`✅ Created: ${htmlFileName}\n`, '4', 'script-tags');
+              }
+            } else {
+              throw new Error('WriteFile returned unsuccessful result');
+            }
+          } catch (error) {
+            filesFailed++;
+            const errorMsg = `❌ Failed to write ${product.jsonFileName}: ${error.message}`;
+            errors.push(errorMsg);
+            addToCombinedLog(errorMsg + '\n', '4', 'script-tags');
+            console.error(`Failed to write HTML file for ${product.name}:`, error);
+          }
+        }
+        
+        const summaryMsg = `\n============================================================\n✅ Script Tag HTML Files Generation Complete\n============================================================\n✅ Files created: ${filesWritten}\n${filesFailed > 0 ? `❌ Files failed: ${filesFailed}\n` : ''}📂 Location: ${outputsDir}\n`;
+        addToCombinedLog(summaryMsg, '4', 'script-tags');
+        
+        if (filesWritten > 0) {
+          console.log(`✅ Generated ${filesWritten} individual HTML files in ${outputsDir}`);
+          scriptTagsHtml += `<div style="margin-top: 1rem; padding: 0.75rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-size: 0.875rem;">✅ Generated ${filesWritten} HTML files in products folder</div>`;
+        }
+        if (filesFailed > 0) {
+          console.warn(`⚠️ ${filesFailed} files failed to write`);
+          scriptTagsHtml += `<div style="margin-top: 1rem; padding: 0.75rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; font-size: 0.875rem;">⚠️ ${filesFailed} files failed to write. Check console and debug log for details.</div>`;
+        }
+      }
+
+      // Update UI with script tags HTML (includes file generation status messages)
+      if (scriptTagsDiv) {
+        scriptTagsDiv.innerHTML = scriptTagsHtml;
+      }
+
+      if (scriptTagsBtn) {
+        scriptTagsBtn.disabled = false;
+        scriptTagsBtn.textContent = '✅ Generated!';
+        setTimeout(() => {
+          scriptTagsBtn.textContent = '📋 Generate Squarespace Script Tags List';
+        }, 2000);
+      }
+
+    } catch (error) {
+      if (scriptTagsDiv) {
+        scriptTagsDiv.innerHTML = `❌ Error generating script tags: ${error.message}`;
+        scriptTagsDiv.style.background = '#f8d7da';
+        scriptTagsDiv.style.border = '1px solid #f5c6cb';
+        scriptTagsDiv.style.color = '#721c24';
+      }
+      if (scriptTagsBtn) {
+        scriptTagsBtn.disabled = false;
+        scriptTagsBtn.textContent = '📋 Generate Squarespace Script Tags List';
+      }
+      alert(`Failed to generate script tags: ${error.message}\n\nMake sure Step 4 has completed and generated JSON files.`);
+    }
+  }
+
+  // Copy individual product script tag (includes suppressor block)
+  function copyProductScriptTag(jsonFileName) {
+    if (!window.productScriptTagsData) {
+      alert('No script tags generated yet. Please click "Generate Squarespace Script Tags List" first.');
+      return;
+    }
+
+    const product = window.productScriptTagsData.find(p => p.jsonFileName === jsonFileName);
+    if (!product) {
+      alert('Product not found.');
+      return;
+    }
+
+    // Use the full code block (suppressor + script tag) that was already generated
+    const fullCodeBlock = product.scriptTag;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullCodeBlock).then(() => {
+        alert(`✅ Script tag for "${product.name}" copied to clipboard!`);
+      });
+    }
+  }
+
+  // Download JSON file with all script tags
+  function downloadProductScriptTagsJSON() {
+    if (!window.productScriptTagsData) {
+      alert('No script tags generated yet. Please click "Generate Squarespace Script Tags List" first.');
+      return;
+    }
+
+    // Create JSON with proper formatting (2-space indent)
+    const jsonContent = JSON.stringify(window.productScriptTagsData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product-script-tags.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
 
   function copyBlogSchema() {
     const codeElement = document.getElementById('blogSchemaCode');
@@ -6135,9 +6948,12 @@
 
     // Extract JSON from script tags (remove <script> wrapper)
     let schemaCode = scriptWrapped.trim();
-    if (schemaCode.startsWith('<script')) {
+    const scriptTagStart = '<' + 'script';
+    if (schemaCode.startsWith(scriptTagStart)) {
       // Remove script tag wrapper - escape forward slash in regex
-      schemaCode = schemaCode.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '').trim();
+      const scriptStartRegex = new RegExp('^<' + 'script[^>]*>');
+      const scriptEndRegex = new RegExp('<' + '/script>$');
+      schemaCode = schemaCode.replace(scriptStartRegex, '').replace(scriptEndRegex, '').trim();
     }
 
     const fileName = 'blog-schema.json';
@@ -6864,7 +7680,9 @@
   
   // Add debug log entry
   function addDebugLog(message) {
-    window.debugLog = window.debugLog || [];
+    if (!window.debugLog || !Array.isArray(window.debugLog)) {
+      window.debugLog = [];
+    }
     window.debugLog.push(message);
     updateDebugLog();
   }
@@ -9083,28 +9901,34 @@
                      'event-schema.json';
     
     try {
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(schema);
+      
       // Validate JSON structure first
-      const jsonString = JSON.stringify(schema, null, 2);
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       JSON.parse(jsonString); // Validate syntax
       
-      // Safe minification using JSON.stringify (lossless, no regex)
-      // Note: JSON.stringify(obj, null, 0) produces minified JSON (no indentation)
-      // This is equivalent to JSON.stringify(obj) but more explicit
+      // Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
       let minifiedJson;
       let minificationSuccess = false;
       let minificationWarning = '';
       
-      try {
-        // Validate schema structure before minification
-        if (!schema || typeof schema !== 'object') {
-          throw new Error('Invalid schema: not an object');
-        }
-        if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
-          throw new Error('Invalid schema: @graph is not an array');
-        }
-        
-        // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-        minifiedJson = JSON.stringify(schema, null, 0);
+      if (shouldMinify) {
+        // Minification requested - only needed for Squarespace code block limits
+        try {
+          // Validate schema structure before minification
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
+            throw new Error('Invalid schema: not an object');
+          }
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
+            throw new Error('Invalid schema: @graph is not an array');
+          }
+          
+          // Safe minification: use JSON.stringify (lossless, no regex manipulation)
+          minifiedJson = JSON.stringify(cleanedSchema, null, 0);
         
         // Validate minified version parses correctly (catches syntax errors)
         JSON.parse(minifiedJson);
@@ -9127,15 +9951,23 @@
           }
         }
         
-        minificationSuccess = true;
-      } catch (minifyError) {
-        // Fallback: use unminified version if minification fails
-        console.warn('⚠️ Minify validation failed. Using unminified version:', minifyError);
+          minificationSuccess = true;
+        } catch (minifyError) {
+          // Fallback: use unminified version if minification fails
+          console.warn('⚠️ Minify validation failed. Using unminified version:', minifyError);
+          minifiedJson = jsonString;
+          minificationSuccess = false;
+          minificationWarning = '⚠️ Minification failed - using unminified version';
+        }
+      } else {
+        // No minification - use formatted JSON (default)
         minifiedJson = jsonString;
-        minificationWarning = '⚠️ Minification failed - using unminified version';
+        minificationSuccess = true;
       }
       
-      const sizeReduction = Math.round((1 - minifiedJson.length/jsonString.length) * 100);
+      const sizeReduction = minificationSuccess && shouldMinify 
+        ? Math.round((1 - minifiedJson.length/jsonString.length) * 100) 
+        : 0;
       
       const exportContent = document.getElementById('schemaExportContent');
       if (exportContent) {
@@ -9249,48 +10081,59 @@
                      'event-schema.json';
 
     try {
-      // Step 1: Validate JSON structure (check for trailing commas, etc.)
-      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      // Step 1: Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Step 2: Validate JSON structure (check for trailing commas, etc.)
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       JSON.parse(jsonString); // Validate it parses correctly
       
-      // Step 2: Safe minification using JSON.stringify (lossless, no regex)
-      // Note: JSON.stringify(obj, null, 0) produces minified JSON (no indentation)
-      // This is equivalent to JSON.stringify(obj) but more explicit
-      let minifiedJson;
+      // Step 3: Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
+      let finalJson;
       let minificationSuccess = false;
       let minificationWarning = '';
       
-      try {
-        // Validate schema structure before minification
-        if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
-          throw new Error('Invalid schema: not an object');
+      if (shouldMinify) {
+        // Minification requested - only needed for Squarespace code block limits
+        try {
+          // Validate schema structure before minification
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
+            throw new Error('Invalid schema: not an object');
+          }
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
+            throw new Error('Invalid schema: @graph is not an array');
+          }
+          
+          // Safe minification: use JSON.stringify (lossless, no regex manipulation)
+          finalJson = JSON.stringify(cleanedSchema, null, 0);
+          
+          // Validate minified version parses correctly (catches syntax errors)
+          JSON.parse(finalJson);
+          
+          // Verify it ends correctly (should end with ]} for @graph array)
+          if (!finalJson.trim().endsWith(']}') && !finalJson.trim().endsWith('}}')) {
+            throw new Error('Invalid JSON structure: incorrect ending');
+          }
+          
+          minificationSuccess = true;
+        } catch (minifyError) {
+          // Fallback: use unminified version if minification fails
+          console.warn('⚠️ Minify validation failed. Saving unminified version instead:', minifyError);
+          finalJson = jsonString;
+          minificationSuccess = false;
+          minificationWarning = '⚠️ Minification failed - saved unminified version';
         }
-        if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
-          throw new Error('Invalid schema: @graph is not an array');
-        }
-        
-        // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0);
-        
-        // Validate minified version parses correctly (catches syntax errors)
-        JSON.parse(minifiedJson);
-        
-        // Verify it ends correctly (should end with ]} for @graph array)
-        if (!minifiedJson.trim().endsWith(']}') && !minifiedJson.trim().endsWith('}}')) {
-          throw new Error('Invalid JSON structure: incorrect ending');
-        }
-        
+      } else {
+        // No minification - use formatted JSON (default)
+        finalJson = jsonString;
         minificationSuccess = true;
-      } catch (minifyError) {
-        // Fallback: use unminified version if minification fails
-        console.warn('⚠️ Minify validation failed. Saving unminified version instead:', minifyError);
-        minifiedJson = jsonString;
-        minificationSuccess = false;
-        minificationWarning = '⚠️ Minification failed - saved unminified version';
       }
       
       // Step 3: Create blob and download
-      const blob = new Blob([minifiedJson], { type: 'application/json' });
+      const blob = new Blob([finalJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -9300,6 +10143,55 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      // Store schema data for deployment button
+      window.lastExportedSchema = {
+        fileName: fileName,
+        jsonContent: finalJson
+      };
+      
+      // Show deploy button if Electron is available
+      const deployBtn = document.getElementById('deploySchemaBtn');
+      const deployInfo = document.getElementById('deployButtonInfo');
+      const electronMode = document.getElementById('electronMode');
+      const browserMode = document.getElementById('browserMode');
+      
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        // Electron app - show deploy button
+        if (deployBtn) {
+          deployBtn.style.display = 'inline-block';
+        }
+        if (deployInfo) {
+          deployInfo.style.display = 'block';
+        }
+        if (electronMode) electronMode.style.display = 'inline';
+        if (browserMode) browserMode.style.display = 'none';
+      } else {
+        // Browser mode - hide deploy button, show manual instructions
+        if (deployBtn) {
+          deployBtn.style.display = 'none';
+        }
+        if (deployInfo) {
+          deployInfo.style.display = 'block';
+          deployInfo.innerHTML = `
+            <div style="color: #92400e; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">
+              ⚠️ Browser Mode - Manual Deployment Required
+            </div>
+            <div style="color: #78350f; font-size: 0.8rem;">
+              Auto-deployment is only available in the <strong>Electron app version</strong>. In browser mode, you must manually:
+              <ol style="margin: 0.5rem 0 0 1rem; padding-left: 0.5rem;">
+                <li>Copy the exported JSON file to the <code>alanranger-schema</code> folder</li>
+                <li>Run: <code>git add &lt;filename&gt;</code></li>
+                <li>Run: <code>git commit -m "Update &lt;filename&gt;"</code></li>
+                <li>Run: <code>git push</code></li>
+              </ol>
+              <strong>💡 Tip:</strong> Use the Electron app (run <code>npm start</code>) for automatic deployment.
+            </div>
+          `;
+        }
+        if (electronMode) electronMode.style.display = 'none';
+        if (browserMode) browserMode.style.display = 'inline';
+      }
+      
       // Step 4: Log to debug
       addDebugLog(`\n📦 Schema Export:`);
       addDebugLog(`   ✅ Exported: ${fileName}`);
@@ -9308,11 +10200,13 @@
       // Quality checks
       const hasContext = window.currentEventSchema['@context'] === 'https://schema.org';
       const hasGraph = Array.isArray(window.currentEventSchema['@graph']);
-      const fileSizeKB = minifiedJson.length / 1024;
+      const fileSizeKB = finalJson.length / 1024;
       const sizeCheck = fileSizeKB < 250 ? '✅' : '⚠️';
       
-      if (minificationSuccess) {
-        addDebugLog(`   ✅ Minified: ${jsonString.length} → ${minifiedJson.length} bytes (${Math.round((1 - minifiedJson.length/jsonString.length) * 100)}% reduction)`);
+      if (minificationSuccess && shouldMinify) {
+        addDebugLog(`   ✅ Minified: ${jsonString.length} → ${finalJson.length} bytes (${Math.round((1 - finalJson.length/jsonString.length) * 100)}% reduction)`);
+      } else if (!shouldMinify) {
+        addDebugLog(`   📄 Formatted JSON (minification disabled)`);
       } else {
         addDebugLog(`   ${minificationWarning}`);
       }
@@ -9354,6 +10248,197 @@
     }
   }
 
+  // Export and Deploy schema to GitHub in one click (Electron only)
+  // Cleanup function to remove @context from objects inside @graph array
+  // @context should only be at the root level, not in individual graph items
+  function cleanupSchemaForExport(schema) {
+    if (!schema || typeof schema !== 'object') {
+      return schema;
+    }
+    
+    // Deep clone to avoid mutating the original
+    const cleaned = JSON.parse(JSON.stringify(schema));
+    
+    // If schema has @graph array, remove @context from each item
+    if (cleaned['@graph'] && Array.isArray(cleaned['@graph'])) {
+      cleaned['@graph'] = cleaned['@graph'].map(item => {
+        if (item && typeof item === 'object' && item['@context']) {
+          // Remove @context from this item
+          const { '@context': _, ...rest } = item;
+          return rest;
+        }
+        return item;
+      });
+    }
+    
+    return cleaned;
+  }
+
+  async function exportAndDeploySchema() {
+    if (!window.currentEventSchema) {
+      alert('Please generate event schema first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease use "Export JSON File Only" and manually copy to alanranger-schema folder.');
+      return;
+    }
+
+    const csvType = window.currentEventSchemaCsvType || 'unknown';
+    const fileName = csvType === 'workshops' ? 'workshops-schema.json' : 
+                     csvType === 'lessons' ? 'lessons-schema.json' : 
+                     'event-schema.json';
+
+    const exportBtn = document.getElementById('exportAndDeployBtn');
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.textContent = '🔄 Exporting & Deploying...';
+    }
+
+    try {
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
+      // Generate JSON (minified or formatted based on checkbox)
+      const jsonString = shouldMinify 
+        ? JSON.stringify(cleanedSchema, null, 0)  // Minified (no indentation)
+        : JSON.stringify(cleanedSchema, null, 2); // Formatted (with indentation, default)
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+
+      addDebugLog(`\n🚀 Export & Deploy:`);
+      addDebugLog(`   📁 Saving to alanranger-schema folder...`);
+
+      // Deploy using Electron API
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+      
+      addDebugLog(`   ✅ ${result.message}`);
+      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
+      addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+
+      // Also trigger download for user's records
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '✅ Deployed!';
+        setTimeout(() => { 
+          exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub'; 
+        }, 3000);
+      }
+
+      alert(`✅ Successfully exported and deployed ${fileName}!\n\n📁 File saved to: ${result.filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}\n\n📥 File also downloaded to your Downloads folder.`);
+
+    } catch (error) {
+      addDebugLog(`   ❌ Deployment error: ${error.message}`);
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.textContent = '🚀 Export JSON & Deploy to GitHub';
+      }
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
+    }
+  }
+
+  // Deploy schema to GitHub (Electron only)
+  async function deploySchemaToGitHub() {
+    if (!window.lastExportedSchema) {
+      alert('Please export the schema first before deploying.');
+      return;
+    }
+    
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy the file to alanranger-schema folder and commit/push.');
+      return;
+    }
+    
+    const { fileName, jsonContent } = window.lastExportedSchema;
+    const deployBtn = document.getElementById('deploySchemaBtn');
+    
+    // Disable button during deployment
+    if (deployBtn) {
+      deployBtn.disabled = true;
+      deployBtn.textContent = '🔄 Deploying...';
+    }
+    
+    addDebugLog(`\n🚀 Deployment:`);
+    addDebugLog(`   📁 Saving to alanranger-schema folder...`);
+    
+    try {
+      const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonContent);
+      
+      addDebugLog(`   ✅ ${result.message}`);
+      addDebugLog(`   📁 File: ${result.filePath}`);
+      addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
+      addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+      addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+      
+      // Update UI with deployment success
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        const existingContent = exportContent.innerHTML;
+        exportContent.innerHTML = existingContent + `
+          <div style="background: #d1fae5; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 0.75rem;">
+            <strong style="color: #065f46;">🚀 Deployed Successfully!</strong><br>
+            <span style="color: #047857; font-size: 0.875rem;">✅ Saved to alanranger-schema folder</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">✅ Committed and pushed to GitHub</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">⏱️  GitHub Pages deploying (2-5 min)</span><br>
+            <span style="color: #047857; font-size: 0.875rem;">🌐 <a href="https://schema.alanranger.com/${fileName}" target="_blank" style="color: #0369a1;">View live schema</a></span>
+          </div>
+        `;
+      }
+      
+      // Re-enable button
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '✅ Deployed!';
+        setTimeout(() => {
+          deployBtn.textContent = '🚀 Deploy to GitHub';
+        }, 3000);
+      }
+      
+    } catch (error) {
+      addDebugLog(`   ❌ Deployment error: ${error.message}`);
+      addDebugLog(`   💡 You can manually copy the file to alanranger-schema folder and commit/push.`);
+      
+      // Update UI with deployment error
+      const exportContent = document.getElementById('schemaExportContent');
+      if (exportContent) {
+        const existingContent = exportContent.innerHTML;
+        exportContent.innerHTML = existingContent + `
+          <div style="background: #fef3c7; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #f59e0b; margin-top: 0.75rem;">
+            <strong style="color: #92400e;">⚠️ Deployment Failed</strong><br>
+            <span style="color: #78350f; font-size: 0.875rem;">Error: ${error.message}</span><br>
+            <span style="color: #78350f; font-size: 0.875rem;">💡 You can manually copy the file to alanranger-schema folder and commit/push.</span>
+          </div>
+        `;
+      }
+      
+      // Re-enable button
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '🚀 Deploy to GitHub';
+      }
+      
+      alert(`Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
+    }
+  }
+
   // Copy Squarespace Script Tag (v4.4) - External src version with safe minification
   function copySquarespaceScript() {
     if (!window.currentEventSchema) {
@@ -9370,31 +10455,37 @@
                        'Event';
 
     try {
-      // Step 1: Validate JSON structure
-      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      // Step 1: Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Step 2: Validate JSON structure
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
       const parsed = JSON.parse(jsonString);
 
       const hasContext = parsed['@context'] === 'https://schema.org';
       const hasGraph = Array.isArray(parsed['@graph']);
       
-      // Step 2: Safe minification with validation and fallback
-      // Note: JSON.stringify(obj, null, 0) produces minified JSON (no indentation)
-      // This is equivalent to JSON.stringify(obj) but more explicit
+      // Step 3: Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
       let minifiedJson;
       let minificationSuccess = false;
       let minificationWarning = '';
       
-      try {
-        // Validate schema structure before minification
-        if (!window.currentEventSchema || typeof window.currentEventSchema !== 'object') {
-          throw new Error('Invalid schema: not an object');
-        }
-        if (!window.currentEventSchema['@graph'] || !Array.isArray(window.currentEventSchema['@graph'])) {
-          throw new Error('Invalid schema: @graph is not an array');
-        }
-        
-        // Safe minification: use JSON.stringify (lossless, no regex manipulation)
-        minifiedJson = JSON.stringify(window.currentEventSchema, null, 0);
+      if (shouldMinify) {
+        // Minification requested - only needed for Squarespace code block limits
+        try {
+          // Validate schema structure before minification
+          if (!cleanedSchema || typeof cleanedSchema !== 'object') {
+            throw new Error('Invalid schema: not an object');
+          }
+          if (!cleanedSchema['@graph'] || !Array.isArray(cleanedSchema['@graph'])) {
+            throw new Error('Invalid schema: @graph is not an array');
+          }
+          
+          // Safe minification: use JSON.stringify (lossless, no regex manipulation)
+          minifiedJson = JSON.stringify(cleanedSchema, null, 0);
         
         // Validate minified version parses correctly (catches syntax errors)
         JSON.parse(minifiedJson);
@@ -9404,13 +10495,18 @@
           throw new Error('Invalid JSON structure: incorrect ending');
         }
         
-        minificationSuccess = true;
-      } catch (minifyError) {
-        // Fallback: use unminified version if minification fails
-        console.warn('⚠️ Minify validation failed. Using unminified version for script tag:', minifyError);
+          minificationSuccess = true;
+        } catch (minifyError) {
+          // Fallback: use unminified version if minification fails
+          console.warn('⚠️ Minify validation failed. Using unminified version for script tag:', minifyError);
+          minifiedJson = jsonString;
+          minificationSuccess = false;
+          minificationWarning = '⚠️ Minification failed - using unminified version';
+        }
+      } else {
+        // No minification - use formatted JSON (default)
         minifiedJson = jsonString;
-        minificationSuccess = false;
-        minificationWarning = '⚠️ Minification failed - using unminified version';
+        minificationSuccess = true;
       }
       
       const fileSizeKB = minifiedJson.length / 1024;
@@ -9493,8 +10589,17 @@ ${minifiedJson}
                      'event-schema.json';
 
     try {
-      // Generate unminified JSON (with indentation)
-      const jsonString = JSON.stringify(window.currentEventSchema, null, 2);
+      // Clean up schema: remove @context from objects inside @graph
+      const cleanedSchema = cleanupSchemaForExport(window.currentEventSchema);
+      
+      // Check if minification is requested (checkbox, off by default)
+      const minifyCheckbox = document.getElementById('minifyJsonCheckbox');
+      const shouldMinify = minifyCheckbox && minifyCheckbox.checked;
+      
+      // Generate JSON (minified or formatted based on checkbox)
+      const jsonString = shouldMinify 
+        ? JSON.stringify(cleanedSchema, null, 0)  // Minified (no indentation)
+        : JSON.stringify(cleanedSchema, null, 2); // Formatted (with indentation, default)
       
       // Validate JSON
       JSON.parse(jsonString);
@@ -9517,15 +10622,45 @@ ${minifiedJson}
           const filePath = path.join(repoDir, fileName);
           fs.writeFileSync(filePath, jsonString, 'utf-8');
           
-          // Open folder in file explorer
-          const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
-          shell.showItemInFolder(filePath);
-          
           addDebugLog(`\n📥 Export to GitHub Folder:`);
           addDebugLog(`   ✅ Saved: ${filePath}`);
-          addDebugLog(`   📁 Folder opened in Explorer`);
           
-          alert(`✅ Successfully saved ${fileName} to GitHub folder!\n\nFolder opened in Explorer.`);
+          // If Electron API is available, also deploy (commit and push)
+          if (window.electronAPI && window.electronAPI.saveAndDeploySchema) {
+            addDebugLog(`   🚀 Deploying to GitHub...`);
+            try {
+              const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+              addDebugLog(`   ✅ ${result.message}`);
+              addDebugLog(`   📁 File: ${result.filePath}`);
+              addDebugLog(`   🔄 Git: Committed and pushed to GitHub`);
+              addDebugLog(`   ⏱️  GitHub Pages will auto-deploy in 2-5 minutes`);
+              addDebugLog(`   🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+              
+              // Open folder in file explorer
+              const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+              shell.showItemInFolder(filePath);
+              
+              alert(`✅ Successfully saved and deployed ${fileName}!\n\n📁 File saved to: ${filePath}\n🔄 Committed and pushed to GitHub\n⏱️  GitHub Pages will auto-deploy in 2-5 minutes\n🌐 Live URL: https://schema.alanranger.com/${fileName}`);
+            } catch (deployError) {
+              addDebugLog(`   ⚠️  Deployment error: ${deployError.message}`);
+              addDebugLog(`   📁 File saved, but deployment failed. You can manually commit/push.`);
+              
+              // Open folder in file explorer
+              const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+              shell.showItemInFolder(filePath);
+              
+              alert(`✅ File saved to GitHub folder, but deployment failed.\n\n📁 File: ${filePath}\n❌ Error: ${deployError.message}\n\nPlease manually commit and push to GitHub.`);
+            }
+          } else {
+            // No Electron API - just save and open folder
+            const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+            shell.showItemInFolder(filePath);
+            
+            addDebugLog(`   📁 Folder opened in Explorer`);
+            addDebugLog(`   ⚠️  Auto-deployment not available. Please manually commit/push to GitHub.`);
+            
+            alert(`✅ Successfully saved ${fileName} to GitHub folder!\n\n📁 File: ${filePath}\n\n⚠️  Auto-deployment is only available in Electron app.\nPlease manually commit and push to GitHub.`);
+          }
           return;
         } catch (electronError) {
           console.warn('Electron file system access failed, falling back to download:', electronError);
@@ -12422,7 +13557,7 @@ ${minifiedJson}
     // The Python script will automatically find and use: 03 – combined_product_reviews.csv
     if (isElectronMode && !fileToProcess) {
       console.log("ℹ️ Electron mode: Using automatically created file from Step 3b");
-      console.log("   Expected file: inputs-files/workflow/03 – combined_product_reviews.csv");
+      console.log("   Expected file: shared-resources/csv processed/03 – combined_product_reviews.csv");
     } else if (fileToProcess) {
       const fileName = fileToProcess.name;
       // Check if file needs to be saved to workflow directory first (browser mode only)
@@ -12567,37 +13702,55 @@ ${minifiedJson}
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          const urls = [];
-          const headers = results.meta.fields || [];
-          
-          const urlColumn = headers.find(h => 
-            h.toLowerCase() === 'url' || h.toLowerCase() === 'link' || h.toLowerCase() === 'website'
-          );
-          
-          if (!urlColumn) {
-            reject(new Error('No URL column found. Expected column name: URL, Link, or Website'));
-            return;
-          }
-          
-          results.data.forEach((row, index) => {
-            const url = row[urlColumn];
-            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-              const trimmedUrl = url.trim();
-              // Deduplicate URLs - only add if not already in array
-              if (!urls.find(u => u.url === trimmedUrl)) {
-                urls.push({
-                  url: trimmedUrl,
-                  row: urls.length, // Use current array index, not CSV row number
-                  allFields: row
-                });
-              }
+          try {
+            const urls = [];
+            const headers = results.meta.fields || [];
+            
+            // Log headers for debugging
+            console.log('CSV headers found:', headers);
+            
+            const urlColumn = headers.find(h => {
+              const lower = h.toLowerCase().trim();
+              return lower === 'url' || 
+                     lower === 'link' || 
+                     lower === 'website' ||
+                     lower === 'full url' ||
+                     lower === 'fullurl' ||
+                     lower.includes('url') && (lower.includes('full') || lower.includes('page'));
+            });
+            
+            if (!urlColumn) {
+              const availableColumns = headers.join(', ') || 'none';
+              reject(new Error(`No URL column found. Expected column name: URL, Link, or Website. Available columns: ${availableColumns}`));
+              return;
             }
-          });
-          
-          resolve(urls);
+            
+            console.log(`Using URL column: "${urlColumn}"`);
+            
+            results.data.forEach((row, index) => {
+              const url = row[urlColumn];
+              if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                const trimmedUrl = url.trim();
+                // Deduplicate URLs - only add if not already in array
+                if (!urls.find(u => u.url === trimmedUrl)) {
+                  urls.push({
+                    url: trimmedUrl,
+                    row: urls.length, // Use current array index, not CSV row number
+                    allFields: row
+                  });
+                }
+              }
+            });
+            
+            console.log(`Parsed ${urls.length} URLs from CSV`);
+            resolve(urls);
+          } catch (parseError) {
+            reject(new Error(`Error parsing CSV data: ${parseError.message || parseError.toString()}`));
+          }
         },
         error: function(error) {
-          reject(error);
+          const errorMsg = error.message || error.toString() || JSON.stringify(error);
+          reject(new Error(`CSV parsing failed: ${errorMsg}`));
         }
       });
     });
@@ -15408,13 +16561,27 @@ ${minifiedJson}
   
   // Helper: Get API base URL based on current hostname
   function getApiBaseUrl() {
-    // Always use local origin when running locally (try vercel dev first, fallback to production)
+    // Always use deployed Vercel API for validator endpoints
+    // (local server on port 8000 only handles Python tasks, not API endpoints)
+    const isElectron = (window.location.protocol === 'file:') && 
+                       (navigator.userAgent.includes('Electron') || window.electronAPI);
+    
+    // For Electron or standalone HTML files, use deployed API
+    if (isElectron || window.location.protocol === 'file:') {
+      return 'https://schema-tools-six.vercel.app';
+    }
+    
+    // For web browsers running on localhost
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return window.location.origin; // Try local vercel dev first
     }
+    
+    // For deployed Vercel app
     if (window.location.hostname.includes('schema-tools-six.vercel.app')) {
       return 'https://schema-tools-six.vercel.app';
     }
+    
+    // Fallback: use current origin
     return window.location.origin;
   }
 
@@ -16099,9 +17266,15 @@ ${minifiedJson}
       updateBulkButtons();
       
     } catch (error) {
-      alert('Error: ' + error.message);
+      const errorMsg = error.message || error.toString() || JSON.stringify(error);
+      alert('Error: ' + errorMsg);
       progressDiv.style.display = 'none';
       console.error('Validation error:', error);
+      addDebugLog(`❌ Validation error: ${errorMsg}`);
+      if (error.stack) {
+        console.error('Error stack:', error.stack);
+        addDebugLog(`   Stack: ${error.stack}`);
+      }
     }
   }
   
@@ -16991,7 +18164,7 @@ ${minifiedJson}
       const isElectron = !!(window.electronAPI && window.electronAPI.isElectron) || 
                          navigator.userAgent.toLowerCase().includes('electron');
       
-      // Show build section in Electron mode
+      // Show build section in Electron mode (Product Tab)
       if (isElectron && window.electronAPI && window.electronAPI.buildDesktop) {
         const buildSection = document.getElementById('build-desktop-section');
         if (buildSection) {
@@ -17075,6 +18248,94 @@ ${minifiedJson}
                 buildBtn.textContent = '❌ Build Failed - Try Again';
                 buildBtn.style.background = '#e74c3c';
                 buildOutput.scrollTop = buildOutput.scrollHeight;
+              }
+            });
+          }
+        }
+        
+        // Show build section in Electron mode (Event Tab)
+        const buildSectionEvent = document.getElementById('build-desktop-section-event');
+        if (buildSectionEvent) {
+          buildSectionEvent.style.display = 'block';
+          
+          const buildBtnEvent = document.getElementById('buildDesktopBtnEvent');
+          const buildOutputEvent = document.getElementById('buildOutputEvent');
+          
+          if (buildBtnEvent && buildOutputEvent) {
+            buildBtnEvent.addEventListener('click', async () => {
+              buildBtnEvent.disabled = true;
+              buildBtnEvent.textContent = '🔨 Building...';
+              buildBtnEvent.style.background = '#95a5a6';
+              buildOutputEvent.style.display = 'block';
+              buildOutputEvent.textContent = '🔨 Starting build process...\n';
+              buildOutputEvent.scrollTop = buildOutputEvent.scrollHeight;
+              
+              // Set up event listeners for build progress
+              if (window.electronAPI.onBuildProgress) {
+                window.electronAPI.onBuildProgress((data) => {
+                  buildOutputEvent.textContent += data.data;
+                  buildOutputEvent.scrollTop = buildOutputEvent.scrollHeight;
+                });
+              }
+              
+              if (window.electronAPI.onBuildComplete) {
+                window.electronAPI.onBuildComplete((data) => {
+                  buildOutputEvent.textContent += `\n✅ ${data.message}\n`;
+                  buildOutputEvent.textContent += `\n📁 Output location: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe\n`;
+                  buildOutputEvent.textContent += `   (Typically: C:\\Users\\<YourUsername>\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe)\n`;
+                  buildBtnEvent.disabled = false;
+                  buildBtnEvent.textContent = '✅ Build Complete!';
+                  buildBtnEvent.style.background = '#27AE60';
+                  
+                  // Show and enable the "Open Built App" button
+                  const openExeBtnEvent = document.getElementById('openExeBtnEvent');
+                  if (openExeBtnEvent && window.electronAPI.openExe && window.electronAPI.getExePath) {
+                    openExeBtnEvent.style.display = 'inline-block';
+                    openExeBtnEvent.onclick = async () => {
+                      try {
+                        // Get the exe path from Electron
+                        const exePath = await window.electronAPI.getExePath();
+                        await window.electronAPI.openExe(exePath);
+                        openExeBtnEvent.textContent = '✅ Opened!';
+                        setTimeout(() => {
+                          openExeBtnEvent.textContent = '▶️ Open Built App (SchemaTools.exe)';
+                        }, 2000);
+                      } catch (error) {
+                        try {
+                          const exePath = await window.electronAPI.getExePath();
+                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n${exePath}`);
+                        } catch {
+                          alert(`Failed to open app: ${error.message}\n\nPlease open manually:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`);
+                        }
+                      }
+                    };
+                  }
+                  
+                  buildOutputEvent.scrollTop = buildOutputEvent.scrollHeight;
+                });
+              }
+              
+              if (window.electronAPI.onBuildError) {
+                window.electronAPI.onBuildError((data) => {
+                  buildOutputEvent.textContent += `\n❌ Build Error: ${data.error}\n`;
+                  if (data.stderr) {
+                    buildOutputEvent.textContent += `\nError output:\n${data.stderr}\n`;
+                  }
+                  buildBtnEvent.disabled = false;
+                  buildBtnEvent.textContent = '❌ Build Failed - Try Again';
+                  buildBtnEvent.style.background = '#e74c3c';
+                  buildOutputEvent.scrollTop = buildOutputEvent.scrollHeight;
+                });
+              }
+              
+              try {
+                await window.electronAPI.buildDesktop();
+              } catch (error) {
+                buildOutputEvent.textContent += `\n❌ Build failed: ${error.message}\n`;
+                buildBtnEvent.disabled = false;
+                buildBtnEvent.textContent = '❌ Build Failed - Try Again';
+                buildBtnEvent.style.background = '#e74c3c';
+                buildOutputEvent.scrollTop = buildOutputEvent.scrollHeight;
               }
             });
           }
@@ -17220,6 +18481,172 @@ ${expandedPath}
           const openExeBtnWeb = document.getElementById('openExeBtnWeb');
           if (openExeBtnWeb) {
             openExeBtnWeb.addEventListener('click', () => {
+              const exePath = 'C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe';
+              
+              // Create a batch file that opens the exe
+              const batchContent = `@echo off
+cd /d "C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64"
+start "" "SchemaTools.exe"
+exit`;
+              
+              // Create blob and download
+              const blob = new Blob([batchContent], { type: 'text/plain;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'Open-SchemaTools.bat';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              // Show instructions
+              setTimeout(() => {
+                alert(`✅ Batch file downloaded!\n\n💡 To open the app:\n1. Go to your Downloads folder\n2. Double-click "Open-SchemaTools.bat"\n3. The app will launch!\n\nOr open directly:\n${exePath}`);
+              }, 500);
+            });
+          }
+        }
+        
+        // Web mode handlers for Event Tab
+        const launchDivEvent = document.getElementById('desktop-launch-event');
+        if (launchDivEvent) {
+          launchDivEvent.style.display = 'block';
+          
+          // Get the actual exe path from Electron API if available, otherwise show expected location
+          let fullExePathEvent = "%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe";
+          if (isElectronMode && window.electronAPI && window.electronAPI.getExePath) {
+            // Use async IIFE to handle await
+            (async () => {
+              try {
+                const actualPath = await window.electronAPI.getExePath();
+                if (actualPath) {
+                  fullExePathEvent = actualPath;
+                }
+              } catch (e) {
+                // Fallback to default
+              }
+            })();
+          }
+          const buildCommand = "npm run build:desktop";
+          
+          // Copy build command button (Event Tab)
+          const copyPathBtnEvent = document.getElementById('copyPathBtnEvent');
+          if (copyPathBtnEvent) {
+            copyPathBtnEvent.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(buildCommand);
+                copyPathBtnEvent.textContent = '✅ Copied!';
+                copyPathBtnEvent.style.background = '#27AE60';
+                setTimeout(() => {
+                  copyPathBtnEvent.textContent = '📋 Copy Build Command';
+                  copyPathBtnEvent.style.background = '#0078D4';
+                }, 2000);
+              } catch (e) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = buildCommand;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyPathBtnEvent.textContent = '✅ Copied!';
+                setTimeout(() => {
+                  copyPathBtnEvent.textContent = '📋 Copy Build Command';
+                }, 2000);
+              }
+            });
+          }
+          
+          // Open folder in Explorer button - Creates batch file to open PowerShell in correct directory (Event Tab)
+          const openFolderBtnEvent = document.getElementById('openFolderBtnEvent');
+          if (openFolderBtnEvent) {
+            openFolderBtnEvent.addEventListener('click', async () => {
+              try {
+                // Copy command to clipboard first
+                await navigator.clipboard.writeText(buildCommand);
+                
+                // Calculate project root folder (use hardcoded path since exe is now in LOCALAPPDATA)
+                const projectFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools';
+                
+                // Create a batch file that opens PowerShell and runs the build command
+                const batchContent = `@echo off
+cd /d "${projectFolderPath}"
+echo.
+echo ========================================
+echo   Schema Tools - Build Desktop App
+echo ========================================
+echo.
+echo Project folder: ${projectFolderPath}
+echo.
+echo ⚠️  IMPORTANT: Build output goes to %LOCALAPPDATA%\\SchemaTools
+echo    (No more Dropbox lock errors!)
+echo.
+echo Starting build process...
+echo.
+powershell.exe -NoExit -Command "Set-Location '${projectFolderPath}'; Write-Host ''; Write-Host '📁 Project folder:' -ForegroundColor Green; Write-Host '${projectFolderPath}' -ForegroundColor Cyan; Write-Host ''; Write-Host '⚠️  If you see EBUSY/locked errors:' -ForegroundColor Red; Write-Host '   Close Dropbox and wait for sync to finish' -ForegroundColor Yellow; Write-Host ''; Write-Host '🔨 Running build command: ${buildCommand}' -ForegroundColor Yellow; Write-Host ''; ${buildCommand}"`;
+                
+                // Create blob and download the batch file
+                const blob = new Blob([batchContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Open-PowerShell-Here.bat';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                openFolderBtnEvent.textContent = '✅ Batch file downloaded!';
+                setTimeout(() => {
+                  openFolderBtnEvent.textContent = '📁 Open PowerShell Here';
+                }, 2000);
+                
+                // Show instructions
+                setTimeout(() => {
+                  alert(`✅ Batch file downloaded!\n\n💡 Next steps:\n1. Close any running Electron apps (SchemaTools.exe)\n2. Go to your Downloads folder\n3. Double-click "Open-PowerShell-Here.bat"\n4. PowerShell will open and automatically run the build!\n\n📁 Project folder:\n${projectFolderPath}\n\n📁 Built app will be at:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe\n\n🔨 Command: ${buildCommand}\n\n✅ No more Dropbox lock errors - builds go to LOCALAPPDATA!`);
+                }, 500);
+              } catch (e) {
+                // Fallback: show manual instructions
+                const projectFolderPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools';
+                await navigator.clipboard.writeText(buildCommand);
+                alert(`📋 Build command copied to clipboard!\n\n📁 Project folder:\n${projectFolderPath}\n\n💡 To open terminal:\n1. Close any running Electron apps first\n2. Navigate to the folder above in Windows Explorer\n3. Right-click in empty space → "Open PowerShell here"\n4. Paste (Ctrl+V) and press Enter\n\n⚠️ Important: Make sure you're in the project folder!\n\nOr manually run:\n${buildCommand}\n\n📁 Built app will be at:\n%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`);
+              }
+            });
+          }
+          
+          // Show full path button - expand LOCALAPPDATA (Event Tab)
+          const showInstructionsBtnEvent = document.getElementById('showInstructionsBtnEvent');
+          if (showInstructionsBtnEvent) {
+            showInstructionsBtnEvent.addEventListener('click', () => {
+              const expandedPath = `C:\\Users\\YOUR_USERNAME\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe`;
+              const instructions = `📁 Full Path to Desktop App:
+
+Environment Variable:
+%LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe
+
+Actual Path (replace YOUR_USERNAME):
+${expandedPath}
+
+💡 To find your actual path:
+1. Press Windows Key + R
+2. Type: %LOCALAPPDATA%\\SchemaTools\\SchemaTools-win32-x64
+3. Press Enter
+4. Windows Explorer will open to the folder
+
+💡 To build the app:
+1. Open terminal in your project folder
+2. Run: ${buildCommand}
+3. Then navigate to the path above`;
+              
+              alert(instructions);
+            });
+          }
+          
+          // Open Electron app button (web mode - creates batch file to open exe) (Event Tab)
+          const openExeBtnWebEvent = document.getElementById('openExeBtnWebEvent');
+          if (openExeBtnWebEvent) {
+            openExeBtnWebEvent.addEventListener('click', () => {
               const exePath = 'C:\\Users\\alan\\AppData\\Local\\SchemaTools\\SchemaTools-win32-x64\\SchemaTools.exe';
               
               // Create a batch file that opens the exe
@@ -17911,8 +19338,17 @@ exit`;
     // Step 1: File upload detection and auto-trigger Step 2
     document.getElementById('file-step1')?.addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
-        const fileName = e.target.files[0].name;
-        if (fileName.includes('01') && (fileName.includes('products') || fileName.includes('product'))) {
+        const fileName = e.target.files[0].name.toLowerCase();
+        // Accept the specific product CSV file: raw-01-products-sqsp-export.csv
+        // Also accept variations with 'raw', '01', 'products', and 'sqsp' or 'squarespace'
+        const isProductFile = (
+          fileName.includes('raw') && 
+          fileName.includes('01') && 
+          fileName.includes('product') && 
+          (fileName.includes('sqsp') || fileName.includes('squarespace') || fileName.includes('export'))
+        ) || fileName === 'raw-01-products-sqsp-export.csv';
+        
+        if (isProductFile) {
           updateStatus(1, 'Uploading raw CSV...', 40);
           setTimeout(() => {
             markComplete(1, 'Step 1 complete – raw file ready');
@@ -17922,6 +19358,9 @@ exit`;
               autoCleanProducts();
             }, 800);
           }, 1200);
+        } else {
+          updateStatus(1, '⚠️ File may not be a valid product CSV', 0);
+          alert('Please upload the correct file: raw-01-products-sqsp-export.csv\n\nPath: shared-resources/csv/');
         }
       }
     });
