@@ -7361,13 +7361,41 @@
 
     window.currentBlogSchema = blogSchema;
 
+    // CRITICAL VERIFICATION: Extract and verify a sample BlogPosting from final schema
+    const sampleBlogPosting = blogSchema['@graph'].find(obj => obj && obj['@type'] === 'BlogPosting');
+    if (sampleBlogPosting) {
+      blogLog('🔍 VERIFICATION: Sample BlogPosting object from final @graph:');
+      blogLog(`   @type: ${sampleBlogPosting['@type']}`);
+      blogLog(`   @id: ${sampleBlogPosting['@id']}`);
+      blogLog(`   headline: ${sampleBlogPosting.headline ? `"${sampleBlogPosting.headline.substring(0, 60)}..."` : 'MISSING'}`);
+      blogLog(`   articleBody: ${sampleBlogPosting.articleBody ? `${sampleBlogPosting.articleBody.length} characters` : 'MISSING'}`);
+      blogLog(`   datePublished: ${sampleBlogPosting.datePublished || 'MISSING'}`);
+      blogLog(`   wordCount: ${sampleBlogPosting.wordCount || 'MISSING'}`);
+      blogLog(`   Total fields in sample: ${Object.keys(sampleBlogPosting).length}`);
+      
+      // Verify it's NOT just an @id reference
+      if (Object.keys(sampleBlogPosting).length <= 2) {
+        blogLog('❌ CRITICAL ERROR: BlogPosting object appears to be only an @id reference!');
+        blogLog(`   Object keys: ${Object.keys(sampleBlogPosting).join(', ')}`);
+      } else {
+        blogLog('✅ CONFIRMED: BlogPosting is a complete object with all fields');
+      }
+    } else {
+      blogLog('❌ CRITICAL ERROR: No BlogPosting objects found in final @graph!');
+    }
+
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
+
+    // VERIFY BlogPosting objects are in the JSON string
+    const blogPostingCountInJson = (schemaCode.match(/"@type"\s*:\s*"BlogPosting"/g) || []).length;
+    blogLog(`🔍 VERIFICATION: Found ${blogPostingCountInJson} BlogPosting @type declarations in JSON string`);
 
     const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
 
     blogLog('✅ Schema generation complete!');
     blogLog(`   - Total BlogPosting objects in @graph: ${blogPostingsInGraph.length}`);
+    blogLog(`   - BlogPosting @type declarations in JSON: ${blogPostingCountInJson}`);
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
 
     const codeElement = document.getElementById('blogSchemaCode');
