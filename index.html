@@ -6172,6 +6172,40 @@
 
   const BLOG_URL_GLOBAL = 'https://www.alanranger.com/blog-on-photography';
 
+  function cleanArticleBodyForDescription(articleBody, title) {
+    if (!articleBody) return '';
+    let text = articleBody;
+    // If the title appears in the body, drop everything before the first occurrence
+    if (title) {
+      const idx = text.toLowerCase().indexOf(String(title).toLowerCase());
+      if (idx > 0) {
+        text = text.slice(idx);
+      }
+    }
+    // Strip obvious Squarespace navigation fragments
+    const NAV_PATTERNS = [
+      '/Cart 0',
+      'Sign In My Account',
+      'Back photography courses coventry',
+      'Back Workshops Calendar',
+      'Back Services Summary',
+      'Back Hire A Professional Photographer',
+      'Back Gallery',
+      'Back Book A Free Consultation',
+      'Blog [/photography-news-blog',
+      'Academy [/free-online-photography-course]',
+      'Recommended Products [/photography-equipment-recommendations]'
+    ];
+    for (const frag of NAV_PATTERNS) {
+      const idx = text.indexOf(frag);
+      if (idx === 0) {
+        // Remove leading nav fragment
+        text = text.slice(frag.length);
+      }
+    }
+    return text.trim();
+  }
+
   function deriveLearningResourceType(categories, tags, title, text) {
     const haystack = `${categories || ''} ${(tags || []).join(' ')} ${title || ''} ${text || ''}`.toLowerCase();
     if (haystack.match(/assignment|practice|project|exercise/)) {
@@ -6230,14 +6264,17 @@
       .join(' ');
 
     const articleBodySource = html || chunksText || '';
-    const articleBody = stripHtmlToText(articleBodySource);
+    let articleBody = stripHtmlToText(articleBodySource);
     const wordCount = countWords(articleBody);
     const timeRequired = estimateReadingTime(wordCount);
 
+    // Clean article body for description / nav removal
+    const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
+
     // Build description with preference order:
     // 1) Supabase description/excerpt if it is not just a repeat of the headline
-    // 2) First ~200 chars of articleBody
-    // 3) (optional future) CSV-level description
+    // 2) First ~200 chars of cleaned articleBody
+    // 3) Fallback: truncated title
     let description = '';
     if (rawEntityDescription) {
       const trimmed = String(rawEntityDescription).trim();
@@ -6245,12 +6282,17 @@
         description = trimmed;
       }
     }
-    if (!description && articleBody) {
-      description = truncate(articleBody, 200);
+    if (!description && cleanedForDescription) {
+      description = truncate(cleanedForDescription, 220);
     }
     // Final fallback: use a truncated version of the title so description is never empty
     if (!description && title) {
       description = truncate(String(title), 160);
+    }
+
+    // Prefer cleaned body for downstream analysis if available
+    if (cleanedForDescription) {
+      articleBody = cleanedForDescription;
     }
 
     const entityText = `${title || ''} ${description || ''} ${articleBody || ''} ${chunksText || ''}`;
@@ -6274,11 +6316,16 @@
       /distinction/.test(lowerEntityText) ||
       /panel/.test(lowerEntityText);
 
-    if (hasRpsContext) {
+    if (hasRpsContext && primaryCategory && /rps|distinction/i.test(String(primaryCategory))) {
       articleSection = 'RPS Distinctions';
       if (!genre || genre === articleSection) {
         genre = 'Photography Case Study';
       }
+    }
+
+    // Override genre for assignments
+    if (learningResourceType === 'Assignment') {
+      genre = 'Photography Assignment';
     }
 
     const learningResourceType = deriveLearningResourceType(categories, tags, title, articleBody);
@@ -6376,6 +6423,38 @@
       '@type': 'SpeakableSpecification',
       xpath: ['/html/head/title', '//h1']
     };
+
+    // Add hasPart for numbered assignment tasks
+    if (learningResourceType === 'Assignment' && articleBody) {
+      const taskMatches = [];
+      const taskRegex = /\b([1-9])\.\s+([^*]+?)(?=(?:\s+[1-9]\.\s+)|$)/g;
+      let match;
+      while ((match = taskRegex.exec(articleBody)) !== null) {
+        const taskNumber = match[1];
+        const taskText = match[2].trim();
+        if (!taskText) continue;
+        const name = `Task ${taskNumber} — ${truncate(taskText, 160)}`;
+        taskMatches.push({
+          '@type': 'WebPageElement',
+          name
+        });
+        if (taskMatches.length >= 10) break;
+      }
+      if (taskMatches.length) {
+        blogPosting.hasPart = taskMatches;
+      }
+    }
+
+    // Optional educationalAlignment for assignments
+    if (learningResourceType === 'Assignment') {
+      const level = educationalLevel || 'Beginner';
+      blogPosting.educationalAlignment = {
+        '@type': 'AlignmentObject',
+        alignmentType: 'educationalFramework',
+        educationalFramework: 'Photography Skills',
+        targetName: level
+      };
+    }
 
     const keys = Object.keys(blogPosting);
     for (const key of keys) {
@@ -6481,6 +6560,9 @@
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
 
+    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
+    const WEBSITE_ID = 'https://www.alanranger.com#website';
+
     const blog = {
       '@type': 'Blog',
       '@id': `${BLOG_URL}#blog`,
@@ -6495,6 +6577,7 @@
 
     const itemList = {
       '@type': 'ItemList',
+      '@id': `${BLOG_URL}#itemlist`,
       itemListOrder: 'Descending',
       itemListElement: blogPostings.map((post, index) => ({
         '@type': 'ListItem',
@@ -6528,13 +6611,75 @@
       name: 'Photography Blog',
       inLanguage: 'en-GB',
       isPartOf: {
-        '@id': 'https://www.alanranger.com#website'
+        '@id': WEBSITE_ID
       }
+    };
+
+    // Per-post WebPage and Breadcrumb for each BlogPosting
+    const postWebPages = blogPostings
+      .filter(post => post && post.url)
+      .map(post => ({
+        '@type': 'WebPage',
+        '@id': `${post.url}#webpage`,
+        url: post.url,
+        name: post.headline,
+        inLanguage: 'en-GB',
+        isPartOf: { '@id': WEBSITE_ID }
+      }));
+
+    const postBreadcrumbs = blogPostings
+      .filter(post => post && post.url && post.headline)
+      .map(post => ({
+        '@type': 'BreadcrumbList',
+        '@id': `${post.url}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: 'https://www.alanranger.com'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Photography Blog',
+            item: BLOG_URL
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: post.headline,
+            item: post.url
+          }
+        ]
+      }));
+
+    const webSite = {
+      '@type': 'WebSite',
+      '@id': WEBSITE_ID,
+      url: 'https://www.alanranger.com',
+      name: 'Alan Ranger Photography',
+      publisher: { '@id': ORGANIZATION_ID }
+    };
+
+    const organization = {
+      '@type': 'Organization',
+      '@id': ORGANIZATION_ID,
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com'
     };
 
     const blogSchema = {
       '@context': 'https://schema.org',
-      '@graph': [blog, itemList, breadcrumb, webPage]
+      '@graph': [
+        webSite,
+        organization,
+        blog,
+        itemList,
+        webPage,
+        ...postWebPages,
+        ...postBreadcrumbs
+      ]
     };
 
     window.currentBlogSchema = blogSchema;
