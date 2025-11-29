@@ -3443,6 +3443,7 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
   // Override console methods to also log to debug console (MUST be before debugLog)
   const originalConsoleLog = console.log.bind(console);
@@ -9294,43 +9295,54 @@
       if (saveToGithub && generatedFiles.length > 0) {
         blogPosts_log(`\n📦 Creating ZIP file with ${generatedFiles.length} schema files...`);
         try {
-          // Use JSZip if available, otherwise fallback to individual downloads
-          if (typeof JSZip !== 'undefined') {
-            const zip = new JSZip();
-            generatedFiles.forEach(file => {
-              zip.file(file.name, file.content);
-            });
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            const zipUrl = URL.createObjectURL(zipBlob);
-            const a = document.createElement('a');
-            a.href = zipUrl;
-            a.download = `blog-post-schemas-${new Date().toISOString().split('T')[0]}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(zipUrl);
-            blogPosts_log(`✅ ZIP file downloaded: ${generatedFiles.length} files`);
+          // Check if JSZip is loaded
+          if (typeof JSZip === 'undefined') {
+            blogPosts_log(`⚠️  JSZip library not loaded. Loading now...`);
+            // Try to load JSZip dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+            script.onload = async () => {
+              await downloadZip();
+            };
+            script.onerror = () => {
+              blogPosts_log(`❌ Failed to load JSZip. Cannot create ZIP file.`);
+              blogPosts_log(`💡 Please refresh the page or use Electron app for automatic GitHub deployment.`);
+            };
+            document.head.appendChild(script);
           } else {
-            // Fallback: Download files individually (with delay to avoid browser blocking)
-            blogPosts_log(`⚠️  JSZip not available. Downloading files individually...`);
-            for (let i = 0; i < generatedFiles.length; i++) {
-              await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
-              const file = generatedFiles[i];
-              const blob = new Blob([file.content], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
+            await downloadZip();
+          }
+          
+          async function downloadZip() {
+            try {
+              const zip = new JSZip();
+              generatedFiles.forEach(file => {
+                zip.file(file.name, file.content);
+              });
+              blogPosts_log(`   Compressing ${generatedFiles.length} files...`);
+              const zipBlob = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+              });
+              const zipUrl = URL.createObjectURL(zipBlob);
               const a = document.createElement('a');
-              a.href = url;
-              a.download = file.name;
+              a.href = zipUrl;
+              a.download = `blog-post-schemas-${new Date().toISOString().split('T')[0]}.zip`;
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              URL.revokeObjectURL(url);
+              URL.revokeObjectURL(zipUrl);
+              blogPosts_log(`✅ ZIP file downloaded: ${generatedFiles.length} files`);
+            } catch (e) {
+              blogPosts_log(`❌ Failed to create ZIP: ${e.message}`);
+              blogPosts_log(`💡 Error details: ${e.stack || 'Unknown error'}`);
+              blogPosts_log(`💡 Please use Electron app for automatic GitHub deployment, or refresh page and try again.`);
             }
-            blogPosts_log(`✅ Downloaded ${generatedFiles.length} files individually`);
           }
         } catch (e) {
-          blogPosts_log(`❌ Failed to create ZIP: ${e.message}`);
-          blogPosts_log(`💡 You can manually copy the JSON from the debug log`);
+          blogPosts_log(`❌ Unexpected error: ${e.message}`);
+          blogPosts_log(`💡 Please refresh the page or use Electron app.`);
         }
       }
     }
