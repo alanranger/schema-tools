@@ -9337,15 +9337,33 @@
   /**
    * Detect if blog post already contains an FAQ block
    * Returns true if FAQ markers are found, false otherwise
+   * CRITICAL: Must be thorough to avoid duplicate FAQ schemas
    */
   function hasExistingFAQBlock(articleBody, html) {
     if (!articleBody && !html) return false;
     
-    const searchText = (articleBody || '').toLowerCase();
-    const htmlText = html ? html.toLowerCase() : '';
-    const combinedText = searchText + ' ' + htmlText;
+    // Use raw HTML first (before cleaning) for most accurate detection
+    const rawHtml = html || '';
     
-    // FAQ markers to search for
+    // Extract text from raw HTML (before any cleaning) for detection
+    let rawHtmlText = '';
+    if (rawHtml) {
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = rawHtml;
+        rawHtmlText = tempDiv.textContent || tempDiv.innerText || '';
+      } catch (e) {
+        // Fallback: use HTML as-is if parsing fails
+        rawHtmlText = rawHtml.replace(/<[^>]+>/g, ' ');
+      }
+    }
+    
+    // Combine all text sources (raw HTML text + cleaned articleBody)
+    const rawText = (articleBody || '').toLowerCase();
+    const htmlText = rawHtmlText.toLowerCase();
+    const combinedText = (rawText + ' ' + htmlText).toLowerCase();
+    
+    // FAQ markers to search for (case-insensitive)
     const faqMarkers = [
       'faq',
       'faqs',
@@ -9354,31 +9372,70 @@
       'question:',
       'q:',
       'q –',
-      'q.'
+      'q.',
+      'questions and answers',
+      'q&a',
+      'q and a'
     ];
     
     // Check for FAQ markers in text
     for (const marker of faqMarkers) {
-      if (combinedText.includes(marker)) {
+      if (combinedText.includes(marker.toLowerCase())) {
         return true;
       }
     }
     
-    // Check for H2/H3 headings containing "FAQ" or "Question"
-    if (html) {
+    // Check for numbered questions pattern (strong FAQ indicator)
+    // Pattern: "1.", "2.", "3." followed by question-like text
+    const numberedQuestionPattern = /\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/i;
+    if (numberedQuestionPattern.test(combinedText)) {
+      // Additional check: if we find 2+ numbered questions, it's definitely an FAQ
+      const numberedMatches = combinedText.match(/\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/gi);
+      if (numberedMatches && numberedMatches.length >= 2) {
+        return true;
+      }
+    }
+    
+    // Check for H1/H2/H3/H4 headings containing "FAQ" or "Question"
+    if (rawHtml) {
       try {
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        const headings = tempDiv.querySelectorAll('h2, h3');
+        tempDiv.innerHTML = rawHtml;
+        const headings = tempDiv.querySelectorAll('h1, h2, h3, h4');
         
         for (const heading of headings) {
-          const headingText = heading.textContent.toLowerCase();
-          if (headingText.includes('faq') || headingText.includes('question')) {
+          const headingText = heading.textContent.toLowerCase().trim();
+          // Check for FAQ in heading
+          if (headingText.includes('faq') || headingText.includes('faqs')) {
+            return true;
+          }
+          // Check for "question" or "questions" in heading
+          if (headingText.includes('question')) {
+            return true;
+          }
+          // Check for "FAQs -" pattern (common format)
+          if (/^faqs\s*[-–—]/.test(headingText)) {
             return true;
           }
         }
       } catch (e) {
         // If HTML parsing fails, continue with text search only
+        console.warn('FAQ detection: HTML parsing failed', e);
+      }
+    }
+    
+    // Check for structured FAQ patterns in HTML (divs, sections with FAQ class/id)
+    if (rawHtml) {
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = rawHtml;
+        // Check for elements with FAQ-related classes/ids
+        const faqElements = tempDiv.querySelectorAll('[class*="faq" i], [id*="faq" i], [class*="question" i], [id*="question" i]');
+        if (faqElements && faqElements.length > 0) {
+          return true;
+        }
+      } catch (e) {
+        // Ignore parsing errors
       }
     }
     
@@ -9395,8 +9452,10 @@
     const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
     
     // STEP 1: Check if FAQ block already exists
-    if (hasExistingFAQBlock(articleBody, html)) {
+    const hasFAQ = hasExistingFAQBlock(articleBody, html);
+    if (hasFAQ) {
       // FAQ block detected - skip generation entirely
+      blogPosts_log(`   ⏭️  FAQ skipped (existing FAQ block detected): ${extractSlug(url)}`);
       return null;
     }
     
