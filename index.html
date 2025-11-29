@@ -9416,15 +9416,25 @@
   }
 
   async function blogPosts_deployToGithub() {
+    blogPosts_log(`\n🚀 Deploy button clicked`);
+    
     if (!window.electronAPI || !window.electronAPI.isElectron) {
       alert('GitHub deployment is only available in the Electron app.\n\nIn browser: Files will download as ZIP when "Save to GitHub" is checked.');
       return;
     }
 
+    blogPosts_log(`   Checking for generated files...`);
+    blogPosts_log(`   window.blogPostsGeneratedFiles exists: ${window.blogPostsGeneratedFiles ? 'YES' : 'NO'}`);
+    blogPosts_log(`   window.blogPostsGeneratedFiles length: ${window.blogPostsGeneratedFiles ? window.blogPostsGeneratedFiles.length : 'N/A'}`);
+    
     if (!window.blogPostsGeneratedFiles || window.blogPostsGeneratedFiles.length === 0) {
-      alert('No generated files to deploy. Please generate schemas first.');
+      blogPosts_log(`❌ No generated files found in memory.`);
+      blogPosts_log(`   Debug: window.blogPostsGeneratedFiles = ${window.blogPostsGeneratedFiles ? 'exists but empty' : 'undefined'}`);
+      alert('No generated files to deploy. Please generate schemas first.\n\nMake sure you click "Generate Blog Post Schemas" before deploying.');
       return;
     }
+    
+    blogPosts_log(`✅ Found ${window.blogPostsGeneratedFiles.length} files ready for deployment`);
 
     const deployBtn = document.getElementById('blogPostsDeployBtn');
     const statusDiv = document.getElementById('blogPostsDeployStatus');
