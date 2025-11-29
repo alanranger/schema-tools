@@ -9194,40 +9194,98 @@
    * Check if a blog post is eligible for HowTo/FAQ/Image schemas
    * Based on case-insensitive keyword matching in title, url, tags, or categories
    */
-  function isEligibleForAdditionalSchemas(csvRow) {
-    if (!csvRow) return false;
+  /**
+   * MASTER HOWTO DETECTION RULE
+   * Generate HowTo ONLY if page contains any of:
+   * Before You Shoot, Before You Begin, The Assignment, Assignment Tasks, Assignment, Task, Tasks, Step, Steps, 1., 2., 3., Learning Objectives, Practice Assignment, Technique, Process, How To, Prep
+   */
+  function shouldGenerateHowTo(html, plainText, debugLog = null) {
+    if (!html && !plainText) {
+      if (debugLog) debugLog('HowTo Detection: No HTML or plain text provided');
+      return false;
+    }
     
-    const keywords = [
-      'what is', 'how to', 'guide', 'tips', 'assignment', 'practice',
-      'mastering', 'basics', 'camera settings', 'simple steps', 'learn',
-      'photography skills', 'improve'
+    if (debugLog) {
+      debugLog('HowTo Detection: Starting MASTER RULE check');
+      debugLog(`  - HTML length: ${html ? html.length : 0}`);
+      debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
+    }
+    
+    const textLower = plainText ? plainText.toLowerCase() : '';
+    const htmlLower = html ? html.toLowerCase() : '';
+    const combinedText = (textLower + ' ' + htmlLower).toLowerCase();
+    
+    // MASTER RULE: Check for HowTo keywords
+    const howToMarkers = [
+      'before you shoot',
+      'before you begin',
+      'the assignment',
+      'assignment tasks',
+      'assignment',
+      'task',
+      'tasks',
+      'step',
+      'steps',
+      'learning objectives',
+      'practice assignment',
+      'technique',
+      'process',
+      'how to',
+      'prep'
     ];
     
-    const searchText = [
-      csvRow.title || '',
-      csvRow.url || '',
-      Array.isArray(csvRow.tags) ? csvRow.tags.join(' ') : (csvRow.tags || ''),
-      Array.isArray(csvRow.categories) ? csvRow.categories.join(' ') : (csvRow.categories || '')
-    ].join(' ').toLowerCase();
+    // Also check for numbered steps (1., 2., 3.)
+    if (/\b(1|2|3)\.\s+/.test(combinedText)) {
+      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found numbered steps (1., 2., 3.)`);
+      return true;
+    }
     
-    return keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
+    for (const marker of howToMarkers) {
+      if (combinedText.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found "${marker}"`);
+        return true;
+      }
+    }
+    
+    if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: No HowTo markers found`);
+    return false;
+  }
+
+  /**
+   * Check if file already exists in GitHub (safety rule)
+   */
+  async function fileExistsInGithub(fileName) {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      // In browser, we can't check - assume file doesn't exist
+      return false;
+    }
+    
+    try {
+      // Check if file exists by trying to read it
+      const result = await window.electronAPI.checkFileExists(fileName);
+      return result || false;
+    } catch (e) {
+      // If check fails, assume file doesn't exist (safer to generate than skip)
+      console.warn(`Could not check if file exists: ${fileName}`, e);
+      return false;
+    }
   }
 
   /**
    * Generate HowTo schema for a blog post
    * Extracts steps from content or uses fallback template
    */
-  async function generateHowToSchema(csvRow, blogPosting, articleBody) {
+  async function generateHowToSchema(csvRow, blogPosting, plainText) {
     const url = csvRow.url;
     const slug = extractSlug(url);
     const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
     
-    // Try to extract real steps from articleBody
+    // Try to extract real steps from plainText
     let steps = [];
     
-    if (articleBody) {
+    if (plainText) {
       // Priority 1: Numbered lists (1., 2., 3.)
-      const numberedMatches = articleBody.match(/\d+\.\s+[^\n]+/g);
+      const numberedMatches = plainText.match(/\d+\.\s+[^\n]+/g);
       if (numberedMatches && numberedMatches.length >= 3) {
         steps = numberedMatches.slice(0, 10).map((match, idx) => ({
           '@type': 'HowToStep',
@@ -9240,10 +9298,10 @@
       // Priority 2: Headings containing instructional keywords
       if (steps.length === 0) {
         const headingPattern = /(?:^|\n)\s*(?:#{1,6}|<h[1-6]>)\s*(?:before|steps|tasks|assignment|tips|how to)[^\n]+/gi;
-        const headingMatches = articleBody.match(headingPattern);
+        const headingMatches = plainText.match(headingPattern);
         if (headingMatches && headingMatches.length >= 2) {
           // Extract content after each heading
-          const sections = articleBody.split(headingPattern);
+          const sections = plainText.split(headingPattern);
           steps = headingMatches.slice(0, 5).map((heading, idx) => {
             const headingText = heading.replace(/^#+\s*|<h[1-6]>\s*|<\/h[1-6]>/gi, '').trim();
             const content = sections[idx + 1] ? sections[idx + 1].substring(0, 200).trim() : '';
@@ -9260,7 +9318,7 @@
       // Priority 3: Bullet points with instructional language
       if (steps.length === 0) {
         const bulletPattern = /(?:^|\n)\s*[-•*]\s*(?:do|prepare|set|use|apply|capture|review|check|adjust|select|choose|position|focus|expose|shoot|edit|refine)[^\n]+/gi;
-        const bulletMatches = articleBody.match(bulletPattern);
+        const bulletMatches = plainText.match(bulletPattern);
         if (bulletMatches && bulletMatches.length >= 3) {
           steps = bulletMatches.slice(0, 8).map((match, idx) => ({
             '@type': 'HowToStep',
@@ -9341,76 +9399,21 @@
    * CRITICAL: Must be thorough to avoid duplicate FAQ schemas
    */
   function hasExistingFAQBlock(articleBody, html, debugLog = null) {
-    if (!articleBody && !html) {
-      if (debugLog) debugLog('FAQ Detection: No articleBody or HTML provided');
+    if (!html && !plainText) {
+      if (debugLog) debugLog('FAQ Detection: No HTML or plain text provided');
       return false;
     }
     
-    // Use raw HTML first (before cleaning) for most accurate detection
-    const rawHtml = html || '';
-    
     if (debugLog) {
-      debugLog(`FAQ Detection: Starting check`);
-      debugLog(`  - HTML length: ${rawHtml ? rawHtml.length : 0}`);
-      debugLog(`  - articleBody length: ${articleBody ? articleBody.length : 0}`);
+      debugLog('FAQ Detection: Starting MASTER RULE check');
+      debugLog(`  - HTML length: ${html ? html.length : 0}`);
+      debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    // Extract text from raw HTML (before any cleaning) for detection
-    let rawHtmlText = '';
-    if (rawHtml) {
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = rawHtml;
-        rawHtmlText = tempDiv.textContent || tempDiv.innerText || '';
-        if (debugLog) debugLog(`  - Extracted HTML text length: ${rawHtmlText.length}`);
-      } catch (e) {
-        // Fallback: use HTML as-is if parsing fails
-        rawHtmlText = rawHtml.replace(/<[^>]+>/g, ' ');
-        if (debugLog) debugLog(`  - HTML parsing failed, using fallback: ${rawHtmlText.length}`);
-      }
-    }
+    const textLower = plainText ? plainText.toLowerCase() : '';
+    const htmlLower = html ? html.toLowerCase() : '';
     
-    // PRIORITY CHECK: Check raw HTML string directly FIRST (most reliable)
-    // This catches FAQs even if DOM parsing fails or articleBody is cleaned
-    // This catches FAQs even if DOM parsing fails or articleBody is cleaned
-    if (rawHtml && rawHtml.length > 0) {
-      const rawHtmlLower = rawHtml.toLowerCase();
-      
-      // Check for FAQ markers in raw HTML (most reliable - catches everything)
-      for (const marker of faqMarkers) {
-        if (rawHtmlLower.includes(marker.toLowerCase())) {
-          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in raw HTML string (PRIORITY CHECK)`);
-          return true;
-        }
-      }
-      
-      // Check for "FAQs -" or "FAQ -" pattern in HTML headings directly
-      if (/<h[1-6][^>]*>.*faqs?\s*[-–—:]/i.test(rawHtml)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in raw HTML heading tag (PRIORITY CHECK)`);
-        return true;
-      }
-      
-      // Check for FAQPage schema in HTML (if already embedded)
-      if (/@type["\s]*:["\s]*["\']?FAQPage/i.test(rawHtml) || /"@type"\s*:\s*"FAQPage"/i.test(rawHtml)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found FAQPage schema in raw HTML (PRIORITY CHECK)`);
-        return true;
-      }
-      
-      // Check for common FAQ section patterns in HTML
-      if (/storytelling\s+photography\s*[-–—]\s*faqs/i.test(rawHtmlLower)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "Storytelling Photography — FAQs" pattern in raw HTML`);
-        return true;
-      }
-    } else {
-      if (debugLog) debugLog(`  ⚠️  WARNING: No raw HTML available for priority check - relying on articleBody only`);
-    }
-    
-    // Fallback: Combine all text sources (raw HTML text + cleaned articleBody) for additional checks
-    const rawText = (articleBody || '').toLowerCase();
-    const htmlText = rawHtmlText.toLowerCase();
-    const combinedText = (rawText + ' ' + htmlText).toLowerCase();
-    
-    // FAQ markers to search for (case-insensitive) - for fallback checks
+    // MASTER RULE: Check for FAQ markers in plain text
     const faqMarkers = [
       'faq',
       'faqs',
@@ -9419,98 +9422,27 @@
       'question:',
       'q:',
       'q –',
-      'q.',
-      'questions and answers',
-      'q&a',
-      'q and a'
+      'q.'
     ];
     
-    // Check for FAQ markers in combined text (fallback if raw HTML check didn't catch it)
     for (const marker of faqMarkers) {
-      if (combinedText.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in combined text (FALLBACK CHECK)`);
+      if (textLower.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "${marker}" in plain text`);
         return true;
       }
     }
     
-    // Check for numbered questions pattern (strong FAQ indicator)
-    // Pattern: "1.", "2.", "3." followed by question-like text
-    const numberedQuestionPattern = /\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/i;
-    if (numberedQuestionPattern.test(combinedText)) {
-      // Additional check: if we find 2+ numbered questions, it's definitely an FAQ
-      const numberedMatches = combinedText.match(/\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/gi);
-      if (numberedMatches && numberedMatches.length >= 2) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found ${numberedMatches.length} numbered questions`);
+    // MASTER RULE: Check for <h2> or <h3> containing "FAQ"
+    if (html) {
+      // Check h2 tags
+      if (/<h2[^>]*>.*faq/i.test(html)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h2> tag`);
         return true;
       }
-    }
-    
-    // Check for H1/H2/H3/H4 headings containing "FAQ" or "Question"
-    if (rawHtml) {
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = rawHtml;
-        const headings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        
-        if (debugLog) debugLog(`  - Found ${headings.length} headings to check`);
-        
-        for (const heading of headings) {
-          // Get text content (handles nested elements)
-          let headingText = heading.textContent || heading.innerText || '';
-          headingText = headingText.toLowerCase().trim();
-          
-          // Also check innerHTML for cases where text might be in nested tags
-          const headingHTML = heading.innerHTML.toLowerCase();
-          
-          if (debugLog && (headingText.includes('faq') || headingText.includes('question') || headingHTML.includes('faq'))) {
-            debugLog(`  - Checking heading: "${headingText.substring(0, 100)}"`);
-          }
-          
-          // Check for FAQ in heading text
-          if (headingText.includes('faq') || headingText.includes('faqs')) {
-            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in heading text: "${headingText.substring(0, 80)}"`);
-            return true;
-          }
-          
-          // Check for FAQ in heading HTML (in case of nested formatting)
-          if (headingHTML.includes('faq') || headingHTML.includes('faqs')) {
-            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in heading HTML`);
-            return true;
-          }
-          
-          // Check for "question" or "questions" in heading
-          if (headingText.includes('question')) {
-            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "question" in heading: "${headingText.substring(0, 80)}"`);
-            return true;
-          }
-          
-          // Check for "FAQs -" pattern (common format) - more flexible pattern
-          if (/^faqs?\s*[-–—:]/i.test(headingText) || /faqs?\s*[-–—:]/i.test(headingText)) {
-            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in heading: "${headingText.substring(0, 80)}"`);
-            return true;
-          }
-        }
-      } catch (e) {
-        // If HTML parsing fails, continue with text search only
-        if (debugLog) debugLog(`  ⚠️  HTML parsing failed: ${e.message}`);
-        console.warn('FAQ detection: HTML parsing failed', e);
-      }
-    }
-    
-    // Check for structured FAQ patterns in HTML (divs, sections with FAQ class/id)
-    if (rawHtml) {
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = rawHtml;
-        // Check for elements with FAQ-related classes/ids
-        const faqElements = tempDiv.querySelectorAll('[class*="faq" i], [id*="faq" i], [class*="question" i], [id*="question" i]');
-        if (faqElements && faqElements.length > 0) {
-          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found ${faqElements.length} elements with FAQ-related classes/ids`);
-          return true;
-        }
-      } catch (e) {
-        // Ignore parsing errors
-        if (debugLog) debugLog(`  ⚠️  FAQ element search failed: ${e.message}`);
+      // Check h3 tags
+      if (/<h3[^>]*>.*faq/i.test(html)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h3> tag`);
+        return true;
       }
     }
     
@@ -9863,12 +9795,26 @@
 
         // ============================================
         // GENERATE ADDITIONAL SCHEMAS (HowTo, FAQ, ImageObject)
+        // MASTER RULE: Fetch HTML from public URL and convert to plain text
         // ============================================
-        if (isEligibleForAdditionalSchemas(row)) {
-          blogPosts_log(`   📋 Post eligible for additional schemas: ${slug}`);
-          
-          // Get blogPosting object and content for additional schemas
-          const blogPosting = await buildEnrichedBlogPosting(row);
+        
+        // Fetch HTML from public URL (MASTER RULE)
+        let html = null;
+        let plainText = '';
+        
+        if (row.url) {
+          blogPosts_log(`   🔍 Fetching HTML from public URL: ${row.url}`);
+          html = await fetchHtmlFromPublicUrl(row.url);
+          if (html) {
+            plainText = htmlToPlainText(html);
+            blogPosts_log(`   ✅ HTML fetched: ${html.length} chars, plain text: ${plainText.length} chars`);
+          } else {
+            blogPosts_log(`   ⚠️  WARNING: Could not fetch HTML from public URL`);
+          }
+        }
+        
+        // Get blogPosting object for additional schemas
+        const blogPosting = await buildEnrichedBlogPosting(row);
           
           // Fetch HTML and articleBody for HowTo/FAQ extraction
           let html = null;
@@ -9917,48 +9863,41 @@
             blogPosts_log(`   ⚠️  Error generating HowTo for ${slug}: ${e.message}`);
           }
           
-          // Generate FAQ schema (only if no existing FAQ block detected)
+          // Generate FAQ schema (MASTER RULE: skip if FAQ markers detected)
           try {
-            // CRITICAL: ALWAYS fetch fresh HTML for FAQ detection (don't rely on earlier fetch)
-            if (supabaseAvailable && supabase && row.url) {
-              blogPosts_log(`   🔍 Fetching HTML for FAQ detection: ${slug}`);
-              blogPosts_log(`   🔍 URL: ${row.url}`);
-              html = await fetchPageHtmlForUrl(row.url);
-              if (!html || html.length === 0) {
-                blogPosts_log(`   ⚠️  WARNING: HTML fetch returned empty/null for ${slug}`);
-                blogPosts_log(`   ⚠️  This may mean the URL doesn't exist in page_html table or URL mismatch`);
-                blogPosts_log(`   ⚠️  FAQ detection will use articleBody only (less reliable)`);
-                // Don't fail - continue with articleBody only
-              } else {
-                blogPosts_log(`   ✅ HTML fetched: ${html.length} characters`);
-              }
-            } else {
-              blogPosts_log(`   ⚠️  WARNING: Supabase not available - cannot fetch HTML for FAQ detection`);
-            }
+            const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
+            const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
             
-            // Use raw HTML for detection (not cleaned articleBody)
-            const faqSchema = await generateFAQSchema(row, blogPosting, articleBody, html);
-            if (faqSchema) {
-              const faqFileName = `${slug}_faq.json`;
-              const faqJson = JSON.stringify(faqSchema, null, 2);
-              generatedFiles.push({ name: faqFileName, content: faqJson });
-              
-              if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                try {
-                  await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
-                  blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
-                  saved++;
-                } catch (e) {
-                  blogPosts_log(`   ❌ Failed to save FAQ ${faqFileName}: ${e.message}`);
-                  errors++;
-                }
-              } else {
-                blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
-                saved++;
-              }
+            if (hasFAQ) {
+              blogPosts_log(`   ⏭️  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
             } else {
-              // FAQ block detected - skip generation
-              blogPosts_log(`   ⏭️  FAQ skipped (existing FAQ block detected): ${slug}`);
+              // Check if file already exists (SAFETY RULE)
+              const faqFileName = `${slug}_faq.json`;
+              const fileExists = await fileExistsInGithub(faqFileName);
+              
+              if (fileExists) {
+                blogPosts_log(`   ⏭️  FAQ SKIPPED: File already exists in GitHub: ${faqFileName}`);
+              } else {
+                const faqSchema = await generateFAQSchema(row, blogPosting, plainText);
+                if (faqSchema) {
+                  const faqJson = JSON.stringify(faqSchema, null, 2);
+                  generatedFiles.push({ name: faqFileName, content: faqJson });
+                  
+                  if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                    try {
+                      await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
+                      blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
+                      saved++;
+                    } catch (e) {
+                      blogPosts_log(`   ❌ Failed to save FAQ ${faqFileName}: ${e.message}`);
+                      errors++;
+                    }
+                  } else {
+                    blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
+                    saved++;
+                  }
+                }
+              }
             }
           } catch (e) {
             blogPosts_log(`   ⚠️  Error generating FAQ for ${slug}: ${e.message}`);
