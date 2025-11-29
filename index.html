@@ -2805,6 +2805,7 @@
           <span>Save to GitHub</span>
         </label>
         <button onclick="blogPosts_generateSchema()" id="blogPostsGenerateBtn" disabled>Generate Blog Post Schemas</button>
+        <button onclick="blogPosts_stopGeneration()" id="blogPostsStopBtn" style="display: none; background: #dc2626; color: white;">⏹️ Stop Generation</button>
         <button onclick="blogPosts_clearForm()" class="secondary">Clear</button>
       </div>
 
@@ -9369,49 +9370,39 @@
       }
     }
     
-    // Combine all text sources (raw HTML text + cleaned articleBody)
-    const rawText = (articleBody || '').toLowerCase();
-    const htmlText = rawHtmlText.toLowerCase();
-    const combinedText = (rawText + ' ' + htmlText).toLowerCase();
-    
-    // FAQ markers to search for (case-insensitive)
-    const faqMarkers = [
-      'faq',
-      'faqs',
-      'frequently asked questions',
-      'common questions',
-      'question:',
-      'q:',
-      'q –',
-      'q.',
-      'questions and answers',
-      'q&a',
-      'q and a'
-    ];
-    
-    // Check for FAQ markers in combined text
-    for (const marker of faqMarkers) {
-      if (combinedText.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in combined text`);
-        return true;
-      }
-    }
-    
-    // Also check raw HTML string directly (in case DOM parsing misses it)
-    if (rawHtml) {
+    // PRIORITY CHECK: Check raw HTML string directly FIRST (most reliable)
+    // This catches FAQs even if DOM parsing fails or articleBody is cleaned
+    // This catches FAQs even if DOM parsing fails or articleBody is cleaned
+    if (rawHtml && rawHtml.length > 0) {
       const rawHtmlLower = rawHtml.toLowerCase();
-      // Check for FAQ markers in raw HTML (more reliable than DOM parsing sometimes)
+      
+      // Check for FAQ markers in raw HTML (most reliable - catches everything)
       for (const marker of faqMarkers) {
         if (rawHtmlLower.includes(marker.toLowerCase())) {
-          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in raw HTML string`);
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in raw HTML string (PRIORITY CHECK)`);
           return true;
         }
       }
+      
       // Check for "FAQs -" or "FAQ -" pattern in HTML headings directly
       if (/<h[1-6][^>]*>.*faqs?\s*[-–—:]/i.test(rawHtml)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in raw HTML heading tag`);
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in raw HTML heading tag (PRIORITY CHECK)`);
         return true;
       }
+      
+      // Check for FAQPage schema in HTML (if already embedded)
+      if (/@type["\s]*:["\s]*["\']?FAQPage/i.test(rawHtml) || /"@type"\s*:\s*"FAQPage"/i.test(rawHtml)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found FAQPage schema in raw HTML (PRIORITY CHECK)`);
+        return true;
+      }
+      
+      // Check for common FAQ section patterns in HTML
+      if (/storytelling\s+photography\s*[-–—]\s*faqs/i.test(rawHtmlLower)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "Storytelling Photography — FAQs" pattern in raw HTML`);
+        return true;
+      }
+    } else {
+      if (debugLog) debugLog(`  ⚠️  WARNING: No raw HTML available for priority check - relying on articleBody only`);
     }
     
     // Check for numbered questions pattern (strong FAQ indicator)
@@ -9560,14 +9551,28 @@
   async function generateFAQSchema(csvRow, blogPosting, articleBody, html) {
     const url = csvRow.url;
     const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
+    const slug = extractSlug(url);
     
     // STEP 1: Check if FAQ block already exists (with debug logging)
+    blogPosts_log(`   🔍 Checking for existing FAQ block: ${slug}`);
     const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
+    
+    // CRITICAL: Log what we're checking
+    if (!html) {
+      blogPosts_log(`   ⚠️  WARNING: No HTML provided for FAQ detection - detection may fail!`);
+    }
+    if (!articleBody) {
+      blogPosts_log(`   ⚠️  WARNING: No articleBody provided for FAQ detection`);
+    }
+    
     const hasFAQ = hasExistingFAQBlock(articleBody, html, debugLog);
+    
     if (hasFAQ) {
       // FAQ block detected - skip generation entirely
-      blogPosts_log(`   ⏭️  FAQ skipped (existing FAQ block detected): ${extractSlug(url)}`);
+      blogPosts_log(`   ⏭️  FAQ SKIPPED (existing FAQ block detected): ${slug}`);
       return null;
+    } else {
+      blogPosts_log(`   ✅ No existing FAQ detected - will generate new FAQ: ${slug}`);
     }
     
     // STEP 2: No FAQ block exists - generate generic FAQ schema
@@ -9699,18 +9704,40 @@
     return imageObject;
   }
 
+  // Global flag to stop generation
+  let blogPostsStopGeneration = false;
+
+  function blogPosts_stopGeneration() {
+    blogPostsStopGeneration = true;
+    blogPosts_log('\n⏹️ STOP REQUESTED - Generation will stop after current post...');
+    const stopBtn = document.getElementById('blogPostsStopBtn');
+    if (stopBtn) {
+      stopBtn.disabled = true;
+      stopBtn.textContent = '⏹️ Stopping...';
+    }
+  }
+
   async function blogPosts_generateSchema() {
     if (!blogPostsData || blogPostsData.length === 0) {
       alert('Please upload a blog CSV file first.');
       return;
     }
 
+    // Reset stop flag
+    blogPostsStopGeneration = false;
+
     const generateBtn = document.getElementById('blogPostsGenerateBtn');
+    const stopBtn = document.getElementById('blogPostsStopBtn');
     const saveToGithub = document.getElementById('blogPostsSaveToGithub')?.checked || false;
     
     if (generateBtn) {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
+    }
+    
+    if (stopBtn) {
+      stopBtn.style.display = 'inline-block';
+      stopBtn.disabled = false;
     }
 
     blogPosts_log('🔨 Starting blog post schema generation (individual files)...');
@@ -9740,6 +9767,12 @@
     updateProgress();
 
     for (const row of blogPostsData) {
+      // Check stop flag
+      if (blogPostsStopGeneration) {
+        blogPosts_log(`\n⏹️ Generation stopped by user at post ${processed + 1}/${blogPostsData.length}`);
+        break;
+      }
+      
       try {
         if (!row || !row.url) {
           blogPosts_log(`⚠️  Skipping row with no URL`);
@@ -9858,10 +9891,18 @@
           
           // Generate FAQ schema (only if no existing FAQ block detected)
           try {
-            // CRITICAL: Ensure we have HTML before checking for FAQ
-            if (!html && supabaseAvailable && supabase && row.url) {
-              blogPosts_log(`   ⚠️  No HTML available for FAQ detection, fetching...`);
+            // CRITICAL: ALWAYS fetch fresh HTML for FAQ detection (don't rely on earlier fetch)
+            if (supabaseAvailable && supabase && row.url) {
+              blogPosts_log(`   🔍 Fetching HTML for FAQ detection: ${slug}`);
               html = await fetchPageHtmlForUrl(row.url);
+              if (!html || html.length === 0) {
+                blogPosts_log(`   ⚠️  WARNING: HTML fetch returned empty/null for ${slug}`);
+                blogPosts_log(`   ⚠️  FAQ detection may be unreliable without HTML`);
+              } else {
+                blogPosts_log(`   ✅ HTML fetched: ${html.length} characters`);
+              }
+            } else {
+              blogPosts_log(`   ⚠️  WARNING: Supabase not available - cannot fetch HTML for FAQ detection`);
             }
             
             // Use raw HTML for detection (not cleaned articleBody)
@@ -10044,8 +10085,22 @@
       generateBtn.disabled = false;
       generateBtn.textContent = 'Generate Blog Post Schemas';
     }
+    
+    const stopBtn = document.getElementById('blogPostsStopBtn');
+    if (stopBtn) {
+      stopBtn.style.display = 'none';
+      stopBtn.disabled = false;
+      stopBtn.textContent = '⏹️ Stop Generation';
+    }
+    
+    // Reset stop flag
+    blogPostsStopGeneration = false;
 
-    blogPosts_log(`\n✅ Generation complete: ${processed} processed, ${saved} saved, ${errors} errors`);
+    if (blogPostsStopGeneration) {
+      blogPosts_log(`\n⏹️ Generation stopped by user: ${processed} processed, ${saved} saved, ${errors} errors`);
+    } else {
+      blogPosts_log(`\n✅ Generation complete: ${processed} processed, ${saved} saved, ${errors} errors`);
+    }
   }
 
   async function blogPosts_deployToGithub() {
