@@ -2717,7 +2717,10 @@
         </button>
         <button onclick="saveBlogSchemaToFile()" class="secondary">💾 Save JSON to alanranger-schema folder</button>
         <button onclick="saveBlogSchemaAsText()" class="secondary">📝 Save Schema as .txt</button>
-        <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema</button>
+        <button class="copy-btn" onclick="copyBlogSchema()" style="background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">Copy Schema (with script tags)</button>
+        <button class="copy-btn" onclick="copyBlogSchemaJSONOnly()" style="background:#059669; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem;">📋 Copy JSON Only (for Google Test)</button>
+        <button onclick="saveBlogSchemaTestVersion()" class="secondary" style="background:#dc2626; color:#fff;">🧪 Save TEST Version (blog-schema-test.json)</button>
+        <button onclick="validateTestSchema()" class="secondary" style="background:#7c3aed; color:#fff;">✅ Validate TEST Version</button>
       </div>
       
       <div class="code-card">
@@ -6811,7 +6814,12 @@
   }
 
   async function buildEnrichedBlogPosting(csvRow) {
-    const url = csvRow.url;
+    // 🔥 13. URL normalization - remove trailing slash (Google prefers canonical without slash)
+    let url = csvRow.url;
+    if (url && url.endsWith('/')) {
+      url = url.slice(0, -1);
+    }
+    
     let entity = null;
     let html = null;
     let chunks = [];
@@ -6832,8 +6840,9 @@
     const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
     const modifiedDate = (entity && entity.update_date) || publishDate || null;
     const imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
-    const imageWidth = entity && entity.image_width ? entity.image_width : 1200;
-    const imageHeight = entity && entity.image_height ? entity.image_height : 800;
+    // 🔥 3. Image dimensions - use 1500x1000 as default (or from metadata)
+    const imageWidth = entity && entity.image_width ? entity.image_width : 1500;
+    const imageHeight = entity && entity.image_height ? entity.image_height : 1000;
     const categories = (entity && entity.categories) || csvRow.categories || [];
     const tags = (entity && entity.tags) || csvRow.tags || [];
 
@@ -6921,8 +6930,26 @@
 
     // Derive additional metadata
     const publishYear = publishDate ? new Date(publishDate).getFullYear() : new Date().getFullYear();
-    const isAssignment = learningResourceType === 'Assignment';
+    // 🔥 11. Detect assignments - check slug or category
+    const isAssignment = learningResourceType === 'Assignment' || 
+                         /assignment/i.test(url || '') || 
+                         /practice/i.test(articleSection || '');
     const isCaseStudy = articleSection === 'Case Studies' || /case study/i.test(title || '');
+    
+    // 🔥 11. Extract teaches topic for assignments
+    let teachesTopic = '';
+    if (isAssignment) {
+      // Extract main topic from title or articleSection
+      if (title) {
+        const topicMatch = title.match(/(?:photography|photography\s+)?([^\-]+?)(?:\s+assignment|\s+practice)/i);
+        if (topicMatch && topicMatch[1]) {
+          teachesTopic = topicMatch[1].trim();
+        } else {
+          // Fallback: use articleSection or first keyword
+          teachesTopic = articleSection || (keywords.length > 0 ? keywords[0] : 'Photography');
+        }
+      }
+    }
     
     // Extract hasPart for assignments (numbered steps/tasks)
     const hasPart = [];
@@ -6987,7 +7014,11 @@
       alternativeHeadline: title ? `${title} | Alan Ranger Photography` : '',
       description: description || '',
       url: url,
-      mainEntityOfPage: { '@id': `${url}#webpage` },
+      // 🔥 1. mainEntityOfPage - must be WebPage object with @type
+      mainEntityOfPage: { 
+        '@type': 'WebPage',
+        '@id': `${url}#webpage` 
+      },
       datePublished: publishDate || '',
       dateCreated: publishDate || '',
       dateModified: modifiedDate || publishDate || '',
@@ -6999,7 +7030,8 @@
       genre: genre || 'Photography Guide',
       articleSection: articleSection || 'Photography',
       keywords: keywords.length > 0 ? keywords : [],
-      learningResourceType: learningResourceType || 'Article',
+      // 🔥 11 & 12. Assignments need teaches + learningResourceType
+      learningResourceType: isAssignment ? 'Practice Assignment' : (learningResourceType || 'Article'),
       educationalLevel: educationalLevel || 'Beginner',
       proficiencyLevel: proficiencyLevel || 'Beginner',
       typicalAgeRange: typicalAgeRange || '18-99',
@@ -7019,6 +7051,7 @@
       about: entityInfo.about.length > 0 ? entityInfo.about : [],
       mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [],
       hasPart: hasPart.length > 0 ? hasPart : [],
+      // 🔥 3. Image must be ImageObject (not string)
       image: imageUrl ? {
         '@type': 'ImageObject',
         url: imageUrl,
@@ -7028,10 +7061,11 @@
       } : {
         '@type': 'ImageObject',
         url: '',
-        width: 1200,
-        height: 800,
+        width: 1500,
+        height: 1000,
         caption: ''
       },
+      // 🔥 4. thumbnailUrl - duplicate image URL
       thumbnailUrl: imageUrl || '',
       primaryImageOfPage: { '@id': `${url}#webpage` },
       speakable: {
@@ -7039,9 +7073,12 @@
         xpath: ['/html/head/title', '//h1'],
         cssSelector: ['h1', '.intro']
       },
+      // 🔥 6. discussionUrl - always present
       discussionUrl: `${url}#comments`,
+      // 🔥 14. Author must have @id
       author: {
         '@type': 'Person',
+        '@id': 'https://www.alanranger.com/#alanranger',
         name: 'Alan Ranger',
         url: 'https://www.alanranger.com/about-alan-ranger',
         jobTitle: 'Photographer & Photography Educator',
@@ -7050,6 +7087,7 @@
           'https://www.linkedin.com/in/alanrangerphotography'
         ]
       },
+      // 🔥 15. Publisher logo must have width/height
       publisher: {
         '@type': 'Organization',
         '@id': 'https://www.alanranger.com#organization',
@@ -7058,11 +7096,15 @@
         logo: {
           '@type': 'ImageObject',
           url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
-          width: 600,
-          height: 60
+          width: 300,
+          height: 100
         }
       },
-      isPartOf: { '@id': `${BLOG_URL_GLOBAL}#blog` },
+      // 🔥 2. isPartOf must point to WebSite (not Blog) - Google requires this for hierarchy
+      isPartOf: { 
+        '@type': 'WebSite',
+        '@id': 'https://www.alanranger.com/#website' 
+      },
       copyrightHolder: {
         '@type': 'Organization',
         '@id': 'https://www.alanranger.com#organization',
@@ -7077,6 +7119,11 @@
       },
       isRelatedTo: relatedLink.length > 0 ? relatedLink : []
     };
+    
+    // 🔥 11. Add teaches field for assignments
+    if (isAssignment && teachesTopic) {
+      blogPosting.teaches = teachesTopic;
+    }
     
     // Add citation for RPS content
     if (/\brps\b/.test(articleBody.toLowerCase()) || /royal photographic society/i.test(articleBody.toLowerCase())) {
@@ -8645,6 +8692,136 @@
       blogLog(`❌ Copy failed: ${err.message}`, 'error');
     } finally {
       document.body.removeChild(textarea);
+    }
+  }
+
+  // Copy JSON only (without script tags) - for pasting into Google Rich Results Test
+  function copyBlogSchemaJSONOnly() {
+    if (!window.currentBlogSchema) {
+      alert('Please generate blog schema first.');
+      return;
+    }
+
+    // Get clean JSON (no script tags, no HTML encoding)
+    const cleanedSchema = cleanupSchemaForExport(window.currentBlogSchema);
+    const jsonString = JSON.stringify(cleanedSchema, null, 2);
+    
+    // Validate JSON before copying
+    try {
+      JSON.parse(jsonString);
+    } catch (e) {
+      alert(`❌ JSON validation failed: ${e.message}\n\nPlease regenerate the schema.`);
+      return;
+    }
+
+    // Copy to clipboard using modern API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(jsonString).then(() => {
+        blogLog('✅ JSON (without script tags) copied to clipboard');
+        blogLog('   📋 Ready to paste into Google Rich Results Test CODE tab');
+        alert('✅ JSON copied to clipboard!\n\nPaste this into Google Rich Results Test CODE tab.\n\n⚠️ Make sure to paste ONLY the JSON (no script tags).');
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        fallbackCopy(jsonString);
+      });
+    } else {
+      fallbackCopy(jsonString);
+    }
+  }
+
+  // Save test version (blog-schema-test.json) - for validation before deployment
+  async function saveBlogSchemaTestVersion() {
+    if (!window.currentBlogSchema) {
+      alert('Please generate blog schema first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Test version save is only available in the Electron app.\n\nIn browser: Use "Copy JSON Only" and paste into Google Rich Results Test.');
+      return;
+    }
+
+    const fileName = 'blog-schema-test.json';
+
+    try {
+      // Clean up schema: remove @context from objects inside @graph (if present)
+      const cleanedSchema = cleanupSchemaForExport(window.currentBlogSchema);
+      
+      // Generate JSON (formatted, not minified)
+      const jsonString = JSON.stringify(cleanedSchema, null, 2);
+      
+      // Validate JSON
+      JSON.parse(jsonString);
+
+      blogLog(`\n🧪 Saving TEST version: ${fileName}`);
+      blogLog(`   📁 This file is for testing only - will NOT replace production schema`);
+
+      // Save to outputs folder (not deployed)
+      let result;
+      if (window.electronAPI.saveSchemaToOutputs) {
+        result = await window.electronAPI.saveSchemaToOutputs(fileName, jsonString);
+      } else {
+        // Fallback: use browser download
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        result = { message: 'Downloaded successfully', filePath: fileName };
+      }
+      
+      blogLog(`   ✅ ${result.message}`);
+      blogLog(`   📁 File: ${result.filePath}`);
+      blogLog(`\n📋 Next steps:`);
+      blogLog(`   1. Open ${fileName} in a text editor`);
+      blogLog(`   2. Copy the entire JSON (Ctrl+A, Ctrl+C)`);
+      blogLog(`   3. Paste into Google Rich Results Test CODE tab`);
+      blogLog(`   4. Verify it passes validation`);
+      blogLog(`   5. Only then use "Export JSON & Deploy to GitHub"`);
+
+      alert(`✅ Test version saved!\n\nFile: ${result.filePath}\n\n📋 Next steps:\n1. Open the file and copy the JSON\n2. Paste into Google Rich Results Test\n3. Verify it passes\n4. Only then deploy to production`);
+
+    } catch (error) {
+      blogLog(`❌ Error saving test version: ${error.message}`, 'error');
+      alert(`Error saving test version: ${error.message}`);
+    }
+  }
+
+  // Validate test version using Node.js test script
+  async function validateTestSchema() {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Validation is only available in the Electron app.\n\nIn browser: Run "node test-patch-requirements.js" in terminal.');
+      return;
+    }
+
+    blogLog('\n🧪 Running validation tests...');
+    blogLog('   Checking blog-schema-test.json against all patch requirements...');
+
+    try {
+      // Use Electron API to run the test script
+      if (window.electronAPI.runNodeScript) {
+        const result = await window.electronAPI.runNodeScript('test-patch-requirements.js');
+        blogLog(result.output);
+        if (result.exitCode === 0) {
+          blogLog('\n✅ VALIDATION PASSED - Schema is ready for Google Rich Results Test!');
+          alert('✅ Validation Passed!\n\nAll patch plan requirements are met.\n\nYou can now test in Google Rich Results Test and deploy.');
+        } else {
+          blogLog('\n❌ VALIDATION FAILED - Please fix errors before deploying');
+          alert('❌ Validation Failed!\n\nPlease check the debug log for details.\n\nDO NOT deploy until all errors are fixed.');
+        }
+      } else {
+        // Fallback: show instructions
+        blogLog('\n📋 To validate locally, run in terminal:');
+        blogLog('   node test-patch-requirements.js');
+        alert('To validate:\n\n1. Open terminal in Schema Tools folder\n2. Run: node test-patch-requirements.js\n3. Check results');
+      }
+    } catch (error) {
+      blogLog(`❌ Validation error: ${error.message}`, 'error');
+      alert(`Validation error: ${error.message}\n\nRun manually: node test-patch-requirements.js`);
     }
   }
 
