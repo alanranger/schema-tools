@@ -9405,6 +9405,34 @@
       if (debugLog) debugLog(`  ⚠️  WARNING: No raw HTML available for priority check - relying on articleBody only`);
     }
     
+    // Fallback: Combine all text sources (raw HTML text + cleaned articleBody) for additional checks
+    const rawText = (articleBody || '').toLowerCase();
+    const htmlText = rawHtmlText.toLowerCase();
+    const combinedText = (rawText + ' ' + htmlText).toLowerCase();
+    
+    // FAQ markers to search for (case-insensitive) - for fallback checks
+    const faqMarkers = [
+      'faq',
+      'faqs',
+      'frequently asked questions',
+      'common questions',
+      'question:',
+      'q:',
+      'q –',
+      'q.',
+      'questions and answers',
+      'q&a',
+      'q and a'
+    ];
+    
+    // Check for FAQ markers in combined text (fallback if raw HTML check didn't catch it)
+    for (const marker of faqMarkers) {
+      if (combinedText.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in combined text (FALLBACK CHECK)`);
+        return true;
+      }
+    }
+    
     // Check for numbered questions pattern (strong FAQ indicator)
     // Pattern: "1.", "2.", "3." followed by question-like text
     const numberedQuestionPattern = /\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/i;
@@ -9894,10 +9922,13 @@
             // CRITICAL: ALWAYS fetch fresh HTML for FAQ detection (don't rely on earlier fetch)
             if (supabaseAvailable && supabase && row.url) {
               blogPosts_log(`   🔍 Fetching HTML for FAQ detection: ${slug}`);
+              blogPosts_log(`   🔍 URL: ${row.url}`);
               html = await fetchPageHtmlForUrl(row.url);
               if (!html || html.length === 0) {
                 blogPosts_log(`   ⚠️  WARNING: HTML fetch returned empty/null for ${slug}`);
-                blogPosts_log(`   ⚠️  FAQ detection may be unreliable without HTML`);
+                blogPosts_log(`   ⚠️  This may mean the URL doesn't exist in page_html table or URL mismatch`);
+                blogPosts_log(`   ⚠️  FAQ detection will use articleBody only (less reliable)`);
+                // Don't fail - continue with articleBody only
               } else {
                 blogPosts_log(`   ✅ HTML fetched: ${html.length} characters`);
               }
