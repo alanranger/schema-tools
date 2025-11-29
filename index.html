@@ -2823,6 +2823,13 @@
       <div id="blogPostsSchemaSummary" style="padding: 1rem; background: #d4edda; border-radius: 8px; border: 1px solid #c3e6cb; color: #155724; margin-bottom: 1rem;">
         <p style="margin: 0;" id="blogPostsSchemaSummaryText"></p>
       </div>
+      
+      <div class="button-group" style="margin-top: 1rem; margin-bottom: 1rem;">
+        <button id="blogPostsDeployBtn" onclick="blogPosts_deployToGithub()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem; display: none;">
+          🚀 Deploy All to GitHub
+        </button>
+        <p id="blogPostsDeployStatus" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd; color: #0c4a6e; font-size: 0.875rem;"></p>
+      </div>
     </div>
 
   </div>
@@ -9290,7 +9297,18 @@
       }
     }
 
-    // Browser: Download ZIP if files were generated
+    // Store generated files for later deployment (if not auto-saving)
+    window.blogPostsGeneratedFiles = generatedFiles;
+    
+    // Show deploy button if in Electron and not auto-saving
+    if (window.electronAPI && window.electronAPI.isElectron && !saveToGithub) {
+      const deployBtn = document.getElementById('blogPostsDeployBtn');
+      if (deployBtn) {
+        deployBtn.style.display = 'inline-block';
+      }
+    }
+    
+    // Browser: Download ZIP if files were generated and saveToGithub is checked
     if (!window.electronAPI || !window.electronAPI.isElectron) {
       if (saveToGithub && generatedFiles.length > 0) {
         blogPosts_log(`\n📦 Creating ZIP file with ${generatedFiles.length} schema files...`);
@@ -9351,16 +9369,20 @@
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
       if (saveToGithub) {
-        if (window.electronAPI && window.electronAPI.isElectron) {
+        if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
           summary += `• Saved to GitHub: ${saved} files<br>`;
           summary += `• Errors: ${errors}<br><br>`;
           summary += `📁 Files saved to: alanranger-schema repository (root directory)<br>`;
           summary += `🌐 Live URLs: https://schema.alanranger.com/&lt;slug&gt;_schema.json`;
         } else {
-          summary += `• Generated: ${saved} schemas<br>`;
+          summary += `• Generated: ${processed - errors} schemas<br>`;
           summary += `• Errors: ${errors}<br><br>`;
-          summary += `📥 Files downloaded as ZIP (or individually if JSZip unavailable)<br>`;
-          summary += `💡 For GitHub deployment, use Electron app or manually upload files.`;
+          if (window.electronAPI && window.electronAPI.isElectron) {
+            summary += `💡 Click "🚀 Deploy All to GitHub" button below to save all files to GitHub.`;
+          } else {
+            summary += `📥 Files downloaded as ZIP (or individually if JSZip unavailable)<br>`;
+            summary += `💡 For GitHub deployment, use Electron app or manually upload files.`;
+          }
         }
       } else {
         summary += `• Generated: ${processed - errors} schemas (not saved)<br>`;
