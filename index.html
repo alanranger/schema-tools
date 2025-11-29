@@ -9191,9 +9191,39 @@
   // ============================================
 
   /**
-   * Check if a blog post is eligible for HowTo/FAQ/Image schemas
-   * Based on case-insensitive keyword matching in title, url, tags, or categories
+   * Fetch HTML from public URL
    */
+  async function fetchHtmlFromPublicUrl(url) {
+    if (!url) return null;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`Failed to fetch HTML from ${url}: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      const html = await response.text();
+      return html || null;
+    } catch (error) {
+      console.warn(`Error fetching HTML from ${url}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Convert HTML to plain text for scanning
+   */
+  function htmlToPlainText(html) {
+    if (!html) return '';
+    try {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || '';
+    } catch (e) {
+      // Fallback: strip HTML tags
+      return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+  }
+
   /**
    * MASTER HOWTO DETECTION RULE
    * Generate HowTo ONLY if page contains any of:
