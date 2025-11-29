@@ -9816,97 +9816,110 @@
         // Get blogPosting object for additional schemas
         const blogPosting = await buildEnrichedBlogPosting(row);
         
-        // Generate HowTo schema
-          try {
-            const howToSchema = await generateHowToSchema(row, blogPosting, articleBody);
-            if (howToSchema) {
-              const howToFileName = `${slug}_howto.json`;
-              const howToJson = JSON.stringify(howToSchema, null, 2);
-              generatedFiles.push({ name: howToFileName, content: howToJson });
-              
-              if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                try {
-                  await window.electronAPI.saveAndDeploySchema(howToFileName, howToJson);
-                  blogPosts_log(`   ✅ Saved HowTo: ${howToFileName}`);
-                  saved++;
-                } catch (e) {
-                  blogPosts_log(`   ❌ Failed to save HowTo ${howToFileName}: ${e.message}`);
-                  errors++;
-                }
-              } else {
-                blogPosts_log(`   📄 Generated HowTo: ${howToFileName}`);
-                saved++;
-              }
-            }
-          } catch (e) {
-            blogPosts_log(`   ⚠️  Error generating HowTo for ${slug}: ${e.message}`);
-          }
+        // Generate HowTo schema (MASTER RULE: only if markers detected)
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [HowTo Detection] ${msg}`);
+          const shouldGenerate = shouldGenerateHowTo(html, plainText, debugLog);
           
-          // Generate FAQ schema (MASTER RULE: skip if FAQ markers detected)
-          try {
-            const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
-            const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          if (shouldGenerate) {
+            // Check if file already exists (SAFETY RULE)
+            const howToFileName = `${slug}_howto.json`;
+            const fileExists = await fileExistsInGithub(howToFileName);
             
-            if (hasFAQ) {
-              blogPosts_log(`   ⏭️  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
+            if (fileExists) {
+              blogPosts_log(`   ⏭️  HowTo SKIPPED: File already exists in GitHub: ${howToFileName}`);
             } else {
-              // Check if file already exists (SAFETY RULE)
-              const faqFileName = `${slug}_faq.json`;
-              const fileExists = await fileExistsInGithub(faqFileName);
-              
-              if (fileExists) {
-                blogPosts_log(`   ⏭️  FAQ SKIPPED: File already exists in GitHub: ${faqFileName}`);
-              } else {
-                const faqSchema = await generateFAQSchema(row, blogPosting, plainText);
-                if (faqSchema) {
-                  const faqJson = JSON.stringify(faqSchema, null, 2);
-                  generatedFiles.push({ name: faqFileName, content: faqJson });
-                  
-                  if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                    try {
-                      await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
-                      blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
-                      saved++;
-                    } catch (e) {
-                      blogPosts_log(`   ❌ Failed to save FAQ ${faqFileName}: ${e.message}`);
-                      errors++;
-                    }
-                  } else {
-                    blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
+              const howToSchema = await generateHowToSchema(row, blogPosting, plainText);
+              if (howToSchema) {
+                const howToJson = JSON.stringify(howToSchema, null, 2);
+                generatedFiles.push({ name: howToFileName, content: howToJson });
+                
+                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                  try {
+                    await window.electronAPI.saveAndDeploySchema(howToFileName, howToJson);
+                    blogPosts_log(`   ✅ Saved HowTo: ${howToFileName}`);
                     saved++;
+                  } catch (e) {
+                    blogPosts_log(`   ❌ Failed to save HowTo ${howToFileName}: ${e.message}`);
+                    errors++;
                   }
-                }
-              }
-            }
-          } catch (e) {
-            blogPosts_log(`   ⚠️  Error generating FAQ for ${slug}: ${e.message}`);
-          }
-          
-          // Generate ImageObject schema
-          try {
-            const imageSchema = await generateImageObjectSchema(row, blogPosting);
-            if (imageSchema) {
-              const imageFileName = `${slug}_image.json`;
-              const imageJson = JSON.stringify(imageSchema, null, 2);
-              generatedFiles.push({ name: imageFileName, content: imageJson });
-              
-              if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                try {
-                  await window.electronAPI.saveAndDeploySchema(imageFileName, imageJson);
-                  blogPosts_log(`   ✅ Saved ImageObject: ${imageFileName}`);
+                } else {
+                  blogPosts_log(`   📄 Generated HowTo: ${howToFileName}`);
                   saved++;
-                } catch (e) {
-                  blogPosts_log(`   ❌ Failed to save ImageObject ${imageFileName}: ${e.message}`);
-                  errors++;
                 }
-              } else {
-                blogPosts_log(`   📄 Generated ImageObject: ${imageFileName}`);
-                saved++;
               }
             }
-          } catch (e) {
-            blogPosts_log(`   ⚠️  Error generating ImageObject for ${slug}: ${e.message}`);
+          } else {
+            blogPosts_log(`   ⏭️  HowTo SKIPPED: No HowTo markers detected for ${slug}`);
           }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating HowTo for ${slug}: ${e.message}`);
+        }
+        
+        // Generate FAQ schema (MASTER RULE: skip if FAQ markers detected)
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
+          const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          
+          if (hasFAQ) {
+            blogPosts_log(`   ⏭️  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
+          } else {
+            // Check if file already exists (SAFETY RULE)
+            const faqFileName = `${slug}_faq.json`;
+            const fileExists = await fileExistsInGithub(faqFileName);
+            
+            if (fileExists) {
+              blogPosts_log(`   ⏭️  FAQ SKIPPED: File already exists in GitHub: ${faqFileName}`);
+            } else {
+              const faqSchema = await generateFAQSchema(row, blogPosting, plainText);
+              if (faqSchema) {
+                const faqJson = JSON.stringify(faqSchema, null, 2);
+                generatedFiles.push({ name: faqFileName, content: faqJson });
+                
+                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                  try {
+                    await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
+                    blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
+                    saved++;
+                  } catch (e) {
+                    blogPosts_log(`   ❌ Failed to save FAQ ${faqFileName}: ${e.message}`);
+                    errors++;
+                  }
+                } else {
+                  blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
+                  saved++;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating FAQ for ${slug}: ${e.message}`);
+        }
+        
+        // Generate ImageObject schema
+        try {
+          const imageSchema = await generateImageObjectSchema(row, blogPosting);
+          if (imageSchema) {
+            const imageFileName = `${slug}_image.json`;
+            const imageJson = JSON.stringify(imageSchema, null, 2);
+            generatedFiles.push({ name: imageFileName, content: imageJson });
+            
+            if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+              try {
+                await window.electronAPI.saveAndDeploySchema(imageFileName, imageJson);
+                blogPosts_log(`   ✅ Saved ImageObject: ${imageFileName}`);
+                saved++;
+              } catch (e) {
+                blogPosts_log(`   ❌ Failed to save ImageObject ${imageFileName}: ${e.message}`);
+                errors++;
+              }
+            } else {
+              blogPosts_log(`   📄 Generated ImageObject: ${imageFileName}`);
+              saved++;
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating ImageObject for ${slug}: ${e.message}`);
         }
         
         processed++;
