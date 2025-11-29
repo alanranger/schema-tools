@@ -6927,6 +6927,39 @@
       keywords.push(String(kw).trim()); // Keep original case
     }
 
+    // 🔒 SAFE PATCH: Guarantee keywords field - fallback if empty
+    if (keywords.length === 0) {
+      const STOPWORDS = new Set(['the', 'and', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can']);
+      
+      // Extract words from title
+      const titleWords = (title || '').toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !STOPWORDS.has(w))
+        .slice(0, 3);
+      
+      // Add category/articleSection
+      if (articleSection && articleSection !== 'Photography') {
+        const sectionWords = articleSection.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+        titleWords.push(...sectionWords);
+      }
+      
+      // Add 1-2 about keywords if present
+      if (entityInfo.about.length > 0) {
+        entityInfo.about.slice(0, 2).forEach(item => {
+          if (item.name) {
+            const aboutWord = item.name.toLowerCase().split(/\s+/)[0];
+            if (aboutWord.length > 3 && !titleWords.includes(aboutWord)) {
+              titleWords.push(aboutWord);
+            }
+          }
+        });
+      }
+      
+      // Deduplicate and add to keywords
+      const uniqueWords = [...new Set(titleWords)].slice(0, 4);
+      keywords.push(...uniqueWords.map(w => w.charAt(0).toUpperCase() + w.slice(1)));
+    }
 
     // Derive additional metadata
     const publishYear = publishDate ? new Date(publishDate).getFullYear() : new Date().getFullYear();
@@ -7029,7 +7062,7 @@
       readingTime: readingTime || 'PT1M',
       genre: genre || 'Photography Guide',
       articleSection: articleSection || 'Photography',
-      keywords: keywords.length > 0 ? keywords : [],
+      keywords: keywords.length > 0 ? keywords : [], // Will be guaranteed below if empty
       // 🔥 11 & 12. Assignments need teaches + learningResourceType
       learningResourceType: isAssignment ? 'Practice Assignment' : (learningResourceType || 'Article'),
       educationalLevel: educationalLevel || 'Beginner',
@@ -7049,7 +7082,7 @@
         targetName: educationalLevel || 'Beginner'
       },
       about: entityInfo.about.length > 0 ? entityInfo.about : [],
-      mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [],
+      mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [], // Will be guaranteed below if empty
       hasPart: hasPart.length > 0 ? hasPart : [],
       // 🔥 3. Image must be ImageObject (not string)
       image: imageUrl ? {
@@ -7352,6 +7385,40 @@
     if (deduplicatedPostings.length !== blogPostings.length) {
       blogLog(`⚠️  WARNING: Deduplicated ${blogPostings.length} → ${deduplicatedPostings.length} BlogPosting objects`);
     }
+    
+    // 🔒 SAFE PATCH: Guarantee mentions field - add related posts for posts with empty mentions
+    deduplicatedPostings.forEach((post, idx) => {
+      // Only modify if mentions is missing or empty
+      if (!post.mentions || !Array.isArray(post.mentions) || post.mentions.length === 0) {
+        const currentUrl = post.url;
+        const currentSection = post.articleSection || 'Photography';
+        
+        // Find 1-2 related posts from same category (articleSection)
+        const relatedPosts = deduplicatedPostings
+          .filter(p => 
+            p.url !== currentUrl && // Not self
+            p.articleSection === currentSection && // Same category
+            p['@id'] // Has valid @id
+          )
+          .slice(0, 2); // Max 2 related posts
+        
+        // If no same category, find any related post
+        if (relatedPosts.length === 0) {
+          const anyRelated = deduplicatedPostings
+            .filter(p => p.url !== currentUrl && p['@id'])
+            .slice(0, 1);
+          relatedPosts.push(...anyRelated);
+        }
+        
+        // Set mentions with @id references
+        if (relatedPosts.length > 0) {
+          post.mentions = relatedPosts.map(p => ({ '@id': p['@id'] }));
+        } else {
+          // Last resort: use blog index
+          post.mentions = [{ '@id': `${BLOG_URL_GLOBAL}#blog` }];
+        }
+      }
+    });
     
     blogLog(`✅ Validated ${deduplicatedPostings.length} unique BlogPosting objects ready for schema`);
     
@@ -8660,6 +8727,40 @@
     }
   }
 
+  // Fallback copy function specifically for JSON (more reliable)
+  function fallbackCopyJSON(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        blogLog('✅ JSON (without script tags) copied to clipboard');
+        blogLog('   📋 Ready to paste into Google Rich Results Test CODE tab');
+        alert('✅ JSON copied to clipboard!\n\nPaste this into Google Rich Results Test CODE tab.\n\n⚠️ Make sure to paste ONLY the JSON (no script tags).');
+      } else {
+        throw new Error('execCommand copy failed');
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      // Last resort: show the JSON in a prompt they can copy from
+      const jsonPreview = text.substring(0, 500) + '...\n\n[Full JSON is ' + text.length + ' characters]';
+      alert('⚠️ Automatic copy failed.\n\nPlease:\n1. Click OK\n2. The JSON will be shown in console\n3. Or manually select from the code block below');
+      console.log('=== COPY THIS JSON ===');
+      console.log(text);
+      console.log('=== END JSON ===');
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+
   function fallbackCopy(text) {
     // Create a temporary textarea element
     const textarea = document.createElement('textarea');
@@ -8714,18 +8815,25 @@
       return;
     }
 
-    // Copy to clipboard using modern API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(jsonString).then(() => {
-        blogLog('✅ JSON (without script tags) copied to clipboard');
-        blogLog('   📋 Ready to paste into Google Rich Results Test CODE tab');
-        alert('✅ JSON copied to clipboard!\n\nPaste this into Google Rich Results Test CODE tab.\n\n⚠️ Make sure to paste ONLY the JSON (no script tags).');
-      }).catch((err) => {
-        console.error('Clipboard API failed:', err);
-        fallbackCopy(jsonString);
-      });
-    } else {
-      fallbackCopy(jsonString);
+    // Copy to clipboard - use fallback method which is more reliable
+    // Modern clipboard API requires HTTPS or localhost, fallback works everywhere
+    try {
+      // Try modern API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonString).then(() => {
+          blogLog('✅ JSON (without script tags) copied to clipboard');
+          blogLog('   📋 Ready to paste into Google Rich Results Test CODE tab');
+          alert('✅ JSON copied to clipboard!\n\nPaste this into Google Rich Results Test CODE tab.\n\n⚠️ Make sure to paste ONLY the JSON (no script tags).');
+        }).catch((err) => {
+          console.error('Clipboard API failed, using fallback:', err);
+          fallbackCopyJSON(jsonString);
+        });
+      } else {
+        fallbackCopyJSON(jsonString);
+      }
+    } catch (e) {
+      console.error('Copy failed, using fallback:', e);
+      fallbackCopyJSON(jsonString);
     }
   }
 
