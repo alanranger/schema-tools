@@ -9305,12 +9305,21 @@
     
     blogPosts_log(`\n💾 Stored ${generatedFiles.length} generated files for deployment`);
     
-    // Show deploy button if in Electron and not auto-saving
-    if (window.electronAPI && window.electronAPI.isElectron && !saveToGithub) {
+    // Show deploy button if in Electron and we have files (always show, even if already saved)
+    if (window.electronAPI && window.electronAPI.isElectron && generatedFiles.length > 0) {
       const deployBtn = document.getElementById('blogPostsDeployBtn');
       if (deployBtn) {
         deployBtn.style.display = 'inline-block';
+        if (saveToGithub) {
+          deployBtn.textContent = '🔄 Redeploy All to GitHub';
+          blogPosts_log(`   💡 Deploy button available (files already saved, but you can redeploy)`);
+        } else {
+          deployBtn.textContent = '🚀 Deploy All to GitHub';
+          blogPosts_log(`   💡 Click "🚀 Deploy All to GitHub" button to save all ${generatedFiles.length} files to GitHub`);
+        }
       }
+    } else if (!window.electronAPI || !window.electronAPI.isElectron) {
+      blogPosts_log(`   💡 For GitHub deployment, use Electron app or check "Save to GitHub" and regenerate`);
     }
     
     // Browser: Download ZIP if files were generated and saveToGithub is checked
