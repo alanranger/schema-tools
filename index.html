@@ -6367,6 +6367,24 @@
     text = text.replace(/Alan Ranger\s*\/blog-on-photography[^\n]*/gi, '');
     text = text.replace(/\d+\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\s*(Facebook|LinkedIn|Tumblr|Pinterest|Likes|Genre)/gi, '');
     
+    // Remove navigation patterns at the end (last 500 chars - likely footer/navigation)
+    if (text.length > 500) {
+      const lastPart = text.substring(text.length - 500);
+      const mainPart = text.substring(0, text.length - 500);
+      const cleanedLast = lastPart
+        .replace(/previous post\s*$/gi, '')
+        .replace(/next post\s*$/gi, '')
+        .replace(/Subscribe\s*$/gi, '')
+        .replace(/Newsletter\s*$/gi, '');
+      text = mainPart + cleanedLast;
+    } else {
+      text = text
+        .replace(/previous post\s*$/gi, '')
+        .replace(/next post\s*$/gi, '')
+        .replace(/Subscribe\s*$/gi, '')
+        .replace(/Newsletter\s*$/gi, '');
+    }
+    
     // Clean up excessive whitespace but preserve paragraph structure
     text = text.replace(/\n{3,}/g, '\n\n');
     text = text.replace(/[ \t]+/g, ' ');

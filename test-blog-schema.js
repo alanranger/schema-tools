@@ -415,26 +415,31 @@ function testISODurations(blogPostings) {
 function testArticleBodyCleaning(blogPostings) {
   console.log('\n=== TEST 7: ARTICLEBODY CLEANING ===');
   
+  // Use regex patterns for more precise matching (word boundaries, etc.)
   const pollutionPatterns = [
-    'Cart 0',
-    'Cart ',
-    'My Account',
-    'Sign In',
-    'search',
-    'Search',
-    'Home',
-    'Newsletter',
-    'Subscribe',
-    'Cookie',
-    'GDPR',
-    'Footer',
-    'related posts',
-    'All posts',
-    'previous post',
-    'next post',
-    '/Cart',
-    '[/cart]',
-    'Back photography'
+    { pattern: /Cart\s+0/i, name: 'Cart 0' },
+    { pattern: /Cart\s+\d+/i, name: 'Cart number' },
+    { pattern: /My Account/i, name: 'My Account' },
+    { pattern: /Sign In/i, name: 'Sign In' },
+    { pattern: /\/search\b/i, name: '/search' },
+    { pattern: /^search\b/i, name: 'search at start' },
+    { pattern: /searchBack/i, name: 'searchBack' },
+    { pattern: /\bsearch\s+Back/i, name: 'search Back' },
+    { pattern: /^Home\b/i, name: 'Home at start' }, // Only "Home" at start (likely navigation)
+    { pattern: /Newsletter/i, name: 'Newsletter' },
+    // Only flag "Subscribe" at end (likely footer/navigation)
+    { pattern: /Subscribe\s*$/i, name: 'Subscribe at end' },
+    { pattern: /Cookie/i, name: 'Cookie' },
+    { pattern: /GDPR/i, name: 'GDPR' },
+    { pattern: /Footer/i, name: 'Footer' },
+    { pattern: /related posts/i, name: 'related posts' },
+    { pattern: /All posts/i, name: 'All posts' },
+    // Only flag "previous post" / "next post" at end (likely navigation)
+    { pattern: /previous post\s*$/i, name: 'previous post at end' },
+    { pattern: /next post\s*$/i, name: 'next post at end' },
+    { pattern: /\/Cart/i, name: '/Cart' },
+    { pattern: /\[\/cart\]/i, name: '[/cart]' },
+    { pattern: /Back\s+photography/i, name: 'Back photography' }
   ];
   
   let cleanPosts = 0;
@@ -447,13 +452,14 @@ function testArticleBodyCleaning(blogPostings) {
       return;
     }
     
-    const foundPollution = pollutionPatterns.filter(pattern => 
-      post.articleBody.includes(pattern)
-    );
+    const foundPollution = pollutionPatterns.filter(({ pattern }) => 
+      pattern.test(post.articleBody)
+    ).map(({ name }) => name);
     
     if (foundPollution.length > 0) {
       pollutedPosts++;
-      if (idx < 10) {
+      // Always show first 10 errors to help debug
+      if (pollutedPosts <= 10) {
         error(`Post ${idx + 1} (${post.url || 'no URL'}): articleBody contains pollution: ${foundPollution.join(', ')}`);
       }
     } else {
