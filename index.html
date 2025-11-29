@@ -9339,11 +9339,20 @@
    * Returns true if FAQ markers are found, false otherwise
    * CRITICAL: Must be thorough to avoid duplicate FAQ schemas
    */
-  function hasExistingFAQBlock(articleBody, html) {
-    if (!articleBody && !html) return false;
+  function hasExistingFAQBlock(articleBody, html, debugLog = null) {
+    if (!articleBody && !html) {
+      if (debugLog) debugLog('FAQ Detection: No articleBody or HTML provided');
+      return false;
+    }
     
     // Use raw HTML first (before cleaning) for most accurate detection
     const rawHtml = html || '';
+    
+    if (debugLog) {
+      debugLog(`FAQ Detection: Starting check`);
+      debugLog(`  - HTML length: ${rawHtml ? rawHtml.length : 0}`);
+      debugLog(`  - articleBody length: ${articleBody ? articleBody.length : 0}`);
+    }
     
     // Extract text from raw HTML (before any cleaning) for detection
     let rawHtmlText = '';
@@ -9352,9 +9361,11 @@
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = rawHtml;
         rawHtmlText = tempDiv.textContent || tempDiv.innerText || '';
+        if (debugLog) debugLog(`  - Extracted HTML text length: ${rawHtmlText.length}`);
       } catch (e) {
         // Fallback: use HTML as-is if parsing fails
         rawHtmlText = rawHtml.replace(/<[^>]+>/g, ' ');
+        if (debugLog) debugLog(`  - HTML parsing failed, using fallback: ${rawHtmlText.length}`);
       }
     }
     
@@ -9378,9 +9389,27 @@
       'q and a'
     ];
     
-    // Check for FAQ markers in text
+    // Check for FAQ markers in combined text
     for (const marker of faqMarkers) {
       if (combinedText.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in combined text`);
+        return true;
+      }
+    }
+    
+    // Also check raw HTML string directly (in case DOM parsing misses it)
+    if (rawHtml) {
+      const rawHtmlLower = rawHtml.toLowerCase();
+      // Check for FAQ markers in raw HTML (more reliable than DOM parsing sometimes)
+      for (const marker of faqMarkers) {
+        if (rawHtmlLower.includes(marker.toLowerCase())) {
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found marker "${marker}" in raw HTML string`);
+          return true;
+        }
+      }
+      // Check for "FAQs -" or "FAQ -" pattern in HTML headings directly
+      if (/<h[1-6][^>]*>.*faqs?\s*[-–—:]/i.test(rawHtml)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in raw HTML heading tag`);
         return true;
       }
     }
@@ -9392,6 +9421,7 @@
       // Additional check: if we find 2+ numbered questions, it's definitely an FAQ
       const numberedMatches = combinedText.match(/\d+\.\s+(how|what|why|when|where|who|which|can|should|will|does|is|are|do|did|would|could|may)\s+/gi);
       if (numberedMatches && numberedMatches.length >= 2) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found ${numberedMatches.length} numbered questions`);
         return true;
       }
     }
@@ -9401,25 +9431,49 @@
       try {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = rawHtml;
-        const headings = tempDiv.querySelectorAll('h1, h2, h3, h4');
+        const headings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        
+        if (debugLog) debugLog(`  - Found ${headings.length} headings to check`);
         
         for (const heading of headings) {
-          const headingText = heading.textContent.toLowerCase().trim();
-          // Check for FAQ in heading
+          // Get text content (handles nested elements)
+          let headingText = heading.textContent || heading.innerText || '';
+          headingText = headingText.toLowerCase().trim();
+          
+          // Also check innerHTML for cases where text might be in nested tags
+          const headingHTML = heading.innerHTML.toLowerCase();
+          
+          if (debugLog && (headingText.includes('faq') || headingText.includes('question') || headingHTML.includes('faq'))) {
+            debugLog(`  - Checking heading: "${headingText.substring(0, 100)}"`);
+          }
+          
+          // Check for FAQ in heading text
           if (headingText.includes('faq') || headingText.includes('faqs')) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in heading text: "${headingText.substring(0, 80)}"`);
             return true;
           }
+          
+          // Check for FAQ in heading HTML (in case of nested formatting)
+          if (headingHTML.includes('faq') || headingHTML.includes('faqs')) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in heading HTML`);
+            return true;
+          }
+          
           // Check for "question" or "questions" in heading
           if (headingText.includes('question')) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "question" in heading: "${headingText.substring(0, 80)}"`);
             return true;
           }
-          // Check for "FAQs -" pattern (common format)
-          if (/^faqs\s*[-–—]/.test(headingText)) {
+          
+          // Check for "FAQs -" pattern (common format) - more flexible pattern
+          if (/^faqs?\s*[-–—:]/i.test(headingText) || /faqs?\s*[-–—:]/i.test(headingText)) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQs -" pattern in heading: "${headingText.substring(0, 80)}"`);
             return true;
           }
         }
       } catch (e) {
         // If HTML parsing fails, continue with text search only
+        if (debugLog) debugLog(`  ⚠️  HTML parsing failed: ${e.message}`);
         console.warn('FAQ detection: HTML parsing failed', e);
       }
     }
@@ -9432,14 +9486,70 @@
         // Check for elements with FAQ-related classes/ids
         const faqElements = tempDiv.querySelectorAll('[class*="faq" i], [id*="faq" i], [class*="question" i], [id*="question" i]');
         if (faqElements && faqElements.length > 0) {
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found ${faqElements.length} elements with FAQ-related classes/ids`);
           return true;
         }
       } catch (e) {
         // Ignore parsing errors
+        if (debugLog) debugLog(`  ⚠️  FAQ element search failed: ${e.message}`);
       }
     }
     
+    if (debugLog) debugLog(`  ❌ FAQ NOT DETECTED: No FAQ markers found`);
     return false;
+  }
+
+  /**
+   * TEST FUNCTION: Validate FAQ detection for a specific URL
+   * Call this from browser console to test detection logic
+   */
+  async function testFAQDetection(url) {
+    console.log(`\n🧪 Testing FAQ Detection for: ${url}`);
+    console.log('='.repeat(60));
+    
+    if (!supabaseAvailable || !supabase) {
+      console.error('❌ Supabase not available for testing');
+      return;
+    }
+    
+    try {
+      // Fetch HTML and chunks
+      const [htmlResult, chunksResult] = await Promise.all([
+        fetchPageHtmlForUrl(url),
+        fetchPageChunksForUrl(url, 5)
+      ]);
+      
+      const html = htmlResult;
+      const chunksText = chunksResult
+        .map(c => (c && c.chunk_text) || '')
+        .filter(Boolean)
+        .join(' ');
+      
+      const articleBodySource = html || chunksText || '';
+      let articleBody = stripHtmlToText(articleBodySource);
+      articleBody = cleanFullArticleBody(articleBody, 'Test Title');
+      
+      console.log(`\n📊 Data Retrieved:`);
+      console.log(`  - HTML length: ${html ? html.length : 0}`);
+      console.log(`  - ArticleBody length: ${articleBody ? articleBody.length : 0}`);
+      
+      // Test detection with debug logging
+      const debugLog = (msg) => console.log(`  ${msg}`);
+      const hasFAQ = hasExistingFAQBlock(articleBody, html, debugLog);
+      
+      console.log(`\n${'='.repeat(60)}`);
+      if (hasFAQ) {
+        console.log(`✅ RESULT: FAQ DETECTED - Should SKIP generation`);
+      } else {
+        console.log(`❌ RESULT: FAQ NOT DETECTED - Will GENERATE (THIS IS A PROBLEM IF FAQ EXISTS!)`);
+      }
+      console.log('='.repeat(60));
+      
+      return hasFAQ;
+    } catch (error) {
+      console.error('❌ Test failed:', error);
+      return false;
+    }
   }
 
   /**
@@ -9451,8 +9561,9 @@
     const url = csvRow.url;
     const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
     
-    // STEP 1: Check if FAQ block already exists
-    const hasFAQ = hasExistingFAQBlock(articleBody, html);
+    // STEP 1: Check if FAQ block already exists (with debug logging)
+    const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
+    const hasFAQ = hasExistingFAQBlock(articleBody, html, debugLog);
     if (hasFAQ) {
       // FAQ block detected - skip generation entirely
       blogPosts_log(`   ⏭️  FAQ skipped (existing FAQ block detected): ${extractSlug(url)}`);
