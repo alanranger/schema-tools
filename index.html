@@ -9858,6 +9858,13 @@
           
           // Generate FAQ schema (only if no existing FAQ block detected)
           try {
+            // CRITICAL: Ensure we have HTML before checking for FAQ
+            if (!html && supabaseAvailable && supabase && row.url) {
+              blogPosts_log(`   ⚠️  No HTML available for FAQ detection, fetching...`);
+              html = await fetchPageHtmlForUrl(row.url);
+            }
+            
+            // Use raw HTML for detection (not cleaned articleBody)
             const faqSchema = await generateFAQSchema(row, blogPosting, articleBody, html);
             if (faqSchema) {
               const faqFileName = `${slug}_faq.json`;
