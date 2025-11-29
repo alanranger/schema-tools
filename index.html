@@ -9815,29 +9815,8 @@
         
         // Get blogPosting object for additional schemas
         const blogPosting = await buildEnrichedBlogPosting(row);
-          
-          // Fetch HTML and articleBody for HowTo/FAQ extraction
-          let html = null;
-          let articleBody = null;
-          
-          if (supabaseAvailable && supabase && row.url) {
-            const [htmlResult, chunksResult] = await Promise.all([
-              fetchPageHtmlForUrl(row.url),
-              fetchPageChunksForUrl(row.url, 5)
-            ]);
-            html = htmlResult;
-            
-            const chunksText = chunksResult
-              .map(c => (c && c.chunk_text) || '')
-              .filter(Boolean)
-              .join(' ');
-            
-            const articleBodySource = html || chunksText || '';
-            articleBody = stripHtmlToText(articleBodySource);
-            articleBody = cleanFullArticleBody(articleBody, row.title);
-          }
-          
-          // Generate HowTo schema
+        
+        // Generate HowTo schema
           try {
             const howToSchema = await generateHowToSchema(row, blogPosting, articleBody);
             if (howToSchema) {
