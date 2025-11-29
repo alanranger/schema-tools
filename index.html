@@ -9300,8 +9300,10 @@
       }
     }
 
-    // Store generated files for later deployment (if not auto-saving)
+    // ALWAYS store generated files for later deployment (even if not auto-saved)
     window.blogPostsGeneratedFiles = generatedFiles;
+    
+    blogPosts_log(`\n💾 Stored ${generatedFiles.length} generated files for deployment`);
     
     // Show deploy button if in Electron and not auto-saving
     if (window.electronAPI && window.electronAPI.isElectron && !saveToGithub) {
