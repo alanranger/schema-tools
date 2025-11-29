@@ -9335,105 +9335,147 @@
   }
 
   /**
-   * Generate FAQ schema for a blog post
-   * Extracts FAQ-style content from headings or uses fallback
+   * Detect if blog post already contains an FAQ block
+   * Returns true if FAQ markers are found, false otherwise
    */
-  async function generateFAQSchema(csvRow, blogPosting, html) {
-    const url = csvRow.url;
-    const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
+  function hasExistingFAQBlock(articleBody, html) {
+    if (!articleBody && !html) return false;
     
-    let faqItems = [];
+    const searchText = (articleBody || '').toLowerCase();
+    const htmlText = html ? html.toLowerCase() : '';
+    const combinedText = searchText + ' ' + htmlText;
     
-    // Try extracting FAQ from HTML headings
-    if (html) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      
-      // Find H3/H4 headings starting with question words
-      const questionPattern = /^(what|why|how|when|should|can|will|does|is|are|do|did|would|could|may)\s+/i;
-      const headings = tempDiv.querySelectorAll('h3, h4');
-      
-      for (const heading of headings) {
-        const headingText = heading.textContent.trim();
-        if (questionPattern.test(headingText)) {
-          // Find the next paragraph or content after this heading
-          let answerText = '';
-          let nextElement = heading.nextElementSibling;
-          let attempts = 0;
-          
-          while (nextElement && attempts < 3) {
-            if (nextElement.tagName === 'P' || nextElement.tagName === 'DIV') {
-              answerText = nextElement.textContent.trim();
-              if (answerText.length > 50) break; // Need substantial answer
-            }
-            nextElement = nextElement.nextElementSibling;
-            attempts++;
-          }
-          
-          // If no answer found, use a generic one
-          if (!answerText || answerText.length < 50) {
-            answerText = `This question is addressed in the article "${headline}". Please refer to the full content for detailed information.`;
-          }
-          
-          faqItems.push({
-            '@type': 'Question',
-            name: headingText,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: answerText.substring(0, 500) // Limit answer length
-            }
-          });
-          
-          if (faqItems.length >= 5) break; // Limit to 5 FAQs
-        }
+    // FAQ markers to search for
+    const faqMarkers = [
+      'faq',
+      'faqs',
+      'frequently asked questions',
+      'common questions',
+      'question:',
+      'q:',
+      'q –',
+      'q.'
+    ];
+    
+    // Check for FAQ markers in text
+    for (const marker of faqMarkers) {
+      if (combinedText.includes(marker)) {
+        return true;
       }
     }
     
-    // Fallback to generic FAQ if no headings match
-    if (faqItems.length === 0) {
-      faqItems = [
-        {
-          '@type': 'Question',
-          name: 'What is this assignment about?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `This ${blogPosting.articleSection || 'photography'} assignment covers ${headline.toLowerCase()}. Follow the guidance in the article to complete the tasks and improve your photography skills.`
-          }
-        },
-        {
-          '@type': 'Question',
-          name: 'How do I complete the tasks?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Follow the step-by-step instructions provided in the article. Review the techniques, apply them in practice, and refine your approach based on the results and feedback outlined in the post.`
-          }
-        },
-        {
-          '@type': 'Question',
-          name: 'What settings should I use for best results?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Refer to the article for specific camera settings and recommendations. The optimal settings depend on your equipment, lighting conditions, and the specific photography technique being demonstrated.`
+    // Check for H2/H3 headings containing "FAQ" or "Question"
+    if (html) {
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const headings = tempDiv.querySelectorAll('h2, h3');
+        
+        for (const heading of headings) {
+          const headingText = heading.textContent.toLowerCase();
+          if (headingText.includes('faq') || headingText.includes('question')) {
+            return true;
           }
         }
-      ];
+      } catch (e) {
+        // If HTML parsing fails, continue with text search only
+      }
     }
     
-    // Build FAQPage schema
+    return false;
+  }
+
+  /**
+   * Generate FAQ schema for a blog post
+   * ONLY generates if no existing FAQ block is detected
+   * Returns null if FAQ block exists (skip generation)
+   */
+  async function generateFAQSchema(csvRow, blogPosting, articleBody, html) {
+    const url = csvRow.url;
+    const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
+    
+    // STEP 1: Check if FAQ block already exists
+    if (hasExistingFAQBlock(articleBody, html)) {
+      // FAQ block detected - skip generation entirely
+      return null;
+    }
+    
+    // STEP 2: No FAQ block exists - generate generic FAQ schema
+    // Use standard photography Q&A pattern (5-8 questions)
+    const faqItems = [
+      {
+        '@type': 'Question',
+        name: 'What is this photography technique about?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `This article covers ${headline.toLowerCase()}. It provides guidance on photography techniques, camera settings, and practical tips to help you improve your photography skills.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'How do I apply these techniques?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Follow the step-by-step guidance provided in the article. Practice the techniques in real-world conditions, adjust your camera settings as recommended, and review your results to refine your approach.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'What camera settings should I use?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `The optimal camera settings depend on your specific equipment, lighting conditions, and the photography technique being demonstrated. Refer to the article for detailed recommendations tailored to different scenarios.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'Do I need special equipment?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `The equipment requirements vary depending on the technique. While some methods can be achieved with basic camera gear, others may benefit from specific lenses, filters, or accessories. Check the article for detailed equipment recommendations.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'How can I improve my results?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Practice regularly, pay attention to lighting conditions, experiment with different settings, and review your images critically. The article provides specific tips and common mistakes to avoid that will help you achieve better results.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'Is this suitable for beginners?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `The article is designed to be accessible to photographers of various skill levels. Beginners will find clear explanations and step-by-step guidance, while more experienced photographers can use it as a reference for refining their technique.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'What are the most common mistakes to avoid?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Common mistakes include incorrect camera settings for the conditions, poor composition choices, and not paying attention to lighting. The article addresses these issues and provides solutions to help you avoid these pitfalls.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'Where can I practice these techniques?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `You can practice these photography techniques in various locations depending on the specific method. The article may suggest ideal locations, but many techniques can be practiced in your local area with the right conditions and approach.`
+        }
+      }
+    ];
+    
+    // Build FAQPage schema (exact structure as specified)
+    // Note: @context required for valid JSON-LD, but structure matches user spec
     const faqPage = {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      '@id': `${url}#faq`,
       mainEntity: faqItems
     };
-    
-    // Add mainEntityOfPage reference
-    if (url) {
-      faqPage.mainEntityOfPage = {
-        '@type': 'WebPage',
-        '@id': `${url}#webpage`
-      };
-    }
     
     return faqPage;
   }
@@ -9644,9 +9686,9 @@
             blogPosts_log(`   ⚠️  Error generating HowTo for ${slug}: ${e.message}`);
           }
           
-          // Generate FAQ schema
+          // Generate FAQ schema (only if no existing FAQ block detected)
           try {
-            const faqSchema = await generateFAQSchema(row, blogPosting, html);
+            const faqSchema = await generateFAQSchema(row, blogPosting, articleBody, html);
             if (faqSchema) {
               const faqFileName = `${slug}_faq.json`;
               const faqJson = JSON.stringify(faqSchema, null, 2);
@@ -9665,6 +9707,9 @@
                 blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
                 saved++;
               }
+            } else {
+              // FAQ block detected - skip generation
+              blogPosts_log(`   ⏭️  FAQ skipped (existing FAQ block detected): ${slug}`);
             }
           } catch (e) {
             blogPosts_log(`   ⚠️  Error generating FAQ for ${slug}: ${e.message}`);
