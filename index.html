@@ -9710,10 +9710,10 @@
   function blogPosts_stopGeneration() {
     blogPostsStopGeneration = true;
     blogPosts_log('\n⏹️ STOP REQUESTED - Generation will stop after current post...');
-    const stopBtn = document.getElementById('blogPostsStopBtn');
-    if (stopBtn) {
-      stopBtn.disabled = true;
-      stopBtn.textContent = '⏹️ Stopping...';
+    const stopBtnEl = document.getElementById('blogPostsStopBtn');
+    if (stopBtnEl) {
+      stopBtnEl.disabled = true;
+      stopBtnEl.textContent = '⏹️ Stopping...';
     }
   }
 
@@ -10086,11 +10086,12 @@
       generateBtn.textContent = 'Generate Blog Post Schemas';
     }
     
-    const stopBtn = document.getElementById('blogPostsStopBtn');
-    if (stopBtn) {
-      stopBtn.style.display = 'none';
-      stopBtn.disabled = false;
-      stopBtn.textContent = '⏹️ Stop Generation';
+    // Reuse stopBtn variable already declared at function start
+    const stopBtnFinal = document.getElementById('blogPostsStopBtn');
+    if (stopBtnFinal) {
+      stopBtnFinal.style.display = 'none';
+      stopBtnFinal.disabled = false;
+      stopBtnFinal.textContent = '⏹️ Stop Generation';
     }
     
     // Reset stop flag
