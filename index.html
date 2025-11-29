@@ -1385,6 +1385,7 @@
       <button class="tab active" onclick="switchTab('event')">Event Schema</button>
       <button class="tab" onclick="switchTab('product')">Product Schema</button>
       <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
+      <button class="tab" onclick="switchTab('blogPosts')">Blog Posts</button>
       <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
       <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
       <button class="tab" onclick="switchTab('workflow')">📋 Complete Workflow</button>
@@ -2728,6 +2729,99 @@
           <span>JSON-LD Schema</span>
         </div>
         <pre style="background:#000 !important; color:#fff !important; padding:12px; margin:0; overflow:auto; font-family:'Courier New', monospace !important; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word;"><code id="blogSchemaCode" style="background:#000 !important; color:#fff !important;"></code></pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Blog Posts Schema Tab Content -->
+  <div id="blogPostsTab" class="tab-content">
+    <div class="instructions">
+      <strong>📝 Blog Posts Schema Generator</strong><br><br>
+      
+      ✅ Generate individual BlogPosting schema files for each blog post.<br>
+      ✅ Works entirely offline in your browser.<br>
+      ✅ Compliant with Schema.org and Google Rich Results requirements.<br><br>
+      
+      <strong>What this does:</strong> Creates individual structured data files for each blog post, saved to GitHub. Each blog post page can fetch its schema via URL (similar to product schemas).<br><br>
+      
+      <strong>📄 Complete Workflow - Step by Step:</strong><br>
+      <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin-top: 1rem; margin-bottom: 1rem;">
+        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2;">
+          <li><strong>Export Blog Posts from Squarespace:</strong><br>
+            <code style="background: #edf2f7; padding: 6px 10px; border-radius: 4px; font-size: 1.1rem; font-weight: 700; display: inline-block; margin: 4px 0;">Squarespace → Blog → Export CSV</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Export all blog posts as CSV<br>
+            • File location: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code><br>
+            • Required fields: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Title</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Url Id</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Full Url</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Categories</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Tags</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Image</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Publish On</code></span>
+          </li>
+          <li><strong>Upload Blog CSV File:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Upload Blog CSV File" below<br>
+            • Select your exported blog CSV file<br>
+            • The file will be validated automatically</span>
+          </li>
+          <li><strong>Generate Blog Post Schemas:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Generate Blog Post Schemas" button<br>
+            • This will create individual schema files for each blog post<br>
+            • Check debug log for progress</span>
+          </li>
+          <li><strong>Save to GitHub:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Check "Save to GitHub" checkbox<br>
+            • Click "Generate Blog Post Schemas" to save all files<br>
+            • Files will be saved as <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;slug&gt;_schema.json</code> in alanranger-schema repo</span>
+          </li>
+          <li><strong>Deploy to Squarespace:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Add script tag to each blog post page:<br>
+            <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;script type="application/ld+json" src="https://schema.alanranger.com/&lt;slug&gt;_schema.json"&gt;&lt;/script&gt;</code><br>
+            • Validate using Schema Validator tab</span>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="workflow-section">
+      <h3>Step 1: Upload Blog CSV File</h3>
+      <label for="blogPostsCsvFile">Upload Blog CSV File:</label>
+      <input type="file" id="blogPostsCsvFile" accept=".csv" aria-label="Blog CSV file upload" onchange="blogPosts_handleCSVUpload(event)">
+      <p style="margin-top: 0.75rem; color: #4a5568; font-size: 0.9rem;">
+        Expected CSV fields: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Title</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Url Id</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Full Url</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Categories</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Tags</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Image</code>, <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">Publish On</code>
+      </p>
+      
+      <div id="blogPostsCsvInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px; border-left: 3px solid #3182ce;">
+        <p style="margin: 0; color: #2c5282; font-weight: 600;" id="blogPostsCsvInfoText"></p>
+      </div>
+
+      <!-- Debug Log Section -->
+      <div id="blogPostsDebugLogContainer" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; max-height: 300px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: #495057;">📋 Debug Log</h4>
+          <button onclick="blogPosts_copyDebugLog()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid #dee2e6; border-radius: 4px; background: white; cursor: pointer;">Copy Log</button>
+        </div>
+        <pre id="blogPostsDebugLog" style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; color: #212529; background: white; padding: 0.5rem; border-radius: 4px;"></pre>
+      </div>
+
+      <div class="button-group" style="margin-top: 1.5rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <input type="checkbox" id="blogPostsSaveToGithub" checked>
+          <span>Save to GitHub</span>
+        </label>
+        <button onclick="blogPosts_generateSchema()" id="blogPostsGenerateBtn" disabled>Generate Blog Post Schemas</button>
+        <button onclick="blogPosts_clearForm()" class="secondary">Clear</button>
+      </div>
+
+      <div id="blogPostsProgress" style="display: none; margin-top: 1rem;">
+        <div id="blogPostsProgressText" style="font-size: 0.85rem; color: #4a5568;">
+          Preparing blog post schemas...
+        </div>
+        <div style="margin-top: 0.5rem; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+          <div id="blogPostsProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg,#3b82f6,#10b981); transition: width 0.2s ease-out;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="blogPostsSchemaOutput" style="display: none; margin-top: 2rem;">
+      <h3>Generated Schemas</h3>
+      <div id="blogPostsSchemaSummary" style="padding: 1rem; background: #d4edda; border-radius: 8px; border: 1px solid #c3e6cb; color: #155724; margin-bottom: 1rem;">
+        <p style="margin: 0;" id="blogPostsSchemaSummaryText"></p>
       </div>
     </div>
 
@@ -5840,6 +5934,15 @@
   // Blog CSV data storage
   let blogPosts = [];
   let blogDebugLog = [];
+  let blogPostsData = []; // Separate data array for Blog Posts tab
+  let blogPostsDebugLog = []; // Separate debug log for Blog Posts tab
+
+  // Slug extraction helper
+  function extractSlug(url) {
+    if (!url) return '';
+    const parts = url.split('/').filter(Boolean);
+    return parts[parts.length - 1] || '';
+  }
 
   function blogLog(message, level = 'info') {
     const timestamp = new Date().toLocaleTimeString();
@@ -8941,6 +9044,340 @@
     document.getElementById('blogCsvInfo').style.display = 'none';
     document.getElementById('blogDebugLogContainer').style.display = 'none';
     document.getElementById('blogSchemaOutput').style.display = 'none';
+  }
+
+  // ============================================
+  // BLOG POSTS SCHEMA GENERATOR FUNCTIONS
+  // ============================================
+
+  function blogPosts_log(message, level = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    blogPostsDebugLog.push(logEntry);
+    
+    // Update debug log display
+    const debugLogElement = document.getElementById('blogPostsDebugLog');
+    const debugLogContainer = document.getElementById('blogPostsDebugLogContainer');
+    if (debugLogElement) {
+      debugLogElement.textContent = blogPostsDebugLog.join('\n');
+      if (debugLogContainer) {
+        debugLogContainer.style.display = 'block';
+        debugLogElement.scrollTop = debugLogElement.scrollHeight;
+      }
+    }
+    console.log(logEntry);
+  }
+
+  function blogPosts_copyDebugLog() {
+    if (!blogPostsDebugLog || blogPostsDebugLog.length === 0) {
+      alert('No debug log available to copy.');
+      return;
+    }
+    const logText = blogPostsDebugLog.join('\n');
+    navigator.clipboard.writeText(logText).then(() => {
+      alert('✅ Debug log copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy debug log. Please select the debug log text and copy manually (Ctrl+C).');
+    });
+  }
+
+  async function blogPosts_handleCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      document.getElementById('blogPostsGenerateBtn').disabled = true;
+      document.getElementById('blogPostsCsvInfo').style.display = 'none';
+      blogPostsDebugLog = [];
+      document.getElementById('blogPostsDebugLogContainer').style.display = 'none';
+      return;
+    }
+
+    blogPostsDebugLog = [];
+    blogPosts_log(`📄 Loading blog CSV file: ${file.name}`);
+
+    parseBlogCsv(file)
+      .then(rows => {
+        blogPostsData = rows;
+        blogPosts_log(`✅ Loaded ${blogPostsData.length} normalised blog posts from CSV`);
+        if (blogPostsData.length > 0) {
+          blogPosts_log(`   Sample row keys: ${Object.keys(blogPostsData[0]).join(', ')}`);
+        }
+
+        const infoDiv = document.getElementById('blogPostsCsvInfo');
+        const infoText = document.getElementById('blogPostsCsvInfoText');
+        infoText.textContent = `✅ Loaded ${blogPostsData.length} blog posts. Ready to generate schemas.`;
+        infoDiv.style.display = 'block';
+        document.getElementById('blogPostsGenerateBtn').disabled = false;
+      })
+      .catch(error => {
+        blogPosts_log(`❌ Error parsing CSV file: ${error.message}`, 'error');
+        alert('Error parsing CSV file: ' + error.message);
+        document.getElementById('blogPostsGenerateBtn').disabled = true;
+      });
+  }
+
+  async function blogPosts_generateSingleSchema(csvRow) {
+    // Use the existing buildEnrichedBlogPosting function to get the BlogPosting object
+    const blogPosting = await buildEnrichedBlogPosting(csvRow);
+    
+    // Build the complete schema with @context, WebPage, BreadcrumbList, etc.
+    const url = csvRow.url;
+    const BLOG_URL = BLOG_URL_GLOBAL;
+    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
+    const WEBSITE_ID = 'https://www.alanranger.com#website';
+    
+    // Create WebPage for this post
+    const webPage = {
+      '@type': 'WebPage',
+      '@id': `${url}#webpage`,
+      url: url,
+      name: blogPosting.headline || '',
+      description: blogPosting.description || '',
+      inLanguage: 'en-GB',
+      isPartOf: { '@id': WEBSITE_ID },
+      primaryImageOfPage: { '@id': blogPosting.image && blogPosting.image.url ? blogPosting.image.url : '' }
+    };
+    
+    // Create BreadcrumbList
+    const breadcrumbList = {
+      '@type': 'BreadcrumbList',
+      '@id': `${url}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://www.alanranger.com'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Blog',
+          item: BLOG_URL
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: blogPosting.headline || '',
+          item: url
+        }
+      ]
+    };
+    
+    // Build complete schema with @graph
+    const schema = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        webPage,
+        breadcrumbList,
+        blogPosting
+      ]
+    };
+    
+    return schema;
+  }
+
+  async function blogPosts_generateSchema() {
+    if (!blogPostsData || blogPostsData.length === 0) {
+      alert('Please upload a blog CSV file first.');
+      return;
+    }
+
+    const generateBtn = document.getElementById('blogPostsGenerateBtn');
+    const saveToGithub = document.getElementById('blogPostsSaveToGithub')?.checked || false;
+    
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Generating...';
+    }
+
+    blogPosts_log('🔨 Starting blog post schema generation (individual files)...');
+    blogPosts_log(`   Processing ${blogPostsData.length} blog posts`);
+
+    const progressContainer = document.getElementById('blogPostsProgress');
+    const progressText = document.getElementById('blogPostsProgressText');
+    const progressBar = document.getElementById('blogPostsProgressBar');
+
+    if (progressContainer) {
+      progressContainer.style.display = 'block';
+    }
+
+    const total = blogPostsData.length;
+    let processed = 0;
+    let saved = 0;
+    let errors = 0;
+    const generatedFiles = []; // Store files for browser ZIP download
+
+    function updateProgress() {
+      if (!progressText || !progressBar || !total) return;
+      const pct = Math.round((processed / total) * 100);
+      progressText.textContent = `Generating schemas ${processed}/${total} (${pct}%)...`;
+      progressBar.style.width = `${pct}%`;
+    }
+
+    updateProgress();
+
+    for (const row of blogPostsData) {
+      try {
+        if (!row || !row.url) {
+          blogPosts_log(`⚠️  Skipping row with no URL`);
+          processed++;
+          updateProgress();
+          continue;
+        }
+
+        // Generate schema for this post
+        const schema = await blogPosts_generateSingleSchema(row);
+        
+        // Extract slug and create filename
+        const slug = extractSlug(row.url);
+        if (!slug) {
+          blogPosts_log(`⚠️  Could not extract slug from URL: ${row.url}`);
+          errors++;
+          processed++;
+          updateProgress();
+          continue;
+        }
+        
+        const fileName = `${slug}_schema.json`;
+        const jsonString = JSON.stringify(schema, null, 2);
+        
+        // Validate JSON
+        try {
+          JSON.parse(jsonString);
+        } catch (e) {
+          blogPosts_log(`❌ Invalid JSON for ${slug}: ${e.message}`);
+          errors++;
+          processed++;
+          updateProgress();
+          continue;
+        }
+        
+        // Save to GitHub if checkbox is checked
+        if (saveToGithub) {
+          if (window.electronAPI && window.electronAPI.isElectron) {
+            // Electron: Save directly to GitHub
+            try {
+              const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+              blogPosts_log(`✅ Saved to GitHub: ${fileName}`);
+              saved++;
+            } catch (e) {
+              blogPosts_log(`❌ Failed to save ${fileName}: ${e.message}`);
+              errors++;
+            }
+          } else {
+            // Browser: Store for batch download
+            generatedFiles.push({ name: fileName, content: jsonString });
+            blogPosts_log(`📄 Generated: ${fileName} (will download as ZIP)`);
+            saved++;
+          }
+        } else {
+          blogPosts_log(`📄 Generated: ${fileName} (not saved - checkbox unchecked)`);
+        }
+        
+        processed++;
+        updateProgress();
+        
+        if (processed % 10 === 0 || processed === total) {
+          blogPosts_log(`   Progress: ${processed}/${total} processed, ${saved} saved, ${errors} errors`);
+        }
+      } catch (error) {
+        blogPosts_log(`❌ Error processing ${row.url}: ${error.message}`);
+        errors++;
+        processed++;
+        updateProgress();
+      }
+    }
+
+    // Browser: Download ZIP if files were generated
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      if (saveToGithub && generatedFiles.length > 0) {
+        blogPosts_log(`\n📦 Creating ZIP file with ${generatedFiles.length} schema files...`);
+        try {
+          // Use JSZip if available, otherwise fallback to individual downloads
+          if (typeof JSZip !== 'undefined') {
+            const zip = new JSZip();
+            generatedFiles.forEach(file => {
+              zip.file(file.name, file.content);
+            });
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const zipUrl = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = zipUrl;
+            a.download = `blog-post-schemas-${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(zipUrl);
+            blogPosts_log(`✅ ZIP file downloaded: ${generatedFiles.length} files`);
+          } else {
+            // Fallback: Download files individually (with delay to avoid browser blocking)
+            blogPosts_log(`⚠️  JSZip not available. Downloading files individually...`);
+            for (let i = 0; i < generatedFiles.length; i++) {
+              await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+              const file = generatedFiles[i];
+              const blob = new Blob([file.content], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = file.name;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }
+            blogPosts_log(`✅ Downloaded ${generatedFiles.length} files individually`);
+          }
+        } catch (e) {
+          blogPosts_log(`❌ Failed to create ZIP: ${e.message}`);
+          blogPosts_log(`💡 You can manually copy the JSON from the debug log`);
+        }
+      }
+    }
+
+    // Show summary
+    const outputDiv = document.getElementById('blogPostsSchemaOutput');
+    const summaryText = document.getElementById('blogPostsSchemaSummaryText');
+    
+    if (outputDiv && summaryText) {
+      let summary = `✅ Schema generation complete!<br>`;
+      summary += `• Processed: ${processed} posts<br>`;
+      if (saveToGithub) {
+        if (window.electronAPI && window.electronAPI.isElectron) {
+          summary += `• Saved to GitHub: ${saved} files<br>`;
+          summary += `• Errors: ${errors}<br><br>`;
+          summary += `📁 Files saved to: alanranger-schema repository (root directory)<br>`;
+          summary += `🌐 Live URLs: https://schema.alanranger.com/&lt;slug&gt;_schema.json`;
+        } else {
+          summary += `• Generated: ${saved} schemas<br>`;
+          summary += `• Errors: ${errors}<br><br>`;
+          summary += `📥 Files downloaded as ZIP (or individually if JSZip unavailable)<br>`;
+          summary += `💡 For GitHub deployment, use Electron app or manually upload files.`;
+        }
+      } else {
+        summary += `• Generated: ${processed - errors} schemas (not saved)<br>`;
+        summary += `• Errors: ${errors}<br><br>`;
+        summary += `💡 Check "Save to GitHub" and regenerate to save files.`;
+      }
+      summaryText.innerHTML = summary;
+      outputDiv.style.display = 'block';
+    }
+
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Blog Post Schemas';
+    }
+
+    blogPosts_log(`\n✅ Generation complete: ${processed} processed, ${saved} saved, ${errors} errors`);
+  }
+
+  function blogPosts_clearForm() {
+    document.getElementById('blogPostsCsvFile').value = '';
+    blogPostsData = [];
+    blogPostsDebugLog = [];
+    document.getElementById('blogPostsGenerateBtn').disabled = true;
+    document.getElementById('blogPostsCsvInfo').style.display = 'none';
+    document.getElementById('blogPostsDebugLogContainer').style.display = 'none';
+    document.getElementById('blogPostsSchemaOutput').style.display = 'none';
   }
 
   function testBlogSchemaOrg() {
