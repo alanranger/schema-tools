@@ -9401,14 +9401,137 @@
     blogPosts_log(`\n✅ Generation complete: ${processed} processed, ${saved} saved, ${errors} errors`);
   }
 
+  async function blogPosts_deployToGithub() {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('GitHub deployment is only available in the Electron app.\n\nIn browser: Files will download as ZIP when "Save to GitHub" is checked.');
+      return;
+    }
+
+    if (!window.blogPostsGeneratedFiles || window.blogPostsGeneratedFiles.length === 0) {
+      alert('No generated files to deploy. Please generate schemas first.');
+      return;
+    }
+
+    const deployBtn = document.getElementById('blogPostsDeployBtn');
+    const statusDiv = document.getElementById('blogPostsDeployStatus');
+
+    if (deployBtn) {
+      deployBtn.disabled = true;
+      deployBtn.textContent = '🔄 Deploying...';
+    }
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.innerHTML = '📁 Deploying files to GitHub...';
+      statusDiv.style.background = '#f0f9ff';
+      statusDiv.style.borderColor = '#bae6fd';
+      statusDiv.style.color = '#0c4a6e';
+    }
+
+    blogPosts_log('\n🚀 Starting GitHub deployment...');
+    blogPosts_log(`   Deploying ${window.blogPostsGeneratedFiles.length} schema files`);
+
+    let deployed = 0;
+    let errors = 0;
+    const errorFiles = [];
+
+    try {
+      for (let i = 0; i < window.blogPostsGeneratedFiles.length; i++) {
+        const file = window.blogPostsGeneratedFiles[i];
+        try {
+          blogPosts_log(`   Deploying ${i + 1}/${window.blogPostsGeneratedFiles.length}: ${file.name}...`);
+          const result = await window.electronAPI.saveAndDeploySchema(file.name, file.content);
+          blogPosts_log(`✅ Deployed: ${file.name}`);
+          deployed++;
+          
+          // Update status every 10 files
+          if ((i + 1) % 10 === 0 || (i + 1) === window.blogPostsGeneratedFiles.length) {
+            if (statusDiv) {
+              statusDiv.innerHTML = `📁 Deploying... ${i + 1}/${window.blogPostsGeneratedFiles.length} files (${deployed} successful, ${errors} errors)`;
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`❌ Failed to deploy ${file.name}: ${e.message}`);
+          errors++;
+          errorFiles.push(file.name);
+        }
+      }
+
+      blogPosts_log(`\n✅ Deployment complete!`);
+      blogPosts_log(`   • Deployed: ${deployed} files`);
+      blogPosts_log(`   • Errors: ${errors}`);
+      if (errorFiles.length > 0) {
+        blogPosts_log(`   • Failed files: ${errorFiles.slice(0, 5).join(', ')}${errorFiles.length > 5 ? '...' : ''}`);
+      }
+      blogPosts_log(`   📁 Files saved to: alanranger-schema repository (root directory)`);
+      blogPosts_log(`   🌐 Live URLs: https://schema.alanranger.com/<slug>_schema.json`);
+
+      if (statusDiv) {
+        let statusHtml = `✅ Deployment complete!<br>`;
+        statusHtml += `• Deployed: <strong>${deployed}</strong> files<br>`;
+        statusHtml += `• Errors: ${errors}`;
+        if (errorFiles.length > 0) {
+          statusHtml += `<br>• Failed files: ${errorFiles.slice(0, 3).join(', ')}${errorFiles.length > 3 ? ` (+${errorFiles.length - 3} more)` : ''}`;
+        }
+        statusHtml += `<br><br>📁 Files saved to: alanranger-schema repository (root directory)<br>`;
+        statusHtml += `🌐 Live URLs: https://schema.alanranger.com/&lt;slug&gt;_schema.json`;
+        statusDiv.innerHTML = statusHtml;
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.borderColor = '#c3e6cb';
+        statusDiv.style.color = '#155724';
+      }
+
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '✅ Deployed to GitHub';
+        setTimeout(() => {
+          deployBtn.textContent = '🚀 Deploy All to GitHub';
+        }, 5000);
+      }
+
+      // Show confirmation alert
+      if (errors === 0) {
+        alert(`✅ Successfully deployed ${deployed} blog post schemas to GitHub!\n\n📁 Repository: alanranger-schema\n🌐 Live URLs: https://schema.alanranger.com/<slug>_schema.json\n\nCheck the debug log for details.`);
+      } else {
+        alert(`⚠️ Deployment completed with errors:\n\n✅ Deployed: ${deployed} files\n❌ Errors: ${errors} files\n\nCheck the debug log for failed file details.`);
+      }
+    } catch (error) {
+      blogPosts_log(`❌ Deployment error: ${error.message}`);
+      blogPosts_log(`   Stack: ${error.stack || 'No stack trace'}`);
+      
+      if (statusDiv) {
+        statusDiv.innerHTML = `❌ Deployment failed: ${error.message}<br><br>Check the debug log for details.`;
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.borderColor = '#f5c6cb';
+        statusDiv.style.color = '#721c24';
+      }
+
+      if (deployBtn) {
+        deployBtn.disabled = false;
+        deployBtn.textContent = '🚀 Deploy All to GitHub';
+      }
+      
+      alert(`❌ Deployment failed: ${error.message}\n\nCheck the debug log for details.`);
+    }
+  }
+
   function blogPosts_clearForm() {
     document.getElementById('blogPostsCsvFile').value = '';
     blogPostsData = [];
     blogPostsDebugLog = [];
+    window.blogPostsGeneratedFiles = [];
     document.getElementById('blogPostsGenerateBtn').disabled = true;
     document.getElementById('blogPostsCsvInfo').style.display = 'none';
     document.getElementById('blogPostsDebugLogContainer').style.display = 'none';
     document.getElementById('blogPostsSchemaOutput').style.display = 'none';
+    const deployBtn = document.getElementById('blogPostsDeployBtn');
+    if (deployBtn) {
+      deployBtn.style.display = 'none';
+    }
+    const statusDiv = document.getElementById('blogPostsDeployStatus');
+    if (statusDiv) {
+      statusDiv.style.display = 'none';
+    }
   }
 
   function testBlogSchemaOrg() {
