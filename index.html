@@ -9345,32 +9345,64 @@
     ];
     
     let totalStepMatches = 0;
+    let bestPattern = null;
+    let bestMatches = null;
+    
     for (const pattern of numberedStepsPatterns) {
       const matches = searchText.match(pattern);
-      if (matches) {
-        totalStepMatches = Math.max(totalStepMatches, matches.length);
-        if (debugLog && matches.length > 0) {
+      if (matches && matches.length > totalStepMatches) {
+        totalStepMatches = matches.length;
+        bestPattern = pattern;
+        bestMatches = matches;
+        if (debugLog) {
           debugLog(`  - Found ${matches.length} matches with pattern: ${pattern.source.substring(0, 50)}`);
+          // Show first 2 matches as examples
+          if (matches.length > 0) {
+            debugLog(`    Example: ${matches[0].substring(0, 60)}...`);
+          }
         }
       }
     }
     
-    // Also check HTML directly for numbered list items
+    // Also check HTML directly for numbered list items (ol/ul with numbered content)
     if (mainContentHtml) {
+      // Check for <ol> lists
+      const olMatches = mainContentHtml.match(/<ol[^>]*>[\s\S]*?<\/ol>/gi);
+      if (olMatches) {
+        for (const ol of olMatches) {
+          const liMatches = ol.match(/<li[^>]*>[\s\S]*?<\/li>/gi);
+          if (liMatches && liMatches.length >= 3) {
+            totalStepMatches = Math.max(totalStepMatches, liMatches.length);
+            if (debugLog && liMatches.length > totalStepMatches - liMatches.length) {
+              debugLog(`  - Found ${liMatches.length} numbered list items in <ol> tag`);
+            }
+          }
+        }
+      }
+      
+      // Check for any <li> with numbers at start
       const htmlListMatches = mainContentHtml.match(/<li[^>]*>\s*[1-9]\d*\.\s+[^<]+/gi);
-      if (htmlListMatches) {
-        totalStepMatches = Math.max(totalStepMatches, htmlListMatches.length);
-        if (debugLog && htmlListMatches.length > 0) {
+      if (htmlListMatches && htmlListMatches.length > totalStepMatches) {
+        totalStepMatches = htmlListMatches.length;
+        if (debugLog) {
           debugLog(`  - Found ${htmlListMatches.length} numbered list items in HTML`);
+          debugLog(`    Example: ${htmlListMatches[0].substring(0, 60)}...`);
         }
       }
     }
     
     if (totalStepMatches >= 3) {
-      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format (OVERRIDES exclusions)`);
+      if (debugLog) {
+        debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format (OVERRIDES exclusions)`);
+        if (bestMatches && bestMatches.length >= 3) {
+          debugLog(`    Steps found: ${bestMatches.slice(0, 3).map(m => m.substring(0, 40)).join('; ')}...`);
+        }
+      }
       return true;
     } else if (totalStepMatches > 0) {
       if (debugLog) debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps but need at least 3 for HowTo`);
+    } else {
+      if (debugLog) debugLog(`  - No numbered steps found in main content`);
     }
     
     // PRIORITY 4: Check for HowTo-specific headings in HTML structure
