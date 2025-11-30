@@ -10662,8 +10662,8 @@
       resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">';
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
       resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ NOT DETECTED (existing FAQ found)' : '✅ DETECTED (will generate)'}</p>`;
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ DETECTED (will generate)' : '❌ NOT DETECTED (will skip)'}</p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}</p>`;
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
       resultHtml += '</div>';
       
