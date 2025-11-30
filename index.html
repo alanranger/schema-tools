@@ -10605,11 +10605,39 @@
       
       blogPosts_log('\n✅ Single URL generation complete!');
       
+      // Display results with schema preview
       if (resultDiv) {
-        resultDiv.innerHTML += '<div style="margin-top: 1rem; padding: 1rem; background: #d4edda; border-radius: 6px; color: #155724;"><strong>✅ Schema generated successfully!</strong><br>Check the debug log for details.</div>';
+        resultDiv.style.display = 'block';
+        let resultHtml = '<h4 style="margin-top: 0; color: #10b981;">✅ Schema Generated Successfully</h4>';
+        resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
+        resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
+        resultHtml += `<p><strong>Main Schema:</strong> <code>${fileName}</code></p>`;
+        
+        // Show schema preview (first 500 chars)
+        const schemaPreview = jsonString.length > 500 ? jsonString.substring(0, 500) + '...' : jsonString;
+        resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">';
+        resultHtml += '<h5 style="margin-top: 0;">Schema Preview:</h5>';
+        resultHtml += `<pre style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">${schemaPreview.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</pre>`;
+        resultHtml += '</div>';
+        
+        // Add copy button and full schema textarea (hidden)
+        const schemaTextareaId = `schema_${slug}`;
+        resultHtml += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">';
+        resultHtml += `<button onclick="copySingleUrlSchema('${schemaTextareaId}')" style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">📋 Copy Schema JSON</button>`;
+        resultHtml += '</div>';
+        resultHtml += `<textarea id="${schemaTextareaId}" style="display: none;">${jsonString.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
+        
+        resultDiv.innerHTML = resultHtml;
+        resultDiv.style.borderColor = '#10b981';
+        
+        // Restore the textarea value (it gets escaped in innerHTML)
+        const schemaTextarea = document.getElementById(schemaTextareaId);
+        if (schemaTextarea) {
+          schemaTextarea.value = jsonString;
+        }
       }
       
-      alert(`✅ Schema generated for ${slug}!\n\nCheck the debug log for details.`);
+      alert(`✅ Schema generated for ${slug}!\n\nMain schema: ${fileName}\n\nCheck the result panel below for the full schema.`);
       
     } catch (error) {
       blogPosts_log(`❌ Generation failed: ${error.message}`);
@@ -10625,6 +10653,31 @@
         generateBtn.disabled = false;
         generateBtn.textContent = '✅ Generate Schema';
       }
+    }
+  }
+
+  function copySingleUrlSchema(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) {
+      alert('❌ Schema not found');
+      return;
+    }
+    
+    const text = textarea.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Schema copied to clipboard!');
+      }).catch(() => {
+        // Fallback for older browsers
+        textarea.select();
+        document.execCommand('copy');
+        alert('✅ Schema copied to clipboard!');
+      });
+    } else {
+      // Fallback for older browsers
+      textarea.select();
+      document.execCommand('copy');
+      alert('✅ Schema copied to clipboard!');
     }
   }
 
