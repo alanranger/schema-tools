@@ -9191,22 +9191,38 @@
   // ============================================
 
   /**
-   * Fetch HTML from public URL
+   * Fetch HTML - tries Supabase first (more reliable), then public URL as fallback
    */
-  async function fetchHtmlFromPublicUrl(url) {
+  async function fetchHtmlForDetection(url) {
     if (!url) return null;
+    
+    // PRIORITY 1: Try Supabase (already stored, more reliable, no CORS issues)
+    if (supabaseAvailable && supabase) {
+      try {
+        const html = await fetchPageHtmlForUrl(url);
+        if (html && html.length > 0) {
+          return html;
+        }
+      } catch (e) {
+        console.warn(`Supabase HTML fetch failed for ${url}:`, e.message);
+      }
+    }
+    
+    // PRIORITY 2: Fallback to public URL (may fail due to CORS in browser, but works in Electron)
     try {
       const response = await fetch(url);
-      if (!response.ok) {
-        console.warn(`Failed to fetch HTML from ${url}: ${response.status} ${response.statusText}`);
-        return null;
+      if (response.ok) {
+        const html = await response.text();
+        if (html && html.length > 0) {
+          return html;
+        }
       }
-      const html = await response.text();
-      return html || null;
     } catch (error) {
-      console.warn(`Error fetching HTML from ${url}:`, error.message);
-      return null;
+      // CORS or network error - expected in browser, but works in Electron
+      console.warn(`Public URL fetch failed for ${url} (may be CORS):`, error.message);
     }
+    
+    return null;
   }
 
   /**
@@ -9828,18 +9844,18 @@
         // MASTER RULE: Fetch HTML from public URL and convert to plain text
         // ============================================
         
-        // Fetch HTML from public URL (MASTER RULE)
+        // Fetch HTML (MASTER RULE: Supabase first, then public URL fallback)
         let html = null;
         let plainText = '';
         
         if (row.url) {
-          blogPosts_log(`   🔍 Fetching HTML from public URL: ${row.url}`);
-          html = await fetchHtmlFromPublicUrl(row.url);
+          blogPosts_log(`   🔍 Fetching HTML for detection: ${row.url}`);
+          html = await fetchHtmlForDetection(row.url);
           if (html) {
             plainText = htmlToPlainText(html);
             blogPosts_log(`   ✅ HTML fetched: ${html.length} chars, plain text: ${plainText.length} chars`);
           } else {
-            blogPosts_log(`   ⚠️  WARNING: Could not fetch HTML from public URL`);
+            blogPosts_log(`   ⚠️  WARNING: Could not fetch HTML (tried Supabase and public URL)`);
           }
         }
         
