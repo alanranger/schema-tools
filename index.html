@@ -9505,11 +9505,12 @@
       if (!foundStrongMarker) {
         if (debugLog) {
           if (totalStepMatches >= 3) {
-            debugLog(`  ❌ HowTo NOT DETECTED: Assignment page with ${totalStepMatches} numbered steps (these are TASKS, not HowTo) and no strong HowTo headings`);
+            debugLog(`  ❌ No HowTo markers: Assignment page with ${totalStepMatches} numbered steps (these are TASKS, not HowTo) and no strong HowTo headings`);
           } else {
-            debugLog(`  ❌ HowTo NOT DETECTED: Assignment page with no numbered steps (3+) and no strong HowTo markers in headings`);
+            debugLog(`  ❌ No HowTo markers: Assignment page with no numbered steps (3+) and no strong HowTo markers in headings`);
           }
-          debugLog(`  → RETURNING FALSE: HowTo will NOT be generated`);
+          debugLog(`    → HowTo does NOT exist, but content has no HowTo markers → will SKIP`);
+          debugLog(`  → RETURNING FALSE: will SKIP`);
         }
         return false;
       }
@@ -9535,9 +9536,9 @@
     }
     
     if (debugLog) {
-      debugLog(`  ❌ HowTo markers NOT found: No valid HowTo markers in main content`);
-      debugLog(`    → HowTo does NOT exist, but content has no HowTo markers - will SKIP`);
-      debugLog(`  → RETURNING FALSE: HowTo will NOT be generated (no markers found)`);
+      debugLog(`  ❌ No HowTo markers: No valid HowTo markers in main content`);
+      debugLog(`    → HowTo does NOT exist, but content has no HowTo markers → will SKIP`);
+      debugLog(`  → RETURNING FALSE: will SKIP`);
     }
     return false; // Doesn't exist, but no markers, so skip
   }
