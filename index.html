@@ -10448,12 +10448,22 @@
       generateBtn.textContent = '⏳ Generating...';
     }
     
+    // Show debug log container
+    const debugLogContainer = document.getElementById('blogPostsDebugLogContainer');
+    if (debugLogContainer) {
+      debugLogContainer.style.display = 'block';
+    }
+    
     blogPosts_log(`\n🔨 Generating schema for single URL: ${url}`);
     blogPosts_log('='.repeat(60));
     
     try {
       // Create a mock CSV row from the URL
       const slug = extractSlug(url);
+      if (!slug) {
+        throw new Error('Could not extract slug from URL');
+      }
+      
       const mockRow = {
         url: url,
         title: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -10467,7 +10477,15 @@
       
       // Generate main schema
       blogPosts_log('📄 Generating main schema...');
-      const schema = await blogPosts_generateSingleSchema(mockRow);
+      let schema;
+      try {
+        schema = await blogPosts_generateSingleSchema(mockRow);
+        blogPosts_log('✅ Main schema generated successfully');
+      } catch (schemaError) {
+        blogPosts_log(`❌ Error generating main schema: ${schemaError.message}`);
+        blogPosts_log(`   Stack: ${schemaError.stack || 'No stack trace'}`);
+        throw schemaError;
+      }
       const fileName = `${slug}_schema.json`;
       const jsonString = JSON.stringify(schema, null, 2);
       
@@ -10595,10 +10613,13 @@
       
     } catch (error) {
       blogPosts_log(`❌ Generation failed: ${error.message}`);
+      blogPosts_log(`   Error type: ${error.constructor.name}`);
+      blogPosts_log(`   Stack trace: ${error.stack || 'No stack trace available'}`);
       if (resultDiv) {
-        resultDiv.innerHTML += `<div style="margin-top: 1rem; padding: 1rem; background: #f8d7da; border-radius: 6px; color: #721c24;"><strong>❌ Error:</strong> ${error.message}</div>`;
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div style="margin-top: 1rem; padding: 1rem; background: #f8d7da; border-radius: 6px; color: #721c24;"><strong>❌ Error:</strong> ${error.message}<br><br>Check the debug log for full details.</div>`;
       }
-      alert(`❌ Error: ${error.message}`);
+      alert(`❌ Error: ${error.message}\n\nCheck the debug log for full details.`);
     } finally {
       if (generateBtn) {
         generateBtn.disabled = false;
