@@ -10651,7 +10651,7 @@
       const howToDebugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
       const shouldHowTo = shouldGenerateHowTo(html, plainText, howToDebugLog);
       
-      // Show results
+      // Show results - use EXACT same wording as debug log
       const slug = extractSlug(url);
       let resultHtml = '<h4 style="margin-top: 0; color: #1e40af;">📊 Detection Results</h4>';
       resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
@@ -10662,8 +10662,8 @@
       resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">';
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
       resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP' : '✅ GENERATE'}</p>`;
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}</p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ NOT DETECTED (existing FAQ found)' : '✅ DETECTED (will generate)'}</p>`;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ DETECTED (will generate)' : '❌ NOT DETECTED (will skip)'}</p>`;
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
       resultHtml += '</div>';
       
