@@ -9444,22 +9444,54 @@
    * Returns true if FAQ markers are found, false otherwise
    * CRITICAL: Must be thorough to avoid duplicate FAQ schemas
    */
-  function hasExistingFAQBlock(articleBody, html, debugLog = null) {
+  function hasExistingFAQBlock(html, plainText, debugLog = null) {
     if (!html && !plainText) {
       if (debugLog) debugLog('FAQ Detection: No HTML or plain text provided');
       return false;
     }
     
     if (debugLog) {
-      debugLog('FAQ Detection: Starting MASTER RULE check');
+      debugLog('FAQ Detection: Starting ENHANCED MASTER RULE check');
       debugLog(`  - HTML length: ${html ? html.length : 0}`);
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
+    // PRIORITY 1: Check for FAQPage schema in HTML (most reliable)
+    if (html) {
+      // Check for FAQPage schema in script tags
+      if (/"@type"\s*:\s*"FAQPage"/i.test(html) || /@type["\s]*:["\s]*["\']?FAQPage/i.test(html)) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found FAQPage schema in HTML`);
+        return true;
+      }
+      
+      // Check for FAQ in <h2> or <h3> tags (structure-based, more reliable)
+      const h2Matches = html.match(/<h2[^>]*>([^<]*)<\/h2>/gi);
+      const h3Matches = html.match(/<h3[^>]*>([^<]*)<\/h3>/gi);
+      
+      if (h2Matches) {
+        for (const h2 of h2Matches) {
+          if (/faq/i.test(h2)) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h2> tag: ${h2.substring(0, 80)}`);
+            return true;
+          }
+        }
+      }
+      
+      if (h3Matches) {
+        for (const h3 of h3Matches) {
+          if (/faq/i.test(h3)) {
+            if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h3> tag: ${h3.substring(0, 80)}`);
+            return true;
+          }
+        }
+      }
+    }
+    
+    // PRIORITY 2: Check plain text for FAQ markers
     const textLower = plainText ? plainText.toLowerCase() : '';
     const htmlLower = html ? html.toLowerCase() : '';
+    const combinedText = (textLower + ' ' + htmlLower).toLowerCase();
     
-    // MASTER RULE: Check for FAQ markers in plain text
     const faqMarkers = [
       'faq',
       'faqs',
@@ -9472,22 +9504,8 @@
     ];
     
     for (const marker of faqMarkers) {
-      if (textLower.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "${marker}" in plain text`);
-        return true;
-      }
-    }
-    
-    // MASTER RULE: Check for <h2> or <h3> containing "FAQ"
-    if (html) {
-      // Check h2 tags
-      if (/<h2[^>]*>.*faq/i.test(html)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h2> tag`);
-        return true;
-      }
-      // Check h3 tags
-      if (/<h3[^>]*>.*faq/i.test(html)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h3> tag`);
+      if (combinedText.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "${marker}" in text`);
         return true;
       }
     }
