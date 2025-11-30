@@ -9488,14 +9488,24 @@
           // Check if it's in a heading (more reliable)
           if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
             foundStrongMarker = true;
-            if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
-            break;
+            if (debugLog) {
+              debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
+              debugLog(`  → RETURNING TRUE: HowTo will be generated (strong heading overrides assignment exclusion)`);
+            }
+            return true;
           }
         }
       }
       
       if (!foundStrongMarker) {
-        if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: Exclusion pattern found, no numbered steps (3+), and no strong HowTo markers in headings`);
+        if (debugLog) {
+          if (totalStepMatches >= 3) {
+            debugLog(`  ❌ HowTo NOT DETECTED: Assignment page with ${totalStepMatches} numbered steps (these are TASKS, not HowTo) and no strong HowTo headings`);
+          } else {
+            debugLog(`  ❌ HowTo NOT DETECTED: Assignment page with no numbered steps (3+) and no strong HowTo markers in headings`);
+          }
+          debugLog(`  → RETURNING FALSE: HowTo will NOT be generated`);
+        }
         return false;
       }
     }
@@ -10652,22 +10662,8 @@
       resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">';
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
       resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
-      
-      // More detailed HowTo message
-      let howToMessage = '';
-      if (shouldHowTo) {
-        howToMessage = '✅ GENERATE';
-      } else {
-        // Check if it's an assignment page
-        const isAssignment = /assignment|practice assignment|learning objectives/i.test(plainText);
-        if (isAssignment) {
-          howToMessage = '❌ SKIP (assignment/lesson page - no numbered steps detected)';
-        } else {
-          howToMessage = '❌ SKIP (no HowTo markers or numbered steps found)';
-        }
-      }
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${howToMessage}</p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP' : '✅ GENERATE'}</p>`;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}</p>`;
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
       resultHtml += '</div>';
       
