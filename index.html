@@ -9278,48 +9278,167 @@
     }
     
     if (debugLog) {
-      debugLog('HowTo Detection: Starting MASTER RULE check');
+      debugLog('HowTo Detection: Starting ULTRA-STRICT check');
       debugLog(`  - HTML length: ${html ? html.length : 0}`);
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    const textLower = plainText ? plainText.toLowerCase() : '';
-    const htmlLower = html ? html.toLowerCase() : '';
-    const combinedText = (textLower + ' ' + htmlLower).toLowerCase();
-    
-    // MASTER RULE: Check for HowTo keywords
-    const howToMarkers = [
-      'before you shoot',
-      'before you begin',
-      'the assignment',
-      'assignment tasks',
-      'assignment',
-      'task',
-      'tasks',
-      'step',
-      'steps',
-      'learning objectives',
-      'practice assignment',
-      'technique',
-      'process',
-      'how to',
-      'prep'
-    ];
-    
-    // Also check for numbered steps (1., 2., 3.)
-    if (/\b(1|2|3)\.\s+/.test(combinedText)) {
-      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found numbered steps (1., 2., 3.)`);
-      return true;
-    }
-    
-    for (const marker of howToMarkers) {
-      if (combinedText.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found "${marker}"`);
+    // PRIORITY 1: Check for HowTo schema in HTML (MOST RELIABLE - 100% accurate)
+    if (html) {
+      // Check for HowTo schema in script tags
+      if (/"@type"\s*:\s*"HowTo"/i.test(html) || /@type["\s]*:["\s]*["\']?HowTo/i.test(html)) {
+        if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo schema in HTML (MOST RELIABLE)`);
         return true;
       }
     }
     
-    if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: No HowTo markers found`);
+    // PRIORITY 2: Extract main content area (exclude navigation/footer)
+    let mainContentHtml = '';
+    let mainContentText = '';
+    
+    if (html) {
+      // Try to extract main article content
+      const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+      const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+      const contentMatch = html.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      
+      if (articleMatch) {
+        mainContentHtml = articleMatch[1];
+        if (debugLog) debugLog(`  - Found <article> tag, extracted ${mainContentHtml.length} chars`);
+      } else if (mainMatch) {
+        mainContentHtml = mainMatch[1];
+        if (debugLog) debugLog(`  - Found <main> tag, extracted ${mainContentHtml.length} chars`);
+      } else if (contentMatch) {
+        mainContentHtml = contentMatch[1];
+        if (debugLog) debugLog(`  - Found content div, extracted ${mainContentHtml.length} chars`);
+      } else {
+        // Fallback: use HTML but exclude likely navigation/footer areas
+        const h1Match = html.indexOf('<h1');
+        const h2Match = html.indexOf('<h2');
+        const contentStart = Math.min(h1Match > 0 ? h1Match : html.length, h2Match > 0 ? h2Match : html.length);
+        mainContentHtml = html.substring(contentStart);
+        const footerStart = Math.floor(mainContentHtml.length * 0.8);
+        mainContentHtml = mainContentHtml.substring(0, footerStart);
+        if (debugLog) debugLog(`  - Using fallback: extracted ${mainContentHtml.length} chars from main content area`);
+      }
+      
+      if (mainContentHtml) {
+        mainContentText = htmlToPlainText(mainContentHtml);
+      }
+    }
+    
+    // Use main content text if available, otherwise use full plain text
+    const searchText = mainContentText || plainText || '';
+    const searchTextLower = searchText.toLowerCase();
+    
+    // PRIORITY 3: Check for STRONG HowTo indicators in main content
+    // REQUIRE: Multiple numbered steps (1., 2., 3., etc.) in structured format
+    // This excludes assignment pages that just have "tasks" but aren't true HowTo guides
+    
+    // Check for numbered steps pattern (must have at least 3 steps)
+    const numberedStepsPattern = /(?:^|\n)\s*(?:step\s+)?[1-9]\d*\.\s+[^\n]+/gi;
+    const stepMatches = searchText.match(numberedStepsPattern);
+    if (stepMatches && stepMatches.length >= 3) {
+      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${stepMatches.length} numbered steps in structured format`);
+      return true;
+    }
+    
+    // PRIORITY 4: Check for HowTo-specific headings in HTML structure
+    if (mainContentHtml) {
+      const h2Matches = mainContentHtml.match(/<h2[^>]*>([^<]*)<\/h2>/gi);
+      const h3Matches = mainContentHtml.match(/<h3[^>]*>([^<]*)<\/h3>/gi);
+      
+      const howToHeadingPatterns = [
+        /how\s+to\b/i,
+        /step\s+by\s+step/i,
+        /instructions/i,
+        /guide\s+to/i,
+        /tutorial/i
+      ];
+      
+      if (h2Matches) {
+        for (const h2 of h2Matches) {
+          for (const pattern of howToHeadingPatterns) {
+            if (pattern.test(h2)) {
+              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo heading in <h2>: ${h2.substring(0, 80)}`);
+              return true;
+            }
+          }
+        }
+      }
+      
+      if (h3Matches) {
+        for (const h3 of h3Matches) {
+          for (const pattern of howToHeadingPatterns) {
+            if (pattern.test(h3)) {
+              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo heading in <h3>: ${h3.substring(0, 80)}`);
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
+    // PRIORITY 5: Check for strict HowTo markers (exclude assignment/lesson pages)
+    // EXCLUDE: "assignment", "practice assignment", "learning objectives" (these are lessons, not HowTo)
+    const excludePatterns = [
+      /assignment/i,
+      /practice assignment/i,
+      /learning objectives/i,
+      /reflection questions/i
+    ];
+    
+    for (const excludePattern of excludePatterns) {
+      if (excludePattern.test(searchTextLower)) {
+        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern - likely assignment/lesson page, not HowTo`);
+        // Still check for strong HowTo signals, but be more strict
+        const strongHowToMarkers = [
+          'how to',
+          'step by step',
+          'instructions',
+          'tutorial',
+          'guide to'
+        ];
+        
+        let foundStrongMarker = false;
+        for (const marker of strongHowToMarkers) {
+          if (searchTextLower.includes(marker)) {
+            // Check if it's in a heading (more reliable)
+            if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
+              foundStrongMarker = true;
+              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
+              break;
+            }
+          }
+        }
+        
+        if (!foundStrongMarker) {
+          if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: Exclusion pattern found, no strong HowTo markers in headings`);
+          return false;
+        }
+      }
+    }
+    
+    // PRIORITY 6: Check for generic HowTo markers (only if no exclusions)
+    const genericHowToMarkers = [
+      'how to',
+      'step by step',
+      'instructions',
+      'tutorial',
+      'guide to'
+    ];
+    
+    for (const marker of genericHowToMarkers) {
+      if (searchTextLower.includes(marker)) {
+        // Must appear in a heading or near numbered steps to be valid
+        if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
+          if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found "${marker}" in heading`);
+          return true;
+        }
+      }
+    }
+    
+    if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: No valid HowTo markers found in main content`);
     return false;
   }
 
