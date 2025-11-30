@@ -9333,13 +9333,14 @@
     
     // PRIORITY 3: Check for STRONG HowTo indicators in main content
     // REQUIRE: Multiple numbered steps (1., 2., 3., etc.) in structured format
-    // This excludes assignment pages that just have "tasks" but aren't true HowTo guides
+    // This is the STRONGEST signal - numbered steps override exclusion patterns
     
     // Check for numbered steps pattern (must have at least 3 steps)
+    // Pattern matches: "1. ", "2. ", "Step 1. ", etc.
     const numberedStepsPattern = /(?:^|\n)\s*(?:step\s+)?[1-9]\d*\.\s+[^\n]+/gi;
     const stepMatches = searchText.match(numberedStepsPattern);
     if (stepMatches && stepMatches.length >= 3) {
-      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${stepMatches.length} numbered steps in structured format`);
+      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${stepMatches.length} numbered steps in structured format (OVERRIDES exclusions)`);
       return true;
     }
     
@@ -9379,8 +9380,9 @@
       }
     }
     
-    // PRIORITY 5: Check for strict HowTo markers (exclude assignment/lesson pages)
+    // PRIORITY 5: Check for exclusion patterns (assignment/lesson pages)
     // EXCLUDE: "assignment", "practice assignment", "learning objectives" (these are lessons, not HowTo)
+    // BUT: Only exclude if NO numbered steps were found above
     const excludePatterns = [
       /assignment/i,
       /practice assignment/i,
@@ -9388,34 +9390,40 @@
       /reflection questions/i
     ];
     
+    let hasExclusionPattern = false;
     for (const excludePattern of excludePatterns) {
       if (excludePattern.test(searchTextLower)) {
-        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern - likely assignment/lesson page, not HowTo`);
-        // Still check for strong HowTo signals, but be more strict
-        const strongHowToMarkers = [
-          'how to',
-          'step by step',
-          'instructions',
-          'tutorial',
-          'guide to'
-        ];
-        
-        let foundStrongMarker = false;
-        for (const marker of strongHowToMarkers) {
-          if (searchTextLower.includes(marker)) {
-            // Check if it's in a heading (more reliable)
-            if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
-              foundStrongMarker = true;
-              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
-              break;
-            }
+        hasExclusionPattern = true;
+        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern "${excludePattern.source}" - likely assignment/lesson page`);
+        break;
+      }
+    }
+    
+    // If exclusion pattern found AND no numbered steps, check for strong HowTo markers in headings
+    if (hasExclusionPattern) {
+      const strongHowToMarkers = [
+        'how to',
+        'step by step',
+        'instructions',
+        'tutorial',
+        'guide to'
+      ];
+      
+      let foundStrongMarker = false;
+      for (const marker of strongHowToMarkers) {
+        if (searchTextLower.includes(marker)) {
+          // Check if it's in a heading (more reliable)
+          if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
+            foundStrongMarker = true;
+            if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
+            break;
           }
         }
-        
-        if (!foundStrongMarker) {
-          if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: Exclusion pattern found, no strong HowTo markers in headings`);
-          return false;
-        }
+      }
+      
+      if (!foundStrongMarker) {
+        if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: Exclusion pattern found, no numbered steps (3+), and no strong HowTo markers in headings`);
+        return false;
       }
     }
     
