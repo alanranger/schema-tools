@@ -10638,7 +10638,21 @@
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
       resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
       resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP (no HowTo markers)'}</p>`;
+      
+      // More detailed HowTo message
+      let howToMessage = '';
+      if (shouldHowTo) {
+        howToMessage = '✅ GENERATE';
+      } else {
+        // Check if it's an assignment page
+        const isAssignment = /assignment|practice assignment|learning objectives/i.test(plainText);
+        if (isAssignment) {
+          howToMessage = '❌ SKIP (assignment/lesson page - no numbered steps detected)';
+        } else {
+          howToMessage = '❌ SKIP (no HowTo markers or numbered steps found)';
+        }
+      }
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${howToMessage}</p>`;
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
       resultHtml += '</div>';
       
