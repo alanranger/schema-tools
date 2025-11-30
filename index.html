@@ -2778,6 +2778,32 @@
       </div>
     </div>
 
+    <div class="workflow-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+      <h3 style="margin-top: 0; color: #1e40af;">🧪 Test Single URL (Optional)</h3>
+      <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">Test detection and generate schema for a single blog post URL before running the full batch.</p>
+      
+      <div style="margin-bottom: 1rem;">
+        <label for="blogPostsTestUrl" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Blog Post URL:</label>
+        <input 
+          type="text" 
+          id="blogPostsTestUrl" 
+          placeholder="https://www.alanranger.com/blog-on-photography/example-post"
+          style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;"
+        >
+      </div>
+      
+      <div class="button-group">
+        <button onclick="blogPosts_testSingleUrl()" id="blogPostsTestBtn" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem;">
+          🔍 Test Detection
+        </button>
+        <button onclick="blogPosts_generateSingleUrl()" id="blogPostsGenerateSingleBtn" style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          ✅ Generate Schema
+        </button>
+      </div>
+      
+      <div id="blogPostsSingleUrlResult" style="display: none; margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #cbd5e1;"></div>
+    </div>
+
     <div class="workflow-section">
       <h3>Step 1: Upload Blog CSV File</h3>
       <label for="blogPostsCsvFile">Upload Blog CSV File:</label>
@@ -10299,8 +10325,283 @@
     }
   }
 
+  /**
+   * Test detection for a single URL
+   */
+  async function blogPosts_testSingleUrl() {
+    const urlInput = document.getElementById('blogPostsTestUrl');
+    const url = urlInput?.value?.trim();
+    const resultDiv = document.getElementById('blogPostsSingleUrlResult');
+    const testBtn = document.getElementById('blogPostsTestBtn');
+    
+    if (!url) {
+      alert('Please enter a blog post URL');
+      return;
+    }
+    
+    if (!url.includes('alanranger.com/blog-on-photography/')) {
+      alert('Please enter a valid blog post URL from alanranger.com');
+      return;
+    }
+    
+    if (testBtn) {
+      testBtn.disabled = true;
+      testBtn.textContent = '🔍 Testing...';
+    }
+    
+    if (resultDiv) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>🔍 Testing detection...</p>';
+    }
+    
+    blogPosts_log(`\n🧪 Testing single URL: ${url}`);
+    blogPosts_log('='.repeat(60));
+    
+    try {
+      // Fetch HTML
+      blogPosts_log('📡 Fetching HTML...');
+      const html = await fetchHtmlForDetection(url);
+      const plainText = html ? htmlToPlainText(html) : '';
+      
+      blogPosts_log(`✅ HTML fetched: ${html ? html.length : 0} chars`);
+      blogPosts_log(`✅ Plain text: ${plainText.length} chars`);
+      
+      // Test FAQ Detection
+      blogPosts_log('\n🔍 FAQ DETECTION TEST');
+      blogPosts_log('='.repeat(60));
+      const faqDebugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
+      const hasFAQ = hasExistingFAQBlock(html, plainText, faqDebugLog);
+      
+      // Test HowTo Detection
+      blogPosts_log('\n🔍 HOWTO DETECTION TEST');
+      blogPosts_log('='.repeat(60));
+      const howToDebugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
+      const shouldHowTo = shouldGenerateHowTo(html, plainText, howToDebugLog);
+      
+      // Show results
+      const slug = extractSlug(url);
+      let resultHtml = '<h4 style="margin-top: 0; color: #1e40af;">📊 Detection Results</h4>';
+      resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
+      resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
+      resultHtml += `<p><strong>HTML Length:</strong> ${html ? html.length : 0} characters</p>`;
+      resultHtml += `<p><strong>Plain Text Length:</strong> ${plainText.length} characters</p>`;
+      
+      resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">';
+      resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
+      resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP (no HowTo markers)'}</p>`;
+      resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
+      resultHtml += '</div>';
+      
+      if (resultDiv) {
+        resultDiv.innerHTML = resultHtml;
+        resultDiv.style.borderColor = hasFAQ || shouldHowTo ? '#10b981' : '#f59e0b';
+      }
+      
+      blogPosts_log('\n✅ Test complete!');
+      
+    } catch (error) {
+      blogPosts_log(`❌ Test failed: ${error.message}`);
+      if (resultDiv) {
+        resultDiv.innerHTML = `<p style="color: #dc2626;">❌ Error: ${error.message}</p>`;
+        resultDiv.style.borderColor = '#dc2626';
+      }
+    } finally {
+      if (testBtn) {
+        testBtn.disabled = false;
+        testBtn.textContent = '🔍 Test Detection';
+      }
+    }
+  }
+
+  /**
+   * Generate schema for a single URL
+   */
+  async function blogPosts_generateSingleUrl() {
+    const urlInput = document.getElementById('blogPostsTestUrl');
+    const url = urlInput?.value?.trim();
+    const resultDiv = document.getElementById('blogPostsSingleUrlResult');
+    const generateBtn = document.getElementById('blogPostsGenerateSingleBtn');
+    const saveToGithub = document.getElementById('blogPostsSaveToGithub')?.checked || false;
+    
+    if (!url) {
+      alert('Please enter a blog post URL');
+      return;
+    }
+    
+    if (!url.includes('alanranger.com/blog-on-photography/')) {
+      alert('Please enter a valid blog post URL from alanranger.com');
+      return;
+    }
+    
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Generating...';
+    }
+    
+    blogPosts_log(`\n🔨 Generating schema for single URL: ${url}`);
+    blogPosts_log('='.repeat(60));
+    
+    try {
+      // Create a mock CSV row from the URL
+      const slug = extractSlug(url);
+      const mockRow = {
+        url: url,
+        title: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        categories: [],
+        tags: [],
+        imageUrl: '',
+        publishDate: new Date().toISOString().split('T')[0]
+      };
+      
+      blogPosts_log(`📝 Created mock row for: ${slug}`);
+      
+      // Generate main schema
+      blogPosts_log('📄 Generating main schema...');
+      const schema = await blogPosts_generateSingleSchema(mockRow);
+      const fileName = `${slug}_schema.json`;
+      const jsonString = JSON.stringify(schema, null, 2);
+      
+      // Validate JSON
+      try {
+        JSON.parse(jsonString);
+        blogPosts_log('✅ JSON is valid');
+      } catch (e) {
+        throw new Error(`Invalid JSON: ${e.message}`);
+      }
+      
+      // Save to GitHub if checked
+      if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+        try {
+          await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
+          blogPosts_log(`✅ Saved to GitHub: ${fileName}`);
+        } catch (e) {
+          blogPosts_log(`❌ Failed to save: ${e.message}`);
+          throw e;
+        }
+      } else {
+        blogPosts_log(`📄 Generated: ${fileName} (not saved - check "Save to GitHub" to save)`);
+      }
+      
+      // Fetch HTML for additional schemas
+      blogPosts_log('\n📡 Fetching HTML for additional schemas...');
+      const html = await fetchHtmlForDetection(url);
+      const plainText = html ? htmlToPlainText(html) : '';
+      
+      if (html) {
+        blogPosts_log(`✅ HTML fetched: ${html.length} chars`);
+        
+        const blogPosting = await buildEnrichedBlogPosting(mockRow);
+        
+        // Generate HowTo if eligible
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
+          const shouldGenerate = shouldGenerateHowTo(html, plainText, debugLog);
+          
+          if (shouldGenerate) {
+            const howToFileName = `${slug}_howto.json`;
+            const fileExists = await fileExistsInGithub(howToFileName);
+            
+            if (fileExists) {
+              blogPosts_log(`   ⏭️  HowTo SKIPPED: File already exists: ${howToFileName}`);
+            } else {
+              const howToSchema = await generateHowToSchema(mockRow, blogPosting, plainText);
+              if (howToSchema) {
+                const howToJson = JSON.stringify(howToSchema, null, 2);
+                
+                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                  await window.electronAPI.saveAndDeploySchema(howToFileName, howToJson);
+                  blogPosts_log(`   ✅ Saved HowTo: ${howToFileName}`);
+                } else {
+                  blogPosts_log(`   📄 Generated HowTo: ${howToFileName}`);
+                }
+              }
+            }
+          } else {
+            blogPosts_log(`   ⏭️  HowTo SKIPPED: No HowTo markers detected`);
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating HowTo: ${e.message}`);
+        }
+        
+        // Generate FAQ if eligible
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
+          const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          
+          if (hasFAQ) {
+            blogPosts_log(`   ⏭️  FAQ SKIPPED: Existing FAQ detected`);
+          } else {
+            const faqFileName = `${slug}_faq.json`;
+            const fileExists = await fileExistsInGithub(faqFileName);
+            
+            if (fileExists) {
+              blogPosts_log(`   ⏭️  FAQ SKIPPED: File already exists: ${faqFileName}`);
+            } else {
+              const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText);
+              if (faqSchema) {
+                const faqJson = JSON.stringify(faqSchema, null, 2);
+                
+                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                  await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
+                  blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
+                } else {
+                  blogPosts_log(`   📄 Generated FAQ: ${faqFileName}`);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating FAQ: ${e.message}`);
+        }
+        
+        // Generate ImageObject if image exists
+        try {
+          const imageSchema = await generateImageObjectSchema(mockRow, blogPosting);
+          if (imageSchema) {
+            const imageFileName = `${slug}_image.json`;
+            const imageJson = JSON.stringify(imageSchema, null, 2);
+            
+            if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+              await window.electronAPI.saveAndDeploySchema(imageFileName, imageJson);
+              blogPosts_log(`   ✅ Saved ImageObject: ${imageFileName}`);
+            } else {
+              blogPosts_log(`   📄 Generated ImageObject: ${imageFileName}`);
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error generating ImageObject: ${e.message}`);
+        }
+      } else {
+        blogPosts_log(`   ⚠️  Could not fetch HTML - skipping additional schemas`);
+      }
+      
+      blogPosts_log('\n✅ Single URL generation complete!');
+      
+      if (resultDiv) {
+        resultDiv.innerHTML += '<div style="margin-top: 1rem; padding: 1rem; background: #d4edda; border-radius: 6px; color: #155724;"><strong>✅ Schema generated successfully!</strong><br>Check the debug log for details.</div>';
+      }
+      
+      alert(`✅ Schema generated for ${slug}!\n\nCheck the debug log for details.`);
+      
+    } catch (error) {
+      blogPosts_log(`❌ Generation failed: ${error.message}`);
+      if (resultDiv) {
+        resultDiv.innerHTML += `<div style="margin-top: 1rem; padding: 1rem; background: #f8d7da; border-radius: 6px; color: #721c24;"><strong>❌ Error:</strong> ${error.message}</div>`;
+      }
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✅ Generate Schema';
+      }
+    }
+  }
+
   function blogPosts_clearForm() {
     document.getElementById('blogPostsCsvFile').value = '';
+    document.getElementById('blogPostsTestUrl').value = '';
     blogPostsData = [];
     blogPostsDebugLog = [];
     window.blogPostsGeneratedFiles = [];
@@ -10308,6 +10609,7 @@
     document.getElementById('blogPostsCsvInfo').style.display = 'none';
     document.getElementById('blogPostsDebugLogContainer').style.display = 'none';
     document.getElementById('blogPostsSchemaOutput').style.display = 'none';
+    document.getElementById('blogPostsSingleUrlResult').style.display = 'none';
     const deployBtn = document.getElementById('blogPostsDeployBtn');
     if (deployBtn) {
       deployBtn.style.display = 'none';
