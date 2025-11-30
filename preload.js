@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   batchDeploySchemas: (files) => ipcRenderer.invoke('batch-deploy-schemas', { files }),
   checkFileExists: (fileName) => ipcRenderer.invoke('check-file-exists', fileName),
   deleteSchemaFile: (fileName) => ipcRenderer.invoke('delete-schema-file', fileName),
+  batchDeleteSchemaFiles: (fileNames) => ipcRenderer.invoke('batch-delete-schema-files', fileNames),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
   onServerLog: (callback) => {

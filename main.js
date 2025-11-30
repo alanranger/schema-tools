@@ -625,7 +625,7 @@ ipcMain.handle('check-file-exists', async (event, fileName) => {
   }
 });
 
-// IPC handler for deleting a schema file from GitHub
+// IPC handler for deleting a schema file from GitHub (single file)
 ipcMain.handle('delete-schema-file', async (event, fileName) => {
   return new Promise((resolve, reject) => {
     try {
@@ -719,6 +719,120 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
       
     } catch (error) {
       console.error('❌ Error deleting schema file:', error);
+      reject(error);
+    }
+  });
+});
+
+// IPC handler for batch deleting multiple schema files (single commit and push)
+ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+      const projectRoot = isBuiltApp 
+        ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+        : __dirname;
+      
+      const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
+      
+      // Delete all files first
+      const filesToDelete = [];
+      for (const fileName of fileNames) {
+        const filePath = path.join(schemaRepoPath, fileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          filesToDelete.push(fileName);
+          console.log(`🗑️  Deleted schema file: ${filePath}`);
+        } else {
+          console.log(`ℹ️  File ${fileName} does not exist (skipping)`);
+        }
+      }
+      
+      if (filesToDelete.length === 0) {
+        resolve({ success: true, message: 'No files to delete', deletedCount: 0 });
+        return;
+      }
+      
+      // Git operations - stage all deletions, single commit, single push
+      const commitMessage = `Delete ${filesToDelete.length} schema file(s)`;
+      const gitCommands = [
+        { cmd: 'git', args: ['rm', ...filesToDelete], desc: 'Stage all file deletions' },
+        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit all deletions' },
+        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
+      ];
+      
+      let currentStep = 0;
+      const runNextCommand = () => {
+        if (currentStep >= gitCommands.length) {
+          resolve({ 
+            success: true, 
+            message: `✅ ${filesToDelete.length} file(s) deleted and deployed successfully!`,
+            deletedCount: filesToDelete.length
+          });
+          return;
+        }
+        
+        const { cmd, args, desc } = gitCommands[currentStep];
+        console.log(`🔄 Git: ${desc}...`);
+        
+        const gitProcess = spawn(cmd, args, {
+          cwd: schemaRepoPath,
+          shell: false,
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        gitProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+        
+        gitProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        gitProcess.on('close', (code) => {
+          const hasOnlyWarnings = stderr && (
+            stderr.includes('LF will be replaced by CRLF') ||
+            stderr.includes('CRLF will be replaced by LF') ||
+            stderr.includes('warning:')
+          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
+          
+          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
+            if (hasOnlyWarnings) {
+              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
+            } else {
+              console.log(`✅ Git: ${desc} completed`);
+            }
+            currentStep++;
+            runNextCommand();
+          } else {
+            // For commit, code 1 might mean "nothing to commit" - that's OK if all files were already deleted
+            if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
+              console.log(`ℹ️ Git: No changes to commit (files already deleted)`);
+              currentStep++;
+              runNextCommand();
+            } else {
+              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              console.error(`❌ ${error}`);
+              reject(new Error(error));
+            }
+          }
+        });
+        
+        gitProcess.on('error', (err) => {
+          const error = `Git ${desc} error: ${err.message}`;
+          console.error(`❌ ${error}`);
+          reject(new Error(error));
+        });
+      };
+      
+      // Start git operations
+      runNextCommand();
+      
+    } catch (error) {
+      console.error('❌ Error batch deleting schema files:', error);
       reject(error);
     }
   });

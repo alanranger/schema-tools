@@ -10836,7 +10836,7 @@
   }
 
   /**
-   * Delete selected files from GitHub
+   * Delete selected files from GitHub (batched - single commit and push)
    */
   async function blogPosts_deleteSelectedFiles() {
     const checkboxes = document.querySelectorAll('.existing-file-checkbox:checked');
@@ -10847,48 +10847,52 @@
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${filesToDelete.length} file(s) from GitHub?\n\nThis action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete ${filesToDelete.length} file(s) from GitHub?\n\nThis will:\n1. Delete files locally\n2. Commit all deletions\n3. Push to GitHub\n\nThis action cannot be undone.`)) {
       return;
     }
 
     const deleteBtn = document.getElementById('blogPostsDeleteBtn');
     if (deleteBtn) {
       deleteBtn.disabled = true;
-      deleteBtn.textContent = '🗑️ Deleting...';
+      deleteBtn.textContent = '🗑️ Deleting & Deploying...';
     }
 
     blogPosts_log(`\n🗑️  Deleting ${filesToDelete.length} selected file(s)...`);
+    blogPosts_log(`   Files: ${filesToDelete.join(', ')}`);
 
-    let deleted = 0;
-    let errors = 0;
-
-    for (const fileName of filesToDelete) {
-      try {
-        if (window.electronAPI && window.electronAPI.isElectron) {
-          // Use the delete file function from main.js
-          await window.electronAPI.deleteSchemaFile(fileName);
-          blogPosts_log(`   ✅ Deleted: ${fileName}`);
-          deleted++;
+    try {
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        // Use batch delete function
+        const result = await window.electronAPI.batchDeleteSchemaFiles(filesToDelete);
+        
+        if (result.success) {
+          blogPosts_log(`\n✅ Batch deletion complete: ${result.deletedCount} file(s) deleted`);
+          blogPosts_log(`   ✅ Committed and pushed to GitHub`);
+          blogPosts_log(`   ⏳ Waiting 2 seconds for GitHub to sync...`);
+          
+          // Wait a moment for GitHub to sync
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Refresh the audit to show updated list
+          blogPosts_log(`\n🔄 Refreshing audit...`);
+          await blogPosts_runPreRunAudit();
+          
+          alert(`✅ Deleted ${result.deletedCount} file(s) from GitHub.\n\nFiles have been committed and pushed.\n\nYou can now proceed with generation.`);
         } else {
-          blogPosts_log(`   ⚠️  Cannot delete in browser mode: ${fileName}`);
+          throw new Error(result.message || 'Batch deletion failed');
         }
-      } catch (e) {
-        blogPosts_log(`   ❌ Failed to delete ${fileName}: ${e.message}`);
-        errors++;
+      } else {
+        alert('⚠️ Batch deletion is only available in Electron app.');
+      }
+    } catch (e) {
+      blogPosts_log(`❌ Batch deletion failed: ${e.message}`);
+      alert(`❌ Error: ${e.message}\n\nCheck the debug log for details.`);
+    } finally {
+      if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = '🗑️ Delete Selected Files';
       }
     }
-
-    blogPosts_log(`\n✅ Deletion complete: ${deleted} deleted, ${errors} errors`);
-
-    if (deleteBtn) {
-      deleteBtn.disabled = false;
-      deleteBtn.textContent = '🗑️ Delete Selected Files';
-    }
-
-    // Refresh the audit
-    await blogPosts_runPreRunAudit();
-
-    alert(`✅ Deleted ${deleted} file(s) from GitHub.\n\n${errors > 0 ? `⚠️ ${errors} file(s) failed to delete.` : ''}\n\nYou can now proceed with generation.`);
   }
 
   /**
