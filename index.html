@@ -9288,9 +9288,13 @@
       // Check for HowTo schema in script tags
       if (/"@type"\s*:\s*"HowTo"/i.test(html) || /@type["\s]*:["\s]*["\']?HowTo/i.test(html)) {
         if (debugLog) debugLog(`  ✅ HowTo EXISTS: Found HowTo schema in HTML - will SKIP generation`);
-        return false; // EXISTS, so don't generate (skip)
+        return false; // EXISTS, so don't generate (skip) - same as FAQ logic
       }
     }
+    
+    // HowTo does NOT exist - now check if content has HowTo markers
+    // If has markers → GENERATE (return true)
+    // If no markers → SKIP (return false)
     
     // PRIORITY 2: Extract main content area (exclude navigation/footer)
     let mainContentHtml = '';
