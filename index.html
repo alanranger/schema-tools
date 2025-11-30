@@ -10275,52 +10275,39 @@
       statusDiv.style.color = '#0c4a6e';
     }
 
-    blogPosts_log('\n🚀 Starting GitHub deployment...');
-    blogPosts_log(`   Deploying ${window.blogPostsGeneratedFiles.length} schema files`);
+    blogPosts_log('\n🚀 Starting batch GitHub deployment...');
+    blogPosts_log(`   Deploying ${window.blogPostsGeneratedFiles.length} schema files in a single batch`);
 
-    let deployed = 0;
-    let errors = 0;
-    const errorFiles = [];
+    if (statusDiv) {
+      statusDiv.innerHTML = `📁 Writing ${window.blogPostsGeneratedFiles.length} files, then staging, committing, and pushing to GitHub...`;
+    }
 
     try {
-      for (let i = 0; i < window.blogPostsGeneratedFiles.length; i++) {
-        const file = window.blogPostsGeneratedFiles[i];
-        try {
-          blogPosts_log(`   Deploying ${i + 1}/${window.blogPostsGeneratedFiles.length}: ${file.name}...`);
-          const result = await window.electronAPI.saveAndDeploySchema(file.name, file.content);
-          blogPosts_log(`✅ Deployed: ${file.name}`);
-          deployed++;
-          
-          // Update status every 10 files
-          if ((i + 1) % 10 === 0 || (i + 1) === window.blogPostsGeneratedFiles.length) {
-            if (statusDiv) {
-              statusDiv.innerHTML = `📁 Deploying... ${i + 1}/${window.blogPostsGeneratedFiles.length} files (${deployed} successful, ${errors} errors)`;
-            }
-          }
-        } catch (e) {
-          blogPosts_log(`❌ Failed to deploy ${file.name}: ${e.message}`);
-          errors++;
-          errorFiles.push(file.name);
-        }
-      }
+      // Transform files to batch format: { fileName, jsonContent }
+      const batchFiles = window.blogPostsGeneratedFiles.map(file => ({
+        fileName: file.name,
+        jsonContent: file.content
+      }));
 
-      blogPosts_log(`\n✅ Deployment complete!`);
-      blogPosts_log(`   • Deployed: ${deployed} files`);
-      blogPosts_log(`   • Errors: ${errors}`);
-      if (errorFiles.length > 0) {
-        blogPosts_log(`   • Failed files: ${errorFiles.slice(0, 5).join(', ')}${errorFiles.length > 5 ? '...' : ''}`);
-      }
+      blogPosts_log(`   Writing all ${batchFiles.length} files to repository...`);
+      
+      // Use batch deployment - writes all files, then stages all, commits once, pushes once
+      const result = await window.electronAPI.batchDeploySchemas(batchFiles);
+      
+      blogPosts_log(`\n✅ Batch deployment complete!`);
+      blogPosts_log(`   • Deployed: ${result.fileCount || batchFiles.length} files`);
+      blogPosts_log(`   • Message: ${result.message || 'All files deployed successfully'}`);
       blogPosts_log(`   📁 Files saved to: alanranger-schema repository (root directory)`);
       blogPosts_log(`   🌐 Live URLs: https://schema.alanranger.com/<slug>_schema.json`);
+      
+      const deployed = result.fileCount || batchFiles.length;
+      const errors = 0;
 
       if (statusDiv) {
-        let statusHtml = `✅ Deployment complete!<br>`;
-        statusHtml += `• Deployed: <strong>${deployed}</strong> files<br>`;
-        statusHtml += `• Errors: ${errors}`;
-        if (errorFiles.length > 0) {
-          statusHtml += `<br>• Failed files: ${errorFiles.slice(0, 3).join(', ')}${errorFiles.length > 3 ? ` (+${errorFiles.length - 3} more)` : ''}`;
-        }
-        statusHtml += `<br><br>📁 Files saved to: alanranger-schema repository (root directory)<br>`;
+        let statusHtml = `✅ Batch deployment complete!<br>`;
+        statusHtml += `• Deployed: <strong>${deployed}</strong> files in a single commit<br>`;
+        statusHtml += `• Git operations: All files staged → One commit → One push<br>`;
+        statusHtml += `<br>📁 Files saved to: alanranger-schema repository (root directory)<br>`;
         statusHtml += `🌐 Live URLs: https://schema.alanranger.com/&lt;slug&gt;_schema.json`;
         statusDiv.innerHTML = statusHtml;
         statusDiv.style.background = '#d4edda';
@@ -10337,11 +10324,7 @@
       }
 
       // Show confirmation alert
-      if (errors === 0) {
-        alert(`✅ Successfully deployed ${deployed} blog post schemas to GitHub!\n\n📁 Repository: alanranger-schema\n🌐 Live URLs: https://schema.alanranger.com/<slug>_schema.json\n\nCheck the debug log for details.`);
-      } else {
-        alert(`⚠️ Deployment completed with errors:\n\n✅ Deployed: ${deployed} files\n❌ Errors: ${errors} files\n\nCheck the debug log for failed file details.`);
-      }
+      alert(`✅ Successfully deployed ${deployed} blog post schemas to GitHub in a single batch!\n\n📁 Repository: alanranger-schema\n🔄 Git: All files staged, committed, and pushed in one operation\n🌐 Live URLs: https://schema.alanranger.com/<slug>_schema.json\n\nCheck the debug log for details.`);
     } catch (error) {
       blogPosts_log(`❌ Deployment error: ${error.message}`);
       blogPosts_log(`   Stack: ${error.stack || 'No stack trace'}`);
