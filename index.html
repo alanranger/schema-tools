@@ -9416,6 +9416,7 @@
       if (debugLog) {
         debugLog(`  ❌ HowTo NOT DETECTED: Found ${totalStepMatches} numbered steps BUT this is an assignment page (${exclusionReason})`);
         debugLog(`    → Numbered steps in assignments are TASKS, not HowTo instructions`);
+        debugLog(`    → Will check for strong HowTo headings that might override this exclusion`);
       }
       // Don't return yet - check for strong HowTo headings that override this
     } else if (totalStepMatches >= 3) {
@@ -9425,6 +9426,7 @@
         if (bestMatches && bestMatches.length >= 3) {
           debugLog(`    Steps found: ${bestMatches.slice(0, 3).map(m => m.substring(0, 40)).join('; ')}...`);
         }
+        debugLog(`  → RETURNING TRUE: HowTo will be generated`);
       }
       return true;
     } else if (totalStepMatches > 0) {
@@ -9517,7 +9519,10 @@
       }
     }
     
-    if (debugLog) debugLog(`  ❌ HowTo NOT DETECTED: No valid HowTo markers found in main content`);
+    if (debugLog) {
+      debugLog(`  ❌ HowTo NOT DETECTED: No valid HowTo markers found in main content`);
+      debugLog(`  → RETURNING FALSE: HowTo will NOT be generated`);
+    }
     return false;
   }
 
