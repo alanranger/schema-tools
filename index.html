@@ -10837,6 +10837,7 @@
 
   /**
    * Delete selected files from GitHub (batched - single commit and push)
+   * SAFETY: Only deletes files that match slugs from the uploaded CSV
    */
   async function blogPosts_deleteSelectedFiles() {
     const checkboxes = document.querySelectorAll('.existing-file-checkbox:checked');
@@ -10847,7 +10848,50 @@
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${filesToDelete.length} file(s) from GitHub?\n\nThis will:\n1. Delete files locally\n2. Commit all deletions\n3. Push to GitHub\n\nThis action cannot be undone.`)) {
+    // SAFETY CHECK: Verify all files match expected patterns from CSV
+    if (!blogPostsData || blogPostsData.length === 0) {
+      alert('❌ Error: No CSV data found. Cannot verify file safety.');
+      return;
+    }
+
+    // Build list of valid slugs from CSV
+    const validSlugs = new Set();
+    for (const row of blogPostsData) {
+      if (row && row.url) {
+        const slug = extractSlug(row.url);
+        if (slug) {
+          validSlugs.add(slug);
+        }
+      }
+    }
+
+    // Validate each file matches a slug from CSV
+    const validFilePattern = /^([a-z0-9-]+)_(schema|howto|faq|image)\.json$/;
+    const invalidFiles = [];
+    const validFiles = [];
+
+    for (const fileName of filesToDelete) {
+      const match = fileName.match(validFilePattern);
+      if (!match) {
+        invalidFiles.push(fileName);
+        continue;
+      }
+      
+      const slug = match[1];
+      if (!validSlugs.has(slug)) {
+        invalidFiles.push(fileName);
+        continue;
+      }
+      
+      validFiles.push(fileName);
+    }
+
+    if (invalidFiles.length > 0) {
+      alert(`❌ SAFETY CHECK FAILED!\n\nThese files do not match your CSV upload:\n${invalidFiles.join('\n')}\n\nOnly files from your uploaded CSV can be deleted.`);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${filesToDelete.length} file(s) from GitHub?\n\n✅ SAFETY CHECK PASSED: All files match your CSV upload\n\nThis will:\n1. Delete files locally\n2. Commit all deletions\n3. Push to GitHub\n\nThis action cannot be undone.`)) {
       return;
     }
 
@@ -10857,13 +10901,14 @@
       deleteBtn.textContent = '🗑️ Deleting & Deploying...';
     }
 
-    blogPosts_log(`\n🗑️  Deleting ${filesToDelete.length} selected file(s)...`);
-    blogPosts_log(`   Files: ${filesToDelete.join(', ')}`);
+    blogPosts_log(`\n🗑️  Deleting ${validFiles.length} selected file(s)...`);
+    blogPosts_log(`   ✅ Safety check passed: All files match CSV upload`);
+    blogPosts_log(`   Files: ${validFiles.join(', ')}`);
 
     try {
       if (window.electronAPI && window.electronAPI.isElectron) {
-        // Use batch delete function
-        const result = await window.electronAPI.batchDeleteSchemaFiles(filesToDelete);
+        // Use batch delete function (only valid files)
+        const result = await window.electronAPI.batchDeleteSchemaFiles(validFiles);
         
         if (result.success) {
           blogPosts_log(`\n✅ Batch deletion complete: ${result.deletedCount} file(s) deleted`);

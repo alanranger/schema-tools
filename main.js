@@ -735,9 +735,31 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
       
       const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
       
-      // Delete all files first
-      const filesToDelete = [];
+      // SAFETY CHECK: Validate all filenames match expected blog schema pattern
+      // Only allow deletion of files matching: slug_schema.json, slug_howto.json, slug_faq.json, slug_image.json
+      const validFilePattern = /^[a-z0-9-]+_(schema|howto|faq|image)\.json$/;
+      const invalidFiles = [];
+      const validFiles = [];
+      
       for (const fileName of fileNames) {
+        if (!validFilePattern.test(fileName)) {
+          invalidFiles.push(fileName);
+          console.error(`❌ SAFETY CHECK FAILED: Invalid filename pattern: ${fileName}`);
+        } else {
+          validFiles.push(fileName);
+        }
+      }
+      
+      if (invalidFiles.length > 0) {
+        const error = `SAFETY CHECK FAILED: Cannot delete files that don't match blog schema pattern:\n${invalidFiles.join('\n')}\n\nOnly files matching pattern: slug_(schema|howto|faq|image).json are allowed.`;
+        console.error(`❌ ${error}`);
+        reject(new Error(error));
+        return;
+      }
+      
+      // Delete all valid files
+      const filesToDelete = [];
+      for (const fileName of validFiles) {
         const filePath = path.join(schemaRepoPath, fileName);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
