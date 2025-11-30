@@ -9337,11 +9337,40 @@
     
     // Check for numbered steps pattern (must have at least 3 steps)
     // Pattern matches: "1. ", "2. ", "Step 1. ", etc.
-    const numberedStepsPattern = /(?:^|\n)\s*(?:step\s+)?[1-9]\d*\.\s+[^\n]+/gi;
-    const stepMatches = searchText.match(numberedStepsPattern);
-    if (stepMatches && stepMatches.length >= 3) {
-      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${stepMatches.length} numbered steps in structured format (OVERRIDES exclusions)`);
+    // Try multiple patterns to catch different formats
+    const numberedStepsPatterns = [
+      /(?:^|\n)\s*(?:step\s+)?[1-9]\d*\.\s+[^\n]+/gi,  // "1. " or "Step 1. "
+      /\b[1-9]\d*\.\s+[A-Z][^\n]{10,}/g,                // "1. " followed by capital letter and substantial text
+      /<li[^>]*>\s*[1-9]\d*\.\s+[^<]+/gi                // HTML list items with numbers
+    ];
+    
+    let totalStepMatches = 0;
+    for (const pattern of numberedStepsPatterns) {
+      const matches = searchText.match(pattern);
+      if (matches) {
+        totalStepMatches = Math.max(totalStepMatches, matches.length);
+        if (debugLog && matches.length > 0) {
+          debugLog(`  - Found ${matches.length} matches with pattern: ${pattern.source.substring(0, 50)}`);
+        }
+      }
+    }
+    
+    // Also check HTML directly for numbered list items
+    if (mainContentHtml) {
+      const htmlListMatches = mainContentHtml.match(/<li[^>]*>\s*[1-9]\d*\.\s+[^<]+/gi);
+      if (htmlListMatches) {
+        totalStepMatches = Math.max(totalStepMatches, htmlListMatches.length);
+        if (debugLog && htmlListMatches.length > 0) {
+          debugLog(`  - Found ${htmlListMatches.length} numbered list items in HTML`);
+        }
+      }
+    }
+    
+    if (totalStepMatches >= 3) {
+      if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format (OVERRIDES exclusions)`);
       return true;
+    } else if (totalStepMatches > 0) {
+      if (debugLog) debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps but need at least 3 for HowTo`);
     }
     
     // PRIORITY 4: Check for HowTo-specific headings in HTML structure
