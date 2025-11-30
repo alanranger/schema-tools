@@ -7197,29 +7197,9 @@
       inLanguage: 'en-GB',
       articleBody: articleBody || '',
       wordCount: wordCount || 0,
-      timeRequired: timeRequired || 'PT1M',
-      readingTime: readingTime || 'PT1M',
-      genre: genre || 'Photography Guide',
-      articleSection: articleSection || 'Photography',
       keywords: keywords.length > 0 ? keywords : [], // Will be guaranteed below if empty
-      // 🔥 11 & 12. Assignments need teaches + learningResourceType
-      learningResourceType: isAssignment ? 'Practice Assignment' : (learningResourceType || 'Article'),
-      educationalLevel: educationalLevel || 'Beginner',
-      proficiencyLevel: proficiencyLevel || 'Beginner',
-      typicalAgeRange: typicalAgeRange || '18-99',
-      educationalUse: learningResourceType === 'Assignment' ? 'Practice' : 'Learning',
-      estimatedCost: estimatedCost,
-      audience: {
-        '@type': 'EducationalAudience',
-        educationalRole: 'Photographer',
-        audienceType: 'Student'
-      },
-      educationalAlignment: {
-        '@type': 'AlignmentObject',
-        alignmentType: 'educationalFramework',
-        educationalFramework: 'Photography Skills',
-        targetName: educationalLevel || 'Beginner'
-      },
+      // NOTE: Removed invalid BlogPosting properties: readingTime, genre, articleSection, learningResourceType, 
+      // educationalLevel, proficiencyLevel, typicalAgeRange, educationalUse, estimatedCost, audience, educationalAlignment
       about: entityInfo.about.length > 0 ? entityInfo.about : [],
       mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [], // Will be guaranteed below if empty
       hasPart: hasPart.length > 0 ? hasPart : [],
@@ -7239,11 +7219,11 @@
       },
       // 🔥 4. thumbnailUrl - duplicate image URL
       thumbnailUrl: imageUrl || '',
-      primaryImageOfPage: { '@id': `${url}#webpage` },
+      // NOTE: primaryImageOfPage removed from BlogPosting (only allowed in WebPage)
       speakable: {
         '@type': 'SpeakableSpecification',
-        xpath: ['/html/head/title', '//h1'],
-        cssSelector: ['h1', '.intro']
+        xpath: ['/html/head/title', '//h1']
+        // NOTE: cssSelector removed - not valid in Schema.org
       },
       // 🔥 6. discussionUrl - always present
       discussionUrl: `${url}#comments`,
@@ -7283,13 +7263,8 @@
         name: 'Alan Ranger Photography'
       },
       copyrightYear: publishYear,
-      sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : [],
-      relatedLink: relatedLink.length > 0 ? relatedLink : [],
-      subjectOf: {
-        '@type': 'Blog',
-        '@id': `${BLOG_URL_GLOBAL}#blog`
-      },
-      isRelatedTo: relatedLink.length > 0 ? relatedLink : []
+      sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : []
+      // NOTE: Removed invalid BlogPosting properties: relatedLink, isRelatedTo, subjectOf
     };
     
     // 🔥 11. Add teaches field for assignments
@@ -7310,14 +7285,7 @@
       }
     }
     
-    // Add funding information (none for blog posts, but field present for consistency)
-    blogPosting.funding = {
-      '@type': 'MonetaryGrant',
-      funder: {
-        '@type': 'Organization',
-        name: 'Alan Ranger Photography'
-      }
-    };
+    // NOTE: funding removed - not a valid BlogPosting property
     
     // Add interactionStatistic (always present)
     blogPosting.interactionStatistic = {
@@ -7329,17 +7297,35 @@
     // Add commentCount
     blogPosting.commentCount = entity && entity.comment_count ? entity.comment_count : 0;
 
+    // Remove invalid BlogPosting properties (explicit cleanup to ensure they're never included)
+    const INVALID_BLOGPOSTING_PROPERTIES = [
+      'contentLocation', 'readingTime', 'proficiencyLevel', 'primaryImageOfPage',
+      'genre', 'articleSection', 'learningResourceType', 'educationalLevel',
+      'typicalAgeRange', 'educationalUse', 'estimatedCost', 'audience',
+      'educationalAlignment', 'relatedLink', 'isRelatedTo', 'funding'
+    ];
+    INVALID_BLOGPOSTING_PROPERTIES.forEach(prop => {
+      if (blogPosting.hasOwnProperty(prop)) {
+        delete blogPosting[prop];
+      }
+    });
+
+    // Fix speakable - remove cssSelector if present
+    if (blogPosting.speakable && blogPosting.speakable.cssSelector) {
+      delete blogPosting.speakable.cssSelector;
+    }
+
     // Clean up ONLY truly optional fields - NEVER remove required fields
     // Required fields that must ALWAYS be present (even if empty):
     const REQUIRED_FIELDS = new Set([
       '@type', '@id', 'headline', 'alternativeHeadline', 'description', 'url', 'mainEntityOfPage',
       'datePublished', 'dateCreated', 'dateModified', 'inLanguage', 'articleBody', 'wordCount',
-      'timeRequired', 'readingTime', 'genre', 'articleSection', 'keywords', 'learningResourceType',
-      'educationalLevel', 'proficiencyLevel', 'typicalAgeRange', 'educationalUse', 'estimatedCost',
-      'audience', 'educationalAlignment', 'about', 'mentions', 'hasPart', 'image', 'thumbnailUrl',
-      'primaryImageOfPage', 'speakable', 'discussionUrl', 'author', 'publisher', 'isPartOf',
-      'copyrightHolder', 'copyrightYear', 'sameAs', 'relatedLink', 'subjectOf', 'isRelatedTo',
-      'interactionStatistic', 'commentCount', 'funding'
+      'keywords', 'about', 'mentions', 'hasPart', 'image', 'thumbnailUrl',
+      'speakable', 'discussionUrl', 'author', 'publisher', 'isPartOf',
+      'copyrightHolder', 'copyrightYear', 'sameAs', 'interactionStatistic', 'commentCount'
+      // NOTE: Removed invalid fields: timeRequired, readingTime, genre, articleSection, learningResourceType,
+      // educationalLevel, proficiencyLevel, typicalAgeRange, educationalUse, estimatedCost, audience,
+      // educationalAlignment, primaryImageOfPage, relatedLink, subjectOf, isRelatedTo, funding
     ]);
     
     const keys = Object.keys(blogPosting);
@@ -9825,13 +9811,7 @@
       encodingFormat: 'image/jpeg' // Default, could be enhanced
     };
     
-    // Add backreference to WebPage
-    if (url) {
-      imageObject.contentLocation = {
-        '@type': 'WebPage',
-        '@id': `${url}#webpage`
-      };
-    }
+    // NOTE: contentLocation removed from ImageObject - not a valid ImageObject property
     
     return imageObject;
   }
