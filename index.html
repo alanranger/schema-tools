@@ -9515,6 +9515,51 @@
   }
 
   /**
+   * TEST FUNCTION: Test detection logic for a specific URL
+   * Call this from browser console: testBlogDetection('https://www.alanranger.com/blog-on-photography/the-art-of-storytelling-photography')
+   */
+  async function testBlogDetection(url) {
+    console.log(`\n🧪 Testing Blog Detection for: ${url}`);
+    console.log('='.repeat(60));
+    
+    try {
+      // Fetch HTML
+      const html = await fetchHtmlForDetection(url);
+      const plainText = html ? htmlToPlainText(html) : '';
+      
+      console.log(`\n📊 Data Retrieved:`);
+      console.log(`  - HTML length: ${html ? html.length : 0}`);
+      console.log(`  - Plain text length: ${plainText ? plainText.length : 0}`);
+      
+      // Test FAQ Detection
+      console.log(`\n${'='.repeat(60)}`);
+      console.log('🔍 FAQ DETECTION TEST');
+      console.log('='.repeat(60));
+      const faqDebugLog = (msg) => console.log(`  ${msg}`);
+      const hasFAQ = hasExistingFAQBlock(html, plainText, faqDebugLog);
+      console.log(`\n✅ RESULT: ${hasFAQ ? 'FAQ DETECTED - Will SKIP FAQ generation' : 'NO FAQ - Will GENERATE FAQ'}`);
+      
+      // Test HowTo Detection
+      console.log(`\n${'='.repeat(60)}`);
+      console.log('🔍 HOWTO DETECTION TEST');
+      console.log('='.repeat(60));
+      const howToDebugLog = (msg) => console.log(`  ${msg}`);
+      const shouldHowTo = shouldGenerateHowTo(html, plainText, howToDebugLog);
+      console.log(`\n✅ RESULT: ${shouldHowTo ? 'HOWTO DETECTED - Will GENERATE HowTo' : 'NO HOWTO - Will SKIP HowTo generation'}`);
+      
+      console.log(`\n${'='.repeat(60)}`);
+      console.log('📋 SUMMARY');
+      console.log('='.repeat(60));
+      console.log(`  FAQ Schema: ${hasFAQ ? '❌ SKIP' : '✅ GENERATE'}`);
+      console.log(`  HowTo Schema: ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}`);
+      console.log(`  ImageObject Schema: ✅ GENERATE (if image exists)`);
+      
+    } catch (error) {
+      console.error('❌ Test failed:', error);
+    }
+  }
+
+  /**
    * TEST FUNCTION: Validate FAQ detection for a specific URL
    * Call this from browser console to test detection logic
    */
