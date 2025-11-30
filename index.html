@@ -9513,26 +9513,66 @@
       }
     }
     
-    // PRIORITY 2: Check plain text for FAQ markers
+    // PRIORITY 2: Check plain text for FAQ markers (STRICT - must be in FAQ context)
     const textLower = plainText ? plainText.toLowerCase() : '';
     const htmlLower = html ? html.toLowerCase() : '';
     const combinedText = (textLower + ' ' + htmlLower).toLowerCase();
     
-    const faqMarkers = [
+    // STRICT FAQ markers - only exact phrases that indicate FAQ sections
+    const strictFaqMarkers = [
       'faq',
       'faqs',
       'frequently asked questions',
-      'common questions',
-      'question:',
-      'q:',
-      'q –',
-      'q.'
+      'common questions'
     ];
     
-    for (const marker of faqMarkers) {
+    // Check for strict markers first
+    for (const marker of strictFaqMarkers) {
       if (combinedText.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "${marker}" in text`);
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found strict marker "${marker}" in text`);
         return true;
+      }
+    }
+    
+    // Check for question patterns ONLY if they appear in FAQ-like contexts
+    // Pattern: "Question:" or "Q:" followed by actual question text (not "Reflection Questions")
+    const questionPatterns = [
+      /question:\s*[a-z]/i,  // "Question:" followed by lowercase letter (actual question)
+      /q:\s*[a-z]/i,          // "Q:" followed by lowercase letter
+      /q\s*–\s*[a-z]/i,       // "Q –" followed by lowercase letter
+      /q\.\s*[a-z]/i          // "Q." followed by lowercase letter
+    ];
+    
+    // But EXCLUDE common false positives
+    const falsePositives = [
+      'reflection questions',
+      'reflection question',
+      'assignment questions',
+      'practice questions',
+      'review questions',
+      'discussion questions',
+      'study questions',
+      'exam questions',
+      'quiz questions'
+    ];
+    
+    // Check if text contains false positives (if so, skip question pattern matching)
+    let hasFalsePositive = false;
+    for (const fp of falsePositives) {
+      if (combinedText.includes(fp.toLowerCase())) {
+        hasFalsePositive = true;
+        if (debugLog) debugLog(`  ⚠️  Found false positive "${fp}" - skipping question pattern check`);
+        break;
+      }
+    }
+    
+    // Only check question patterns if no false positives found
+    if (!hasFalsePositive) {
+      for (const pattern of questionPatterns) {
+        if (pattern.test(combinedText)) {
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found question pattern in text`);
+          return true;
+        }
       }
     }
     
