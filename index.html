@@ -9267,9 +9267,10 @@
   }
 
   /**
-   * MASTER HOWTO DETECTION RULE
-   * Generate HowTo ONLY if page contains any of:
-   * Before You Shoot, Before You Begin, The Assignment, Assignment Tasks, Assignment, Task, Tasks, Step, Steps, 1., 2., 3., Learning Objectives, Practice Assignment, Technique, Process, How To, Prep
+   * Simple HowTo Detection Rule
+   * Check if HowTo schema exists in HTML
+   * - If EXISTS → return false (skip, don't generate)
+   * - If DOESN'T exist → return true (generate)
    */
   function shouldGenerateHowTo(html, plainText, debugLog = null) {
     if (!html && !plainText) {
@@ -9283,264 +9284,20 @@
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    // BINARY CHECK: Does HowTo schema EXIST in HTML? (same as FAQ logic)
+    // Check if HowTo schema EXISTS in HTML
     if (html) {
       // Check for HowTo schema in script tags
       if (/"@type"\s*:\s*"HowTo"/i.test(html) || /@type["\s]*:["\s]*["\']?HowTo/i.test(html)) {
         if (debugLog) debugLog(`  ✅ HowTo EXISTS: Found HowTo schema in HTML`);
         if (debugLog) debugLog(`  → RETURNING FALSE: will SKIP (don't duplicate)`);
-        return false; // EXISTS, so don't generate (skip) - same as FAQ logic
+        return false; // EXISTS, so don't generate (skip)
       }
     }
     
-    // HowTo does NOT exist → GENERATE (same as FAQ logic - simple binary check)
+    // HowTo does NOT exist → GENERATE
     if (debugLog) debugLog(`  ❌ HowTo does NOT exist: No HowTo schema found in HTML`);
     if (debugLog) debugLog(`  → RETURNING TRUE: will GENERATE`);
-    return true; // Doesn't exist, so generate - SIMPLE BINARY LOGIC (same as FAQ)
-    let mainContentHtml = '';
-    let mainContentText = '';
-    
-    if (html) {
-      // Try to extract main article content
-      const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
-      const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-      const contentMatch = html.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      
-      if (articleMatch) {
-        mainContentHtml = articleMatch[1];
-        if (debugLog) debugLog(`  - Found <article> tag, extracted ${mainContentHtml.length} chars`);
-      } else if (mainMatch) {
-        mainContentHtml = mainMatch[1];
-        if (debugLog) debugLog(`  - Found <main> tag, extracted ${mainContentHtml.length} chars`);
-      } else if (contentMatch) {
-        mainContentHtml = contentMatch[1];
-        if (debugLog) debugLog(`  - Found content div, extracted ${mainContentHtml.length} chars`);
-      } else {
-        // Fallback: use HTML but exclude likely navigation/footer areas
-        const h1Match = html.indexOf('<h1');
-        const h2Match = html.indexOf('<h2');
-        const contentStart = Math.min(h1Match > 0 ? h1Match : html.length, h2Match > 0 ? h2Match : html.length);
-        mainContentHtml = html.substring(contentStart);
-        const footerStart = Math.floor(mainContentHtml.length * 0.8);
-        mainContentHtml = mainContentHtml.substring(0, footerStart);
-        if (debugLog) debugLog(`  - Using fallback: extracted ${mainContentHtml.length} chars from main content area`);
-      }
-      
-      if (mainContentHtml) {
-        mainContentText = htmlToPlainText(mainContentHtml);
-      }
-    }
-    
-    // Use main content text if available, otherwise use full plain text
-    const searchText = mainContentText || plainText || '';
-    const searchTextLower = searchText.toLowerCase();
-    
-    // PRIORITY 3: Check for exclusion patterns FIRST (before numbered steps)
-    // If it's an assignment/lesson page, numbered steps are TASKS, not HowTo steps
-    const excludePatterns = [
-      /assignment/i,
-      /practice assignment/i,
-      /learning objectives/i,
-      /reflection questions/i
-    ];
-    
-    let hasExclusionPattern = false;
-    let exclusionReason = '';
-    for (const excludePattern of excludePatterns) {
-      if (excludePattern.test(searchTextLower)) {
-        hasExclusionPattern = true;
-        exclusionReason = excludePattern.source.replace(/[\/\\^$*+?.()|[\]{}]/g, '');
-        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern "${exclusionReason}" - this is an assignment/lesson page`);
-        break;
-      }
-    }
-    
-    // PRIORITY 4: Check for STRONG HowTo indicators in main content
-    // REQUIRE: Multiple numbered steps (1., 2., 3., etc.) in structured format
-    // BUT: If it's an assignment page, numbered steps are TASKS, not HowTo steps
-    
-    // Check for numbered steps pattern (must have at least 3 steps)
-    // Pattern matches: "1. ", "2. ", "Step 1. ", etc.
-    // Try multiple patterns to catch different formats
-    const numberedStepsPatterns = [
-      /(?:^|\n)\s*(?:step\s+)?[1-9]\d*\.\s+[^\n]+/gi,  // "1. " or "Step 1. "
-      /\b[1-9]\d*\.\s+[A-Z][^\n]{10,}/g,                // "1. " followed by capital letter and substantial text
-      /<li[^>]*>\s*[1-9]\d*\.\s+[^<]+/gi                // HTML list items with numbers
-    ];
-    
-    let totalStepMatches = 0;
-    let bestPattern = null;
-    let bestMatches = null;
-    
-    for (const pattern of numberedStepsPatterns) {
-      const matches = searchText.match(pattern);
-      if (matches && matches.length > totalStepMatches) {
-        totalStepMatches = matches.length;
-        bestPattern = pattern;
-        bestMatches = matches;
-        if (debugLog) {
-          debugLog(`  - Found ${matches.length} matches with pattern: ${pattern.source.substring(0, 50)}`);
-          // Show first 2 matches as examples
-          if (matches.length > 0) {
-            debugLog(`    Example: ${matches[0].substring(0, 60)}...`);
-          }
-        }
-      }
-    }
-    
-    // Also check HTML directly for numbered list items (ol/ul with numbered content)
-    if (mainContentHtml) {
-      // Check for <ol> lists
-      const olMatches = mainContentHtml.match(/<ol[^>]*>[\s\S]*?<\/ol>/gi);
-      if (olMatches) {
-        for (const ol of olMatches) {
-          const liMatches = ol.match(/<li[^>]*>[\s\S]*?<\/li>/gi);
-          if (liMatches && liMatches.length >= 3) {
-            totalStepMatches = Math.max(totalStepMatches, liMatches.length);
-            if (debugLog && liMatches.length > totalStepMatches - liMatches.length) {
-              debugLog(`  - Found ${liMatches.length} numbered list items in <ol> tag`);
-            }
-          }
-        }
-      }
-      
-      // Check for any <li> with numbers at start
-      const htmlListMatches = mainContentHtml.match(/<li[^>]*>\s*[1-9]\d*\.\s+[^<]+/gi);
-      if (htmlListMatches && htmlListMatches.length > totalStepMatches) {
-        totalStepMatches = htmlListMatches.length;
-        if (debugLog) {
-          debugLog(`  - Found ${htmlListMatches.length} numbered list items in HTML`);
-          debugLog(`    Example: ${htmlListMatches[0].substring(0, 60)}...`);
-        }
-      }
-    }
-    
-    // CRITICAL: If it's an assignment page, numbered steps are TASKS, not HowTo steps
-    if (hasExclusionPattern && totalStepMatches >= 3) {
-      if (debugLog) {
-        debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps BUT this is an assignment page (${exclusionReason})`);
-        debugLog(`    → Numbered steps in assignments are TASKS, not HowTo instructions`);
-        debugLog(`    → Will check for strong HowTo headings that might override this exclusion`);
-      }
-      // Don't return yet - check for strong HowTo headings that override this
-    } else if (totalStepMatches >= 3) {
-      // Not an assignment page, and has numbered steps - this should be a HowTo
-      if (debugLog) {
-        debugLog(`  ✅ HowTo markers found: Found ${totalStepMatches} numbered steps in structured format`);
-        debugLog(`    → HowTo does NOT exist, and content has HowTo markers - will GENERATE`);
-        if (bestMatches && bestMatches.length >= 3) {
-          debugLog(`    Steps found: ${bestMatches.slice(0, 3).map(m => m.substring(0, 40)).join('; ')}...`);
-        }
-        debugLog(`  → RETURNING TRUE: HowTo will be GENERATED`);
-      }
-      return true; // Doesn't exist, has markers, so generate
-    } else if (totalStepMatches > 0) {
-      if (debugLog) debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps but need at least 3 for HowTo`);
-    } else {
-      if (debugLog) debugLog(`  - No numbered steps found in main content`);
-    }
-    
-    // PRIORITY 4: Check for HowTo-specific headings in HTML structure
-    if (mainContentHtml) {
-      const h2Matches = mainContentHtml.match(/<h2[^>]*>([^<]*)<\/h2>/gi);
-      const h3Matches = mainContentHtml.match(/<h3[^>]*>([^<]*)<\/h3>/gi);
-      
-      const howToHeadingPatterns = [
-        /how\s+to\b/i,
-        /step\s+by\s+step/i,
-        /instructions/i,
-        /guide\s+to/i,
-        /tutorial/i
-      ];
-      
-      if (h2Matches) {
-        for (const h2 of h2Matches) {
-          for (const pattern of howToHeadingPatterns) {
-            if (pattern.test(h2)) {
-              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo heading in <h2>: ${h2.substring(0, 80)}`);
-              return true;
-            }
-          }
-        }
-      }
-      
-      if (h3Matches) {
-        for (const h3 of h3Matches) {
-          for (const pattern of howToHeadingPatterns) {
-            if (pattern.test(h3)) {
-              if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo heading in <h3>: ${h3.substring(0, 80)}`);
-              return true;
-            }
-          }
-        }
-      }
-    }
-    
-    // PRIORITY 5: Check for strong HowTo markers in headings (can override assignment exclusion)
-    // If it's an assignment page but has strong HowTo headings, it might still be a HowTo
-    if (hasExclusionPattern) {
-      const strongHowToMarkers = [
-        'how to',
-        'step by step',
-        'instructions',
-        'tutorial',
-        'guide to'
-      ];
-      
-      let foundStrongMarker = false;
-      for (const marker of strongHowToMarkers) {
-        if (searchTextLower.includes(marker)) {
-          // Check if it's in a heading (more reliable)
-          if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
-            foundStrongMarker = true;
-            if (debugLog) {
-              debugLog(`  ✅ HowTo DETECTED: Found strong marker "${marker}" in heading despite exclusion pattern`);
-              debugLog(`  → RETURNING TRUE: HowTo will be generated (strong heading overrides assignment exclusion)`);
-            }
-            return true;
-          }
-        }
-      }
-      
-      if (!foundStrongMarker) {
-        if (debugLog) {
-          if (totalStepMatches >= 3) {
-            debugLog(`  ❌ No HowTo markers: Assignment page with ${totalStepMatches} numbered steps (these are TASKS, not HowTo) and no strong HowTo headings`);
-          } else {
-            debugLog(`  ❌ No HowTo markers: Assignment page with no numbered steps (3+) and no strong HowTo markers in headings`);
-          }
-          debugLog(`    → HowTo does NOT exist, but content has no HowTo markers → will SKIP`);
-          debugLog(`  → RETURNING FALSE: will SKIP`);
-        }
-        return false;
-      }
-    }
-    
-    // PRIORITY 6: Check for generic HowTo markers (only if no exclusions)
-    const genericHowToMarkers = [
-      'how to',
-      'step by step',
-      'instructions',
-      'tutorial',
-      'guide to'
-    ];
-    
-    for (const marker of genericHowToMarkers) {
-      if (searchTextLower.includes(marker)) {
-        // Must appear in a heading or near numbered steps to be valid
-        if (mainContentHtml && new RegExp(`<h[1-6][^>]*>.*${marker}.*</h[1-6]>`, 'i').test(mainContentHtml)) {
-          if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found "${marker}" in heading`);
-          return true;
-        }
-      }
-    }
-    
-    if (debugLog) {
-      debugLog(`  ❌ No HowTo markers: No valid HowTo markers in main content`);
-      debugLog(`    → HowTo does NOT exist, but content has no HowTo markers → will SKIP`);
-      debugLog(`  → RETURNING FALSE: will SKIP`);
-    }
-    return false; // Doesn't exist, but no markers, so skip
+    return true; // Doesn't exist, so generate
   }
 
   /**
