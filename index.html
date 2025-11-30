@@ -9331,9 +9331,29 @@
     const searchText = mainContentText || plainText || '';
     const searchTextLower = searchText.toLowerCase();
     
-    // PRIORITY 3: Check for STRONG HowTo indicators in main content
+    // PRIORITY 3: Check for exclusion patterns FIRST (before numbered steps)
+    // If it's an assignment/lesson page, numbered steps are TASKS, not HowTo steps
+    const excludePatterns = [
+      /assignment/i,
+      /practice assignment/i,
+      /learning objectives/i,
+      /reflection questions/i
+    ];
+    
+    let hasExclusionPattern = false;
+    let exclusionReason = '';
+    for (const excludePattern of excludePatterns) {
+      if (excludePattern.test(searchTextLower)) {
+        hasExclusionPattern = true;
+        exclusionReason = excludePattern.source.replace(/[\/\\^$*+?.()|[\]{}]/g, '');
+        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern "${exclusionReason}" - this is an assignment/lesson page`);
+        break;
+      }
+    }
+    
+    // PRIORITY 4: Check for STRONG HowTo indicators in main content
     // REQUIRE: Multiple numbered steps (1., 2., 3., etc.) in structured format
-    // This is the STRONGEST signal - numbered steps override exclusion patterns
+    // BUT: If it's an assignment page, numbered steps are TASKS, not HowTo steps
     
     // Check for numbered steps pattern (must have at least 3 steps)
     // Pattern matches: "1. ", "2. ", "Step 1. ", etc.
@@ -9391,9 +9411,17 @@
       }
     }
     
-    if (totalStepMatches >= 3) {
+    // CRITICAL: If it's an assignment page, numbered steps are TASKS, not HowTo steps
+    if (hasExclusionPattern && totalStepMatches >= 3) {
       if (debugLog) {
-        debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format (OVERRIDES exclusions)`);
+        debugLog(`  ❌ HowTo NOT DETECTED: Found ${totalStepMatches} numbered steps BUT this is an assignment page (${exclusionReason})`);
+        debugLog(`    → Numbered steps in assignments are TASKS, not HowTo instructions`);
+      }
+      // Don't return yet - check for strong HowTo headings that override this
+    } else if (totalStepMatches >= 3) {
+      // Not an assignment page, and has numbered steps - this is a HowTo
+      if (debugLog) {
+        debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format`);
         if (bestMatches && bestMatches.length >= 3) {
           debugLog(`    Steps found: ${bestMatches.slice(0, 3).map(m => m.substring(0, 40)).join('; ')}...`);
         }
@@ -9441,26 +9469,8 @@
       }
     }
     
-    // PRIORITY 5: Check for exclusion patterns (assignment/lesson pages)
-    // EXCLUDE: "assignment", "practice assignment", "learning objectives" (these are lessons, not HowTo)
-    // BUT: Only exclude if NO numbered steps were found above
-    const excludePatterns = [
-      /assignment/i,
-      /practice assignment/i,
-      /learning objectives/i,
-      /reflection questions/i
-    ];
-    
-    let hasExclusionPattern = false;
-    for (const excludePattern of excludePatterns) {
-      if (excludePattern.test(searchTextLower)) {
-        hasExclusionPattern = true;
-        if (debugLog) debugLog(`  ⚠️  Found exclusion pattern "${excludePattern.source}" - likely assignment/lesson page`);
-        break;
-      }
-    }
-    
-    // If exclusion pattern found AND no numbered steps, check for strong HowTo markers in headings
+    // PRIORITY 5: Check for strong HowTo markers in headings (can override assignment exclusion)
+    // If it's an assignment page but has strong HowTo headings, it might still be a HowTo
     if (hasExclusionPattern) {
       const strongHowToMarkers = [
         'how to',
