@@ -10651,7 +10651,11 @@
       const howToDebugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
       const shouldHowTo = shouldGenerateHowTo(html, plainText, howToDebugLog);
       
-      // Show results - use EXACT same wording as debug log
+      // CRITICAL: Log the actual return value to verify
+      blogPosts_log(`\n📊 DETECTION RESULT: shouldHowTo = ${shouldHowTo} (${typeof shouldHowTo})`);
+      blogPosts_log(`   → Summary will show: ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}`);
+      
+      // Show results - use EXACT same result value
       const slug = extractSlug(url);
       let resultHtml = '<h4 style="margin-top: 0; color: #1e40af;">📊 Detection Results</h4>';
       resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
@@ -10663,7 +10667,11 @@
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
       resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
       resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}</p>`;
+      
+      // Use the EXACT same variable - no logic, just direct use
+      const howToResult = shouldHowTo;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${howToResult ? '✅ GENERATE' : '❌ SKIP'}</p>`;
+      
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
       resultHtml += '</div>';
       
