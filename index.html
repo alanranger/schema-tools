@@ -9274,29 +9274,29 @@
   function shouldGenerateHowTo(html, plainText, debugLog = null) {
     if (!html && !plainText) {
       if (debugLog) debugLog('HowTo Detection: No HTML or plain text provided');
-      return true; // If no content, assume doesn't exist, so generate
+      return false; // Can't check, assume exists to be safe
     }
     
     if (debugLog) {
-      debugLog('HowTo Detection: Starting ULTRA-STRICT check');
+      debugLog('HowTo Detection: Checking if HowTo schema EXISTS');
       debugLog(`  - HTML length: ${html ? html.length : 0}`);
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    // PRIORITY 1: Check if HowTo schema ALREADY EXISTS in HTML (if exists, skip generation)
+    // BINARY CHECK: Does HowTo schema EXIST in HTML? (same as FAQ logic)
     if (html) {
       // Check for HowTo schema in script tags
       if (/"@type"\s*:\s*"HowTo"/i.test(html) || /@type["\s]*:["\s]*["\']?HowTo/i.test(html)) {
-        if (debugLog) debugLog(`  ✅ HowTo EXISTS: Found HowTo schema in HTML - will SKIP generation`);
+        if (debugLog) debugLog(`  ✅ HowTo EXISTS: Found HowTo schema in HTML`);
+        if (debugLog) debugLog(`  → RETURNING FALSE: will SKIP (don't duplicate)`);
         return false; // EXISTS, so don't generate (skip) - same as FAQ logic
       }
     }
     
-    // HowTo does NOT exist - now check if content has HowTo markers
-    // If has markers → GENERATE (return true)
-    // If no markers → SKIP (return false)
-    
-    // PRIORITY 2: Extract main content area (exclude navigation/footer)
+    // HowTo does NOT exist → GENERATE (same as FAQ logic - simple binary check)
+    if (debugLog) debugLog(`  ❌ HowTo does NOT exist: No HowTo schema found in HTML`);
+    if (debugLog) debugLog(`  → RETURNING TRUE: will GENERATE`);
+    return true; // Doesn't exist, so generate - SIMPLE BINARY LOGIC (same as FAQ)
     let mainContentHtml = '';
     let mainContentText = '';
     
