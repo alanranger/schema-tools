@@ -488,13 +488,34 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
         console.log(`✅ Saved schema file: ${filePath}`);
       }
 
-      // Git operations - stage all files, commit once, push once
-      const commitMessage = `Update ${fileNames.length} product schema files`;
-      const gitCommands = [
-        { cmd: 'git', args: ['add', ...fileNames], desc: 'Stage all files' },
+      // Git operations - stage files in batches (Windows command line limit), then commit once, push once
+      // Windows command line limit is ~8191 characters
+      // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
+      const BATCH_SIZE = 50;
+      const batches = [];
+      for (let i = 0; i < fileNames.length; i += BATCH_SIZE) {
+        batches.push(fileNames.slice(i, i + BATCH_SIZE));
+      }
+      
+      console.log(`📦 Splitting ${fileNames.length} files into ${batches.length} batch(es) for git add`);
+      
+      const commitMessage = `Update ${fileNames.length} schema files`;
+      const gitCommands = [];
+      
+      // Stage files in batches
+      for (let i = 0; i < batches.length; i++) {
+        gitCommands.push({
+          cmd: 'git',
+          args: ['add', ...batches[i]],
+          desc: `Stage files (batch ${i + 1}/${batches.length})`
+        });
+      }
+      
+      // Single commit and push
+      gitCommands.push(
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
-      ];
+      );
       
       let currentStep = 0;
       const runNextCommand = () => {
