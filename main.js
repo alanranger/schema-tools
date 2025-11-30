@@ -775,13 +775,34 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
         return;
       }
       
-      // Git operations - stage all deletions, single commit, single push
+      // Windows command line limit is ~8191 characters
+      // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
+      const BATCH_SIZE = 50;
+      const batches = [];
+      for (let i = 0; i < filesToDelete.length; i += BATCH_SIZE) {
+        batches.push(filesToDelete.slice(i, i + BATCH_SIZE));
+      }
+      
+      console.log(`📦 Splitting ${filesToDelete.length} files into ${batches.length} batch(es) for git rm`);
+      
+      // Git operations - stage deletions in batches, then single commit, single push
       const commitMessage = `Delete ${filesToDelete.length} schema file(s)`;
-      const gitCommands = [
-        { cmd: 'git', args: ['rm', ...filesToDelete], desc: 'Stage all file deletions' },
+      const gitCommands = [];
+      
+      // Stage deletions in batches
+      for (let i = 0; i < batches.length; i++) {
+        gitCommands.push({
+          cmd: 'git',
+          args: ['rm', ...batches[i]],
+          desc: `Stage file deletions (batch ${i + 1}/${batches.length})`
+        });
+      }
+      
+      // Single commit and push
+      gitCommands.push(
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit all deletions' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
-      ];
+      );
       
       let currentStep = 0;
       const runNextCommand = () => {
