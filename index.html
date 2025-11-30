@@ -9477,26 +9477,30 @@
     }
     
     if (debugLog) {
-      debugLog('FAQ Detection: Starting ENHANCED MASTER RULE check');
+      debugLog('FAQ Detection: Starting ULTRA-STRICT check');
       debugLog(`  - HTML length: ${html ? html.length : 0}`);
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    // PRIORITY 1: Check for FAQPage schema in HTML (most reliable)
+    // PRIORITY 1: Check for FAQPage schema in HTML (MOST RELIABLE - 100% accurate)
     if (html) {
       // Check for FAQPage schema in script tags
       if (/"@type"\s*:\s*"FAQPage"/i.test(html) || /@type["\s]*:["\s]*["\']?FAQPage/i.test(html)) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found FAQPage schema in HTML`);
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found FAQPage schema in HTML (MOST RELIABLE)`);
         return true;
       }
-      
-      // Check for FAQ in <h2> or <h3> tags (structure-based, more reliable)
+    }
+    
+    // PRIORITY 2: Check for FAQ in <h2> or <h3> tags ONLY (structure-based, very reliable)
+    if (html) {
       const h2Matches = html.match(/<h2[^>]*>([^<]*)<\/h2>/gi);
       const h3Matches = html.match(/<h3[^>]*>([^<]*)<\/h3>/gi);
       
       if (h2Matches) {
         for (const h2 of h2Matches) {
-          if (/faq/i.test(h2)) {
+          const h2Text = h2.toLowerCase();
+          // Only match if heading contains FAQ as a standalone word or in FAQ context
+          if (/faqs?\b/i.test(h2Text) || /frequently\s+asked\s+questions/i.test(h2Text)) {
             if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h2> tag: ${h2.substring(0, 80)}`);
             return true;
           }
@@ -9505,7 +9509,9 @@
       
       if (h3Matches) {
         for (const h3 of h3Matches) {
-          if (/faq/i.test(h3)) {
+          const h3Text = h3.toLowerCase();
+          // Only match if heading contains FAQ as a standalone word or in FAQ context
+          if (/faqs?\b/i.test(h3Text) || /frequently\s+asked\s+questions/i.test(h3Text)) {
             if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" in <h3> tag: ${h3.substring(0, 80)}`);
             return true;
           }
@@ -9513,70 +9519,84 @@
       }
     }
     
-    // PRIORITY 2: Check plain text for FAQ markers (STRICT - must be in FAQ context)
-    const textLower = plainText ? plainText.toLowerCase() : '';
-    const htmlLower = html ? html.toLowerCase() : '';
-    const combinedText = (textLower + ' ' + htmlLower).toLowerCase();
+    // PRIORITY 3: Check for FAQ markers in MAIN CONTENT ONLY (exclude navigation/footer)
+    // Extract main content area (between article tags or main content divs)
+    let mainContentHtml = '';
+    let mainContentText = '';
     
-    // STRICT FAQ markers - only exact phrases that indicate FAQ sections
+    if (html) {
+      // Try to extract main article content
+      const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+      const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+      const contentMatch = html.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      
+      if (articleMatch) {
+        mainContentHtml = articleMatch[1];
+        if (debugLog) debugLog(`  - Found <article> tag, extracted ${mainContentHtml.length} chars`);
+      } else if (mainMatch) {
+        mainContentHtml = mainMatch[1];
+        if (debugLog) debugLog(`  - Found <main> tag, extracted ${mainContentHtml.length} chars`);
+      } else if (contentMatch) {
+        mainContentHtml = contentMatch[1];
+        if (debugLog) debugLog(`  - Found content div, extracted ${mainContentHtml.length} chars`);
+      } else {
+        // Fallback: use HTML but exclude likely navigation/footer areas
+        // Remove everything before first <h1> or <h2> (navigation)
+        const h1Match = html.indexOf('<h1');
+        const h2Match = html.indexOf('<h2');
+        const contentStart = Math.min(h1Match > 0 ? h1Match : html.length, h2Match > 0 ? h2Match : html.length);
+        mainContentHtml = html.substring(contentStart);
+        // Remove footer (last 20% of page)
+        const footerStart = Math.floor(mainContentHtml.length * 0.8);
+        mainContentHtml = mainContentHtml.substring(0, footerStart);
+        if (debugLog) debugLog(`  - Using fallback: extracted ${mainContentHtml.length} chars from main content area`);
+      }
+      
+      if (mainContentHtml) {
+        mainContentText = htmlToPlainText(mainContentHtml);
+      }
+    }
+    
+    // Use main content text if available, otherwise use full plain text
+    const searchText = mainContentText || plainText || '';
+    const searchTextLower = searchText.toLowerCase();
+    
+    // STRICT FAQ markers - must appear in main content
     const strictFaqMarkers = [
-      'faq',
-      'faqs',
       'frequently asked questions',
-      'common questions'
+      'common questions',
+      'faqs -',
+      'faq -',
+      'faqs:',
+      'faq:'
     ];
     
-    // Check for strict markers first
+    // Check for strict markers in main content
     for (const marker of strictFaqMarkers) {
-      if (combinedText.includes(marker.toLowerCase())) {
-        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found strict marker "${marker}" in text`);
+      if (searchTextLower.includes(marker.toLowerCase())) {
+        if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found strict marker "${marker}" in main content`);
         return true;
       }
     }
     
-    // Check for question patterns ONLY if they appear in FAQ-like contexts
-    // Pattern: "Question:" or "Q:" followed by actual question text (not "Reflection Questions")
-    const questionPatterns = [
-      /question:\s*[a-z]/i,  // "Question:" followed by lowercase letter (actual question)
-      /q:\s*[a-z]/i,          // "Q:" followed by lowercase letter
-      /q\s*–\s*[a-z]/i,       // "Q –" followed by lowercase letter
-      /q\.\s*[a-z]/i          // "Q." followed by lowercase letter
-    ];
-    
-    // But EXCLUDE common false positives
-    const falsePositives = [
-      'reflection questions',
-      'reflection question',
-      'assignment questions',
-      'practice questions',
-      'review questions',
-      'discussion questions',
-      'study questions',
-      'exam questions',
-      'quiz questions'
-    ];
-    
-    // Check if text contains false positives (if so, skip question pattern matching)
-    let hasFalsePositive = false;
-    for (const fp of falsePositives) {
-      if (combinedText.includes(fp.toLowerCase())) {
-        hasFalsePositive = true;
-        if (debugLog) debugLog(`  ⚠️  Found false positive "${fp}" - skipping question pattern check`);
-        break;
-      }
-    }
-    
-    // Only check question patterns if no false positives found
-    if (!hasFalsePositive) {
-      for (const pattern of questionPatterns) {
-        if (pattern.test(combinedText)) {
-          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found question pattern in text`);
+    // Check for standalone "FAQ" or "FAQs" ONLY if it appears near question patterns
+    // This prevents false positives from navigation/footer
+    if (/faqs?\b/i.test(searchTextLower)) {
+      // Check if FAQ appears near actual questions (within 200 chars)
+      const faqIndex = searchTextLower.indexOf('faq');
+      if (faqIndex >= 0) {
+        const contextAround = searchTextLower.substring(Math.max(0, faqIndex - 100), Math.min(searchTextLower.length, faqIndex + 300));
+        // Must have question patterns nearby
+        if (/question:\s*[a-z]|q:\s*[a-z]|q\s*–\s*[a-z]|q\.\s*[a-z]/i.test(contextAround)) {
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED: Found "FAQ" with question patterns nearby`);
           return true;
+        } else {
+          if (debugLog) debugLog(`  ⚠️  Found "FAQ" but no question patterns nearby - likely false positive`);
         }
       }
     }
     
-    if (debugLog) debugLog(`  ❌ FAQ NOT DETECTED: No FAQ markers found`);
+    if (debugLog) debugLog(`  ❌ FAQ NOT DETECTED: No valid FAQ markers found in main content`);
     return false;
   }
 
