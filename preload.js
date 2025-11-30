@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openDevTools: () => ipcRenderer.invoke('open-devtools'),
   saveAndDeploySchema: (fileName, jsonContent) => ipcRenderer.invoke('save-and-deploy-schema', { fileName, jsonContent }),
   batchDeploySchemas: (files) => ipcRenderer.invoke('batch-deploy-schemas', { files }),
+  checkFileExists: (fileName) => ipcRenderer.invoke('check-file-exists', fileName),
+  deleteSchemaFile: (fileName) => ipcRenderer.invoke('delete-schema-file', fileName),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
   onServerLog: (callback) => {

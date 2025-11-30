@@ -607,3 +607,120 @@ ipcMain.handle('write-file', async (event, { filePath, content }) => {
   }
 });
 
+// IPC handler for checking if a file exists in the schema repository
+ipcMain.handle('check-file-exists', async (event, fileName) => {
+  try {
+    const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+    const projectRoot = isBuiltApp 
+      ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+      : __dirname;
+    
+    const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
+    const filePath = path.join(schemaRepoPath, fileName);
+    
+    return fs.existsSync(filePath);
+  } catch (error) {
+    console.error('❌ Error checking file existence:', error);
+    return false;
+  }
+});
+
+// IPC handler for deleting a schema file from GitHub
+ipcMain.handle('delete-schema-file', async (event, fileName) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+      const projectRoot = isBuiltApp 
+        ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+        : __dirname;
+      
+      const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
+      const filePath = path.join(schemaRepoPath, fileName);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        resolve({ success: true, message: `File ${fileName} does not exist (already deleted)` });
+        return;
+      }
+      
+      // Delete file
+      fs.unlinkSync(filePath);
+      console.log(`🗑️  Deleted schema file: ${filePath}`);
+      
+      // Git operations - stage deletion, commit, and push
+      const commitMessage = `Delete ${fileName}`;
+      const gitCommands = [
+        { cmd: 'git', args: ['rm', fileName], desc: 'Stage file deletion' },
+        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit deletion' },
+        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
+      ];
+      
+      let currentStep = 0;
+      const runNextCommand = () => {
+        if (currentStep >= gitCommands.length) {
+          resolve({ 
+            success: true, 
+            message: `✅ File ${fileName} deleted and deployed successfully!`
+          });
+          return;
+        }
+        
+        const { cmd, args, desc } = gitCommands[currentStep];
+        console.log(`🔄 Git: ${desc}...`);
+        
+        const gitProcess = spawn(cmd, args, {
+          cwd: schemaRepoPath,
+          shell: false,
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        gitProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+        
+        gitProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        gitProcess.on('close', (code) => {
+          const hasOnlyWarnings = stderr && (
+            stderr.includes('LF will be replaced by CRLF') ||
+            stderr.includes('CRLF will be replaced by LF') ||
+            stderr.includes('warning:')
+          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
+          
+          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
+            if (hasOnlyWarnings) {
+              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
+            } else {
+              console.log(`✅ Git: ${desc} completed`);
+            }
+            currentStep++;
+            runNextCommand();
+          } else {
+            const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+            console.error(`❌ ${error}`);
+            reject(new Error(error));
+          }
+        });
+        
+        gitProcess.on('error', (err) => {
+          const error = `Git ${desc} error: ${err.message}`;
+          console.error(`❌ ${error}`);
+          reject(new Error(error));
+        });
+      };
+      
+      // Start git operations
+      runNextCommand();
+      
+    } catch (error) {
+      console.error('❌ Error deleting schema file:', error);
+      reject(error);
+    }
+  });
+});
+

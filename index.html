@@ -2825,11 +2825,29 @@
         <pre id="blogPostsDebugLog" style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; color: #212529; background: white; padding: 0.5rem; border-radius: 4px;"></pre>
       </div>
 
+      <!-- Pre-Run Audit: Existing Files -->
+      <div id="blogPostsPreRunAudit" style="display: none; margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+        <h4 style="margin-top: 0; color: #856404;">🔍 Pre-Run Audit: Existing Schema Files</h4>
+        <p style="margin: 0.5rem 0; color: #856404; font-size: 0.9rem;">
+          The following schema files already exist. Select which ones to delete before generation:
+        </p>
+        <div id="blogPostsExistingFilesList" style="max-height: 300px; overflow-y: auto; margin: 1rem 0; padding: 0.5rem; background: white; border-radius: 4px; border: 1px solid #dee2e6;">
+          <!-- Existing files list will be populated here -->
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+          <button onclick="blogPosts_selectAllExistingFiles()" style="padding: 0.5rem 1rem; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">Select All</button>
+          <button onclick="blogPosts_deselectAllExistingFiles()" style="padding: 0.5rem 1rem; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">Deselect All</button>
+          <button onclick="blogPosts_deleteSelectedFiles()" id="blogPostsDeleteBtn" style="padding: 0.5rem 1rem; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">🗑️ Delete Selected Files</button>
+          <button onclick="blogPosts_skipAuditAndGenerate()" style="padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">⏭️ Skip Audit & Generate</button>
+        </div>
+      </div>
+
       <div class="button-group" style="margin-top: 1.5rem;">
         <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
           <input type="checkbox" id="blogPostsSaveToGithub" checked>
           <span>Save to GitHub</span>
         </label>
+        <button onclick="blogPosts_runPreRunAudit()" id="blogPostsAuditBtn" disabled style="background: #f59e0b; color: white;">🔍 Audit Existing Files</button>
         <button onclick="blogPosts_generateSchema()" id="blogPostsGenerateBtn" disabled>Generate Blog Post Schemas</button>
         <button onclick="blogPosts_stopGeneration()" id="blogPostsStopBtn" style="display: none; background: #dc2626; color: white;">⏹️ Stop Generation</button>
         <button onclick="blogPosts_clearForm()" class="secondary">Clear</button>
@@ -9129,6 +9147,11 @@
         infoText.textContent = `✅ Loaded ${blogPostsData.length} blog posts. Ready to generate schemas.`;
         infoDiv.style.display = 'block';
         document.getElementById('blogPostsGenerateBtn').disabled = false;
+        // Enable audit button if in Electron
+        const auditBtn = document.getElementById('blogPostsAuditBtn');
+        if (auditBtn && window.electronAPI && window.electronAPI.isElectron) {
+          auditBtn.disabled = false;
+        }
       })
       .catch(error => {
         blogPosts_log(`❌ Error parsing CSV file: ${error.message}`, 'error');
@@ -10684,6 +10707,201 @@
     }
   }
 
+  /**
+   * Pre-run audit: Check which schema files already exist
+   */
+  async function blogPosts_runPreRunAudit() {
+    if (!blogPostsData || blogPostsData.length === 0) {
+      alert('Please upload a blog CSV file first.');
+      return;
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Pre-run audit is only available in Electron app.');
+      return;
+    }
+
+    const auditBtn = document.getElementById('blogPostsAuditBtn');
+    const auditDiv = document.getElementById('blogPostsPreRunAudit');
+    const filesListDiv = document.getElementById('blogPostsExistingFilesList');
+
+    if (auditBtn) {
+      auditBtn.disabled = true;
+      auditBtn.textContent = '🔍 Auditing...';
+    }
+
+    blogPosts_log('\n🔍 Pre-Run Audit: Checking for existing schema files...');
+    blogPosts_log(`   Scanning ${blogPostsData.length} blog posts...`);
+
+    const existingFiles = [];
+    let checked = 0;
+
+    for (const row of blogPostsData) {
+      if (!row || !row.url) continue;
+
+      const slug = extractSlug(row.url);
+      if (!slug) continue;
+
+      const fileTypes = ['_schema.json', '_howto.json', '_faq.json', '_image.json'];
+      
+      for (const fileType of fileTypes) {
+        const fileName = `${slug}${fileType}`;
+        try {
+          const exists = await fileExistsInGithub(fileName);
+          if (exists) {
+            existingFiles.push({
+              fileName: fileName,
+              slug: slug,
+              type: fileType.replace('_', '').replace('.json', ''),
+              url: row.url
+            });
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Error checking ${fileName}: ${e.message}`);
+        }
+      }
+
+      checked++;
+      if (checked % 10 === 0) {
+        blogPosts_log(`   Checked ${checked}/${blogPostsData.length} posts...`);
+      }
+    }
+
+    blogPosts_log(`\n✅ Audit complete: Found ${existingFiles.length} existing files`);
+
+    if (existingFiles.length === 0) {
+      if (auditDiv) auditDiv.style.display = 'none';
+      if (auditBtn) {
+        auditBtn.disabled = false;
+        auditBtn.textContent = '🔍 Audit Existing Files';
+      }
+      alert('✅ No existing schema files found. You can proceed with generation.');
+      return;
+    }
+
+    // Display existing files with checkboxes
+    if (filesListDiv) {
+      let html = '<div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5rem; padding: 0.5rem; border-bottom: 1px solid #dee2e6; font-weight: 600; font-size: 0.875rem;">';
+      html += '<div>Select</div><div>File Name</div><div>Type</div>';
+      html += '</div>';
+
+      // Group by slug
+      const filesBySlug = {};
+      existingFiles.forEach(file => {
+        if (!filesBySlug[file.slug]) {
+          filesBySlug[file.slug] = [];
+        }
+        filesBySlug[file.slug].push(file);
+      });
+
+      Object.keys(filesBySlug).sort().forEach(slug => {
+        const files = filesBySlug[slug];
+        files.forEach(file => {
+          const checkboxId = `delete_${file.fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          html += `<div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5rem; padding: 0.5rem; border-bottom: 1px solid #e9ecef; align-items: center;">`;
+          html += `<div><input type="checkbox" id="${checkboxId}" class="existing-file-checkbox" data-filename="${file.fileName}" checked></div>`;
+          html += `<div style="font-family: monospace; font-size: 0.8rem;">${file.fileName}</div>`;
+          html += `<div><span style="background: #e0f2fe; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">${file.type}</span></div>`;
+          html += `</div>`;
+        });
+      });
+
+      filesListDiv.innerHTML = html;
+    }
+
+    if (auditDiv) {
+      auditDiv.style.display = 'block';
+    }
+
+    if (auditBtn) {
+      auditBtn.disabled = false;
+      auditBtn.textContent = '🔍 Audit Existing Files';
+    }
+  }
+
+  /**
+   * Select all existing files for deletion
+   */
+  function blogPosts_selectAllExistingFiles() {
+    const checkboxes = document.querySelectorAll('.existing-file-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+  }
+
+  /**
+   * Deselect all existing files
+   */
+  function blogPosts_deselectAllExistingFiles() {
+    const checkboxes = document.querySelectorAll('.existing-file-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+  }
+
+  /**
+   * Delete selected files from GitHub
+   */
+  async function blogPosts_deleteSelectedFiles() {
+    const checkboxes = document.querySelectorAll('.existing-file-checkbox:checked');
+    const filesToDelete = Array.from(checkboxes).map(cb => cb.getAttribute('data-filename'));
+
+    if (filesToDelete.length === 0) {
+      alert('Please select at least one file to delete.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${filesToDelete.length} file(s) from GitHub?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    const deleteBtn = document.getElementById('blogPostsDeleteBtn');
+    if (deleteBtn) {
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = '🗑️ Deleting...';
+    }
+
+    blogPosts_log(`\n🗑️  Deleting ${filesToDelete.length} selected file(s)...`);
+
+    let deleted = 0;
+    let errors = 0;
+
+    for (const fileName of filesToDelete) {
+      try {
+        if (window.electronAPI && window.electronAPI.isElectron) {
+          // Use the delete file function from main.js
+          await window.electronAPI.deleteSchemaFile(fileName);
+          blogPosts_log(`   ✅ Deleted: ${fileName}`);
+          deleted++;
+        } else {
+          blogPosts_log(`   ⚠️  Cannot delete in browser mode: ${fileName}`);
+        }
+      } catch (e) {
+        blogPosts_log(`   ❌ Failed to delete ${fileName}: ${e.message}`);
+        errors++;
+      }
+    }
+
+    blogPosts_log(`\n✅ Deletion complete: ${deleted} deleted, ${errors} errors`);
+
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = '🗑️ Delete Selected Files';
+    }
+
+    // Refresh the audit
+    await blogPosts_runPreRunAudit();
+
+    alert(`✅ Deleted ${deleted} file(s) from GitHub.\n\n${errors > 0 ? `⚠️ ${errors} file(s) failed to delete.` : ''}\n\nYou can now proceed with generation.`);
+  }
+
+  /**
+   * Skip audit and proceed directly to generation
+   */
+  function blogPosts_skipAuditAndGenerate() {
+    const auditDiv = document.getElementById('blogPostsPreRunAudit');
+    if (auditDiv) {
+      auditDiv.style.display = 'none';
+    }
+    blogPosts_generateSchema();
+  }
+
   function blogPosts_clearForm() {
     document.getElementById('blogPostsCsvFile').value = '';
     document.getElementById('blogPostsTestUrl').value = '';
@@ -10691,10 +10909,12 @@
     blogPostsDebugLog = [];
     window.blogPostsGeneratedFiles = [];
     document.getElementById('blogPostsGenerateBtn').disabled = true;
+    document.getElementById('blogPostsAuditBtn').disabled = true;
     document.getElementById('blogPostsCsvInfo').style.display = 'none';
     document.getElementById('blogPostsDebugLogContainer').style.display = 'none';
     document.getElementById('blogPostsSchemaOutput').style.display = 'none';
     document.getElementById('blogPostsSingleUrlResult').style.display = 'none';
+    document.getElementById('blogPostsPreRunAudit').style.display = 'none';
     const deployBtn = document.getElementById('blogPostsDeployBtn');
     if (deployBtn) {
       deployBtn.style.display = 'none';
