@@ -9811,7 +9811,10 @@
       encodingFormat: 'image/jpeg' // Default, could be enhanced
     };
     
-    // NOTE: contentLocation removed from ImageObject - not a valid ImageObject property
+    // Explicitly ensure contentLocation is NOT included (not a valid ImageObject property)
+    if (imageObject.hasOwnProperty('contentLocation')) {
+      delete imageObject.contentLocation;
+    }
     
     return imageObject;
   }
