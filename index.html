@@ -14580,9 +14580,55 @@
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
 
-      const scriptSrcTag = `<!-- ${schemaType} Schema -->
-<script type="application/ld+json"
-        src="https://schema.alanranger.com/${fileName}">
+      // ARP Hybrid Schema Loader v3.2 – Critical Inline + Deferred Full Load
+      // FIXED: Runtime replacement of <PAGE_URL> placeholder to ensure valid JSON-LD
+      const scriptSrcTag = `<!-- 🔥 ARP Hybrid Schema Loader v3.2 – Critical Inline + Deferred Full Load -->
+
+<script type="application/ld+json" id="arp-critical-schema">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "<PAGE_URL>#webpage",
+  "isPartOf": { "@id": "https://www.alanranger.com/#website" },
+  "about": { "@id": "<PAGE_URL>#article" }
+}
+<\/script>
+
+<script>
+(function() {
+  // Dynamic page URL
+  const pageUrl = window.location.href.split("#")[0];
+
+  // Replace placeholder inside inline critical schema (CRITICAL: Must happen immediately)
+  const critical = document.getElementById("arp-critical-schema");
+  if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
+
+  // Extract slug from blog-on-photography path
+  const slug = pageUrl.split("/blog-on-photography/")[1]?.replace(/\\/$/, "");
+  if (!slug) return;
+
+  const base = "https://schema.alanranger.com/";
+
+  const files = [
+    base + slug + "_schema.json",
+    base + slug + "_faq.json",
+    base + slug + "_howto.json",
+    base + slug + "_image.json"
+  ];
+
+  files.forEach(file => {
+    fetch(file)
+      .then(r => r.ok ? r.text() : null)
+      .then(json => {
+        if (!json) return;
+        const el = document.createElement("script");
+        el.type = "application/ld+json";
+        el.textContent = json.trim();
+        document.head.appendChild(el);
+      })
+      .catch(() => {});
+  });
+})();
 <\/script>`;
 
       const inlineScriptTag = `<!-- ${schemaType} Schema (Inline) -->
