@@ -9274,7 +9274,7 @@
   function shouldGenerateHowTo(html, plainText, debugLog = null) {
     if (!html && !plainText) {
       if (debugLog) debugLog('HowTo Detection: No HTML or plain text provided');
-      return false;
+      return true; // If no content, assume doesn't exist, so generate
     }
     
     if (debugLog) {
@@ -9283,12 +9283,12 @@
       debugLog(`  - Plain text length: ${plainText ? plainText.length : 0}`);
     }
     
-    // PRIORITY 1: Check for HowTo schema in HTML (MOST RELIABLE - 100% accurate)
+    // PRIORITY 1: Check if HowTo schema ALREADY EXISTS in HTML (if exists, skip generation)
     if (html) {
       // Check for HowTo schema in script tags
       if (/"@type"\s*:\s*"HowTo"/i.test(html) || /@type["\s]*:["\s]*["\']?HowTo/i.test(html)) {
-        if (debugLog) debugLog(`  ✅ HowTo DETECTED: Found HowTo schema in HTML (MOST RELIABLE)`);
-        return true;
+        if (debugLog) debugLog(`  ✅ HowTo EXISTS: Found HowTo schema in HTML - will SKIP generation`);
+        return false; // EXISTS, so don't generate (skip)
       }
     }
     
@@ -9414,21 +9414,22 @@
     // CRITICAL: If it's an assignment page, numbered steps are TASKS, not HowTo steps
     if (hasExclusionPattern && totalStepMatches >= 3) {
       if (debugLog) {
-        debugLog(`  ❌ HowTo NOT DETECTED: Found ${totalStepMatches} numbered steps BUT this is an assignment page (${exclusionReason})`);
+        debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps BUT this is an assignment page (${exclusionReason})`);
         debugLog(`    → Numbered steps in assignments are TASKS, not HowTo instructions`);
         debugLog(`    → Will check for strong HowTo headings that might override this exclusion`);
       }
       // Don't return yet - check for strong HowTo headings that override this
     } else if (totalStepMatches >= 3) {
-      // Not an assignment page, and has numbered steps - this is a HowTo
+      // Not an assignment page, and has numbered steps - this should be a HowTo
       if (debugLog) {
-        debugLog(`  ✅ HowTo DETECTED: Found ${totalStepMatches} numbered steps in structured format`);
+        debugLog(`  ✅ HowTo markers found: Found ${totalStepMatches} numbered steps in structured format`);
+        debugLog(`    → HowTo does NOT exist, and content has HowTo markers - will GENERATE`);
         if (bestMatches && bestMatches.length >= 3) {
           debugLog(`    Steps found: ${bestMatches.slice(0, 3).map(m => m.substring(0, 40)).join('; ')}...`);
         }
-        debugLog(`  → RETURNING TRUE: HowTo will be generated`);
+        debugLog(`  → RETURNING TRUE: HowTo will be GENERATED`);
       }
-      return true;
+      return true; // Doesn't exist, has markers, so generate
     } else if (totalStepMatches > 0) {
       if (debugLog) debugLog(`  ⚠️  Found ${totalStepMatches} numbered steps but need at least 3 for HowTo`);
     } else {
@@ -9530,10 +9531,11 @@
     }
     
     if (debugLog) {
-      debugLog(`  ❌ HowTo NOT DETECTED: No valid HowTo markers found in main content`);
-      debugLog(`  → RETURNING FALSE: HowTo will NOT be generated`);
+      debugLog(`  ❌ HowTo markers NOT found: No valid HowTo markers in main content`);
+      debugLog(`    → HowTo does NOT exist, but content has no HowTo markers - will SKIP`);
+      debugLog(`  → RETURNING FALSE: HowTo will NOT be generated (no markers found)`);
     }
-    return false;
+    return false; // Doesn't exist, but no markers, so skip
   }
 
   /**
