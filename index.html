@@ -6257,7 +6257,7 @@
     try {
       const query = supabase
         .from('page_entities')
-        .select('title, page_url, description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
+        .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
         .eq('page_url', url)
         .eq('kind', 'article')
         .maybeSingle();
