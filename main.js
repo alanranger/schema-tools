@@ -366,6 +366,18 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
         reject(new Error(`Schema repository folder not found: ${schemaRepoPath}`));
         return;
       }
+
+      // SAFETY: Clean up any stale Git index.lock that can cause "unable to write new index file"
+      const gitLockPath = path.join(schemaRepoPath, '.git', 'index.lock');
+      if (fs.existsSync(gitLockPath)) {
+        try {
+          fs.unlinkSync(gitLockPath);
+          console.warn(`⚠️ Removed stale Git lock file: ${gitLockPath}`);
+        } catch (lockErr) {
+          console.error(`❌ Failed to remove stale Git lock file: ${lockErr.message}`);
+          // Don't hard-fail here; let git surface a clearer error if it still can't write
+        }
+      }
       
       // Write JSON file
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
