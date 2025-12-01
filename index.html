@@ -9366,40 +9366,63 @@
       ]
     };
     
-    // Build ImageObject node based on BlogPosting.image (or fallbacks)
+    // Extract image info from BlogPosting (which may have inline ImageObject from buildEnrichedBlogPosting)
+    let imageUrl = null;
+    let imageWidth = 1500;
+    let imageHeight = 1000;
+    let imageCaption = blogPosting.headline || '';
+    
+    if (blogPosting && blogPosting.image) {
+      if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
+        // Inline ImageObject from buildEnrichedBlogPosting
+        imageUrl = blogPosting.image.url;
+        imageWidth = blogPosting.image.width || 1500;
+        imageHeight = blogPosting.image.height || 1000;
+        imageCaption = blogPosting.image.caption || blogPosting.headline || '';
+      } else if (typeof blogPosting.image === 'string') {
+        // String URL (fallback)
+        imageUrl = blogPosting.image;
+      }
+    }
+    
+    // Also check thumbnailUrl as fallback
+    if (!imageUrl && blogPosting.thumbnailUrl) {
+      imageUrl = blogPosting.thumbnailUrl;
+    }
+    
+    // Create ONE ImageObject node in @graph (only if we have a valid image URL)
     let imageNode = null;
-    const imageFromPost = blogPosting && blogPosting.image && typeof blogPosting.image === 'object'
-      ? blogPosting.image
-      : null;
-    const imageUrl = imageFromPost && imageFromPost.url ? imageFromPost.url : null;
     const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
     
     if (imageUrl && imageObjectId) {
+      // Create the SINGLE ImageObject node that will be referenced by both WebPage and BlogPosting
       imageNode = {
         '@type': 'ImageObject',
         '@id': imageObjectId,
         url: imageUrl,
-        width: imageFromPost.width || 1500,
-        height: imageFromPost.height || 1000,
-        caption: imageFromPost.caption || blogPosting.headline || ''
+        width: imageWidth,
+        height: imageHeight,
+        caption: imageCaption
       };
       
-      // Wire WebPage.primaryImageOfPage to this ImageObject (only when valid)
+      // Wire WebPage.primaryImageOfPage to reference this ImageObject
       webPage.primaryImageOfPage = { '@id': imageObjectId };
     }
     
-    // For the BlogPosting in this schema output, embed a fully populated ImageObject and thumbnailUrl
+    // For BlogPosting: Remove any inline ImageObject and replace with reference to the one in @graph
+    // CRITICAL: Must remove inline ImageObject to avoid duplicate @id conflict
     const blogPostingForOutput = { ...blogPosting };
+    
+    // Remove the inline ImageObject that buildEnrichedBlogPosting created
+    delete blogPostingForOutput.image;
+    
     if (imageUrl && imageObjectId) {
-      blogPostingForOutput.image = {
-        '@type': 'ImageObject',
-        '@id': imageObjectId,
-        url: imageUrl,
-        width: imageFromPost.width || 1500,
-        height: imageFromPost.height || 1000,
-        caption: imageFromPost.caption || blogPosting.headline || ''
-      };
+      // Reference the SINGLE ImageObject in @graph by @id only (not inline object)
+      blogPostingForOutput.image = { '@id': imageObjectId };
       blogPostingForOutput.thumbnailUrl = imageUrl;
+    } else {
+      // No image - remove thumbnailUrl too
+      delete blogPostingForOutput.thumbnailUrl;
     }
     
     // Build complete schema with @graph (WebPage + BreadcrumbList + BlogPosting [+ ImageObject])
