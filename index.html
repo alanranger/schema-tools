@@ -6695,8 +6695,12 @@
       if (rawDesc.length >= 20) {
         const rawDescLower = rawDesc.toLowerCase();
         const titleLower = title ? title.toLowerCase() : '';
-        // Use it if it's not just the title repeated
-        if (rawDescLower !== titleLower && !rawDescLower.startsWith(titleLower + '.')) {
+        // Use it if it's substantially different from the title (not just title repeated)
+        // Allow descriptions that start with part of the title but have additional content
+        const isJustTitle = rawDescLower === titleLower || rawDescLower === (titleLower + '.');
+        const isTitleWithPeriod = titleLower && rawDescLower.startsWith(titleLower + '.') && rawDescLower.length <= titleLower.length + 2;
+        // Accept if it's not just the title, or if it's longer than title + period (has additional content)
+        if (!isJustTitle && !isTitleWithPeriod) {
           desc = rawDesc;
           // Clean it up but preserve the good content
           desc = desc.replace(/^[\-\s]+/, ''); // Remove leading hyphens/spaces
