@@ -7063,14 +7063,6 @@
     const categories = (entity && entity.categories) || csvRow.categories || [];
     const tags = (entity && entity.tags) || csvRow.tags || [];
 
-    // If we still don't have an image URL, try to extract one directly from the HTML
-    if ((!imageUrl || String(imageUrl).trim() === '') && html) {
-      const extractedImage = extractMainImageFromHtml(html, url);
-      if (extractedImage) {
-        imageUrl = extractedImage;
-      }
-    }
-
     const chunksText = chunks
       .map(c => (c && c.chunk_text) || '')
       .filter(Boolean)
@@ -10626,6 +10618,16 @@
       
       if (html) {
         blogPosts_log(`✅ HTML fetched: ${html.length} chars`);
+        
+        // For single-URL mode, ALWAYS try to detect the main image from HTML
+        const extractedImageUrl = extractMainImageFromHtml(html, url);
+        if (extractedImageUrl) {
+          blogPosts_log(`   [Image] Detected main image URL: ${extractedImageUrl}`);
+          // Override mockRow so BlogPosting + ImageObject both use this URL
+          mockRow.imageUrl = extractedImageUrl;
+        } else {
+          blogPosts_log('   [Image] No main image detected in HTML for this URL');
+        }
         
         const blogPosting = await buildEnrichedBlogPosting(mockRow);
         
