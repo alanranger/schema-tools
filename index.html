@@ -7104,7 +7104,7 @@
     }
 
     const title = (entity && entity.title) || csvRow.title;
-    const rawEntityDescription = entity && (entity.description || entity.excerpt);
+    const rawEntityDescription = entity && (entity.meta_description || entity.description || entity.excerpt);
     const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
     const modifiedDate = (entity && entity.update_date) || publishDate || null;
     let imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
