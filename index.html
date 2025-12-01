@@ -6970,6 +6970,66 @@
     return { about: about.slice(0, MAX_ENTITIES), mentions: mentions.slice(0, MAX_ENTITIES) };
   }
 
+  // Helper: Extract main image URL from HTML (og:image or first <article> img, then first <img>)
+  function extractMainImageFromHtml(html, pageUrl) {
+    if (!html) return null;
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // 1) Prefer og:image
+      const ogTag = doc.querySelector('meta[property="og:image"], meta[name="og:image"]');
+      let src = ogTag ? ogTag.getAttribute('content') : null;
+      
+      // 2) Fallback: first image inside <article>
+      if (!src) {
+        const articleImg = doc.querySelector('article img');
+        if (articleImg) {
+          src = articleImg.getAttribute('src') || articleImg.getAttribute('data-src');
+        }
+      }
+      
+      // 3) Fallback: first image anywhere
+      if (!src) {
+        const anyImg = doc.querySelector('img');
+        if (anyImg) {
+          src = anyImg.getAttribute('src') || anyImg.getAttribute('data-src');
+        }
+      }
+      
+      if (!src) return null;
+      
+      // Normalise to absolute URL
+      try {
+        // Handle protocol-relative URLs: //cdn.example.com/...
+        if (src.startsWith('//')) {
+          return 'https:' + src;
+        }
+        
+        // Handle root-relative URLs: /path/to/image.jpg
+        if (src.startsWith('/')) {
+          const base = new URL(pageUrl);
+          return `${base.origin}${src}`;
+        }
+        
+        // If already absolute, return as-is
+        if (/^https?:\/\//i.test(src)) {
+          return src;
+        }
+        
+        // Relative path: resolve against page URL
+        const base = new URL(pageUrl);
+        return new URL(src, base).toString();
+      } catch {
+        // If URL parsing fails, just return the raw src
+        return src;
+      }
+    } catch {
+      return null;
+    }
+  }
+
   async function buildEnrichedBlogPosting(csvRow) {
     // 🔥 13. URL normalization - remove trailing slash (Google prefers canonical without slash)
     let url = csvRow.url;
@@ -6996,12 +7056,20 @@
     const rawEntityDescription = entity && (entity.description || entity.excerpt);
     const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
     const modifiedDate = (entity && entity.update_date) || publishDate || null;
-    const imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
+    let imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
     // 🔥 3. Image dimensions - use 1500x1000 as default (or from metadata)
     const imageWidth = entity && entity.image_width ? entity.image_width : 1500;
     const imageHeight = entity && entity.image_height ? entity.image_height : 1000;
     const categories = (entity && entity.categories) || csvRow.categories || [];
     const tags = (entity && entity.tags) || csvRow.tags || [];
+
+    // If we still don't have an image URL, try to extract one directly from the HTML
+    if ((!imageUrl || String(imageUrl).trim() === '') && html) {
+      const extractedImage = extractMainImageFromHtml(html, url);
+      if (extractedImage) {
+        imageUrl = extractedImage;
+      }
+    }
 
     const chunksText = chunks
       .map(c => (c && c.chunk_text) || '')
