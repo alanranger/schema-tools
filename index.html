@@ -7284,22 +7284,16 @@
       about: entityInfo.about.length > 0 ? entityInfo.about : [],
       mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [], // Will be guaranteed below if empty
       hasPart: hasPart.length > 0 ? hasPart : [],
-      // 🔥 3. Image must be ImageObject (not string)
+      // 🔥 3. Image must be ImageObject (not string) and must not contain empty url/caption
       image: imageUrl ? {
         '@type': 'ImageObject',
         url: imageUrl,
         width: imageWidth,
         height: imageHeight,
         caption: title || ''
-      } : {
-        '@type': 'ImageObject',
-        url: '',
-        width: 1500,
-        height: 1000,
-        caption: ''
-      },
-      // 🔥 4. thumbnailUrl - duplicate image URL
-      thumbnailUrl: imageUrl || '',
+      } : undefined,
+      // 🔥 4. thumbnailUrl - duplicate image URL (only when we have a valid image URL)
+      ...(imageUrl ? { thumbnailUrl: imageUrl } : {}),
       // NOTE: primaryImageOfPage removed from BlogPosting (only allowed in WebPage)
       speakable: {
         '@type': 'SpeakableSpecification',
@@ -9250,7 +9244,6 @@
     // Canonical IDs that align WebPage.about[] and BlogPosting.@id
     const webPageId = `${url}#webpage`;
     const blogPostingId = `${url}#blogposting`;
-    const primaryImageId = `${url}#primaryimage`;
     
     // Create WebPage for this post
     const webPage = {
@@ -9262,7 +9255,7 @@
       inLanguage: 'en-GB',
       isPartOf: { '@id': WEBSITE_ID },
       // primaryImageOfPage will be wired to the primary ImageObject node (if available)
-      primaryImageOfPage: { '@id': '' },
+      primaryImageOfPage: {},
       // WebPage.about[] must reference the BlogPosting node
       about: [
         { '@id': blogPostingId }
@@ -9301,25 +9294,33 @@
       ? blogPosting.image
       : null;
     const imageUrl = imageFromPost && imageFromPost.url ? imageFromPost.url : null;
+    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
     
-    if (imageUrl) {
+    if (imageUrl && imageObjectId) {
       imageNode = {
         '@type': 'ImageObject',
-        '@id': primaryImageId,
+        '@id': imageObjectId,
         url: imageUrl,
         width: imageFromPost.width || 1500,
         height: imageFromPost.height || 1000,
         caption: imageFromPost.caption || blogPosting.headline || ''
       };
       
-      // Wire WebPage.primaryImageOfPage to this ImageObject
-      webPage.primaryImageOfPage['@id'] = primaryImageId;
+      // Wire WebPage.primaryImageOfPage to this ImageObject (must not be empty)
+      webPage.primaryImageOfPage['@id'] = imageObjectId;
     }
     
-    // For the BlogPosting in this schema output, refer to the primary image by @id
+    // For the BlogPosting in this schema output, embed a fully populated ImageObject and thumbnailUrl
     const blogPostingForOutput = { ...blogPosting };
-    if (imageUrl) {
-      blogPostingForOutput.image = { '@id': primaryImageId };
+    if (imageUrl && imageObjectId) {
+      blogPostingForOutput.image = {
+        '@type': 'ImageObject',
+        '@id': imageObjectId,
+        url: imageUrl,
+        width: imageFromPost.width || 1500,
+        height: imageFromPost.height || 1000,
+        caption: imageFromPost.caption || blogPosting.headline || ''
+      };
       blogPostingForOutput.thumbnailUrl = imageUrl;
     }
     
