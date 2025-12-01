@@ -6255,21 +6255,42 @@
       return null;
     }
     try {
+      // Normalize URL: remove trailing slash for consistent matching
+      const normalizedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+      
       const query = supabase
         .from('page_entities')
         .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
-        .eq('page_url', url)
+        .eq('page_url', normalizedUrl)
         .eq('kind', 'article')
         .maybeSingle();
 
       const { data, error } = await query;
       if (error) {
-        console.warn('page_entities fetch error', url, error);
+        console.warn('page_entities fetch error', normalizedUrl, error);
+        blogPosts_log(`   [Supabase] Query error for ${normalizedUrl}: ${error.message}`);
         return null;
       }
-      return data || null;
+      if (!data) {
+        blogPosts_log(`   [Supabase] No entity found for URL: ${normalizedUrl} (kind=article)`);
+        // Try without kind filter as fallback
+        const fallbackQuery = supabase
+          .from('page_entities')
+          .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
+          .eq('page_url', normalizedUrl)
+          .maybeSingle();
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        if (fallbackData) {
+          blogPosts_log(`   [Supabase] Found entity without kind filter (kind=${fallbackData.kind || 'unknown'})`);
+          return fallbackData;
+        }
+        return null;
+      }
+      blogPosts_log(`   [Supabase] Entity found: ${data.title || 'no title'}, meta_description: ${data.meta_description ? 'yes' : 'no'}`);
+      return data;
     } catch (error) {
       console.warn('page_entities fetch exception', url, error);
+      blogPosts_log(`   [Supabase] Exception: ${error.message}`);
       return null;
     }
   }
