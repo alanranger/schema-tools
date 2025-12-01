@@ -30,6 +30,7 @@
     "puppeteer": "^21.5.0"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "electron": "^39.1.0",
     "electron-packager": "^17.1.2"
   }

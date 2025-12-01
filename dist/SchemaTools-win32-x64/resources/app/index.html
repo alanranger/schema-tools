@@ -7130,6 +7130,165 @@
       ]
     };
 
+    // SELF-TESTING: Validate schema before output
+    function validateBlogSchema(schema) {
+      const errors = [];
+      const warnings = [];
+      
+      try {
+        // Structural Validation
+        if (!schema['@context'] || schema['@context'] !== 'https://schema.org') {
+          errors.push('Missing or invalid @context');
+        }
+        
+        if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
+          errors.push('Missing or invalid @graph');
+          return { valid: false, errors, warnings };
+        }
+        
+        const graph = schema['@graph'];
+        const ids = new Set();
+        const postUrls = new Set();
+        
+        // Check for required top-level objects
+        const hasWebSite = graph.some(obj => obj['@type'] === 'WebSite');
+        const hasOrganization = graph.some(obj => obj['@type'] === 'Organization');
+        const hasBlog = graph.some(obj => obj['@type'] === 'Blog');
+        const hasItemList = graph.some(obj => obj['@type'] === 'ItemList');
+        
+        if (!hasWebSite) errors.push('Missing WebSite object');
+        if (!hasOrganization) errors.push('Missing Organization object');
+        if (!hasBlog) errors.push('Missing Blog object');
+        if (!hasItemList) errors.push('Missing ItemList object');
+        
+        // Check for duplicate @id values
+        graph.forEach(obj => {
+          if (obj['@id']) {
+            if (ids.has(obj['@id'])) {
+              errors.push(`Duplicate @id: ${obj['@id']}`);
+            }
+            ids.add(obj['@id']);
+          }
+        });
+        
+        // Validate each BlogPosting
+        const blogPostings = graph.filter(obj => obj['@type'] === 'BlogPosting');
+        const webPages = graph.filter(obj => obj['@type'] === 'WebPage');
+        const breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
+        
+        blogPostings.forEach((post, idx) => {
+          postUrls.add(post.url);
+          
+          // Required fields check
+          if (!post['@id']) errors.push(`BlogPosting ${idx + 1}: Missing @id`);
+          if (!post.headline) errors.push(`BlogPosting ${idx + 1}: Missing headline`);
+          if (!post.url) errors.push(`BlogPosting ${idx + 1}: Missing url`);
+          if (!post.datePublished) warnings.push(`BlogPosting ${idx + 1}: Missing datePublished`);
+          if (!post.articleBody || post.articleBody.trim().length === 0) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or empty articleBody`);
+          }
+          if (!post.description || post.description.length === 0) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing description`);
+          }
+          if (post.description && post.description.length > 160) {
+            warnings.push(`BlogPosting ${idx + 1}: Description too long (${post.description.length} chars)`);
+          }
+          if (!post.mainEntityOfPage || !post.mainEntityOfPage['@id']) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or invalid mainEntityOfPage`);
+          }
+          if (!post.genre) warnings.push(`BlogPosting ${idx + 1}: Missing genre`);
+          if (!post.articleSection) warnings.push(`BlogPosting ${idx + 1}: Missing articleSection`);
+          if (!post.publisher || !post.publisher['@id']) {
+            errors.push(`BlogPosting ${idx + 1}: Missing or invalid publisher`);
+          }
+          if (!post.interactionStatistic) {
+            warnings.push(`BlogPosting ${idx + 1}: Missing interactionStatistic`);
+          }
+          
+          // Check for corresponding WebPage
+          const webpageId = `${post.url}#webpage`;
+          const hasWebPage = webPages.some(wp => wp['@id'] === webpageId);
+          if (!hasWebPage) {
+            errors.push(`BlogPosting ${idx + 1}: Missing corresponding WebPage (${webpageId})`);
+          }
+          
+          // Check for corresponding BreadcrumbList
+          const breadcrumbId = `${post.url}#breadcrumb`;
+          const hasBreadcrumb = breadcrumbs.some(bc => bc['@id'] === breadcrumbId);
+          if (!hasBreadcrumb) {
+            errors.push(`BlogPosting ${idx + 1}: Missing corresponding BreadcrumbList (${breadcrumbId})`);
+          }
+        });
+        
+        // Validate WebPages
+        webPages.forEach((wp, idx) => {
+          if (!wp['@id']) errors.push(`WebPage ${idx + 1}: Missing @id`);
+          if (!wp.url) errors.push(`WebPage ${idx + 1}: Missing url`);
+          if (!wp.isPartOf || !wp.isPartOf['@id']) {
+            errors.push(`WebPage ${idx + 1}: Missing or invalid isPartOf`);
+          }
+        });
+        
+        // Validate BreadcrumbLists
+        breadcrumbs.forEach((bc, idx) => {
+          if (!bc['@id']) errors.push(`BreadcrumbList ${idx + 1}: Missing @id`);
+          if (!bc.itemListElement || !Array.isArray(bc.itemListElement)) {
+            errors.push(`BreadcrumbList ${idx + 1}: Missing or invalid itemListElement`);
+          }
+        });
+        
+        // Validate ItemList contains all posts
+        const itemList = graph.find(obj => obj['@type'] === 'ItemList');
+        if (itemList && itemList.itemListElement) {
+          const itemListUrls = new Set(itemList.itemListElement.map(item => item.url).filter(Boolean));
+          postUrls.forEach(url => {
+            if (!itemListUrls.has(url)) {
+              warnings.push(`Post URL not in ItemList: ${url}`);
+            }
+          });
+        }
+        
+        // JSON validation
+        try {
+          JSON.stringify(schema);
+        } catch (e) {
+          errors.push(`Invalid JSON: ${e.message}`);
+        }
+        
+      } catch (e) {
+        errors.push(`Validation error: ${e.message}`);
+      }
+      
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+        stats: {
+          totalObjects: graph.length,
+          blogPostings: blogPostings.length,
+          webPages: webPages.length,
+          breadcrumbs: breadcrumbs.length
+        }
+      };
+    }
+    
+    // Run validation
+    const validation = validateBlogSchema(blogSchema);
+    
+    if (!validation.valid) {
+      blogLog('❌ Schema validation FAILED:');
+      validation.errors.forEach(err => blogLog(`   ERROR: ${err}`));
+      validation.warnings.forEach(warn => blogLog(`   WARNING: ${warn}`));
+      blogLog('⚠️  Schema generated but contains errors. Review and fix before use.');
+    } else {
+      blogLog('✅ Schema validation PASSED');
+      if (validation.warnings.length > 0) {
+        blogLog('   Warnings (non-critical):');
+        validation.warnings.forEach(warn => blogLog(`   - ${warn}`));
+      }
+      blogLog(`   Stats: ${validation.stats.totalObjects} objects, ${validation.stats.blogPostings} posts, ${validation.stats.webPages} web pages, ${validation.stats.breadcrumbs} breadcrumbs`);
+    }
+
     window.currentBlogSchema = blogSchema;
 
     const schemaCode = JSON.stringify(blogSchema, null, 2);
