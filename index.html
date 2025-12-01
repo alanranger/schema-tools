@@ -7338,10 +7338,10 @@
         '@type': 'WebSite',
         '@id': 'https://www.alanranger.com/#website' 
       },
+      // Copyright holder must reference the global #org node
       copyrightHolder: {
         '@type': 'Organization',
-        '@id': 'https://www.alanranger.com#organization',
-        name: 'Alan Ranger Photography'
+        '@id': 'https://www.alanranger.com/#org'
       },
       copyrightYear: publishYear,
       sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : []
@@ -9245,19 +9245,26 @@
     // Build the complete schema with @context, WebPage, BreadcrumbList, etc.
     const url = csvRow.url;
     const BLOG_URL = BLOG_URL_GLOBAL;
-    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
     const WEBSITE_ID = 'https://www.alanranger.com#website';
+    
+    // Use canonical IDs that align WebPage.about[] and BlogPosting.@id
+    const webPageId = `${url}#webpage`;
+    const blogPostingId = `${url}#blogposting`;
     
     // Create WebPage for this post
     const webPage = {
       '@type': 'WebPage',
-      '@id': `${url}#webpage`,
+      '@id': webPageId,
       url: url,
       name: blogPosting.headline || '',
       description: blogPosting.description || '',
       inLanguage: 'en-GB',
       isPartOf: { '@id': WEBSITE_ID },
-      primaryImageOfPage: { '@id': blogPosting.image && blogPosting.image.url ? blogPosting.image.url : '' }
+      primaryImageOfPage: { '@id': blogPosting.image && blogPosting.image.url ? blogPosting.image.url : '' },
+      // WebPage.about[] must reference the BlogPosting node
+      about: [
+        { '@id': blogPostingId }
+      ]
     };
     
     // Create BreadcrumbList
