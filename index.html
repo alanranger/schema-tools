@@ -6726,8 +6726,9 @@
         desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
       }
       
-      // Remove ALL CAPS words (3+ consecutive uppercase letters) - but keep proper nouns
-      desc = desc.replace(/\b[A-Z]{3,}\b/g, '');
+      // Remove ALL CAPS words (3+ consecutive uppercase letters) - but keep proper nouns,
+      // but DO NOT strip short tokens like "FREE" that are part of meaningful sentences.
+      desc = desc.replace(/\b[A-Z]{4,}\b/g, '');
       
       // Remove URLs
       desc = desc.replace(/https?:\/\/[^\s]+/g, '');
@@ -7302,54 +7303,35 @@
       },
       // 🔥 6. discussionUrl - always present
       discussionUrl: `${url}#comments`,
-      // 🔥 14. Author must have @id
-      author: {
-        '@type': 'Person',
-        '@id': 'https://www.alanranger.com/#alanranger',
-        name: 'Alan Ranger',
-        url: 'https://www.alanranger.com/about-alan-ranger',
-        jobTitle: 'Photographer & Photography Educator',
-        sameAs: [
-          'https://www.alanranger.com',
-          'https://www.linkedin.com/in/alanrangerphotography'
-        ]
-      },
-      // 🔥 15. Publisher logo must have width/height
-      publisher: {
-        '@type': 'Organization',
-        '@id': 'https://www.alanranger.com#organization',
-        name: 'Alan Ranger Photography',
-        url: 'https://www.alanranger.com',
-        logo: {
-          '@type': 'ImageObject',
-          url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
-          width: 300,
-          height: 100
-        }
-      },
+      // 🔥 14. Author / publisher fields will be normalised below to global Person/Org with inline details
       // 🔥 2. isPartOf must point to WebSite (not Blog) - Google requires this for hierarchy
       isPartOf: { 
         '@type': 'WebSite',
         '@id': 'https://www.alanranger.com/#website' 
       },
-      // Copyright holder must reference the global #org node
-      copyrightHolder: {
-        '@type': 'Organization',
-        '@id': 'https://www.alanranger.com/#org'
-      },
+      // Copyright holder will be normalised below to reference the global #org node with inline details
       copyrightYear: publishYear,
       sameAs: relatedLink.length > 0 ? relatedLink.map(link => link.url) : []
       // NOTE: Removed invalid BlogPosting properties: relatedLink, isRelatedTo, subjectOf
     };
     
     // Override/ensure global Person & Organization references for author/creator/accountablePerson/publisher
+    // IMPORTANT: Keep @id pointing to global nodes but also inline minimal details so BlogPosting is self-contained
     const PERSON_REF = {
       '@type': 'Person',
-      '@id': 'https://www.alanranger.com/#person'
+      '@id': 'https://www.alanranger.com/#person',
+      name: 'Alan Ranger',
+      url: 'https://www.alanranger.com'
     };
     const ORG_REF = {
       '@type': 'Organization',
-      '@id': 'https://www.alanranger.com/#org'
+      '@id': 'https://www.alanranger.com/#org',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
+      }
     };
     
     blogPosting.author = PERSON_REF;
@@ -7361,6 +7343,14 @@
     if (isAssignment && teachesTopic) {
       blogPosting.teaches = teachesTopic;
     }
+    
+    // Ensure copyrightHolder always references global org with inline details
+    blogPosting.copyrightHolder = {
+      '@type': 'Organization',
+      '@id': 'https://www.alanranger.com/#org',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com'
+    };
     
     // Add citation for RPS content
     if (/\brps\b/.test(articleBody.toLowerCase()) || /royal photographic society/i.test(articleBody.toLowerCase())) {
