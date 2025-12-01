@@ -2796,8 +2796,11 @@
         <button onclick="blogPosts_testSingleUrl()" id="blogPostsTestBtn" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem;">
           🔍 Test Detection
         </button>
-        <button onclick="blogPosts_generateSingleUrl()" id="blogPostsGenerateSingleBtn" style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+        <button onclick="blogPosts_generateSingleUrl()" id="blogPostsGenerateSingleBtn" style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem;">
           ✅ Generate Schema
+        </button>
+        <button onclick="blogPosts_redeploySingleUrlSchemas()" id="blogPostsRedeploySingleBtn" style="display: none; background: #0ea5e9; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          🚀 Redeploy Schemas to GitHub
         </button>
       </div>
       
@@ -10749,6 +10752,21 @@
       }
       
       alert(`✅ Schema generated for ${slug}!\n\nMain schema: ${fileName}\n\nCheck the result panel below for the full schema.`);
+
+      // If running in Electron with Save to GitHub OFF, offer a Redeploy button so you can push later
+      const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
+      if (redeployBtn && window.electronAPI && window.electronAPI.isElectron) {
+        redeployBtn.style.display = 'inline-block';
+        redeployBtn.textContent = '🚀 Redeploy Schemas to GitHub';
+        redeployBtn.disabled = false;
+        // Store the filenames for this slug so the redeploy handler knows what to send
+        window.blogPostsSingleUrlLastFiles = [
+          `${slug}_schema.json`,
+          `${slug}_howto.json`,
+          `${slug}_faq.json`,
+          `${slug}_image.json`
+        ];
+      }
       
     } catch (error) {
       blogPosts_log(`❌ Generation failed: ${error.message}`);
@@ -10789,6 +10807,71 @@
       textarea.select();
       document.execCommand('copy');
       alert('✅ Schema copied to clipboard!');
+    }
+  }
+
+  // Redeploy the most recently generated single-URL schemas using the batch deploy IPC
+  async function blogPosts_redeploySingleUrlSchemas() {
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      alert('Redeploy is only available in the Electron app.');
+      return;
+    }
+    
+    const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
+    if (redeployBtn) {
+      redeployBtn.disabled = true;
+      redeployBtn.textContent = '🚀 Redeploying...';
+    }
+    
+    try {
+      const files = (window.blogPostsSingleUrlLastFiles || []).filter(Boolean);
+      if (files.length === 0) {
+        alert('No files recorded for redeploy – generate a schema first.');
+        if (redeployBtn) {
+          redeployBtn.disabled = false;
+          redeployBtn.textContent = '🚀 Redeploy Schemas to GitHub';
+        }
+        return;
+      }
+      
+      blogPosts_log(`\n🚀 Redeploying single URL schemas to GitHub: ${files.join(', ')}`);
+      
+      // Read each file from the alanranger-schema repo via Electron and send to batch deploy
+      const batchFiles = [];
+      for (const fileName of files) {
+        try {
+          const fileContent = await window.electronAPI.readSchemaFile(fileName);
+          if (fileContent) {
+            batchFiles.push({
+              fileName,
+              jsonContent: fileContent
+            });
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Could not read ${fileName} for redeploy: ${e.message}`);
+        }
+      }
+      
+      if (batchFiles.length === 0) {
+        alert('No schema files found on disk to redeploy.');
+        if (redeployBtn) {
+          redeployBtn.disabled = false;
+          redeployBtn.textContent = '🚀 Redeploy Schemas to GitHub';
+        }
+        return;
+      }
+      
+      await window.electronAPI.batchDeploySchemas(batchFiles);
+      blogPosts_log(`✅ Redeployed ${batchFiles.length} schema files for this URL to GitHub`);
+      alert(`✅ Redeployed ${batchFiles.length} schema files to GitHub for this URL.`);
+    } catch (error) {
+      blogPosts_log(`❌ Redeploy failed: ${error.message}`);
+      alert(`❌ Redeploy failed: ${error.message}`);
+    } finally {
+      if (redeployBtn) {
+        redeployBtn.disabled = false;
+        redeployBtn.textContent = '🚀 Redeploy Schemas to GitHub';
+      }
     }
   }
 

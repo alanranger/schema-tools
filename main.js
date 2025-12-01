@@ -598,6 +598,27 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
   });
 });
 
+// IPC helper: read a schema file from the alanranger-schema repo (used for single-URL redeploy)
+ipcMain.handle('read-schema-file', async (event, fileName) => {
+  try {
+    const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+    const projectRoot = isBuiltApp 
+      ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+      : __dirname;
+    const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
+    const filePath = path.join(schemaRepoPath, fileName);
+    
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Schema file not found: ${fileName}`);
+    }
+    
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch (error) {
+    console.error('❌ Error reading schema file:', error);
+    throw error;
+  }
+});
+
 // IPC handler for reading files
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
