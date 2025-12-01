@@ -9254,8 +9254,6 @@
       description: blogPosting.description || '',
       inLanguage: 'en-GB',
       isPartOf: { '@id': WEBSITE_ID },
-      // primaryImageOfPage will be wired to the primary ImageObject node (if available)
-      primaryImageOfPage: {},
       // WebPage.about[] must reference the BlogPosting node
       about: [
         { '@id': blogPostingId }
@@ -9306,8 +9304,8 @@
         caption: imageFromPost.caption || blogPosting.headline || ''
       };
       
-      // Wire WebPage.primaryImageOfPage to this ImageObject (must not be empty)
-      webPage.primaryImageOfPage['@id'] = imageObjectId;
+      // Wire WebPage.primaryImageOfPage to this ImageObject (only when valid)
+      webPage.primaryImageOfPage = { '@id': imageObjectId };
     }
     
     // For the BlogPosting in this schema output, embed a fully populated ImageObject and thumbnailUrl
@@ -10622,7 +10620,34 @@
       
       blogPosts_log(`📝 Created mock row for: ${slug}`);
       
-      // Generate main schema
+      // Fetch HTML FIRST so we can detect the main image before building the main schema
+      blogPosts_log('\n📡 Fetching HTML for this URL (single-URL mode)...');
+      const html = await fetchHtmlForDetection(url);
+      const plainText = html ? htmlToPlainText(html) : '';
+      let blogPosting = null;
+      
+      if (html) {
+        blogPosts_log(`✅ HTML fetched: ${html.length} chars`);
+        
+        // For single-URL mode, ALWAYS try to detect the main image from HTML
+        const extractedImageUrl = extractMainImageFromHtml(html, url);
+        if (extractedImageUrl) {
+          blogPosts_log(`   [Image] Detected main image URL: ${extractedImageUrl}`);
+          // Override mockRow so BlogPosting + ImageObject + WebPage all use this URL
+          mockRow.imageUrl = extractedImageUrl;
+        } else {
+          blogPosts_log('   [Image] No main image detected in HTML for this URL');
+        }
+        
+        // Build enriched BlogPosting now that mockRow.imageUrl is populated (if available)
+        blogPosting = await buildEnrichedBlogPosting(mockRow);
+      } else {
+        blogPosts_log('   ⚠️  Could not fetch HTML (may be CORS or network). Proceeding without HTML-based enrichment.');
+        // Fallback: still build BlogPosting from mockRow (without HTML enrichment)
+        blogPosting = await buildEnrichedBlogPosting(mockRow);
+      }
+      
+      // Generate main schema AFTER image detection so WebPage/BlogPosting get correct image wiring
       blogPosts_log('📄 Generating main schema...');
       let schema;
       try {
@@ -10657,25 +10682,8 @@
         blogPosts_log(`📄 Generated: ${fileName} (not saved - check "Save to GitHub" to save)`);
       }
       
-      // Fetch HTML for additional schemas
-      blogPosts_log('\n📡 Fetching HTML for additional schemas...');
-      const html = await fetchHtmlForDetection(url);
-      const plainText = html ? htmlToPlainText(html) : '';
-      
-      if (html) {
-        blogPosts_log(`✅ HTML fetched: ${html.length} chars`);
-        
-        // For single-URL mode, ALWAYS try to detect the main image from HTML
-        const extractedImageUrl = extractMainImageFromHtml(html, url);
-        if (extractedImageUrl) {
-          blogPosts_log(`   [Image] Detected main image URL: ${extractedImageUrl}`);
-          // Override mockRow so BlogPosting + ImageObject both use this URL
-          mockRow.imageUrl = extractedImageUrl;
-        } else {
-          blogPosts_log('   [Image] No main image detected in HTML for this URL');
-        }
-        
-        const blogPosting = await buildEnrichedBlogPosting(mockRow);
+      // Use the same HTML/plainText/BlogPosting instance for additional schemas
+      if (html && blogPosting) {
         
         // Generate HowTo if eligible
         try {
