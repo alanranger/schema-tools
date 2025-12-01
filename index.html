@@ -6690,16 +6690,35 @@
     // ALWAYS use first paragraph from article body (not raw description)
     if (articleBody) {
       // Get first sentence/paragraph - look for first complete sentence
+      // CRITICAL: Skip ALL CAPS headers and find the first real sentence
       const sentences = articleBody.split(/[.!?]\s+/).filter(s => {
         const trimmed = s.trim();
         // Must be at least 20 chars, not navigation, not title
         if (trimmed.length < 20) return false;
         if (/^(back|cart|sign|search|menu|home|blog)/i.test(trimmed)) return false;
         if (title && trimmed.toLowerCase() === title.toLowerCase()) return false;
+        // Skip sentences that are entirely ALL CAPS (headers) or start with ALL CAPS + hyphen
+        if (/^[A-Z\s\-]{20,}$/.test(trimmed)) return false; // Entirely caps
+        if (/^[A-Z\s\-]+\s*https?:\/\//.test(trimmed)) return false; // ALL CAPS header followed by URL
+        if (/^[A-Z\s\-]+\s*[A-Z]/.test(trimmed) && trimmed.length > 50 && !/[a-z]/.test(trimmed)) return false; // Long ALL CAPS block
+        // Prefer sentences that start with lowercase or have mixed case (real content)
         return true;
       });
       
-      if (sentences.length > 0) {
+      // Find first sentence that actually looks like content (has lowercase letters)
+      let foundSentence = null;
+      for (const s of sentences) {
+        const trimmed = s.trim();
+        // Prefer sentences that start with lowercase or have mixed case
+        if (/^[a-z]/.test(trimmed) || (/[a-z]/.test(trimmed) && !/^[A-Z\s\-]{30,}/.test(trimmed))) {
+          foundSentence = trimmed;
+          break;
+        }
+      }
+      
+      if (foundSentence) {
+        desc = foundSentence;
+      } else if (sentences.length > 0) {
         desc = sentences[0].trim();
       } else {
         // Fallback: first 200 chars, but find sentence boundary
@@ -6715,6 +6734,11 @@
         }
       }
       
+      // Remove leading hyphens and malformed prefixes like "- FREE PHOTOGRAPHYThis"
+      desc = desc.replace(/^[\-\s]+/, ''); // Remove leading hyphens and spaces
+      desc = desc.replace(/^[A-Z\s\-]+\s*([A-Z][a-z])/, '$1'); // Remove ALL CAPS prefix before first proper word
+      desc = desc.replace(/^[A-Z\s\-]+\s*https?:\/\/[^\s]+\s*([A-Z][a-z])/, '$1'); // Remove ALL CAPS + URL prefix
+      
       // Remove repeated headline (exact match or contains)
       if (title) {
         const titleLower = title.toLowerCase();
@@ -6726,8 +6750,7 @@
         desc = desc.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
       }
       
-      // Remove ALL CAPS words (3+ consecutive uppercase letters) - but keep proper nouns,
-      // but DO NOT strip short tokens like "FREE" that are part of meaningful sentences.
+      // Remove ALL CAPS words (4+ consecutive uppercase letters) - but keep proper nouns
       desc = desc.replace(/\b[A-Z]{4,}\b/g, '');
       
       // Remove URLs
@@ -6745,7 +6768,18 @@
       desc = desc.replace(/\s+/g, ' ').trim();
       
       // Remove leading/trailing punctuation artifacts
-      desc = desc.replace(/^[.,;:!?\s]+/, '').replace(/[.,;:!?\s]+$/, '');
+      desc = desc.replace(/^[.,;:!?\s\-]+/, '').replace(/[.,;:!?\s]+$/, '');
+    }
+    
+    // If description is still malformed (starts with hyphen or ALL CAPS), try raw description
+    if (desc && (/^[\-\s]+/.test(desc) || /^[A-Z\s\-]{10,}/.test(desc))) {
+      if (rawDescription) {
+        const rawDesc = String(rawDescription).trim();
+        // Prefer raw description if it looks cleaner (starts with lowercase or proper sentence)
+        if (rawDesc && /^[a-z]/.test(rawDesc) || /^[A-Z][a-z]/.test(rawDesc)) {
+          desc = rawDesc;
+        }
+      }
     }
     
     // If still no description, try raw description as last resort
@@ -6754,7 +6788,10 @@
       if (title && desc.toLowerCase() === title.toLowerCase()) {
         desc = '';
       }
-      desc = desc.replace(/[A-Z]{3,}/g, '');
+      // Remove leading hyphens and malformed prefixes
+      desc = desc.replace(/^[\-\s]+/, '');
+      desc = desc.replace(/^[A-Z\s\-]+\s*([A-Z][a-z])/, '$1');
+      desc = desc.replace(/[A-Z]{4,}/g, '');
       desc = desc.replace(/https?:\/\/[^\s]+/g, '');
       desc = desc.replace(/\[\/[^\]]+\]/g, '');
       desc = desc.replace(/\[[^\]]+\]/g, '');
@@ -6773,6 +6810,11 @@
         } else {
           desc = trimmed.trim();
         }
+      }
+      
+      // Ensure starts with capital letter
+      if (desc.length > 0 && /^[a-z]/.test(desc)) {
+        desc = desc.charAt(0).toUpperCase() + desc.slice(1);
       }
       
       // Ensure ends with punctuation
