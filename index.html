@@ -6688,6 +6688,9 @@
     
     let desc = '';
     
+    // Debug logging
+    console.log('[createCleanDescription] rawDescription:', rawDescription ? rawDescription.substring(0, 100) : 'null', 'title:', title);
+    
     // PRIORITY 1: Use meta description (rawDescription) if it exists and is good quality
     if (rawDescription) {
       const rawDesc = String(rawDescription).trim();
@@ -7110,6 +7113,12 @@
 
     const title = (entity && entity.title) || csvRow.title;
     const rawEntityDescription = entity && (entity.meta_description || entity.description || entity.excerpt);
+    // Debug logging for description source
+    if (entity) {
+      blogPosts_log(`   [Description] Entity found - meta_description: ${entity.meta_description ? entity.meta_description.substring(0, 50) + '...' : 'null'}, description: ${entity.description ? entity.description.substring(0, 50) + '...' : 'null'}, rawEntityDescription: ${rawEntityDescription ? rawEntityDescription.substring(0, 50) + '...' : 'null'}`);
+    } else {
+      blogPosts_log(`   [Description] No entity found in Supabase`);
+    }
     const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
     const modifiedDate = (entity && entity.update_date) || publishDate || null;
     let imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
