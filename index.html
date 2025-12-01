@@ -6252,6 +6252,7 @@
   // Supabase-backed helpers for blog enrichment
   async function fetchPageEntityForUrl(url) {
     if (!supabaseAvailable || !supabase || !url) {
+      blogPosts_log(`   [Supabase] Not available - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}, url: ${!!url}`);
       return null;
     }
     try {

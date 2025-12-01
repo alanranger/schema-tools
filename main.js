@@ -383,10 +383,10 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
       console.log(`✅ Saved schema file: ${filePath}`);
       
-      // Git operations - stage, commit, and push
+      // Git operations - stage all changes (including deletions), commit, and push
       const commitMessage = `Update ${fileName}`;
       const gitCommands = [
-        { cmd: 'git', args: ['add', fileName], desc: 'Stage file' },
+        { cmd: 'git', args: ['add', '-A'], desc: 'Stage all changes (including deletions)' },
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
