@@ -6681,13 +6681,45 @@
   // COMPLETELY REWRITTEN - Follows exact canonical template specification
   // Helper: Clean description following exact rules
   function createCleanDescription(articleBody, title, rawDescription) {
-    // Rule: Use FIRST PARAGRAPH ONLY from article body
+    // Rule: PREFER meta description (rawDescription) if available and good quality
+    // Rule: Fall back to first paragraph from article body if meta description is missing/poor
     // Rule: Remove ALL CAPS, URLs, repeated headline, headers/footers
     // Rule: Max 160 characters, human-readable, end with full stop
     
     let desc = '';
     
-    // ALWAYS use first paragraph from article body (not raw description)
+    // PRIORITY 1: Use meta description (rawDescription) if it exists and is good quality
+    if (rawDescription) {
+      const rawDesc = String(rawDescription).trim();
+      // Check if raw description is usable (not just title, has meaningful content)
+      if (rawDesc.length >= 20) {
+        const rawDescLower = rawDesc.toLowerCase();
+        const titleLower = title ? title.toLowerCase() : '';
+        // Use it if it's not just the title repeated
+        if (rawDescLower !== titleLower && !rawDescLower.startsWith(titleLower + '.')) {
+          desc = rawDesc;
+          // Clean it up but preserve the good content
+          desc = desc.replace(/^[\-\s]+/, ''); // Remove leading hyphens/spaces
+          desc = desc.replace(/https?:\/\/[^\s]+/g, ''); // Remove URLs
+          desc = desc.replace(/\[\/[^\]]+\]/g, ''); // Remove bracket patterns
+          desc = desc.replace(/\[[^\]]+\]/g, '');
+          desc = desc.replace(/\s+/g, ' ').trim();
+          // If still good after cleaning, use it
+          if (desc.length >= 20 && desc.length <= 200) {
+            // Ensure starts with capital and ends with period
+            if (desc.length > 0 && /^[a-z]/.test(desc)) {
+              desc = desc.charAt(0).toUpperCase() + desc.slice(1);
+            }
+            if (!desc.endsWith('.')) {
+              desc = desc + '.';
+            }
+            return desc;
+          }
+        }
+      }
+    }
+    
+    // PRIORITY 2: Fall back to article body extraction if meta description wasn't usable
     if (articleBody) {
       // Get first sentence/paragraph - look for first complete sentence
       // CRITICAL: Skip ALL CAPS headers and find the first real sentence
@@ -6771,33 +6803,6 @@
       desc = desc.replace(/^[.,;:!?\s\-]+/, '').replace(/[.,;:!?\s]+$/, '');
     }
     
-    // If description is still malformed (starts with hyphen or ALL CAPS), try raw description
-    if (desc && (/^[\-\s]+/.test(desc) || /^[A-Z\s\-]{10,}/.test(desc))) {
-      if (rawDescription) {
-        const rawDesc = String(rawDescription).trim();
-        // Prefer raw description if it looks cleaner (starts with lowercase or proper sentence)
-        if (rawDesc && /^[a-z]/.test(rawDesc) || /^[A-Z][a-z]/.test(rawDesc)) {
-          desc = rawDesc;
-        }
-      }
-    }
-    
-    // If still no description, try raw description as last resort
-    if (!desc && rawDescription) {
-      desc = String(rawDescription).trim();
-      if (title && desc.toLowerCase() === title.toLowerCase()) {
-        desc = '';
-      }
-      // Remove leading hyphens and malformed prefixes
-      desc = desc.replace(/^[\-\s]+/, '');
-      desc = desc.replace(/^[A-Z\s\-]+\s*([A-Z][a-z])/, '$1');
-      desc = desc.replace(/[A-Z]{4,}/g, '');
-      desc = desc.replace(/https?:\/\/[^\s]+/g, '');
-      desc = desc.replace(/\[\/[^\]]+\]/g, '');
-      desc = desc.replace(/\[[^\]]+\]/g, '');
-      desc = desc.replace(/\s+/g, ' ').trim();
-      if (desc.length < 20) desc = '';
-    }
     
     // Trim to 160 chars and ensure ends with full stop
     if (desc) {
