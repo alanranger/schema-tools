@@ -6694,13 +6694,14 @@
       // Check if raw description is usable (not just title, has meaningful content)
       if (rawDesc.length >= 20) {
         const rawDescLower = rawDesc.toLowerCase();
-        const titleLower = title ? title.toLowerCase() : '';
-        // Use it if it's substantially different from the title (not just title repeated)
-        // Allow descriptions that start with part of the title but have additional content
-        const isJustTitle = rawDescLower === titleLower || rawDescLower === (titleLower + '.');
-        const isTitleWithPeriod = titleLower && rawDescLower.startsWith(titleLower + '.') && rawDescLower.length <= titleLower.length + 2;
-        // Accept if it's not just the title, or if it's longer than title + period (has additional content)
-        if (!isJustTitle && !isTitleWithPeriod) {
+        const titleLower = title ? title.toLowerCase().trim() : '';
+        // Simple check: if meta description is substantially longer than title, or clearly different, use it
+        // Only reject if it's exactly the title or title + period
+        const isExactlyTitle = rawDescLower === titleLower || rawDescLower === (titleLower + '.');
+        // If it's longer than title by more than 10 chars, it has additional content - accept it
+        const hasSubstantialContent = rawDesc.length > (title ? title.length + 10 : 0);
+        
+        if (!isExactlyTitle && hasSubstantialContent) {
           desc = rawDesc;
           // Clean it up but preserve the good content
           desc = desc.replace(/^[\-\s]+/, ''); // Remove leading hyphens/spaces
