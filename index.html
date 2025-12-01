@@ -7466,7 +7466,7 @@
 
     // Declare IDs before use
     const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
-    const WEBSITE_ID = 'https://www.alanranger.com#website';
+    const WEBSITE_ID = 'https://www.alanranger.com/#website';
 
     blogLog(`   Blog URL: ${BLOG_URL}`);
     blogLog(`   Blog Name: ${BLOG_NAME}`);
@@ -9245,11 +9245,12 @@
     // Build the complete schema with @context, WebPage, BreadcrumbList, etc.
     const url = csvRow.url;
     const BLOG_URL = BLOG_URL_GLOBAL;
-    const WEBSITE_ID = 'https://www.alanranger.com#website';
+    const WEBSITE_ID = 'https://www.alanranger.com/#website';
     
-    // Use canonical IDs that align WebPage.about[] and BlogPosting.@id
+    // Canonical IDs that align WebPage.about[] and BlogPosting.@id
     const webPageId = `${url}#webpage`;
     const blogPostingId = `${url}#blogposting`;
+    const primaryImageId = `${url}#primaryimage`;
     
     // Create WebPage for this post
     const webPage = {
@@ -9260,7 +9261,8 @@
       description: blogPosting.description || '',
       inLanguage: 'en-GB',
       isPartOf: { '@id': WEBSITE_ID },
-      primaryImageOfPage: { '@id': blogPosting.image && blogPosting.image.url ? blogPosting.image.url : '' },
+      // primaryImageOfPage will be wired to the primary ImageObject node (if available)
+      primaryImageOfPage: { '@id': '' },
       // WebPage.about[] must reference the BlogPosting node
       about: [
         { '@id': blogPostingId }
@@ -9293,14 +9295,47 @@
       ]
     };
     
-    // Build complete schema with @graph
+    // Build ImageObject node based on BlogPosting.image (or fallbacks)
+    let imageNode = null;
+    const imageFromPost = blogPosting && blogPosting.image && typeof blogPosting.image === 'object'
+      ? blogPosting.image
+      : null;
+    const imageUrl = imageFromPost && imageFromPost.url ? imageFromPost.url : null;
+    
+    if (imageUrl) {
+      imageNode = {
+        '@type': 'ImageObject',
+        '@id': primaryImageId,
+        url: imageUrl,
+        width: imageFromPost.width || 1500,
+        height: imageFromPost.height || 1000,
+        caption: imageFromPost.caption || blogPosting.headline || ''
+      };
+      
+      // Wire WebPage.primaryImageOfPage to this ImageObject
+      webPage.primaryImageOfPage['@id'] = primaryImageId;
+    }
+    
+    // For the BlogPosting in this schema output, refer to the primary image by @id
+    const blogPostingForOutput = { ...blogPosting };
+    if (imageUrl) {
+      blogPostingForOutput.image = { '@id': primaryImageId };
+      blogPostingForOutput.thumbnailUrl = imageUrl;
+    }
+    
+    // Build complete schema with @graph (WebPage + BreadcrumbList + BlogPosting [+ ImageObject])
+    const graph = [
+      webPage,
+      breadcrumbList,
+      blogPostingForOutput
+    ];
+    if (imageNode) {
+      graph.push(imageNode);
+    }
+    
     const schema = {
       '@context': 'https://schema.org',
-      '@graph': [
-        webPage,
-        breadcrumbList,
-        blogPosting
-      ]
+      '@graph': graph
     };
     
     return schema;
