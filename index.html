@@ -9425,15 +9425,25 @@
       delete blogPostingForOutput.thumbnailUrl;
     }
     
-    // Build complete schema with @graph (WebPage + BreadcrumbList + BlogPosting [+ ImageObject])
-    const graph = [
-      webPage,
-      breadcrumbList,
-      blogPostingForOutput
-    ];
+    // Build complete schema with @graph
+    // CRITICAL ORDER: ImageObject MUST come FIRST because WebPage.primaryImageOfPage 
+    // and BlogPosting.image both reference it by @id. Schema.org validator discards
+    // nodes that reference @id values that haven't been defined yet.
+    const graph = [];
+    
+    // 1. ImageObject FIRST (if exists) - required before WebPage and BlogPosting references
     if (imageNode) {
       graph.push(imageNode);
     }
+    
+    // 2. WebPage (references ImageObject via primaryImageOfPage)
+    graph.push(webPage);
+    
+    // 3. BreadcrumbList
+    graph.push(breadcrumbList);
+    
+    // 4. BlogPosting (references ImageObject via image)
+    graph.push(blogPostingForOutput);
     
     const schema = {
       '@context': 'https://schema.org',
