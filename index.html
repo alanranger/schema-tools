@@ -6261,7 +6261,7 @@
       
       const query = supabase
         .from('page_entities')
-        .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
+        .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
         .eq('page_url', normalizedUrl)
         .eq('kind', 'article')
         .maybeSingle();
@@ -6277,7 +6277,7 @@
         // Try without kind filter as fallback
         const fallbackQuery = supabase
           .from('page_entities')
-          .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, image_width, image_height, json_ld_data')
+          .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
           .eq('page_url', normalizedUrl)
           .maybeSingle();
         const { data: fallbackData, error: fallbackError } = await fallbackQuery;
