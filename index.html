@@ -9387,9 +9387,14 @@
     }
     
     // 3. Check for forbidden schema types (should never be in this file)
-    const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'HowTo', 'FAQPage', 'WebSite', 'Organization', 'Person'];
+    const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'Service', 'HowTo', 'FAQPage', 'Organization', 'LocalBusiness'];
     if (forbiddenTypes.includes(schema['@type'])) {
       throw new Error(`CRITICAL: Schema contains forbidden type "${schema['@type']}" - must be BlogPosting ONLY`);
+    }
+    
+    // 3a. Check for multiple @type values (array)
+    if (Array.isArray(schema['@type'])) {
+      throw new Error('CRITICAL: Multiple @type values not allowed - must be single BlogPosting type');
     }
     
     // 4. Check for nested schema types (forbidden)
@@ -10050,21 +10055,12 @@
     const url = csvRow.url;
     const image = blogPosting.image;
     
-    if (!image || !image.url) {
-      return null; // Skip if no image
-    }
-    
+    // CRITICAL: ImageObject must ALWAYS be generated - never return null
     // Extract image URL - use same logic as blogPosts_generateSingleSchema for consistency
     let imageUrl = null;
-    let imageWidth = 1500;
-    let imageHeight = 1000;
-    let imageCaption = blogPosting.headline || '';
     
     if (image && typeof image === 'object' && image.url) {
       imageUrl = image.url;
-      imageWidth = image.width || 1500;
-      imageHeight = image.height || 1000;
-      imageCaption = image.caption || blogPosting.headline || '';
     } else if (typeof image === 'string') {
       imageUrl = image;
     }
@@ -10074,8 +10070,10 @@
       imageUrl = blogPosting.thumbnailUrl;
     }
     
+    // CRITICAL: If no image URL found, throw error instead of returning null
+    // ImageObject is required for schema.org detection
     if (!imageUrl) {
-      return null; // No valid image URL
+      throw new Error(`CRITICAL: No image URL found for ${url} - ImageObject is required and cannot be skipped`);
     }
     
     // CRITICAL: Use exact same @id format as blogPosts_generateSingleSchema
@@ -10084,16 +10082,15 @@
     
     // CRITICAL: @context is REQUIRED - Squarespace rejects context-less JSON-LD with image URLs
     // This must be the FIRST field in the object
+    // CRITICAL: Use exact format as specified - minimal fields only
     const imageObject = {
       '@context': 'https://schema.org',
       '@type': 'ImageObject',
       '@id': imageObjectId,
       url: imageUrl,
-      width: imageWidth,
-      height: imageHeight,
-      caption: imageCaption,
       contentUrl: imageUrl,
-      encodingFormat: 'image/jpeg' // Default, could be enhanced
+      representativeOfPage: true,
+      inLanguage: 'en-GB'
     };
     
     // Explicitly ensure contentLocation is NOT included (not a valid ImageObject property)
@@ -10128,6 +10125,12 @@
     // Log validation success
     console.log('[ImageObject] @context added');
     console.log('[ImageObject] Single-type validation passed');
+    
+    // CRITICAL: Log file write location
+    const slug = extractSlug(url);
+    if (slug) {
+      console.log(`[ImageObject] Writing ImageObject to file: ${slug}_image.json`);
+    }
     
     return imageObject;
   }
@@ -10396,41 +10399,44 @@
         }
         
         // Generate ImageObject schema
+        // CRITICAL: ImageObject must ALWAYS be generated - no conditions, no if checks
         try {
           const imageSchema = await generateImageObjectSchema(row, blogPosting);
-          if (imageSchema) {
-            // CRITICAL: Files must be root-level only
-            const imageFileName = `${slug}_image.json`;
-            
-            // Validate filename doesn't contain path separators
-            if (imageFileName.includes('/') || imageFileName.includes('\\')) {
-              throw new Error(`CRITICAL: Filename "${imageFileName}" contains path separators - must be root-level only`);
-            }
-            
-            // Post-generation validation
-            blogPosts_log(`   [ImageObject] @context added`);
-            blogPosts_log(`   [ImageObject] Single-type validation passed`);
-            blogPosts_log(`   [ImageObject] Filename and path OK: ${imageFileName}`);
-            
-            const imageJson = JSON.stringify(imageSchema, null, 2);
-            generatedFiles.push({ name: imageFileName, content: imageJson });
-            
-            if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-              try {
-                await window.electronAPI.saveAndDeploySchema(imageFileName, imageJson);
-                blogPosts_log(`   ✅ Saved ImageObject: ${imageFileName}`);
-                saved++;
-              } catch (e) {
-                blogPosts_log(`   ❌ Failed to save ImageObject ${imageFileName}: ${e.message}`);
-                errors++;
-              }
-            } else {
-              blogPosts_log(`   📄 Generated ImageObject: ${imageFileName}`);
+          
+          // CRITICAL: Files must be root-level only
+          const imageFileName = `${slug}_image.json`;
+          
+          // Validate filename doesn't contain path separators
+          if (imageFileName.includes('/') || imageFileName.includes('\\')) {
+            throw new Error(`CRITICAL: Filename "${imageFileName}" contains path separators - must be root-level only`);
+          }
+          
+          // Post-generation validation and logging
+          blogPosts_log(`   [ImageObject] @context added`);
+          blogPosts_log(`   [ImageObject] Single-type validation passed`);
+          blogPosts_log(`   [ImageObject] Writing ImageObject to file: ${imageFileName}`);
+          blogPosts_log(`   [ImageObject] Filename and path OK: ${imageFileName}`);
+          
+          const imageJson = JSON.stringify(imageSchema, null, 2);
+          generatedFiles.push({ name: imageFileName, content: imageJson });
+          
+          if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+            try {
+              await window.electronAPI.saveAndDeploySchema(imageFileName, imageJson);
+              blogPosts_log(`   ✅ Saved ImageObject: ${imageFileName}`);
               saved++;
+            } catch (e) {
+              blogPosts_log(`   ❌ Failed to save ImageObject ${imageFileName}: ${e.message}`);
+              errors++;
             }
+          } else {
+            blogPosts_log(`   📄 Generated ImageObject: ${imageFileName}`);
+            saved++;
           }
         } catch (e) {
-          blogPosts_log(`   ⚠️  Error generating ImageObject for ${slug}: ${e.message}`);
+          blogPosts_log(`   ❌ CRITICAL Error generating ImageObject for ${slug}: ${e.message}`);
+          // Don't continue if ImageObject generation fails - it's required
+          errors++;
         }
         
         // Validate generated files
@@ -11570,12 +11576,18 @@
         }
         
         // Check for forbidden types (should not be in this file)
-        const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'HowTo', 'FAQPage', 'WebSite', 'Organization', 'Person'];
+        const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'Service', 'HowTo', 'FAQPage', 'Organization', 'LocalBusiness'];
         for (const forbiddenType of forbiddenTypes) {
           if (schemaData['@type'] === forbiddenType) {
             result.issues.push(`_schema.json: Contains ${forbiddenType} (should be BlogPosting ONLY)`);
             result.status = 'ERROR';
           }
+        }
+        
+        // Check for multiple @type values (array)
+        if (Array.isArray(schemaData['@type'])) {
+          result.issues.push('_schema.json: Multiple @type values not allowed - must be single BlogPosting type');
+          result.status = 'ERROR';
         }
         
         // Check author reference
