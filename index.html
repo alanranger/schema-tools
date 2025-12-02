@@ -10228,10 +10228,6 @@
         // Validate BlogPosting JSON
         try {
           JSON.parse(blogPostingJson);
-        } catch (e) {
-          blogPosts_log(`❌ Invalid BlogPosting JSON for ${slug}: ${e.message}`);
-          errors++;
-        } else {
           // ALWAYS store BlogPosting file for potential deployment
           generatedFiles.push({ name: blogPostingFileName, content: blogPostingJson });
           
@@ -10254,6 +10250,9 @@
             blogPosts_log(`📄 Generated BlogPosting: ${blogPostingFileName} (ready for deployment)`);
             saved++;
           }
+        } catch (e) {
+          blogPosts_log(`❌ Invalid BlogPosting JSON for ${slug}: ${e.message}`);
+          errors++;
         }
 
         // ============================================
