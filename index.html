@@ -7406,23 +7406,9 @@
     };
     
     // Override/ensure global Person & Organization references for author/creator/accountablePerson/publisher
-    // IMPORTANT: Keep @id pointing to global nodes but also inline minimal details so BlogPosting is self-contained
-    const PERSON_REF = {
-      '@type': 'Person',
-      '@id': 'https://www.alanranger.com/#person',
-      name: 'Alan Ranger',
-      url: 'https://www.alanranger.com'
-    };
-    const ORG_REF = {
-      '@type': 'Organization',
-      '@id': 'https://www.alanranger.com/#org',
-      name: 'Alan Ranger Photography',
-      url: 'https://www.alanranger.com',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
-      }
-    };
+    // CRITICAL: Use references only (no inline objects) - Person/Organization are defined globally in Squarespace footer
+    const PERSON_REF = { '@id': 'https://www.alanranger.com/#person' };
+    const ORG_REF = { '@id': 'https://www.alanranger.com/#org' };
     
     blogPosting.author = PERSON_REF;
     blogPosting.creator = PERSON_REF;
@@ -7434,13 +7420,8 @@
       blogPosting.teaches = teachesTopic;
     }
     
-    // Ensure copyrightHolder always references global org with inline details
-    blogPosting.copyrightHolder = {
-      '@type': 'Organization',
-      '@id': 'https://www.alanranger.com/#org',
-      name: 'Alan Ranger Photography',
-      url: 'https://www.alanranger.com'
-    };
+    // Ensure copyrightHolder always references global org (reference only, no inline details)
+    blogPosting.copyrightHolder = ORG_REF;
     
     // Add citation for RPS content
     if (/\brps\b/.test(articleBody.toLowerCase()) || /royal photographic society/i.test(articleBody.toLowerCase())) {
@@ -9667,9 +9648,10 @@
       totalTime: blogPosting.timeRequired || blogPosting.readingTime || 'PT10M'
     };
     
-    // Add image if available
+    // Add image reference if available - use @id reference to match _schema.json and _image.json
     if (blogPosting.image && blogPosting.image.url) {
-      howTo.image = blogPosting.image;
+      const imageObjectId = `${blogPosting.image.url}#imageobject`;
+      howTo.image = { '@id': imageObjectId };
     }
     
     // Add mainEntityOfPage reference
@@ -10022,6 +10004,7 @@
     const faqPage = {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
+      '@id': `${url}#faq`,
       mainEntity: faqItems
     };
     
@@ -10031,6 +10014,7 @@
   /**
    * Generate ImageObject schema for a blog post
    * Extracts primary image with dimensions and metadata
+   * CRITICAL: @id must match exactly with the ImageObject @id in _schema.json
    */
   async function generateImageObjectSchema(csvRow, blogPosting) {
     const url = csvRow.url;
@@ -10040,29 +10024,43 @@
       return null; // Skip if no image
     }
     
-    // Extract dimensions from image URL or use defaults
-    let width = image.width || 1500;
-    let height = image.height || 1000;
+    // Extract image URL - use same logic as blogPosts_generateSingleSchema for consistency
+    let imageUrl = null;
+    let imageWidth = 1500;
+    let imageHeight = 1000;
+    let imageCaption = blogPosting.headline || '';
     
-    // Try to extract dimensions from Squarespace CDN URL
-    if (image.url.includes('squarespace-cdn.com')) {
-      // Squarespace URLs sometimes have dimensions in query params or path
-      const dimensionMatch = image.url.match(/(\d+)x(\d+)/);
-      if (dimensionMatch) {
-        width = parseInt(dimensionMatch[1]);
-        height = parseInt(dimensionMatch[2]);
-      }
+    if (image && typeof image === 'object' && image.url) {
+      imageUrl = image.url;
+      imageWidth = image.width || 1500;
+      imageHeight = image.height || 1000;
+      imageCaption = image.caption || blogPosting.headline || '';
+    } else if (typeof image === 'string') {
+      imageUrl = image;
     }
+    
+    // Also check thumbnailUrl as fallback (same as blogPosts_generateSingleSchema)
+    if (!imageUrl && blogPosting.thumbnailUrl) {
+      imageUrl = blogPosting.thumbnailUrl;
+    }
+    
+    if (!imageUrl) {
+      return null; // No valid image URL
+    }
+    
+    // CRITICAL: Use exact same @id format as blogPosts_generateSingleSchema
+    // Format: ${imageUrl}#imageobject (must match exactly)
+    const imageObjectId = `${imageUrl}#imageobject`;
     
     const imageObject = {
       '@context': 'https://schema.org',
       '@type': 'ImageObject',
-      '@id': `${image.url}#imageobject`,
-      url: image.url,
-      width: width,
-      height: height,
-      caption: image.caption || blogPosting.headline || '',
-      contentUrl: image.url,
+      '@id': imageObjectId,
+      url: imageUrl,
+      width: imageWidth,
+      height: imageHeight,
+      caption: imageCaption,
+      contentUrl: imageUrl,
       encodingFormat: 'image/jpeg' // Default, could be enhanced
     };
     
@@ -10330,6 +10328,32 @@
           }
         } catch (e) {
           blogPosts_log(`   ⚠️  Error generating ImageObject for ${slug}: ${e.message}`);
+        }
+        
+        // Validate generated files
+        try {
+          const schemaFile = generatedFiles.find(f => f.name === `${slug}_schema.json`);
+          const imageFile = generatedFiles.find(f => f.name === `${slug}_image.json`);
+          const howtoFile = generatedFiles.find(f => f.name === `${slug}_howto.json`);
+          const faqFile = generatedFiles.find(f => f.name === `${slug}_faq.json`);
+          
+          const validationResult = validateBlogPostFiles({
+            schema: schemaFile?.content,
+            image: imageFile?.content,
+            howto: howtoFile?.content,
+            faq: faqFile?.content
+          }, slug);
+          
+          if (validationResult.status === 'OK') {
+            blogPosts_log(`   ✅ Validation: ${slug} - OK`);
+          } else {
+            blogPosts_log(`   ⚠️  Validation: ${slug} - ${validationResult.status}`);
+            validationResult.issues.forEach(issue => {
+              blogPosts_log(`      - ${issue}`);
+            });
+          }
+        } catch (validationError) {
+          blogPosts_log(`   ⚠️  Validation error for ${slug}: ${validationError.message}`);
         }
         
         processed++;
@@ -10881,15 +10905,97 @@
         blogPosts_log(`   ⚠️  Could not fetch HTML - skipping additional schemas`);
       }
       
+      // Collect all generated schemas for validation
+      let imageJson = null;
+      let howtoJson = null;
+      let faqJson = null;
+      
+      // Get ImageObject schema if it was generated
+      try {
+        const imageSchema = await generateImageObjectSchema(mockRow, blogPosting);
+        if (imageSchema) {
+          imageJson = JSON.stringify(imageSchema, null, 2);
+        }
+      } catch (e) {
+        blogPosts_log(`   ⚠️  Could not generate ImageObject for validation: ${e.message}`);
+      }
+      
+      // Get HowTo schema if it was generated
+      if (html && blogPosting) {
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [HowTo Validation] ${msg}`);
+          const shouldGenerate = shouldGenerateHowTo(html, plainText, debugLog);
+          if (shouldGenerate) {
+            const howToSchema = await generateHowToSchema(mockRow, blogPosting, plainText);
+            if (howToSchema) {
+              howtoJson = JSON.stringify(howToSchema, null, 2);
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Could not generate HowTo for validation: ${e.message}`);
+        }
+      }
+      
+      // Get FAQ schema if it was generated
+      if (html && blogPosting) {
+        try {
+          const debugLog = (msg) => blogPosts_log(`   [FAQ Validation] ${msg}`);
+          const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          if (!hasFAQ) {
+            const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);
+            if (faqSchema) {
+              faqJson = JSON.stringify(faqSchema, null, 2);
+            }
+          }
+        } catch (e) {
+          blogPosts_log(`   ⚠️  Could not generate FAQ for validation: ${e.message}`);
+        }
+      }
+      
       blogPosts_log('\n✅ Single URL generation complete!');
       
-      // Display results with schema preview
+      // Validate generated files
+      blogPosts_log('\n🔍 Running validation...');
+      const validationFiles = {
+        schema: jsonString,
+        image: imageJson,
+        howto: howtoJson,
+        faq: faqJson
+      };
+      
+      const validationResult = validateBlogPostFiles(validationFiles, slug);
+      
+      if (validationResult.status === 'OK') {
+        blogPosts_log(`   ✅ Validation: ${slug} - OK`);
+      } else {
+        blogPosts_log(`   ⚠️  Validation: ${slug} - ${validationResult.status}`);
+        validationResult.issues.forEach(issue => {
+          blogPosts_log(`      - ${issue}`);
+        });
+      }
+      
+      // Display results with schema preview and validation
       if (resultDiv) {
         resultDiv.style.display = 'block';
         let resultHtml = '<h4 style="margin-top: 0; color: #10b981;">✅ Schema Generated Successfully</h4>';
         resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
         resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
         resultHtml += `<p><strong>Main Schema:</strong> <code>${fileName}</code></p>`;
+        
+        // Show validation results
+        resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: ' + (validationResult.status === 'OK' ? '#d4edda' : '#fff3cd') + '; border-radius: 6px; border: 1px solid: ' + (validationResult.status === 'OK' ? '#c3e6cb' : '#ffeaa7') + ';">';
+        resultHtml += '<h5 style="margin-top: 0;">Validation Results:</h5>';
+        if (validationResult.status === 'OK') {
+          resultHtml += '<p style="color: #155724; margin: 0;">✅ All validations passed!</p>';
+        } else {
+          resultHtml += '<p style="color: #856404; margin: 0;">⚠️ Validation issues found:</p>';
+          resultHtml += '<ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; color: #856404;">';
+          validationResult.issues.forEach(issue => {
+            resultHtml += `<li style="margin-bottom: 0.25rem;">${issue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
+          });
+          resultHtml += '</ul>';
+        }
+        resultHtml += '</div>';
         
         // Show schema preview (first 500 chars)
         const schemaPreview = jsonString.length > 500 ? jsonString.substring(0, 500) + '...' : jsonString;
@@ -10906,7 +11012,7 @@
         resultHtml += `<textarea id="${schemaTextareaId}" style="display: none;">${jsonString.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
         
         resultDiv.innerHTML = resultHtml;
-        resultDiv.style.borderColor = '#10b981';
+        resultDiv.style.borderColor = validationResult.status === 'OK' ? '#10b981' : '#ffc107';
         
         // Restore the textarea value (it gets escaped in innerHTML)
         const schemaTextarea = document.getElementById(schemaTextareaId);
@@ -10915,7 +11021,11 @@
         }
       }
       
-      alert(`✅ Schema generated for ${slug}!\n\nMain schema: ${fileName}\n\nCheck the result panel below for the full schema.`);
+      const validationMsg = validationResult.status === 'OK' 
+        ? `✅ Schema generated and validated for ${slug}!\n\nAll validations passed.`
+        : `⚠️ Schema generated for ${slug} with validation issues.\n\nCheck the result panel for details.`;
+      
+      alert(`${validationMsg}\n\nMain schema: ${fileName}\n\nCheck the result panel below for the full schema and validation results.`);
 
       // If running in Electron with Save to GitHub OFF, offer a Redeploy button so you can push later
       const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
@@ -11304,6 +11414,213 @@
     if (statusDiv) {
       statusDiv.style.display = 'none';
     }
+  }
+
+  /**
+   * Validate generated blog post JSON files
+   * Checks all required fields, ID consistency, and structure
+   * @param {Object} files - Object with keys: schema, image, howto, faq (optional)
+   * @param {string} slug - Blog post slug for reporting
+   * @returns {Object} Validation result with status and issues
+   */
+  function validateBlogPostFiles(files, slug) {
+    const result = {
+      slug: slug,
+      status: 'OK',
+      issues: []
+    };
+    
+    const PERSON_ID = 'https://www.alanranger.com/#person';
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    
+    // 1. Validate _schema.json
+    if (!files.schema) {
+      result.issues.push('Missing _schema.json');
+      result.status = 'ERROR';
+    } else {
+      try {
+        const schemaData = typeof files.schema === 'string' ? JSON.parse(files.schema) : files.schema;
+        
+        // Check @context
+        if (!schemaData['@context'] || schemaData['@context'] !== 'https://schema.org') {
+          result.issues.push('_schema.json: Missing or invalid @context');
+          result.status = 'ERROR';
+        }
+        
+        // Check @graph
+        if (!schemaData['@graph'] || !Array.isArray(schemaData['@graph'])) {
+          result.issues.push('_schema.json: Missing or invalid @graph');
+          result.status = 'ERROR';
+        } else {
+          const graph = schemaData['@graph'];
+          
+          // Find BlogPosting
+          const blogPosting = graph.find(item => item && item['@type'] === 'BlogPosting');
+          if (!blogPosting) {
+            result.issues.push('_schema.json: Missing BlogPosting in @graph');
+            result.status = 'ERROR';
+          } else {
+            // Check BlogPosting @type
+            if (blogPosting['@type'] !== 'BlogPosting') {
+              result.issues.push(`_schema.json: BlogPosting @type is "${blogPosting['@type']}" (should be "BlogPosting")`);
+              result.status = 'ERROR';
+            }
+            
+            // Check author reference
+            if (!blogPosting.author || !blogPosting.author['@id'] || blogPosting.author['@id'] !== PERSON_ID) {
+              result.issues.push(`_schema.json: BlogPosting.author @id is "${blogPosting.author?.['@id'] || 'missing'}" (should be "${PERSON_ID}")`);
+              result.status = 'ERROR';
+            }
+            
+            // Check publisher reference
+            if (!blogPosting.publisher || !blogPosting.publisher['@id'] || blogPosting.publisher['@id'] !== ORG_ID) {
+              result.issues.push(`_schema.json: BlogPosting.publisher @id is "${blogPosting.publisher?.['@id'] || 'missing'}" (should be "${ORG_ID}")`);
+              result.status = 'ERROR';
+            }
+            
+            // Find ImageObject reference in BlogPosting
+            let imageObjectIdFromSchema = null;
+            if (blogPosting.image) {
+              if (blogPosting.image['@id']) {
+                imageObjectIdFromSchema = blogPosting.image['@id'];
+              } else if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
+                // Inline ImageObject (should be reference only, but check @id if present)
+                imageObjectIdFromSchema = blogPosting.image['@id'] || `${blogPosting.image.url}#imageobject`;
+              }
+            }
+            
+            // Find ImageObject in @graph
+            const imageObjectInGraph = graph.find(item => item && item['@type'] === 'ImageObject');
+            if (imageObjectInGraph) {
+              if (!imageObjectInGraph['@id']) {
+                result.issues.push('_schema.json: ImageObject in @graph missing @id');
+                result.status = 'ERROR';
+              } else {
+                // Store for comparison with _image.json
+                if (!imageObjectIdFromSchema) {
+                  imageObjectIdFromSchema = imageObjectInGraph['@id'];
+                } else if (imageObjectIdFromSchema !== imageObjectInGraph['@id']) {
+                  result.issues.push(`_schema.json: BlogPosting.image @id (${imageObjectIdFromSchema}) doesn't match ImageObject in @graph @id (${imageObjectInGraph['@id']})`);
+                  result.status = 'ERROR';
+                }
+              }
+            }
+            
+            // Store imageObjectId for comparison with _image.json
+            result.imageObjectId = imageObjectIdFromSchema || (imageObjectInGraph ? imageObjectInGraph['@id'] : null);
+          }
+          
+          // Check for WebPage
+          const webPage = graph.find(item => item && item['@type'] === 'WebPage');
+          if (!webPage) {
+            result.issues.push('_schema.json: Missing WebPage in @graph');
+            result.status = 'ERROR';
+          }
+          
+          // Check for BreadcrumbList
+          const breadcrumb = graph.find(item => item && item['@type'] === 'BreadcrumbList');
+          if (!breadcrumb) {
+            result.issues.push('_schema.json: Missing BreadcrumbList in @graph');
+            result.status = 'ERROR';
+          }
+        }
+      } catch (e) {
+        result.issues.push(`_schema.json: Invalid JSON - ${e.message}`);
+        result.status = 'ERROR';
+      }
+    }
+    
+    // 2. Validate _image.json
+    if (!files.image) {
+      result.issues.push('Missing _image.json');
+      result.status = 'ERROR';
+    } else {
+      try {
+        const imageData = typeof files.image === 'string' ? JSON.parse(files.image) : files.image;
+        
+        // Check @context
+        if (!imageData['@context'] || imageData['@context'] !== 'https://schema.org') {
+          result.issues.push('_image.json: Missing or invalid @context');
+          result.status = 'ERROR';
+        }
+        
+        // Check @type
+        if (!imageData['@type'] || imageData['@type'] !== 'ImageObject') {
+          result.issues.push(`_image.json: @type is "${imageData['@type'] || 'missing'}" (should be "ImageObject")`);
+          result.status = 'ERROR';
+        }
+        
+        // Check @id exists
+        if (!imageData['@id']) {
+          result.issues.push('_image.json: Missing @id');
+          result.status = 'ERROR';
+        } else {
+          // Check @id matches _schema.json
+          if (result.imageObjectId && imageData['@id'] !== result.imageObjectId) {
+            result.issues.push(`_image.json: @id "${imageData['@id']}" doesn't match _schema.json ImageObject @id "${result.imageObjectId}"`);
+            result.status = 'ERROR';
+          }
+        }
+        
+        // Check there's exactly one ImageObject (it's a single object, not an array)
+        if (Array.isArray(imageData)) {
+          result.issues.push('_image.json: Should be a single ImageObject, not an array');
+          result.status = 'ERROR';
+        }
+      } catch (e) {
+        result.issues.push(`_image.json: Invalid JSON - ${e.message}`);
+        result.status = 'ERROR';
+      }
+    }
+    
+    // 3. Validate _howto.json
+    if (!files.howto) {
+      result.issues.push('Missing _howto.json');
+      result.status = 'ERROR';
+    } else {
+      try {
+        const howtoData = typeof files.howto === 'string' ? JSON.parse(files.howto) : files.howto;
+        
+        // Check @context
+        if (!howtoData['@context'] || howtoData['@context'] !== 'https://schema.org') {
+          result.issues.push('_howto.json: Missing or invalid @context');
+          result.status = 'ERROR';
+        }
+        
+        // Check @type
+        if (!howtoData['@type'] || howtoData['@type'] !== 'HowTo') {
+          result.issues.push(`_howto.json: @type is "${howtoData['@type'] || 'missing'}" (should be "HowTo")`);
+          result.status = 'ERROR';
+        }
+      } catch (e) {
+        result.issues.push(`_howto.json: Invalid JSON - ${e.message}`);
+        result.status = 'ERROR';
+      }
+    }
+    
+    // 4. Validate _faq.json (optional)
+    if (files.faq) {
+      try {
+        const faqData = typeof files.faq === 'string' ? JSON.parse(files.faq) : files.faq;
+        
+        // Check @context
+        if (!faqData['@context'] || faqData['@context'] !== 'https://schema.org') {
+          result.issues.push('_faq.json: Missing or invalid @context');
+          result.status = 'ERROR';
+        }
+        
+        // Check @type
+        if (!faqData['@type'] || faqData['@type'] !== 'FAQPage') {
+          result.issues.push(`_faq.json: @type is "${faqData['@type'] || 'missing'}" (should be "FAQPage")`);
+          result.status = 'ERROR';
+        }
+      } catch (e) {
+        result.issues.push(`_faq.json: Invalid JSON - ${e.message}`);
+        result.status = 'ERROR';
+      }
+    }
+    
+    return result;
   }
 
   function testBlogSchemaOrg() {
