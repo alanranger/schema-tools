@@ -10035,36 +10035,68 @@
    */
   async function generateImageObjectSchema(csvRow, blogPosting) {
     const url = csvRow.url;
-    const image = blogPosting.image;
     
-    if (!image || !image.url) {
-      return null; // Skip if no image
+    // Extract image URL using priority order:
+    // 1. blogPosting.thumbnailUrl (most reliable - always has full URL)
+    // 2. Extract from blogPosting.image['@id'] (remove #imageobject suffix)
+    // 3. csvRow.imageUrl (fallback - from CSV or HTML extraction)
+    let imageUrl = null;
+    
+    // Priority 1: thumbnailUrl (always has the full image URL)
+    if (blogPosting && blogPosting.thumbnailUrl) {
+      imageUrl = blogPosting.thumbnailUrl;
+    }
+    
+    // Priority 2: Extract from image @id reference
+    if (!imageUrl && blogPosting && blogPosting.image) {
+      if (typeof blogPosting.image === 'object' && blogPosting.image['@id']) {
+        // Extract imageUrl from @id: "${imageUrl}#imageobject"
+        const imageId = blogPosting.image['@id'];
+        if (imageId && imageId.endsWith('#imageobject')) {
+          imageUrl = imageId.replace('#imageobject', '');
+        }
+      } else if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
+        // Legacy: Inline ImageObject (should not happen with new code, but handle for safety)
+        imageUrl = blogPosting.image.url;
+      } else if (typeof blogPosting.image === 'string') {
+        // String URL (fallback)
+        imageUrl = blogPosting.image;
+      }
+    }
+    
+    // Priority 3: csvRow.imageUrl (from CSV or HTML extraction)
+    if (!imageUrl && csvRow && csvRow.imageUrl) {
+      imageUrl = csvRow.imageUrl;
+    }
+    
+    // If no image URL found, skip ImageObject generation
+    if (!imageUrl) {
+      return null;
     }
     
     // Extract dimensions from image URL or use defaults
-    let width = image.width || 1500;
-    let height = image.height || 1000;
+    let width = 1500;
+    let height = 1000;
     
     // Try to extract dimensions from Squarespace CDN URL
-    if (image.url.includes('squarespace-cdn.com')) {
+    if (imageUrl.includes('squarespace-cdn.com') || imageUrl.includes('squarespace.com')) {
       // Squarespace URLs sometimes have dimensions in query params or path
-      const dimensionMatch = image.url.match(/(\d+)x(\d+)/);
+      const dimensionMatch = imageUrl.match(/(\d+)x(\d+)/);
       if (dimensionMatch) {
         width = parseInt(dimensionMatch[1]);
         height = parseInt(dimensionMatch[2]);
       }
     }
     
+    // Build minimal ImageObject schema (as per requirements)
     const imageObject = {
       '@context': 'https://schema.org',
       '@type': 'ImageObject',
-      '@id': `${image.url}#imageobject`,
-      url: image.url,
-      width: width,
-      height: height,
-      caption: image.caption || blogPosting.headline || '',
-      contentUrl: image.url,
-      encodingFormat: 'image/jpeg' // Default, could be enhanced
+      '@id': `${imageUrl}#imageobject`,
+      url: imageUrl,
+      contentUrl: imageUrl,
+      representativeOfPage: true,
+      inLanguage: 'en-GB'
     };
     
     // Explicitly ensure contentLocation is NOT included (not a valid ImageObject property)
