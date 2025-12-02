@@ -10044,6 +10044,7 @@
    * Generate ImageObject schema for a blog post
    * Extracts primary image with dimensions and metadata
    * CRITICAL: @id must match exactly with the ImageObject @id in _schema.json
+   * CRITICAL: @context is REQUIRED - Squarespace rejects context-less JSON-LD with image URLs
    */
   async function generateImageObjectSchema(csvRow, blogPosting) {
     const url = csvRow.url;
@@ -10081,6 +10082,8 @@
     // Format: ${imageUrl}#imageobject (must match exactly)
     const imageObjectId = `${imageUrl}#imageobject`;
     
+    // CRITICAL: @context is REQUIRED - Squarespace rejects context-less JSON-LD with image URLs
+    // This must be the FIRST field in the object
     const imageObject = {
       '@context': 'https://schema.org',
       '@type': 'ImageObject',
@@ -10097,6 +10100,34 @@
     if (imageObject.hasOwnProperty('contentLocation')) {
       delete imageObject.contentLocation;
     }
+    
+    // ============================================
+    // VALIDATION - Must pass before returning
+    // ============================================
+    
+    // 1. Validate @context exists and equals "https://schema.org"
+    if (!imageObject['@context'] || imageObject['@context'] !== 'https://schema.org') {
+      throw new Error('CRITICAL: ImageObject @context is missing or invalid - must be "https://schema.org"');
+    }
+    
+    // 2. Validate @id ends with #imageobject
+    if (!imageObject['@id'] || !imageObject['@id'].endsWith('#imageobject')) {
+      throw new Error(`CRITICAL: ImageObject @id "${imageObject['@id']}" does not end with #imageobject`);
+    }
+    
+    // 3. Validate file contains exactly one @type: "ImageObject"
+    if (!imageObject['@type'] || imageObject['@type'] !== 'ImageObject') {
+      throw new Error(`CRITICAL: ImageObject @type is "${imageObject['@type'] || 'missing'}" - must be "ImageObject"`);
+    }
+    
+    // 4. Ensure no @graph exists
+    if (imageObject['@graph']) {
+      throw new Error('CRITICAL: ImageObject contains @graph - must be ImageObject ONLY, no @graph');
+    }
+    
+    // Log validation success
+    console.log('[ImageObject] @context added');
+    console.log('[ImageObject] Single-type validation passed');
     
     return imageObject;
   }
@@ -10375,6 +10406,11 @@
             if (imageFileName.includes('/') || imageFileName.includes('\\')) {
               throw new Error(`CRITICAL: Filename "${imageFileName}" contains path separators - must be root-level only`);
             }
+            
+            // Post-generation validation
+            blogPosts_log(`   [ImageObject] @context added`);
+            blogPosts_log(`   [ImageObject] Single-type validation passed`);
+            blogPosts_log(`   [ImageObject] Filename and path OK: ${imageFileName}`);
             
             const imageJson = JSON.stringify(imageSchema, null, 2);
             generatedFiles.push({ name: imageFileName, content: imageJson });
@@ -10956,6 +10992,12 @@
           const imageSchema = await generateImageObjectSchema(mockRow, blogPosting);
           if (imageSchema) {
             const imageFileName = `${slug}_image.json`;
+            
+            // Post-generation validation
+            blogPosts_log(`   [ImageObject] @context added`);
+            blogPosts_log(`   [ImageObject] Single-type validation passed`);
+            blogPosts_log(`   [ImageObject] Filename and path OK: ${imageFileName}`);
+            
             const imageJson = JSON.stringify(imageSchema, null, 2);
             
             if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
