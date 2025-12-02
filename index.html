@@ -9294,74 +9294,25 @@
   }
 
   async function blogPosts_generateSingleSchema(csvRow) {
+    // CRITICAL: This function must return BlogPosting ONLY - no @graph, no WebPage, no BreadcrumbList, no ImageObject
+    // ABSOLUTE RULE: Each file contains exactly ONE schema type
+    
+    // Global ID constants for validation
+    const PERSON_ID = 'https://www.alanranger.com/#person';
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    
     // Use the existing buildEnrichedBlogPosting function to get the BlogPosting object
     const blogPosting = await buildEnrichedBlogPosting(csvRow);
     
-    // Build the complete schema with @context, WebPage, BreadcrumbList, etc.
     const url = csvRow.url;
-    const BLOG_URL = BLOG_URL_GLOBAL;
-    const WEBSITE_ID = 'https://www.alanranger.com/#website';
     
-    // Canonical IDs that align WebPage.about[] and BlogPosting.@id
-    const webPageId = `${url}#webpage`;
-    const blogPostingId = `${url}#blogposting`;
-    
-    // Create WebPage for this post
-    const webPage = {
-      '@type': 'WebPage',
-      '@id': webPageId,
-      url: url,
-      name: blogPosting.headline || '',
-      description: blogPosting.description || '',
-      inLanguage: 'en-GB',
-      isPartOf: { '@id': WEBSITE_ID },
-      // WebPage.about[] must reference the BlogPosting node
-      about: [
-        { '@id': blogPostingId }
-      ]
-    };
-    
-    // Create BreadcrumbList
-    const breadcrumbList = {
-      '@type': 'BreadcrumbList',
-      '@id': `${url}#breadcrumb`,
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: 'https://www.alanranger.com'
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'Blog',
-          item: BLOG_URL
-        },
-        {
-          '@type': 'ListItem',
-          position: 3,
-          name: blogPosting.headline || '',
-          item: url
-        }
-      ]
-    };
-    
-    // Extract image info from BlogPosting (which may have inline ImageObject from buildEnrichedBlogPosting)
+    // Extract image info from BlogPosting to create @id reference
     let imageUrl = null;
-    let imageWidth = 1500;
-    let imageHeight = 1000;
-    let imageCaption = blogPosting.headline || '';
     
     if (blogPosting && blogPosting.image) {
       if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
-        // Inline ImageObject from buildEnrichedBlogPosting
         imageUrl = blogPosting.image.url;
-        imageWidth = blogPosting.image.width || 1500;
-        imageHeight = blogPosting.image.height || 1000;
-        imageCaption = blogPosting.image.caption || blogPosting.headline || '';
       } else if (typeof blogPosting.image === 'string') {
-        // String URL (fallback)
         imageUrl = blogPosting.image;
       }
     }
@@ -9371,34 +9322,17 @@
       imageUrl = blogPosting.thumbnailUrl;
     }
     
-    // Create ONE ImageObject node in @graph (only if we have a valid image URL)
-    let imageNode = null;
-    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
-    
-    if (imageUrl && imageObjectId) {
-      // Create the SINGLE ImageObject node that will be referenced by both WebPage and BlogPosting
-      imageNode = {
-        '@type': 'ImageObject',
-        '@id': imageObjectId,
-        url: imageUrl,
-        width: imageWidth,
-        height: imageHeight,
-        caption: imageCaption
-      };
-      
-      // Wire WebPage.primaryImageOfPage to reference this ImageObject
-      webPage.primaryImageOfPage = { '@id': imageObjectId };
-    }
-    
-    // For BlogPosting: Remove any inline ImageObject and replace with reference to the one in @graph
-    // CRITICAL: Must remove inline ImageObject to avoid duplicate @id conflict
+    // Create BlogPosting for output - remove inline ImageObject and replace with @id reference
     const blogPostingForOutput = { ...blogPosting };
     
     // Remove the inline ImageObject that buildEnrichedBlogPosting created
     delete blogPostingForOutput.image;
     
+    // Create image @id reference (will be used by both BlogPosting and ImageObject file)
+    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
+    
     if (imageUrl && imageObjectId) {
-      // Reference the SINGLE ImageObject in @graph by @id only (not inline object)
+      // Reference the ImageObject by @id only (not inline object)
       blogPostingForOutput.image = { '@id': imageObjectId };
       blogPostingForOutput.thumbnailUrl = imageUrl;
     } else {
@@ -9406,30 +9340,125 @@
       delete blogPostingForOutput.thumbnailUrl;
     }
     
-    // Build complete schema with @graph
-    // CRITICAL ORDER: ImageObject MUST come FIRST because WebPage.primaryImageOfPage 
-    // and BlogPosting.image both reference it by @id. Schema.org validator discards
-    // nodes that reference @id values that haven't been defined yet.
-    const graph = [];
-    
-    // 1. ImageObject FIRST (if exists) - required before WebPage and BlogPosting references
-    if (imageNode) {
-      graph.push(imageNode);
+    // CRITICAL: Convert object references to string references (no inline objects)
+    // mainEntityOfPage should be a string URL reference, not an object
+    if (blogPostingForOutput.mainEntityOfPage && typeof blogPostingForOutput.mainEntityOfPage === 'object') {
+      // Convert to string reference if it has @id
+      if (blogPostingForOutput.mainEntityOfPage['@id']) {
+        blogPostingForOutput.mainEntityOfPage = blogPostingForOutput.mainEntityOfPage['@id'];
+      } else if (blogPostingForOutput.mainEntityOfPage.url) {
+        blogPostingForOutput.mainEntityOfPage = blogPostingForOutput.mainEntityOfPage.url;
+      } else {
+        blogPostingForOutput.mainEntityOfPage = `${url}#webpage`;
+      }
     }
     
-    // 2. WebPage (references ImageObject via primaryImageOfPage)
-    graph.push(webPage);
+    // isPartOf should be a string URL reference, not an object
+    if (blogPostingForOutput.isPartOf && typeof blogPostingForOutput.isPartOf === 'object') {
+      if (blogPostingForOutput.isPartOf['@id']) {
+        blogPostingForOutput.isPartOf = blogPostingForOutput.isPartOf['@id'];
+      } else if (blogPostingForOutput.isPartOf.url) {
+        blogPostingForOutput.isPartOf = blogPostingForOutput.isPartOf.url;
+      } else {
+        blogPostingForOutput.isPartOf = 'https://www.alanranger.com/#website';
+      }
+    }
     
-    // 3. BreadcrumbList
-    graph.push(breadcrumbList);
-    
-    // 4. BlogPosting (references ImageObject via image)
-    graph.push(blogPostingForOutput);
-    
+    // Build BlogPosting schema - STANDALONE, NO @graph, NO other types
+    // CRITICAL: This must be BlogPosting ONLY - no WebPage, BreadcrumbList, ImageObject, etc.
     const schema = {
       '@context': 'https://schema.org',
-      '@graph': graph
+      '@type': 'BlogPosting',
+      ...blogPostingForOutput
     };
+    
+    // ============================================
+    // RUNTIME VALIDATION - MUST ENFORCE BEFORE RETURNING
+    // ============================================
+    
+    // 1. NO @graph allowed
+    if (schema['@graph']) {
+      throw new Error('CRITICAL: Schema contains @graph - must be BlogPosting ONLY, no @graph');
+    }
+    
+    // 2. Only one @type - must be BlogPosting
+    if (schema['@type'] !== 'BlogPosting') {
+      throw new Error(`CRITICAL: Schema @type is "${schema['@type']}" - must be "BlogPosting" ONLY`);
+    }
+    
+    // 3. Check for forbidden schema types (should never be in this file)
+    const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'HowTo', 'FAQPage', 'WebSite', 'Organization', 'Person'];
+    if (forbiddenTypes.includes(schema['@type'])) {
+      throw new Error(`CRITICAL: Schema contains forbidden type "${schema['@type']}" - must be BlogPosting ONLY`);
+    }
+    
+    // 4. Check for nested schema types (forbidden)
+    const nestedSchemaFields = ['author', 'publisher', 'creator', 'copyrightHolder', 'image', 'mainEntityOfPage', 'isPartOf'];
+    for (const field of nestedSchemaFields) {
+      const value = schema[field];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Check if it's an inline object (not just a reference)
+        if (value['@type'] && Object.keys(value).length > 1) {
+          // It's an inline object with @type - FORBIDDEN
+          const typeName = value['@type'];
+          if (forbiddenTypes.includes(typeName) || typeName === 'Person' || typeName === 'Organization' || typeName === 'ImageObject') {
+            throw new Error(`CRITICAL: Schema contains inline ${typeName} in ${field} - must be reference only: {"@id": "..."}`);
+          }
+        }
+      }
+    }
+    
+    // 5. Validate author is reference only
+    if (schema.author && typeof schema.author === 'object') {
+      if (schema.author['@type'] === 'Person' && Object.keys(schema.author).length > 1) {
+        throw new Error('CRITICAL: Schema contains inline Person in author - must be reference only: {"@id": "https://www.alanranger.com/#person"}');
+      }
+      if (!schema.author['@id'] || schema.author['@id'] !== PERSON_ID) {
+        throw new Error(`CRITICAL: Schema author @id is "${schema.author['@id'] || 'missing'}" - must be "${PERSON_ID}"`);
+      }
+    }
+    
+    // 6. Validate publisher is reference only
+    if (schema.publisher && typeof schema.publisher === 'object') {
+      if (schema.publisher['@type'] === 'Organization' && Object.keys(schema.publisher).length > 1) {
+        throw new Error('CRITICAL: Schema contains inline Organization in publisher - must be reference only: {"@id": "https://www.alanranger.com/#org"}');
+      }
+      if (!schema.publisher['@id'] || schema.publisher['@id'] !== ORG_ID) {
+        throw new Error(`CRITICAL: Schema publisher @id is "${schema.publisher['@id'] || 'missing'}" - must be "${ORG_ID}"`);
+      }
+    }
+    
+    // 7. Validate image is reference only (not inline ImageObject)
+    if (schema.image && typeof schema.image === 'object') {
+      if (schema.image['@type'] === 'ImageObject') {
+        throw new Error('CRITICAL: Schema contains inline ImageObject in image - must be reference only: {"@id": "<imageUrl>#imageobject"}');
+      }
+      if (!schema.image['@id']) {
+        throw new Error('CRITICAL: Schema image must be reference only: {"@id": "<imageUrl>#imageobject"}');
+      }
+    }
+    
+    // 8. Validate mainEntityOfPage is string (not object)
+    if (schema.mainEntityOfPage && typeof schema.mainEntityOfPage === 'object') {
+      throw new Error('CRITICAL: Schema mainEntityOfPage is an object - must be a string URL reference (WebPage comes from Squarespace)');
+    }
+    
+    // 9. Validate isPartOf is string (not object)
+    if (schema.isPartOf && typeof schema.isPartOf === 'object') {
+      throw new Error('CRITICAL: Schema isPartOf is an object - must be a string URL reference (WebSite comes from Squarespace)');
+    }
+    
+    // 10. Check for any other nested @type fields (forbidden)
+    for (const key in schema) {
+      if (key === '@type' || key === '@context' || key === '@id') continue;
+      const value = schema[key];
+      if (value && typeof value === 'object' && !Array.isArray(value) && value['@type']) {
+        const nestedType = value['@type'];
+        if (forbiddenTypes.includes(nestedType)) {
+          throw new Error(`CRITICAL: Schema contains nested ${nestedType} in field "${key}" - forbidden (must be reference only or removed)`);
+        }
+      }
+    }
     
     return schema;
   }
@@ -10162,7 +10191,24 @@
           continue;
         }
         
+        // CRITICAL VALIDATION: Filename must be root-level only (no subfolders)
+        // Validate slug contains only valid characters: [a-z0-9-]
+        const slugPattern = /^[a-z0-9-]+$/;
+        if (!slugPattern.test(slug)) {
+          blogPosts_log(`❌ Invalid slug characters in "${slug}" - must contain only [a-z0-9-]`);
+          errors++;
+          processed++;
+          updateProgress();
+          continue;
+        }
+        
+        // CRITICAL: Files must be saved to root only - no subfolders
         const fileName = `${slug}_schema.json`;
+        
+        // Validate filename doesn't contain path separators (must be root-level)
+        if (fileName.includes('/') || fileName.includes('\\') || fileName.startsWith('./') || fileName.startsWith('../')) {
+          throw new Error(`CRITICAL: Filename "${fileName}" contains path separators - must be root-level only`);
+        }
         const jsonString = JSON.stringify(schema, null, 2);
         
         // Validate JSON
@@ -10231,7 +10277,14 @@
           
           if (shouldGenerate) {
             // Check if file already exists (SAFETY RULE)
+            // CRITICAL: Files must be root-level only
             const howToFileName = `${slug}_howto.json`;
+            
+            // Validate filename doesn't contain path separators
+            if (howToFileName.includes('/') || howToFileName.includes('\\')) {
+              throw new Error(`CRITICAL: Filename "${howToFileName}" contains path separators - must be root-level only`);
+            }
+            
             const fileExists = await fileExistsInGithub(howToFileName);
             
             if (fileExists) {
@@ -10273,7 +10326,14 @@
             blogPosts_log(`   ⏭️  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
           } else {
             // Check if file already exists (SAFETY RULE)
+            // CRITICAL: Files must be root-level only
             const faqFileName = `${slug}_faq.json`;
+            
+            // Validate filename doesn't contain path separators
+            if (faqFileName.includes('/') || faqFileName.includes('\\')) {
+              throw new Error(`CRITICAL: Filename "${faqFileName}" contains path separators - must be root-level only`);
+            }
+            
             const fileExists = await fileExistsInGithub(faqFileName);
             
             if (fileExists) {
@@ -10308,7 +10368,14 @@
         try {
           const imageSchema = await generateImageObjectSchema(row, blogPosting);
           if (imageSchema) {
+            // CRITICAL: Files must be root-level only
             const imageFileName = `${slug}_image.json`;
+            
+            // Validate filename doesn't contain path separators
+            if (imageFileName.includes('/') || imageFileName.includes('\\')) {
+              throw new Error(`CRITICAL: Filename "${imageFileName}" contains path separators - must be root-level only`);
+            }
+            
             const imageJson = JSON.stringify(imageSchema, null, 2);
             generatedFiles.push({ name: imageFileName, content: imageJson });
             
@@ -11434,6 +11501,7 @@
     const ORG_ID = 'https://www.alanranger.com/#org';
     
     // 1. Validate _schema.json
+    // CRITICAL: Must contain BlogPosting ONLY - no @graph, no other types
     if (!files.schema) {
       result.issues.push('Missing _schema.json');
       result.status = 'ERROR';
@@ -11447,83 +11515,77 @@
           result.status = 'ERROR';
         }
         
-        // Check @graph
-        if (!schemaData['@graph'] || !Array.isArray(schemaData['@graph'])) {
-          result.issues.push('_schema.json: Missing or invalid @graph');
+        // CRITICAL: Must NOT have @graph (separate files only)
+        if (schemaData['@graph']) {
+          result.issues.push('_schema.json: Contains @graph (should be BlogPosting ONLY, no @graph)');
           result.status = 'ERROR';
-        } else {
-          const graph = schemaData['@graph'];
-          
-          // Find BlogPosting
-          const blogPosting = graph.find(item => item && item['@type'] === 'BlogPosting');
-          if (!blogPosting) {
-            result.issues.push('_schema.json: Missing BlogPosting in @graph');
-            result.status = 'ERROR';
-          } else {
-            // Check BlogPosting @type
-            if (blogPosting['@type'] !== 'BlogPosting') {
-              result.issues.push(`_schema.json: BlogPosting @type is "${blogPosting['@type']}" (should be "BlogPosting")`);
-              result.status = 'ERROR';
-            }
-            
-            // Check author reference
-            if (!blogPosting.author || !blogPosting.author['@id'] || blogPosting.author['@id'] !== PERSON_ID) {
-              result.issues.push(`_schema.json: BlogPosting.author @id is "${blogPosting.author?.['@id'] || 'missing'}" (should be "${PERSON_ID}")`);
-              result.status = 'ERROR';
-            }
-            
-            // Check publisher reference
-            if (!blogPosting.publisher || !blogPosting.publisher['@id'] || blogPosting.publisher['@id'] !== ORG_ID) {
-              result.issues.push(`_schema.json: BlogPosting.publisher @id is "${blogPosting.publisher?.['@id'] || 'missing'}" (should be "${ORG_ID}")`);
-              result.status = 'ERROR';
-            }
-            
-            // Find ImageObject reference in BlogPosting
-            let imageObjectIdFromSchema = null;
-            if (blogPosting.image) {
-              if (blogPosting.image['@id']) {
-                imageObjectIdFromSchema = blogPosting.image['@id'];
-              } else if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
-                // Inline ImageObject (should be reference only, but check @id if present)
-                imageObjectIdFromSchema = blogPosting.image['@id'] || `${blogPosting.image.url}#imageobject`;
-              }
-            }
-            
-            // Find ImageObject in @graph
-            const imageObjectInGraph = graph.find(item => item && item['@type'] === 'ImageObject');
-            if (imageObjectInGraph) {
-              if (!imageObjectInGraph['@id']) {
-                result.issues.push('_schema.json: ImageObject in @graph missing @id');
-                result.status = 'ERROR';
-              } else {
-                // Store for comparison with _image.json
-                if (!imageObjectIdFromSchema) {
-                  imageObjectIdFromSchema = imageObjectInGraph['@id'];
-                } else if (imageObjectIdFromSchema !== imageObjectInGraph['@id']) {
-                  result.issues.push(`_schema.json: BlogPosting.image @id (${imageObjectIdFromSchema}) doesn't match ImageObject in @graph @id (${imageObjectInGraph['@id']})`);
-                  result.status = 'ERROR';
-                }
-              }
-            }
-            
-            // Store imageObjectId for comparison with _image.json
-            result.imageObjectId = imageObjectIdFromSchema || (imageObjectInGraph ? imageObjectInGraph['@id'] : null);
-          }
-          
-          // Check for WebPage
-          const webPage = graph.find(item => item && item['@type'] === 'WebPage');
-          if (!webPage) {
-            result.issues.push('_schema.json: Missing WebPage in @graph');
-            result.status = 'ERROR';
-          }
-          
-          // Check for BreadcrumbList
-          const breadcrumb = graph.find(item => item && item['@type'] === 'BreadcrumbList');
-          if (!breadcrumb) {
-            result.issues.push('_schema.json: Missing BreadcrumbList in @graph');
+        }
+        
+        // Check @type is BlogPosting
+        if (!schemaData['@type'] || schemaData['@type'] !== 'BlogPosting') {
+          result.issues.push(`_schema.json: @type is "${schemaData['@type'] || 'missing'}" (should be "BlogPosting")`);
+          result.status = 'ERROR';
+        }
+        
+        // Check for forbidden types (should not be in this file)
+        const forbiddenTypes = ['WebPage', 'BreadcrumbList', 'ImageObject', 'HowTo', 'FAQPage', 'WebSite', 'Organization', 'Person'];
+        for (const forbiddenType of forbiddenTypes) {
+          if (schemaData['@type'] === forbiddenType) {
+            result.issues.push(`_schema.json: Contains ${forbiddenType} (should be BlogPosting ONLY)`);
             result.status = 'ERROR';
           }
         }
+        
+        // Check author reference
+        if (!schemaData.author || !schemaData.author['@id'] || schemaData.author['@id'] !== PERSON_ID) {
+          result.issues.push(`_schema.json: BlogPosting.author @id is "${schemaData.author?.['@id'] || 'missing'}" (should be "${PERSON_ID}")`);
+          result.status = 'ERROR';
+        }
+        
+        // Check publisher reference
+        if (!schemaData.publisher || !schemaData.publisher['@id'] || schemaData.publisher['@id'] !== ORG_ID) {
+          result.issues.push(`_schema.json: BlogPosting.publisher @id is "${schemaData.publisher?.['@id'] || 'missing'}" (should be "${ORG_ID}")`);
+          result.status = 'ERROR';
+        }
+        
+        // Check for inline Person/Organization (should be references only)
+        if (schemaData.author && typeof schemaData.author === 'object' && schemaData.author['@type'] === 'Person' && Object.keys(schemaData.author).length > 1) {
+          result.issues.push('_schema.json: Contains inline Person object (should be reference only: {"@id": "..."})');
+          result.status = 'ERROR';
+        }
+        
+        if (schemaData.publisher && typeof schemaData.publisher === 'object' && schemaData.publisher['@type'] === 'Organization' && Object.keys(schemaData.publisher).length > 1) {
+          result.issues.push('_schema.json: Contains inline Organization object (should be reference only: {"@id": "..."})');
+          result.status = 'ERROR';
+        }
+        
+        // Check mainEntityOfPage is a string (not an object) - WebPage comes from Squarespace, not this file
+        if (schemaData.mainEntityOfPage && typeof schemaData.mainEntityOfPage === 'object') {
+          result.issues.push('_schema.json: mainEntityOfPage is an object (should be a string URL reference, WebPage comes from Squarespace)');
+          result.status = 'ERROR';
+        }
+        
+        // Check isPartOf is a string (not an object) - WebSite comes from Squarespace, not this file
+        if (schemaData.isPartOf && typeof schemaData.isPartOf === 'object') {
+          result.issues.push('_schema.json: isPartOf is an object (should be a string URL reference, WebSite comes from Squarespace)');
+          result.status = 'ERROR';
+        }
+        
+        // Find ImageObject reference in BlogPosting
+        let imageObjectIdFromSchema = null;
+        if (schemaData.image) {
+          if (schemaData.image['@id']) {
+            imageObjectIdFromSchema = schemaData.image['@id'];
+          } else if (typeof schemaData.image === 'object' && schemaData.image.url) {
+            // Inline ImageObject (should be reference only)
+            result.issues.push('_schema.json: Contains inline ImageObject (should be reference only: {"@id": "..."})');
+            result.status = 'ERROR';
+            imageObjectIdFromSchema = schemaData.image['@id'] || `${schemaData.image.url}#imageobject`;
+          }
+        }
+        
+        // Store imageObjectId for comparison with _image.json
+        result.imageObjectId = imageObjectIdFromSchema;
       } catch (e) {
         result.issues.push(`_schema.json: Invalid JSON - ${e.message}`);
         result.status = 'ERROR';
