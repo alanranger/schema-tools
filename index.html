@@ -9297,172 +9297,122 @@
       });
   }
 
-  async function blogPosts_generateSingleSchema(csvRow) {
-    // Use the existing buildEnrichedBlogPosting function to get the BlogPosting object
+  /**
+   * Generate WebPage schema ONLY (for <slug>_schema.json)
+   * SPEC: This file must contain ONLY WebPage schema, no @graph, no BlogPosting, no ImageObject, no BreadcrumbList
+   */
+  async function generateWebPageSchema(csvRow) {
+    // Get BlogPosting data for WebPage fields (name, description)
     const blogPosting = await buildEnrichedBlogPosting(csvRow);
-    
-    // Build the complete schema with @context, WebPage, BreadcrumbList, etc.
     const url = csvRow.url;
-    const BLOG_URL = BLOG_URL_GLOBAL;
     const WEBSITE_ID = 'https://www.alanranger.com/#website';
-    
-    // Canonical IDs that align WebPage.about[] and BlogPosting.@id
     const webPageId = `${url}#webpage`;
-    const blogPostingId = `${url}#blogposting`;
     
-    // Create WebPage for this post
+    // Extract image URL for primaryImageOfPage reference
+    let imageUrl = null;
+    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object' && blogPosting.image.url) {
+      imageUrl = blogPosting.image.url;
+    } else if (blogPosting && blogPosting.thumbnailUrl) {
+      imageUrl = blogPosting.thumbnailUrl;
+    } else if (csvRow.imageUrl) {
+      imageUrl = csvRow.imageUrl;
+    }
+    
+    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
+    
+    // Create WebPage schema (ONLY WebPage, standalone, no @graph)
     const webPage = {
+      '@context': 'https://schema.org',
       '@type': 'WebPage',
       '@id': webPageId,
       url: url,
       name: blogPosting.headline || '',
       description: blogPosting.description || '',
       inLanguage: 'en-GB',
-      isPartOf: { '@id': WEBSITE_ID },
-      // WebPage.about[] must reference the BlogPosting node
-      about: [
-        { '@id': blogPostingId }
-      ]
+      isPartOf: { '@id': WEBSITE_ID }
     };
     
-    // Create BreadcrumbList
-    const breadcrumbList = {
-      '@type': 'BreadcrumbList',
-      '@id': `${url}#breadcrumb`,
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: 'https://www.alanranger.com'
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'Blog',
-          item: BLOG_URL
-        },
-        {
-          '@type': 'ListItem',
-          position: 3,
-          name: blogPosting.headline || '',
-          item: url
-        }
-      ]
-    };
-    
-    // Extract image info using priority order:
-    // 1. blogPosting.image (inline ImageObject - RULE 1: has url, width, height, caption, @id)
-    // 2. csvRow.imageUrl (set from HTML extraction in single URL mode, or from CSV in batch mode)
-    // 3. Extract from BlogPosting.image @id reference (format: "${imageUrl}#imageobject")
-    // 4. Extract from BlogPosting.thumbnailUrl
-    let imageUrl = null;
-    let imageWidth = 1500;
-    let imageHeight = 1000;
-    let imageCaption = blogPosting.headline || '';
-    
-    // Priority 1: Extract from blogPosting.image inline ImageObject (RULE 1: has all fields)
-    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object') {
-      if (blogPosting.image.url) {
-        // Inline ImageObject from buildEnrichedBlogPosting (has url, width, height, caption, @id)
-        imageUrl = blogPosting.image.url;
-        imageWidth = blogPosting.image.width || 1500;
-        imageHeight = blogPosting.image.height || 1000;
-        imageCaption = blogPosting.image.caption || blogPosting.headline || '';
-      } else if (blogPosting.image['@id']) {
-        // Only @id reference (extract URL from @id)
-        const imageId = blogPosting.image['@id'];
-        if (imageId && imageId.endsWith('#imageobject')) {
-          imageUrl = imageId.replace('#imageobject', '');
-        }
-      }
-    }
-    
-    // Priority 2: csvRow.imageUrl (from HTML extraction or CSV)
-    if (!imageUrl && csvRow.imageUrl) {
-      imageUrl = csvRow.imageUrl;
-    }
-    
-    // Priority 3: Extract from BlogPosting.thumbnailUrl
-    if (!imageUrl && blogPosting.thumbnailUrl) {
-      imageUrl = blogPosting.thumbnailUrl;
-    }
-    
-    // Create ONE ImageObject node in @graph (only if we have a valid image URL)
-    let imageNode = null;
-    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
-    
-    if (imageUrl && imageObjectId) {
-      // Create the SINGLE ImageObject node that will be referenced by both WebPage and BlogPosting
-      imageNode = {
-        '@type': 'ImageObject',
-        '@id': imageObjectId,
-        url: imageUrl,
-        width: imageWidth,
-        height: imageHeight,
-        caption: imageCaption
-      };
-      
-      // Wire WebPage.primaryImageOfPage to reference this ImageObject
+    // Add primaryImageOfPage reference if image exists
+    if (imageObjectId) {
       webPage.primaryImageOfPage = { '@id': imageObjectId };
     }
     
-    // For BlogPosting: Keep inline ImageObject (RULE 1 - must have BOTH inline AND @id)
-    // buildEnrichedBlogPosting already creates inline ImageObject with @id reference
-    // RULE 1: DO NOT delete inline ImageObject - Google needs it for immediate parsing
-    // The inline ImageObject already contains @id, url, width, height, caption
-    const blogPostingForOutput = { ...blogPosting };
+    // Add breadcrumb reference (breadcrumb is in separate file, referenced by @id)
+    webPage.breadcrumb = { '@id': `${url}#breadcrumb` };
     
-    // Ensure image field is present when imageUrl exists (buildEnrichedBlogPosting should have already set it)
-    // If for some reason it's missing, add it back
-    if (imageUrl && imageObjectId) {
-      // Only add if missing - otherwise keep the inline ImageObject from buildEnrichedBlogPosting
-      if (!blogPostingForOutput.image) {
-        blogPostingForOutput.image = {
-          '@type': 'ImageObject',
-          '@id': imageObjectId,
-          url: imageUrl,
-          width: imageWidth,
-          height: imageHeight,
-          caption: imageCaption
-        };
-      }
-      // Ensure thumbnailUrl is set
-      if (!blogPostingForOutput.thumbnailUrl) {
-        blogPostingForOutput.thumbnailUrl = imageUrl;
-      }
-    } else {
-      // No image - remove image and thumbnailUrl
-      delete blogPostingForOutput.image;
-      delete blogPostingForOutput.thumbnailUrl;
+    return webPage;
+  }
+
+  /**
+   * Generate BlogPosting schema ONLY (standalone, no @graph)
+   * SPEC: BlogPosting must be emitted separately, not in _schema.json
+   */
+  async function generateBlogPostingSchema(csvRow) {
+    const blogPosting = await buildEnrichedBlogPosting(csvRow);
+    const url = csvRow.url;
+    const blogPostingId = `${url}#blogposting`;
+    const webPageId = `${url}#webpage`;
+    
+    // Extract image URL
+    let imageUrl = null;
+    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object' && blogPosting.image.url) {
+      imageUrl = blogPosting.image.url;
+    } else if (blogPosting && blogPosting.thumbnailUrl) {
+      imageUrl = blogPosting.thumbnailUrl;
+    } else if (csvRow.imageUrl) {
+      imageUrl = csvRow.imageUrl;
     }
     
-    // Build complete schema with @graph
-    // CRITICAL ORDER: ImageObject MUST come FIRST because WebPage.primaryImageOfPage 
-    // and BlogPosting.image both reference it by @id. Schema.org validator discards
-    // nodes that reference @id values that haven't been defined yet.
-    const graph = [];
+    const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
     
-    // 1. ImageObject FIRST (if exists) - required before WebPage and BlogPosting references
-    if (imageNode) {
-      graph.push(imageNode);
-    }
-    
-    // 2. WebPage (references ImageObject via primaryImageOfPage)
-    graph.push(webPage);
-    
-    // 3. BreadcrumbList
-    graph.push(breadcrumbList);
-    
-    // 4. BlogPosting (references ImageObject via image)
-    graph.push(blogPostingForOutput);
-    
-    const schema = {
+    // Create BlogPosting schema (standalone, no @graph)
+    const blogPostingSchema = {
       '@context': 'https://schema.org',
-      '@graph': graph
+      '@type': 'BlogPosting',
+      '@id': blogPostingId,
+      headline: blogPosting.headline || '',
+      alternativeHeadline: blogPosting.alternativeHeadline || '',
+      description: blogPosting.description || '',
+      url: url,
+      mainEntityOfPage: { '@id': webPageId },
+      datePublished: blogPosting.datePublished || '',
+      dateCreated: blogPosting.dateCreated || '',
+      dateModified: blogPosting.dateModified || '',
+      inLanguage: 'en-GB',
+      articleBody: blogPosting.articleBody || '',
+      wordCount: blogPosting.wordCount || 0,
+      keywords: blogPosting.keywords || [],
+      about: blogPosting.about || [],
+      mentions: blogPosting.mentions || [],
+      hasPart: blogPosting.hasPart || [],
+      speakable: blogPosting.speakable || {},
+      discussionUrl: blogPosting.discussionUrl || '',
+      author: blogPosting.author || {},
+      creator: blogPosting.creator || {},
+      publisher: blogPosting.publisher || {},
+      isPartOf: blogPosting.isPartOf || {},
+      copyrightHolder: blogPosting.copyrightHolder || {},
+      copyrightYear: blogPosting.copyrightYear || '',
+      sameAs: blogPosting.sameAs || [],
+      interactionStatistic: blogPosting.interactionStatistic || {},
+      commentCount: blogPosting.commentCount || 0
     };
     
-    return schema;
+    // Add image reference (use @id reference, not inline)
+    if (imageObjectId) {
+      blogPostingSchema.image = { '@id': imageObjectId };
+      blogPostingSchema.thumbnailUrl = imageUrl;
+    }
+    
+    return blogPostingSchema;
+  }
+
+  /**
+   * Legacy function name - now generates WebPage only
+   * @deprecated Use generateWebPageSchema() directly
+   */
+  async function blogPosts_generateSingleSchema(csvRow) {
+    return await generateWebPageSchema(csvRow);
   }
 
   // ============================================
@@ -9679,9 +9629,22 @@
       totalTime: blogPosting.timeRequired || blogPosting.readingTime || 'PT10M'
     };
     
-    // Add image if available
-    if (blogPosting.image && blogPosting.image.url) {
-      howTo.image = blogPosting.image;
+    // Add image reference (use @id reference, not inline object)
+    if (blogPosting.image) {
+      if (typeof blogPosting.image === 'object' && blogPosting.image['@id']) {
+        // Use @id reference
+        howTo.image = { '@id': blogPosting.image['@id'] };
+      } else if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
+        // Extract URL and create @id reference
+        const imageUrl = blogPosting.image.url;
+        howTo.image = { '@id': `${imageUrl}#imageobject` };
+      } else if (blogPosting.thumbnailUrl) {
+        // Fallback to thumbnailUrl
+        howTo.image = { '@id': `${blogPosting.thumbnailUrl}#imageobject` };
+      }
+    } else if (blogPosting.thumbnailUrl) {
+      // Fallback to thumbnailUrl
+      howTo.image = { '@id': `${blogPosting.thumbnailUrl}#imageobject` };
     }
     
     // Add mainEntityOfPage reference
@@ -10208,10 +10171,7 @@
           continue;
         }
 
-        // Generate schema for this post
-        const schema = await blogPosts_generateSingleSchema(row);
-        
-        // Extract slug and create filename
+        // Extract slug and create filenames
         const slug = extractSlug(row.url);
         if (!slug) {
           blogPosts_log(`⚠️  Could not extract slug from URL: ${row.url}`);
@@ -10221,43 +10181,79 @@
           continue;
         }
         
-        const fileName = `${slug}_schema.json`;
-        const jsonString = JSON.stringify(schema, null, 2);
+        // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
+        const webPageSchema = await generateWebPageSchema(row);
+        const webPageFileName = `${slug}_schema.json`;
+        const webPageJson = JSON.stringify(webPageSchema, null, 2);
         
-        // Validate JSON
+        // Validate WebPage JSON
         try {
-          JSON.parse(jsonString);
+          JSON.parse(webPageJson);
         } catch (e) {
-          blogPosts_log(`❌ Invalid JSON for ${slug}: ${e.message}`);
+          blogPosts_log(`❌ Invalid WebPage JSON for ${slug}: ${e.message}`);
           errors++;
           processed++;
           updateProgress();
           continue;
         }
         
-        // ALWAYS store file for potential deployment (even if checkbox unchecked)
-        generatedFiles.push({ name: fileName, content: jsonString });
+        // ALWAYS store WebPage file for potential deployment
+        generatedFiles.push({ name: webPageFileName, content: webPageJson });
         
-        // Save to GitHub if checkbox is checked
+        // Save WebPage to GitHub if checkbox is checked
         if (saveToGithub) {
           if (window.electronAPI && window.electronAPI.isElectron) {
-            // Electron: Save directly to GitHub
             try {
-              const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
-              blogPosts_log(`✅ Saved to GitHub: ${fileName}`);
+              await window.electronAPI.saveAndDeploySchema(webPageFileName, webPageJson);
+              blogPosts_log(`✅ Saved WebPage to GitHub: ${webPageFileName}`);
               saved++;
             } catch (e) {
-              blogPosts_log(`❌ Failed to save ${fileName}: ${e.message}`);
+              blogPosts_log(`❌ Failed to save WebPage ${webPageFileName}: ${e.message}`);
               errors++;
             }
           } else {
-            // Browser: Will download as ZIP at end
-            blogPosts_log(`📄 Generated: ${fileName} (will download as ZIP)`);
+            blogPosts_log(`📄 Generated WebPage: ${webPageFileName} (will download as ZIP)`);
             saved++;
           }
         } else {
-          blogPosts_log(`📄 Generated: ${fileName} (ready for deployment)`);
-          saved++; // Count as generated
+          blogPosts_log(`📄 Generated WebPage: ${webPageFileName} (ready for deployment)`);
+          saved++;
+        }
+        
+        // SPEC: Generate BlogPosting schema (standalone, separate from WebPage)
+        const blogPostingSchema = await generateBlogPostingSchema(row);
+        const blogPostingFileName = `${slug}_blogposting.json`;
+        const blogPostingJson = JSON.stringify(blogPostingSchema, null, 2);
+        
+        // Validate BlogPosting JSON
+        try {
+          JSON.parse(blogPostingJson);
+        } catch (e) {
+          blogPosts_log(`❌ Invalid BlogPosting JSON for ${slug}: ${e.message}`);
+          errors++;
+        } else {
+          // ALWAYS store BlogPosting file for potential deployment
+          generatedFiles.push({ name: blogPostingFileName, content: blogPostingJson });
+          
+          // Save BlogPosting to GitHub if checkbox is checked
+          if (saveToGithub) {
+            if (window.electronAPI && window.electronAPI.isElectron) {
+              try {
+                await window.electronAPI.saveAndDeploySchema(blogPostingFileName, blogPostingJson);
+                blogPosts_log(`✅ Saved BlogPosting to GitHub: ${blogPostingFileName}`);
+                saved++;
+              } catch (e) {
+                blogPosts_log(`❌ Failed to save BlogPosting ${blogPostingFileName}: ${e.message}`);
+                errors++;
+              }
+            } else {
+              blogPosts_log(`📄 Generated BlogPosting: ${blogPostingFileName} (will download as ZIP)`);
+              saved++;
+            }
+          } else {
+            blogPosts_log(`📄 Generated BlogPosting: ${blogPostingFileName} (ready for deployment)`);
+            saved++;
+          }
         }
 
         // ============================================
@@ -10817,39 +10813,74 @@
         blogPosting = await buildEnrichedBlogPosting(mockRow);
       }
       
-      // Generate main schema AFTER image detection so WebPage/BlogPosting get correct image wiring
-      blogPosts_log('📄 Generating main schema...');
-      let schema;
+      // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
+      blogPosts_log('📄 Generating WebPage schema...');
+      let webPageSchema;
       try {
-        schema = await blogPosts_generateSingleSchema(mockRow);
-        blogPosts_log('✅ Main schema generated successfully');
+        webPageSchema = await generateWebPageSchema(mockRow);
+        blogPosts_log('✅ WebPage schema generated successfully');
       } catch (schemaError) {
-        blogPosts_log(`❌ Error generating main schema: ${schemaError.message}`);
+        blogPosts_log(`❌ Error generating WebPage schema: ${schemaError.message}`);
         blogPosts_log(`   Stack: ${schemaError.stack || 'No stack trace'}`);
         throw schemaError;
       }
-      const fileName = `${slug}_schema.json`;
-      const jsonString = JSON.stringify(schema, null, 2);
+      const webPageFileName = `${slug}_schema.json`;
+      const webPageJson = JSON.stringify(webPageSchema, null, 2);
       
-      // Validate JSON
+      // Validate WebPage JSON
       try {
-        JSON.parse(jsonString);
-        blogPosts_log('✅ JSON is valid');
+        JSON.parse(webPageJson);
+        blogPosts_log('✅ WebPage JSON is valid');
       } catch (e) {
-        throw new Error(`Invalid JSON: ${e.message}`);
+        throw new Error(`Invalid WebPage JSON: ${e.message}`);
       }
       
-      // Save to GitHub if checked
+      // Save WebPage to GitHub if checked
       if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
         try {
-          await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
-          blogPosts_log(`✅ Saved to GitHub: ${fileName}`);
+          await window.electronAPI.saveAndDeploySchema(webPageFileName, webPageJson);
+          blogPosts_log(`✅ Saved WebPage to GitHub: ${webPageFileName}`);
         } catch (e) {
-          blogPosts_log(`❌ Failed to save: ${e.message}`);
+          blogPosts_log(`❌ Failed to save WebPage: ${e.message}`);
           throw e;
         }
       } else {
-        blogPosts_log(`📄 Generated: ${fileName} (not saved - check "Save to GitHub" to save)`);
+        blogPosts_log(`📄 Generated WebPage: ${webPageFileName} (not saved - check "Save to GitHub" to save)`);
+      }
+      
+      // SPEC: Generate BlogPosting schema (standalone, separate from WebPage)
+      blogPosts_log('📄 Generating BlogPosting schema...');
+      let blogPostingSchema;
+      try {
+        blogPostingSchema = await generateBlogPostingSchema(mockRow);
+        blogPosts_log('✅ BlogPosting schema generated successfully');
+      } catch (schemaError) {
+        blogPosts_log(`❌ Error generating BlogPosting schema: ${schemaError.message}`);
+        blogPosts_log(`   Stack: ${schemaError.stack || 'No stack trace'}`);
+        throw schemaError;
+      }
+      const blogPostingFileName = `${slug}_blogposting.json`;
+      const blogPostingJson = JSON.stringify(blogPostingSchema, null, 2);
+      
+      // Validate BlogPosting JSON
+      try {
+        JSON.parse(blogPostingJson);
+        blogPosts_log('✅ BlogPosting JSON is valid');
+      } catch (e) {
+        throw new Error(`Invalid BlogPosting JSON: ${e.message}`);
+      }
+      
+      // Save BlogPosting to GitHub if checked
+      if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+        try {
+          await window.electronAPI.saveAndDeploySchema(blogPostingFileName, blogPostingJson);
+          blogPosts_log(`✅ Saved BlogPosting to GitHub: ${blogPostingFileName}`);
+        } catch (e) {
+          blogPosts_log(`❌ Failed to save BlogPosting: ${e.message}`);
+          throw e;
+        }
+      } else {
+        blogPosts_log(`📄 Generated BlogPosting: ${blogPostingFileName} (not saved - check "Save to GitHub" to save)`);
       }
       
       // Use the same HTML/plainText/BlogPosting instance for additional schemas
@@ -10943,36 +10974,44 @@
       // Display results with schema preview
       if (resultDiv) {
         resultDiv.style.display = 'block';
-        let resultHtml = '<h4 style="margin-top: 0; color: #10b981;">✅ Schema Generated Successfully</h4>';
+        let resultHtml = '<h4 style="margin-top: 0; color: #10b981;">✅ Schemas Generated Successfully</h4>';
         resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
         resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
-        resultHtml += `<p><strong>Main Schema:</strong> <code>${fileName}</code></p>`;
+        resultHtml += `<p><strong>WebPage Schema:</strong> <code>${webPageFileName}</code></p>`;
+        resultHtml += `<p><strong>BlogPosting Schema:</strong> <code>${blogPostingFileName}</code></p>`;
         
-        // Show schema preview (first 500 chars)
-        const schemaPreview = jsonString.length > 500 ? jsonString.substring(0, 500) + '...' : jsonString;
+        // Show WebPage schema preview (first 500 chars)
+        const webPagePreview = webPageJson.length > 500 ? webPageJson.substring(0, 500) + '...' : webPageJson;
         resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">';
-        resultHtml += '<h5 style="margin-top: 0;">Schema Preview:</h5>';
-        resultHtml += `<pre style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">${schemaPreview.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</pre>`;
+        resultHtml += '<h5 style="margin-top: 0;">WebPage Schema Preview:</h5>';
+        resultHtml += `<pre style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">${webPagePreview.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</pre>`;
         resultHtml += '</div>';
         
-        // Add copy button and full schema textarea (hidden)
-        const schemaTextareaId = `schema_${slug}`;
+        // Add copy buttons and full schema textareas (hidden)
+        const webPageTextareaId = `webpage_${slug}`;
+        const blogPostingTextareaId = `blogposting_${slug}`;
         resultHtml += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">';
-        resultHtml += `<button onclick="copySingleUrlSchema('${schemaTextareaId}')" style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">📋 Copy Schema JSON</button>`;
+        resultHtml += `<button onclick="copySingleUrlSchema('${webPageTextareaId}')" style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">📋 Copy WebPage JSON</button>`;
+        resultHtml += `<button onclick="copySingleUrlSchema('${blogPostingTextareaId}')" style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">📋 Copy BlogPosting JSON</button>`;
         resultHtml += '</div>';
-        resultHtml += `<textarea id="${schemaTextareaId}" style="display: none;">${jsonString.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
+        resultHtml += `<textarea id="${webPageTextareaId}" style="display: none;">${webPageJson.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
+        resultHtml += `<textarea id="${blogPostingTextareaId}" style="display: none;">${blogPostingJson.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
         
         resultDiv.innerHTML = resultHtml;
         resultDiv.style.borderColor = '#10b981';
         
-        // Restore the textarea value (it gets escaped in innerHTML)
-        const schemaTextarea = document.getElementById(schemaTextareaId);
-        if (schemaTextarea) {
-          schemaTextarea.value = jsonString;
+        // Restore the textarea values (they get escaped in innerHTML)
+        const webPageTextarea = document.getElementById(webPageTextareaId);
+        if (webPageTextarea) {
+          webPageTextarea.value = webPageJson;
+        }
+        const blogPostingTextarea = document.getElementById(blogPostingTextareaId);
+        if (blogPostingTextarea) {
+          blogPostingTextarea.value = blogPostingJson;
         }
       }
       
-      alert(`✅ Schema generated for ${slug}!\n\nMain schema: ${fileName}\n\nCheck the result panel below for the full schema.`);
+      alert(`✅ Schemas generated for ${slug}!\n\nWebPage: ${webPageFileName}\nBlogPosting: ${blogPostingFileName}\n\nCheck the result panel below for the full schemas.`);
 
       // If running in Electron with Save to GitHub OFF, offer a Redeploy button so you can push later
       const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
@@ -10983,6 +11022,7 @@
         // Store the filenames for this slug so the redeploy handler knows what to send
         window.blogPostsSingleUrlLastFiles = [
           `${slug}_schema.json`,
+          `${slug}_blogposting.json`,
           `${slug}_howto.json`,
           `${slug}_faq.json`,
           `${slug}_image.json`
