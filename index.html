@@ -7375,13 +7375,20 @@
       about: entityInfo.about.length > 0 ? entityInfo.about : [],
       mentions: entityInfo.mentions.length > 0 ? entityInfo.mentions : [], // Will be guaranteed below if empty
       hasPart: hasPart.length > 0 ? hasPart : [],
-      // 🔥 3. Image must use @id reference to external ImageObject (not inline)
-      // The ImageObject will be generated separately in _image.json
-      // Construct ImageObject ID: imageUrl + "#imageobject"
-      ...(imageUrl ? {
-        image: { '@id': `${imageUrl}#imageobject` },
-        thumbnailUrl: imageUrl
-      } : {}),
+      // 🔥 3. Image must include BOTH inline ImageObject AND @id reference
+      // RULE 1: BlogPosting must have inline ImageObject (for immediate Google parsing)
+      // AND @id reference (for external file linking)
+      // Google merges them - inline ensures image is seen even if external file loads late
+      image: imageUrl ? {
+        '@type': 'ImageObject',
+        '@id': `${imageUrl}#imageobject`,
+        url: imageUrl,
+        width: imageWidth,
+        height: imageHeight,
+        caption: title || ''
+      } : undefined,
+      // 🔥 4. thumbnailUrl - duplicate image URL (only when we have a valid image URL)
+      ...(imageUrl ? { thumbnailUrl: imageUrl } : {}),
       // NOTE: primaryImageOfPage removed from BlogPosting (only allowed in WebPage)
       speakable: {
         '@type': 'SpeakableSpecification',
@@ -9344,39 +9351,36 @@
       ]
     };
     
-    // Extract image URL using priority order:
-    // 1. csvRow.imageUrl (set from HTML extraction in single URL mode, or from CSV in batch mode)
-    // 2. Extract from BlogPosting.image @id reference (format: "${imageUrl}#imageobject")
-    // 3. Extract from BlogPosting.thumbnailUrl
+    // Extract image info using priority order:
+    // 1. blogPosting.image (inline ImageObject - RULE 1: has url, width, height, caption, @id)
+    // 2. csvRow.imageUrl (set from HTML extraction in single URL mode, or from CSV in batch mode)
+    // 3. Extract from BlogPosting.image @id reference (format: "${imageUrl}#imageobject")
+    // 4. Extract from BlogPosting.thumbnailUrl
     let imageUrl = null;
     let imageWidth = 1500;
     let imageHeight = 1000;
     let imageCaption = blogPosting.headline || '';
     
-    // Priority 1: csvRow.imageUrl (most reliable - set from HTML extraction or CSV)
-    if (csvRow.imageUrl) {
-      imageUrl = csvRow.imageUrl;
-    }
-    
-    // Priority 2: Extract from BlogPosting.image @id reference
-    // buildEnrichedBlogPosting now creates: image: { '@id': '${imageUrl}#imageobject' }
-    if (!imageUrl && blogPosting && blogPosting.image) {
-      if (typeof blogPosting.image === 'object' && blogPosting.image['@id']) {
-        // Extract imageUrl from @id reference: "${imageUrl}#imageobject"
-        const imageId = blogPosting.image['@id'];
-        if (imageId && imageId.endsWith('#imageobject')) {
-          imageUrl = imageId.replace('#imageobject', '');
-        }
-      } else if (typeof blogPosting.image === 'object' && blogPosting.image.url) {
-        // Legacy: Inline ImageObject (should not happen with new code, but handle for safety)
+    // Priority 1: Extract from blogPosting.image inline ImageObject (RULE 1: has all fields)
+    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object') {
+      if (blogPosting.image.url) {
+        // Inline ImageObject from buildEnrichedBlogPosting (has url, width, height, caption, @id)
         imageUrl = blogPosting.image.url;
         imageWidth = blogPosting.image.width || 1500;
         imageHeight = blogPosting.image.height || 1000;
         imageCaption = blogPosting.image.caption || blogPosting.headline || '';
-      } else if (typeof blogPosting.image === 'string') {
-        // String URL (fallback)
-        imageUrl = blogPosting.image;
+      } else if (blogPosting.image['@id']) {
+        // Only @id reference (extract URL from @id)
+        const imageId = blogPosting.image['@id'];
+        if (imageId && imageId.endsWith('#imageobject')) {
+          imageUrl = imageId.replace('#imageobject', '');
+        }
       }
+    }
+    
+    // Priority 2: csvRow.imageUrl (from HTML extraction or CSV)
+    if (!imageUrl && csvRow.imageUrl) {
+      imageUrl = csvRow.imageUrl;
     }
     
     // Priority 3: Extract from BlogPosting.thumbnailUrl
@@ -9403,23 +9407,30 @@
       webPage.primaryImageOfPage = { '@id': imageObjectId };
     }
     
-    // For BlogPosting: Ensure image field uses @id reference (buildEnrichedBlogPosting already creates this)
-    // MANDATORY: Always ensure image reference is present when imageUrl exists
+    // For BlogPosting: Keep inline ImageObject (RULE 1 - must have BOTH inline AND @id)
+    // buildEnrichedBlogPosting already creates inline ImageObject with @id reference
+    // RULE 1: DO NOT delete inline ImageObject - Google needs it for immediate parsing
+    // The inline ImageObject already contains @id, url, width, height, caption
     const blogPostingForOutput = { ...blogPosting };
     
-    // Remove any legacy inline ImageObject if present (should not happen with new code)
-    if (blogPostingForOutput.image && typeof blogPostingForOutput.image === 'object' && blogPostingForOutput.image['@type'] === 'ImageObject') {
-      delete blogPostingForOutput.image;
-    }
-    
-    // MANDATORY: Always add image reference when imageUrl exists
-    // This ensures BlogPosting ALWAYS contains the image field when an image URL is present
-    // buildEnrichedBlogPosting already creates: image: { '@id': '${imageUrl}#imageobject' }
-    // But we ensure it's set here as a safety check
+    // Ensure image field is present when imageUrl exists (buildEnrichedBlogPosting should have already set it)
+    // If for some reason it's missing, add it back
     if (imageUrl && imageObjectId) {
-      // Reference the SINGLE ImageObject in @graph by @id only (not inline object)
-      blogPostingForOutput.image = { '@id': imageObjectId };
-      blogPostingForOutput.thumbnailUrl = imageUrl;
+      // Only add if missing - otherwise keep the inline ImageObject from buildEnrichedBlogPosting
+      if (!blogPostingForOutput.image) {
+        blogPostingForOutput.image = {
+          '@type': 'ImageObject',
+          '@id': imageObjectId,
+          url: imageUrl,
+          width: imageWidth,
+          height: imageHeight,
+          caption: imageCaption
+        };
+      }
+      // Ensure thumbnailUrl is set
+      if (!blogPostingForOutput.thumbnailUrl) {
+        blogPostingForOutput.thumbnailUrl = imageUrl;
+      }
     } else {
       // No image - remove image and thumbnailUrl
       delete blogPostingForOutput.image;
@@ -10074,11 +10085,21 @@
       return null;
     }
     
-    // Extract dimensions from image URL or use defaults
+    // Extract dimensions and caption from blogPosting inline ImageObject or use defaults
+    // RULE 2 & 3: The separate _image.json MUST include width/height/caption
+    // These fields are required for Google rich results
     let width = 1500;
     let height = 1000;
+    let caption = blogPosting.headline || '';
     
-    // Try to extract dimensions from Squarespace CDN URL
+    // Priority 1: Extract from blogPosting inline ImageObject (if it exists)
+    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object') {
+      if (blogPosting.image.width) width = blogPosting.image.width;
+      if (blogPosting.image.height) height = blogPosting.image.height;
+      if (blogPosting.image.caption) caption = blogPosting.image.caption;
+    }
+    
+    // Priority 2: Try to extract dimensions from Squarespace CDN URL
     if (imageUrl.includes('squarespace-cdn.com') || imageUrl.includes('squarespace.com')) {
       // Squarespace URLs sometimes have dimensions in query params or path
       const dimensionMatch = imageUrl.match(/(\d+)x(\d+)/);
@@ -10088,13 +10109,16 @@
       }
     }
     
-    // Build minimal ImageObject schema (as per requirements)
+    // RULE 2: Build ImageObject schema with width/height/caption (mandatory fields)
     const imageObject = {
       '@context': 'https://schema.org',
       '@type': 'ImageObject',
       '@id': `${imageUrl}#imageobject`,
       url: imageUrl,
       contentUrl: imageUrl,
+      width: width,
+      height: height,
+      caption: caption,
       representativeOfPage: true,
       inLanguage: 'en-GB'
     };
