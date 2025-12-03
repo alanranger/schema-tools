@@ -17771,39 +17771,35 @@ ${minifiedJson}
   }
 
   function generateWebPageSchema(title, description, image, url) {
+    // Normalise and validate URL – avoid undefined/empty @id values
+    const canonicalUrl = (url || '').toString().trim();
+    if (!canonicalUrl) {
+      throw new Error('generateWebPageSchema: url is required to build WebPage @id');
+    }
+
+    const WEBSITE_ID = 'https://www.alanranger.com/#website';
+    const ORG_ID = 'https://www.alanranger.com/#org';
+
     const webpageSchema = {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      '@id': `${url}#schema`,
-      headline: title,
+      // SPEC: stable @id that BlogPosting.mainEntityOfPage can point at
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      // SPEC: plain string title only – no meta bundle object
+      name: title || '',
+      headline: title || '',
       description: description || '',
-      url: url,
-      mainEntityOfPage: {
-        '@type': 'WebPage',
-        '@id': url
-      },
-      publisher: {
-        '@id': 'https://www.alanranger.com/#org',
-        '@type': 'Organization',
-        name: 'Alan Ranger Photography',
-        logo: {
-          '@type': 'ImageObject',
-          url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w'
-        }
-      },
-      author: {
-        '@id': 'https://www.alanranger.com/#org',
-        '@type': 'Organization',
-        name: 'Alan Ranger Photography'
-      }
+      inLanguage: 'en-GB',
+      isPartOf: { '@id': WEBSITE_ID },
+      // Use @id references only (no inline Organization / ImageObject)
+      publisher: { '@id': ORG_ID },
+      author: { '@id': ORG_ID }
     };
 
-    if (image && image.startsWith('https://')) {
-      webpageSchema.image = image;
-      webpageSchema.primaryImageOfPage = {
-        '@type': 'ImageObject',
-        url: image
-      };
+    if (image && typeof image === 'string' && image.startsWith('http')) {
+      const imageId = `${image}#imageobject`;
+      webpageSchema.primaryImageOfPage = { '@id': imageId };
     }
 
     return webpageSchema;
