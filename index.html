@@ -16907,7 +16907,7 @@ ${minifiedJson}
           schema = generateItemListSchema(title, finalDescription, image, url);
           break;
         case 'WebPage':
-          schema = generateWebPageSchema(title, finalDescription, image, url);
+          schema = generateLandingWebPageSchema(title, finalDescription, image, url);
           break;
         case 'Product':
           schema = generateSimplifiedProductSchema(title, finalDescription, image, url);
@@ -17772,7 +17772,8 @@ ${minifiedJson}
     return itemListSchema;
   }
 
-  function generateWebPageSchema(title, description, image, url) {
+  // Landing-page / generic WebPage generator (different from blog-post WebPage)
+  function generateLandingWebPageSchema(title, description, image, url) {
     // Normalise and validate URL – avoid undefined/empty @id values
     const canonicalUrl = (url || '').toString().trim();
     if (!canonicalUrl) {
