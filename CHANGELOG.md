@@ -2,6 +2,21 @@
 
 All notable changes to the Schema Tools project will be documented in this file.
 
+## ⚠️ CRITICAL: Electron App Build Process
+
+**READ THIS BEFORE MAKING CODE CHANGES:**
+
+The Electron app runs a **packaged version** built from source, NOT source files directly.
+
+**MANDATORY WORKFLOW:**
+1. Update source files (e.g., `index.html` in project root)
+2. Rebuild packaged app using `Open-PowerShell-Here.bat` or `npm run build:desktop`
+3. User runs newly built app from `%LOCALAPPDATA%\SchemaTools\`
+
+**DO NOT:** Edit `dist/` files or expect source changes to appear without rebuilding.
+
+**See `handover-cursor-ai.md` for full details on this critical workflow requirement.**
+
 ## [6.2.0] - 2025-01-XX
 
 ### Product Schema Generator - Schema Structure Fixes (Baseline Restore Point)

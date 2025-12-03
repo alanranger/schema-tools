@@ -68,6 +68,48 @@ This repository contains tools to generate JSON-LD schema markup for **products*
   - No terminal commands needed
   - Run with `npm start` or double-click packaged `.exe`
 
+## ⚠️ CRITICAL: Electron App Build Process
+
+**IMPORTANT - READ THIS FIRST BEFORE MAKING ANY CODE CHANGES:**
+
+The Electron app runs a **packaged version** built from source code, NOT the source files directly.
+
+### Build Workflow
+
+1. **Source Code Location**: All source code is in the project root (e.g., `index.html`, `main.js`, `preload.js`)
+2. **Build Process**: The packaged app is created by running:
+   - `npm run build:desktop` OR
+   - The `Open-PowerShell-Here.bat` file (downloads from the Product Schema tab)
+3. **Packaged App Location**: Built app is located at `%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\`
+4. **User Runs**: The user runs the packaged `.exe` file, NOT the source code
+
+### ⚠️ CRITICAL RULE: Rebuild After Every Code Change
+
+**After making ANY changes to source code (index.html, main.js, preload.js, etc.):**
+
+1. ✅ **Update the source files** (e.g., `index.html` in project root)
+2. ✅ **Rebuild the packaged app** using `Open-PowerShell-Here.bat` or `npm run build:desktop`
+3. ✅ **Close any running Electron apps** before rebuilding
+4. ✅ **Run the newly built app** from `%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe`
+
+**DO NOT:**
+- ❌ Make changes to files in `dist/` folder (they get overwritten on rebuild)
+- ❌ Expect changes to source files to appear in the running app without rebuilding
+- ❌ Skip the rebuild step - changes will NOT be live until you rebuild
+
+### Why This Matters
+
+- The packaged app contains a **copy** of source files at build time
+- Changes to source files do NOT automatically appear in the running packaged app
+- You MUST rebuild to copy updated source files into the packaged app
+- This mistake caused hours of debugging where fixes were applied to source but the app was running old code
+
+### Verification
+
+After rebuilding, verify your changes are in the packaged app:
+- Check `%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\resources\app\index.html`
+- This file should match your source `index.html` after rebuild
+
 ### 4. `schema-validator.js` (Schema Validator Agent)
 - Automated CLI tool to validate schema markup on live URLs.
 - Tests against Schema.org validator and Google Rich Results Test.

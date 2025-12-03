@@ -2,6 +2,21 @@
 
 This file outlines the current state, goals, and key implementation tasks for Cursor AI to complete the unified schema generator tool for events and products.
 
+## ⚠️ CRITICAL: Electron App Build Process - READ FIRST
+
+**MANDATORY WORKFLOW FOR ALL CODE CHANGES:**
+
+The Electron app runs a **packaged version** built from source, NOT source files directly.
+
+**After ANY source code changes:**
+1. ✅ Update source files (e.g., `index.html` in project root)
+2. ✅ Rebuild packaged app using `Open-PowerShell-Here.bat` or `npm run build:desktop`
+3. ✅ User runs newly built app from `%LOCALAPPDATA%\SchemaTools\`
+
+**DO NOT:** Edit `dist/` files or expect source changes without rebuilding.
+
+**See `readme.md` and `handover-cursor-ai.md` for full documentation.**
+
 ---
 
 ## ✅ Current Tools

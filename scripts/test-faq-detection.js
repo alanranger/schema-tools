@@ -287,7 +287,8 @@ async function main() {
     // Test specific URLs first (the ones user reported as problematic)
     const specificURLs = [
       'https://www.alanranger.com/blog-on-photography/what-is-iso-in-photography',
-      'https://www.alanranger.com/blog-on-photography/what-is-framing-in-photography'
+      'https://www.alanranger.com/blog-on-photography/what-is-framing-in-photography',
+      'https://www.alanranger.com/blog-on-photography/the-art-of-storytelling-photography'
     ];
     
     console.log('🔍 Testing specific problematic URLs first...\n');

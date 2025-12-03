@@ -115,6 +115,83 @@ Each product page starts with:
 - Packageable as `.exe` for Windows
 - Vercel build compatibility (skips Electron builds for web)
 
+## ⚠️ CRITICAL: Electron App Build Process - MANDATORY READING
+
+**THIS IS A CRITICAL WORKFLOW REQUIREMENT - FAILURE TO FOLLOW THIS CAUSED HOURS OF DEBUGGING**
+
+### The Problem
+
+The Electron app runs a **packaged version** that is built from source code. The user does NOT run the source files directly. They run a packaged `.exe` file located at `%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe`.
+
+### The Build Process
+
+1. **Source Code**: All source files are in the project root:
+   - `index.html` (main UI and logic)
+   - `main.js` (Electron main process)
+   - `preload.js` (Electron preload script)
+   - Other source files
+
+2. **Build Command**: The packaged app is built using:
+   - `npm run build:desktop` OR
+   - `Open-PowerShell-Here.bat` file (downloaded from Product Schema tab)
+
+3. **Build Output**: The build process uses `electron-packager` to:
+   - Copy ALL source files to `%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\resources\app\`
+   - Package them into a standalone `.exe` application
+
+4. **User Execution**: The user runs the packaged `.exe`, NOT the source files
+
+### ⚠️ MANDATORY WORKFLOW: Rebuild After Code Changes
+
+**EVERY TIME you make changes to source code, you MUST:**
+
+1. ✅ **Update source files** (e.g., `index.html` in project root)
+2. ✅ **Commit changes to Git** (optional but recommended)
+3. ✅ **Rebuild the packaged app**:
+   - Close any running Electron apps
+   - Run `Open-PowerShell-Here.bat` OR `npm run build:desktop`
+   - Wait for build to complete
+4. ✅ **User must run the newly built app** from `%LOCALAPPDATA%\SchemaTools\`
+
+### What NOT to Do
+
+- ❌ **DO NOT** edit files in `dist/` folder - they get overwritten on rebuild
+- ❌ **DO NOT** expect source changes to appear in running app without rebuild
+- ❌ **DO NOT** skip the rebuild step - changes will NOT be live
+- ❌ **DO NOT** tell user to "just restart the app" - they must rebuild
+
+### Why This Caused Hours of Debugging
+
+**Real incident (2025-01-XX):**
+- Multiple fixes were applied to source `index.html`
+- Fixes were committed and pushed to GitHub
+- User reported fixes were not working
+- Root cause: User was running packaged app that still had old code
+- Solution: User needed to rebuild packaged app after source changes
+- Time lost: Several hours of debugging
+
+### Verification Steps
+
+After rebuilding, verify changes are in packaged app:
+```bash
+# Check that packaged app has latest source code
+# File: %LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\resources\app\index.html
+# Should match: G:\Dropbox\...\Schema Tools\index.html (source)
+```
+
+### For Cursor AI / Future Developers
+
+**ALWAYS:**
+1. Update source files in project root
+2. Tell user to rebuild using `Open-PowerShell-Here.bat`
+3. Verify changes are in packaged app location
+4. Never assume source changes are automatically in running app
+
+**NEVER:**
+1. Edit files in `dist/` or packaged app location directly
+2. Tell user to "just restart" without rebuilding
+3. Skip verification that changes are in packaged app
+
 ✅ **Product Schema Generator - COMPLETE (v1.5.3):**
 - Automated workflow (Steps 1 → 2 → 3a → 3b → 4)
 - URL validation with 404 checking

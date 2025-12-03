@@ -2,6 +2,20 @@
 /**
  * Build Desktop App Script
  * Properly expands LOCALAPPDATA environment variable for Windows
+ * 
+ * ⚠️ CRITICAL: This script builds the PACKAGED Electron app from SOURCE files.
+ * 
+ * IMPORTANT WORKFLOW:
+ * 1. Source files are in project root (index.html, main.js, preload.js, etc.)
+ * 2. This script uses electron-packager to copy ALL source files to:
+ *    %LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\resources\app\
+ * 3. User runs the packaged .exe, NOT the source files directly
+ * 
+ * MANDATORY: After ANY source code changes, user MUST run this build script
+ * to update the packaged app. Changes to source files do NOT automatically
+ * appear in the running packaged app.
+ * 
+ * See readme.md and handover-cursor-ai.md for full documentation.
  */
 
 import { execSync } from 'child_process';
