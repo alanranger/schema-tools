@@ -10284,6 +10284,7 @@
 
         // SPEC: Generate BreadcrumbList schema (standalone file)
         try {
+          blogPosts_log(`   📄 Generating BreadcrumbList schema...`);
           const breadcrumbSchema = generateBreadcrumbSchema(row);
           const breadcrumbFileName = `${slug}_breadcrumb.json`;
           const breadcrumbJson = JSON.stringify(breadcrumbSchema, null, 2);
@@ -10292,18 +10293,18 @@
           if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
             try {
               await window.electronAPI.saveAndDeploySchema(breadcrumbFileName, breadcrumbJson);
-              blogPosts_log(`✅ Saved BreadcrumbList: ${breadcrumbFileName}`);
+              blogPosts_log(`   ✅ Saved BreadcrumbList: ${breadcrumbFileName}`);
               saved++;
             } catch (e) {
-              blogPosts_log(`❌ Failed to save BreadcrumbList ${breadcrumbFileName}: ${e.message}`);
+              blogPosts_log(`   ❌ Failed to save BreadcrumbList ${breadcrumbFileName}: ${e.message}`);
               errors++;
             }
           } else {
-            blogPosts_log(`📄 Generated BreadcrumbList: ${breadcrumbFileName}`);
+            blogPosts_log(`   📄 Generated BreadcrumbList: ${breadcrumbFileName}`);
             saved++;
           }
         } catch (e) {
-          blogPosts_log(`❌ Error generating BreadcrumbList for ${slug}: ${e.message}`);
+          blogPosts_log(`   ❌ Error generating BreadcrumbList for ${slug}: ${e.message}`);
           errors++;
         }
 
@@ -10532,7 +10533,7 @@
     if (outputDiv && summaryText) {
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
-      summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
+      summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + BreadcrumbList <code>_breadcrumb.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
       if (saveToGithub) {
         if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
           summary += `• Saved to GitHub: ${saved} files<br>`;
@@ -10757,7 +10758,8 @@
       resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan (per blog post):</h5>';
       resultHtml += `<p><strong>WebPage Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
       resultHtml += `<p><strong>BlogPosting Schema:</strong> ✅ Will generate <code>${slug}_blogposting.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected) — no <code>${slug}_faq.json</code>' : '✅ GENERATE <code>_faq.json</code>'}</p>`;
+      resultHtml += `<p><strong>BreadcrumbList Schema:</strong> ✅ Will generate <code>${slug}_breadcrumb.json</code></p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected) — no <code>${slug}_faq.json</code>' : '✅ GENERATE <code>${slug}_faq.json</code>'}</p>`;
       
       // Use the EXACT same variable - no logic, just direct use
       const howToResult = shouldHowTo;
@@ -10937,6 +10939,7 @@
       }
       
       // Generate BreadcrumbList schema (standalone file)
+      blogPosts_log('📄 Generating BreadcrumbList schema...');
       const breadcrumbSchema = generateBreadcrumbSchema(mockRow);
       const breadcrumbFileName = `${slug}_breadcrumb.json`;
       const breadcrumbJson = JSON.stringify(breadcrumbSchema, null, 2);
@@ -11048,6 +11051,7 @@
         resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
         resultHtml += `<p><strong>WebPage Schema:</strong> <code>${webPageFileName}</code></p>`;
         resultHtml += `<p><strong>BlogPosting Schema:</strong> <code>${blogPostingFileName}</code></p>`;
+        resultHtml += `<p><strong>BreadcrumbList Schema:</strong> <code>${breadcrumbFileName}</code></p>`;
         
         // Show WebPage schema preview (first 500 chars)
         const webPagePreview = webPageJson.length > 500 ? webPageJson.substring(0, 500) + '...' : webPageJson;
@@ -11080,7 +11084,7 @@
         }
       }
       
-      alert(`✅ Schemas generated for ${slug}!\n\nWebPage: ${webPageFileName}\nBlogPosting: ${blogPostingFileName}\n\nCheck the result panel below for the full schemas.`);
+      alert(`✅ Schemas generated for ${slug}!\n\nWebPage: ${webPageFileName}\nBlogPosting: ${blogPostingFileName}\nBreadcrumbList: ${breadcrumbFileName}\n\nCheck the result panel below for the full schemas.`);
 
       // If running in Electron with Save to GitHub OFF, offer a Redeploy button so you can push later
       const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
@@ -11092,6 +11096,7 @@
         window.blogPostsSingleUrlLastFiles = [
           `${slug}_schema.json`,
           `${slug}_blogposting.json`,
+          `${slug}_breadcrumb.json`,
           `${slug}_howto.json`,
           `${slug}_faq.json`,
           `${slug}_image.json`
