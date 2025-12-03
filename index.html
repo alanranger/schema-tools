@@ -9441,6 +9441,29 @@
     };
   }
 
+  // Generate Person schema: <slug>_person.json
+  // Constant template for every blog post - matches @id used in BlogPosting author references
+  function generatePersonSchema() {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      '@id': 'https://www.alanranger.com/#person',
+      name: 'Alan Ranger',
+      url: 'https://www.alanranger.com/about',
+      jobTitle: 'Photographer & Tutor',
+      worksFor: {
+        '@id': 'https://www.alanranger.com/#org'
+      },
+      sameAs: [
+        'https://www.instagram.com/alanrangerphotography/',
+        'https://www.youtube.com/@alanrangerphotography',
+        'https://www.linkedin.com/in/alanranger',
+        'https://www.facebook.com/alanrangerphotography/',
+        'https://bsky.app/profile/alanranger.bsky.social'
+      ]
+    };
+  }
+
   /**
    * Legacy function name - now generates WebPage only
    * @deprecated Use generateWebPageSchema() directly
@@ -10315,6 +10338,32 @@
           errors++;
         }
 
+        // SPEC: Generate Person schema (standalone file, constant template for every post)
+        try {
+          blogPosts_log(`   📄 Generating Person schema...`);
+          const personSchema = generatePersonSchema();
+          const personFileName = `${slug}_person.json`;
+          const personJson = JSON.stringify(personSchema, null, 2);
+          generatedFiles.push({ name: personFileName, content: personJson });
+          
+          if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+            try {
+              await window.electronAPI.saveAndDeploySchema(personFileName, personJson);
+              blogPosts_log(`   ✅ Saved Person: ${personFileName}`);
+              saved++;
+            } catch (e) {
+              blogPosts_log(`   ❌ Failed to save Person ${personFileName}: ${e.message}`);
+              errors++;
+            }
+          } else {
+            blogPosts_log(`   📄 Generated Person: ${personFileName}`);
+            saved++;
+          }
+        } catch (e) {
+          blogPosts_log(`   ❌ Error generating Person for ${slug}: ${e.message}`);
+          errors++;
+        }
+
         // ============================================
         // GENERATE ADDITIONAL SCHEMAS (HowTo, FAQ, ImageObject)
         // MASTER RULE: Fetch HTML from public URL and convert to plain text
@@ -10540,7 +10589,7 @@
     if (outputDiv && summaryText) {
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
-      summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + BreadcrumbList <code>_breadcrumb.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
+      summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + BreadcrumbList <code>_breadcrumb.json</code> + Person <code>_person.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
       if (saveToGithub) {
         if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
           summary += `• Saved to GitHub: ${saved} files<br>`;
@@ -10766,6 +10815,7 @@
       resultHtml += `<p><strong>WebPage Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
       resultHtml += `<p><strong>BlogPosting Schema:</strong> ✅ Will generate <code>${slug}_blogposting.json</code></p>`;
       resultHtml += `<p><strong>BreadcrumbList Schema:</strong> ✅ Will generate <code>${slug}_breadcrumb.json</code></p>`;
+      resultHtml += `<p><strong>Person Schema:</strong> ✅ Will generate <code>${slug}_person.json</code></p>`;
       resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected) — no <code>${slug}_faq.json</code>' : '✅ GENERATE <code>${slug}_faq.json</code>'}</p>`;
       
       // Use the EXACT same variable - no logic, just direct use
@@ -10961,6 +11011,23 @@
       } else {
         blogPosts_log(`📄 Generated BreadcrumbList: ${breadcrumbFileName}`);
       }
+
+      // Generate Person schema (standalone file, constant template for every post)
+      blogPosts_log('📄 Generating Person schema...');
+      const personSchema = generatePersonSchema();
+      const personFileName = `${slug}_person.json`;
+      const personJson = JSON.stringify(personSchema, null, 2);
+      if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+        try {
+          await window.electronAPI.saveAndDeploySchema(personFileName, personJson);
+          blogPosts_log(`✅ Saved Person: ${personFileName}`);
+        } catch (e) {
+          blogPosts_log(`❌ Failed to save Person: ${e.message}`);
+          throw e;
+        }
+      } else {
+        blogPosts_log(`📄 Generated Person: ${personFileName}`);
+      }
       
       // Use the same HTML/plainText/BlogPosting instance for additional schemas
       if (html && blogPosting) {
@@ -11059,6 +11126,7 @@
         resultHtml += `<p><strong>WebPage Schema:</strong> <code>${webPageFileName}</code></p>`;
         resultHtml += `<p><strong>BlogPosting Schema:</strong> <code>${blogPostingFileName}</code></p>`;
         resultHtml += `<p><strong>BreadcrumbList Schema:</strong> <code>${breadcrumbFileName}</code></p>`;
+        resultHtml += `<p><strong>Person Schema:</strong> <code>${personFileName}</code></p>`;
         
         // Show WebPage schema preview (first 500 chars)
         const webPagePreview = webPageJson.length > 500 ? webPageJson.substring(0, 500) + '...' : webPageJson;
@@ -11091,7 +11159,7 @@
         }
       }
       
-      alert(`✅ Schemas generated for ${slug}!\n\nWebPage: ${webPageFileName}\nBlogPosting: ${blogPostingFileName}\nBreadcrumbList: ${breadcrumbFileName}\n\nCheck the result panel below for the full schemas.`);
+      alert(`✅ Schemas generated for ${slug}!\n\nWebPage: ${webPageFileName}\nBlogPosting: ${blogPostingFileName}\nBreadcrumbList: ${breadcrumbFileName}\nPerson: ${personFileName}\n\nCheck the result panel below for the full schemas.`);
 
       // If running in Electron with Save to GitHub OFF, offer a Redeploy button so you can push later
       const redeployBtn = document.getElementById('blogPostsRedeploySingleBtn');
@@ -11104,6 +11172,7 @@
           `${slug}_schema.json`,
           `${slug}_blogposting.json`,
           `${slug}_breadcrumb.json`,
+          `${slug}_person.json`,
           `${slug}_howto.json`,
           `${slug}_faq.json`,
           `${slug}_image.json`
