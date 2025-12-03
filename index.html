@@ -9335,6 +9335,7 @@
       inLanguage: 'en-GB',
       isPartOf: { '@id': WEBSITE_ID },
       breadcrumb: { '@id': `${url}#breadcrumb` },
+      mainEntity: { '@id': `${url}#blogposting` },
       datePublished,
       dateModified
     };
@@ -9361,8 +9362,14 @@
     
     const title = blogPosting.headline || csvRow.title || '';
     const description = blogPosting.description || '';
-    const datePublished = blogPosting.datePublished || csvRow.publishDate || '';
-    const dateModified = blogPosting.dateModified || datePublished;
+    
+    // Convert dates to ISO-8601 format (YYYY-MM-DD -> YYYY-MM-DDTHH:mm:ss+00:00)
+    const rawDatePublished = blogPosting.datePublished || csvRow.publishDate || '';
+    const rawDateModified = blogPosting.dateModified || rawDatePublished;
+    const datePublished = rawDatePublished ? new Date(rawDatePublished).toISOString() : null;
+    const dateModified = rawDateModified ? new Date(rawDateModified).toISOString() : null;
+    const dateCreated = blogPosting.dateCreated ? new Date(blogPosting.dateCreated).toISOString() : datePublished;
+    
     const articleBody = blogPosting.articleBody || '';
     const wordCount = blogPosting.wordCount || 0;
     
@@ -9386,10 +9393,10 @@
       mainEntityOfPage: { '@id': webPageId },
       datePublished,
       dateModified,
+      dateCreated,
       inLanguage: 'en-GB',
       articleBody,
       wordCount,
-      breadcrumb: { '@id': `${url}#breadcrumb` },
       publisher: { '@id': ORG_ID },
       author: { '@id': PERSON_ID }
     };
