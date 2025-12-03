@@ -9302,43 +9302,46 @@
    * SPEC: This file must contain ONLY WebPage schema, no @graph, no BlogPosting, no ImageObject, no BreadcrumbList
    */
   async function generateWebPageSchema(csvRow) {
-    // Get BlogPosting data for WebPage fields (name, description)
+    // Build a CLEAN WebPage object for <slug>_schema.json (no @graph, no extra types)
     const blogPosting = await buildEnrichedBlogPosting(csvRow);
     const url = csvRow.url;
     const WEBSITE_ID = 'https://www.alanranger.com/#website';
     const webPageId = `${url}#webpage`;
     
-    // Extract image URL for primaryImageOfPage reference
+    // Titles and descriptions
+    const title = blogPosting.headline || csvRow.title || '';
+    const description = blogPosting.description || '';
+    
+    // Dates
+    const datePublished = blogPosting.datePublished || csvRow.publishDate || '';
+    const dateModified = blogPosting.dateModified || datePublished;
+    
+    // Primary image
     let imageUrl = null;
-    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object' && blogPosting.image.url) {
-      imageUrl = blogPosting.image.url;
-    } else if (blogPosting && blogPosting.thumbnailUrl) {
+    if (blogPosting && blogPosting.thumbnailUrl) {
       imageUrl = blogPosting.thumbnailUrl;
     } else if (csvRow.imageUrl) {
       imageUrl = csvRow.imageUrl;
     }
-    
     const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
     
-    // Create WebPage schema (ONLY WebPage, standalone, no @graph)
     const webPage = {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
       '@id': webPageId,
-      url: url,
-      name: blogPosting.headline || '',
-      description: blogPosting.description || '',
+      url,
+      name: title,
+      description,
       inLanguage: 'en-GB',
-      isPartOf: { '@id': WEBSITE_ID }
+      isPartOf: { '@id': WEBSITE_ID },
+      breadcrumb: { '@id': `${url}#breadcrumb` },
+      datePublished,
+      dateModified
     };
     
-    // Add primaryImageOfPage reference if image exists
     if (imageObjectId) {
       webPage.primaryImageOfPage = { '@id': imageObjectId };
     }
-    
-    // Add breadcrumb reference (breadcrumb is in separate file, referenced by @id)
-    webPage.breadcrumb = { '@id': `${url}#breadcrumb` };
     
     return webPage;
   }
@@ -9348,63 +9351,87 @@
    * SPEC: BlogPosting must be emitted separately, not in _schema.json
    */
   async function generateBlogPostingSchema(csvRow) {
+    // Build a CLEAN BlogPosting object for <slug>_blogposting.json (no extra schemas)
     const blogPosting = await buildEnrichedBlogPosting(csvRow);
     const url = csvRow.url;
     const blogPostingId = `${url}#blogposting`;
     const webPageId = `${url}#webpage`;
+    const PERSON_ID = 'https://www.alanranger.com/#person';
+    const ORG_ID = 'https://www.alanranger.com/#org';
     
-    // Extract image URL
+    const title = blogPosting.headline || csvRow.title || '';
+    const description = blogPosting.description || '';
+    const datePublished = blogPosting.datePublished || csvRow.publishDate || '';
+    const dateModified = blogPosting.dateModified || datePublished;
+    const articleBody = blogPosting.articleBody || '';
+    const wordCount = blogPosting.wordCount || 0;
+    
+    // Image reference (no inline ImageObject)
     let imageUrl = null;
-    if (blogPosting && blogPosting.image && typeof blogPosting.image === 'object' && blogPosting.image.url) {
-      imageUrl = blogPosting.image.url;
-    } else if (blogPosting && blogPosting.thumbnailUrl) {
+    if (blogPosting && blogPosting.thumbnailUrl) {
       imageUrl = blogPosting.thumbnailUrl;
     } else if (csvRow.imageUrl) {
       imageUrl = csvRow.imageUrl;
     }
-    
     const imageObjectId = imageUrl ? `${imageUrl}#imageobject` : null;
     
-    // Create BlogPosting schema (standalone, no @graph)
     const blogPostingSchema = {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       '@id': blogPostingId,
-      headline: blogPosting.headline || '',
-      alternativeHeadline: blogPosting.alternativeHeadline || '',
-      description: blogPosting.description || '',
-      url: url,
+      headline: title,
+      alternativeHeadline: title ? `${title} | Alan Ranger Photography` : '',
+      description,
+      url,
       mainEntityOfPage: { '@id': webPageId },
-      datePublished: blogPosting.datePublished || '',
-      dateCreated: blogPosting.dateCreated || '',
-      dateModified: blogPosting.dateModified || '',
+      datePublished,
+      dateModified,
       inLanguage: 'en-GB',
-      articleBody: blogPosting.articleBody || '',
-      wordCount: blogPosting.wordCount || 0,
-      keywords: blogPosting.keywords || [],
-      about: blogPosting.about || [],
-      mentions: blogPosting.mentions || [],
-      hasPart: blogPosting.hasPart || [],
-      speakable: blogPosting.speakable || {},
-      discussionUrl: blogPosting.discussionUrl || '',
-      author: blogPosting.author || {},
-      creator: blogPosting.creator || {},
-      publisher: blogPosting.publisher || {},
-      isPartOf: blogPosting.isPartOf || {},
-      copyrightHolder: blogPosting.copyrightHolder || {},
-      copyrightYear: blogPosting.copyrightYear || '',
-      sameAs: blogPosting.sameAs || [],
-      interactionStatistic: blogPosting.interactionStatistic || {},
-      commentCount: blogPosting.commentCount || 0
+      articleBody,
+      wordCount,
+      breadcrumb: { '@id': `${url}#breadcrumb` },
+      publisher: { '@id': ORG_ID },
+      author: { '@id': PERSON_ID }
     };
     
-    // Add image reference (use @id reference, not inline)
     if (imageObjectId) {
       blogPostingSchema.image = { '@id': imageObjectId };
       blogPostingSchema.thumbnailUrl = imageUrl;
     }
     
+    if (blogPosting.about && blogPosting.about.length) {
+      blogPostingSchema.about = blogPosting.about;
+    }
+    if (blogPosting.mentions && blogPosting.mentions.length) {
+      blogPostingSchema.mentions = blogPosting.mentions;
+    }
+    
     return blogPostingSchema;
+  }
+
+  // Generate BreadcrumbList schema: <slug>_breadcrumb.json
+  function generateBreadcrumbSchema(csvRow) {
+    const url = csvRow.url;
+    const title = csvRow.title || 'Photography Blog';
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      '@id': `${url}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Blog',
+          item: 'https://www.alanranger.com/blog-on-photography'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: title,
+          item: url
+        }
+      ]
+    };
   }
 
   /**
@@ -10255,6 +10282,31 @@
           errors++;
         }
 
+        // SPEC: Generate BreadcrumbList schema (standalone file)
+        try {
+          const breadcrumbSchema = generateBreadcrumbSchema(row);
+          const breadcrumbFileName = `${slug}_breadcrumb.json`;
+          const breadcrumbJson = JSON.stringify(breadcrumbSchema, null, 2);
+          generatedFiles.push({ name: breadcrumbFileName, content: breadcrumbJson });
+          
+          if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+            try {
+              await window.electronAPI.saveAndDeploySchema(breadcrumbFileName, breadcrumbJson);
+              blogPosts_log(`✅ Saved BreadcrumbList: ${breadcrumbFileName}`);
+              saved++;
+            } catch (e) {
+              blogPosts_log(`❌ Failed to save BreadcrumbList ${breadcrumbFileName}: ${e.message}`);
+              errors++;
+            }
+          } else {
+            blogPosts_log(`📄 Generated BreadcrumbList: ${breadcrumbFileName}`);
+            saved++;
+          }
+        } catch (e) {
+          blogPosts_log(`❌ Error generating BreadcrumbList for ${slug}: ${e.message}`);
+          errors++;
+        }
+
         // ============================================
         // GENERATE ADDITIONAL SCHEMAS (HowTo, FAQ, ImageObject)
         // MASTER RULE: Fetch HTML from public URL and convert to plain text
@@ -10882,6 +10934,22 @@
         }
       } else {
         blogPosts_log(`📄 Generated BlogPosting: ${blogPostingFileName} (not saved - check "Save to GitHub" to save)`);
+      }
+      
+      // Generate BreadcrumbList schema (standalone file)
+      const breadcrumbSchema = generateBreadcrumbSchema(mockRow);
+      const breadcrumbFileName = `${slug}_breadcrumb.json`;
+      const breadcrumbJson = JSON.stringify(breadcrumbSchema, null, 2);
+      if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+        try {
+          await window.electronAPI.saveAndDeploySchema(breadcrumbFileName, breadcrumbJson);
+          blogPosts_log(`✅ Saved BreadcrumbList: ${breadcrumbFileName}`);
+        } catch (e) {
+          blogPosts_log(`❌ Failed to save BreadcrumbList: ${e.message}`);
+          throw e;
+        }
+      } else {
+        blogPosts_log(`📄 Generated BreadcrumbList: ${breadcrumbFileName}`);
       }
       
       // Use the same HTML/plainText/BlogPosting instance for additional schemas
