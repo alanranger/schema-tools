@@ -10480,6 +10480,7 @@
     if (outputDiv && summaryText) {
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
+      summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
       if (saveToGithub) {
         if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
           summary += `• Saved to GitHub: ${saved} files<br>`;
@@ -10701,15 +10702,16 @@
       resultHtml += `<p><strong>Plain Text Length:</strong> ${plainText.length} characters</p>`;
       
       resultHtml += '<div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">';
-      resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan:</h5>';
-      resultHtml += `<p><strong>Main Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected)' : '✅ GENERATE'}</p>`;
+      resultHtml += '<h5 style="margin-top: 0;">Schema Generation Plan (per blog post):</h5>';
+      resultHtml += `<p><strong>WebPage Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
+      resultHtml += `<p><strong>BlogPosting Schema:</strong> ✅ Will generate <code>${slug}_blogposting.json</code></p>`;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected) — no <code>${slug}_faq.json</code>' : '✅ GENERATE <code>_faq.json</code>'}</p>`;
       
       // Use the EXACT same variable - no logic, just direct use
       const howToResult = shouldHowTo;
-      resultHtml += `<p><strong>HowTo Schema:</strong> ${howToResult ? '✅ GENERATE' : '❌ SKIP'}</p>`;
+      resultHtml += `<p><strong>HowTo Schema:</strong> ${howToResult ? '✅ GENERATE <code>${slug}_howto.json</code>' : '❌ SKIP — no <code>${slug}_howto.json</code>'}</p>`;
       
-      resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE (if image exists)</p>`;
+      resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE <code>${slug}_image.json</code> (if image exists)</p>`;
       resultHtml += '</div>';
       
       if (resultDiv) {
