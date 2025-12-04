@@ -39,44 +39,15 @@ const finalAppDir = path.join(outputDir, 'SchemaTools-win32-x64');
 
 console.log(`📁 Building to: ${outputDir}`);
 
-// Kill all Node and Electron processes that might be locking files
+// Kill only Electron and SchemaTools processes that might be locking files
 async function killLockingProcesses() {
   if (process.platform === 'win32') {
     try {
-      console.log('🔍 Checking for Node/Electron processes that might lock files...');
-      const currentPid = process.pid;
+      console.log('🔍 Checking for Electron/SchemaTools processes that might lock files...');
       const processes = ['electron.exe', 'SchemaTools.exe'];
       
-      // Only kill node.exe processes that are NOT this build script
-      try {
-        const nodeProcesses = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH', { 
-          encoding: 'utf-8',
-          stdio: 'pipe'
-        });
-        if (nodeProcesses.trim() && nodeProcesses.includes('node.exe')) {
-          // Get all node.exe PIDs and kill only those that aren't this process
-          const lines = nodeProcesses.trim().split('\n').filter(line => line.trim());
-          for (const line of lines) {
-            try {
-              // Extract PID from CSV format: "node.exe","12345","Session Name","Session#","Mem Usage"
-              const match = line.match(/"node\.exe","(\d+)"/);
-              if (match) {
-                const pid = parseInt(match[1]);
-                if (pid !== currentPid && pid !== process.ppid) {
-                  console.log(`⚠️  Found node.exe process (PID ${pid}). Closing...`);
-                  execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
-                }
-              }
-            } catch (e) {
-              // Ignore individual process kill errors
-            }
-          }
-        }
-      } catch (e) {
-        // No node.exe processes or couldn't list them
-      }
-      
-      // Kill Electron and SchemaTools processes
+      // Only kill Electron and SchemaTools processes (not all Node processes)
+      // This avoids killing MCP servers and other unrelated Node processes
       for (const proc of processes) {
         try {
           const result = execSync(`tasklist /FI "IMAGENAME eq ${proc}" /FO CSV /NH`, { 
@@ -99,7 +70,7 @@ async function killLockingProcesses() {
       
       // Wait for processes to fully terminate and files to unlock
       console.log('⏳ Waiting for files to unlock...');
-      await new Promise(resolve => setTimeout(resolve, 4000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (e) {
       // Continue anyway
     }
