@@ -150,30 +150,59 @@ async function build() {
     if (!cleanupSuccess) {
       const tempBuiltDir = path.join(buildOutputDir, buildAppName + '-win32-x64');
       if (fs.existsSync(tempBuiltDir)) {
-        // Remove final dir if it exists
+        // Remove final dir if it exists (with retries)
         if (fs.existsSync(finalAppDir)) {
-          try {
-            fs.rmSync(finalAppDir, { recursive: true, force: true });
-          } catch (e) {
-            // Ignore
+          for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+              fs.rmSync(finalAppDir, { recursive: true, force: true });
+              console.log('✅ Removed old final directory');
+              break;
+            } catch (e) {
+              if (attempt < 4) {
+                console.log(`⚠️  Attempt ${attempt + 1} to remove old directory failed, waiting 2 seconds...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              } else {
+                console.log('⚠️  Could not remove old final directory, will try rename anyway...');
+              }
+            }
           }
         }
-        // Rename temp to final
-        fs.renameSync(tempBuiltDir, finalAppDir);
-        console.log('✅ Renamed temporary build to final location');
+        
+        // Wait a bit before attempting rename to let file handles release
+        console.log('⏳ Waiting before final rename...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Rename temp to final (with retries)
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            fs.renameSync(tempBuiltDir, finalAppDir);
+            console.log('✅ Renamed temporary build to final location');
+            break;
+          } catch (e) {
+            if (attempt < 4) {
+              console.log(`⚠️  Rename attempt ${attempt + 1} failed (${e.message}), waiting 3 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            } else {
+              throw new Error(`Failed to rename build directory after 5 attempts: ${e.message}\nThe app is available at: ${tempBuiltDir}\\SchemaTools.exe`);
+            }
+          }
+        }
       }
     }
     
     console.log(`\n✅ Build complete! App saved to: ${finalAppDir}\\SchemaTools.exe`);
   } catch (error) {
     console.error('\n❌ Build failed:', error.message);
-    if (error.message.includes('EBUSY') || error.message.includes('locked')) {
+    if (error.message.includes('EBUSY') || error.message.includes('locked') || error.message.includes('EPERM') || error.message.includes('permission')) {
       console.error('\n💡 Troubleshooting:');
-      console.error('   1. Close ALL Node.js and Electron processes in Task Manager');
-      console.error('   2. Close any Windows Explorer windows');
-      console.error('   3. Disable Windows Search Indexer temporarily');
-      console.error('   4. Try running as Administrator');
-      console.error('   5. Restart your computer if needed');
+      console.error('   1. Close ALL SchemaTools.exe and Electron processes in Task Manager');
+      console.error('   2. Close any Windows Explorer windows showing the SchemaTools folder');
+      console.error('   3. Close Dropbox and wait for sync to finish (if using Dropbox)');
+      console.error('   4. Disable Windows Search Indexer temporarily');
+      console.error('   5. Try running PowerShell as Administrator');
+      console.error('   6. If the temp build exists, you can run it from:');
+      console.error(`      ${outputDir}\\SchemaTools-temp-*-win32-x64\\SchemaTools.exe`);
+      console.error('   7. Restart your computer if needed');
     }
     process.exit(1);
   }
