@@ -68,9 +68,59 @@ async function killLockingProcesses() {
         }
       }
       
+      // Check for Node processes that might have handles to the build directory
+      // Only kill if they're likely related to the build process or have handles to our directory
+      try {
+        const nodeProcesses = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH', { 
+          encoding: 'utf-8',
+          stdio: 'pipe'
+        });
+        if (nodeProcesses.trim() && nodeProcesses.includes('node.exe')) {
+          const lines = nodeProcesses.trim().split('\n').filter(line => line.trim());
+          const currentPid = process.pid;
+          let killedCount = 0;
+          
+          for (const line of lines) {
+            try {
+              const match = line.match(/"node\.exe","(\d+)"/);
+              if (match) {
+                const pid = parseInt(match[1]);
+                // Don't kill this build script or its parent
+                if (pid !== currentPid && pid !== process.ppid) {
+                  // Check if this process has handles to our target directory
+                  // Use PowerShell to check for open handles (requires admin, but worth trying)
+                  try {
+                    const handleCheck = execSync(
+                      `powershell -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path"`,
+                      { encoding: 'utf-8', stdio: 'pipe', timeout: 2000 }
+                    );
+                    // If process path contains SchemaTools or is in the build directory, kill it
+                    if (handleCheck && (handleCheck.includes('SchemaTools') || handleCheck.includes(outputDir.replace(/\\/g, '/')))) {
+                      console.log(`⚠️  Found Node process (PID ${pid}) with potential handles to build directory. Closing...`);
+                      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+                      killedCount++;
+                    }
+                  } catch (e) {
+                    // If we can't check, be conservative - don't kill it
+                    // This preserves MCP servers that aren't related to the build
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore individual process errors
+            }
+          }
+          if (killedCount > 0) {
+            console.log(`✅ Closed ${killedCount} Node process(es) with potential file locks`);
+          }
+        }
+      } catch (e) {
+        // No node.exe processes or couldn't list them - continue
+      }
+      
       // Wait for processes to fully terminate and files to unlock
       console.log('⏳ Waiting for files to unlock...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Increased wait time
     } catch (e) {
       // Continue anyway
     }
@@ -146,7 +196,7 @@ async function build() {
       shell: true
     });
     
-    // If we used a temp name, rename it to the final name
+    // If we used a temp name, copy it to the final name (copy is more tolerant of locks than rename)
     if (!cleanupSuccess) {
       const tempBuiltDir = path.join(buildOutputDir, buildAppName + '-win32-x64');
       if (fs.existsSync(tempBuiltDir)) {
@@ -162,28 +212,39 @@ async function build() {
                 console.log(`⚠️  Attempt ${attempt + 1} to remove old directory failed, waiting 2 seconds...`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
               } else {
-                console.log('⚠️  Could not remove old final directory, will try rename anyway...');
+                console.log('⚠️  Could not remove old final directory, will try copy anyway...');
               }
             }
           }
         }
         
-        // Wait a bit before attempting rename to let file handles release
-        console.log('⏳ Waiting before final rename...');
+        // Wait a bit before attempting copy to let file handles release
+        console.log('⏳ Waiting before final copy...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Rename temp to final (with retries)
+        // Copy temp to final (copy is more tolerant of locks than rename)
+        // Use robocopy on Windows for better file lock handling
         for (let attempt = 0; attempt < 5; attempt++) {
           try {
-            fs.renameSync(tempBuiltDir, finalAppDir);
-            console.log('✅ Renamed temporary build to final location');
+            // Use copy instead of rename - copy is more tolerant of file locks
+            // Copy recursively from temp to final location
+            fs.cpSync(tempBuiltDir, finalAppDir, { recursive: true, force: true });
+            console.log('✅ Copied temporary build to final location');
+            
+            // Try to remove temp directory after successful copy
+            try {
+              fs.rmSync(tempBuiltDir, { recursive: true, force: true });
+              console.log('✅ Cleaned up temporary directory');
+            } catch (e) {
+              // Ignore cleanup errors
+            }
             break;
           } catch (e) {
             if (attempt < 4) {
-              console.log(`⚠️  Rename attempt ${attempt + 1} failed (${e.message}), waiting 3 seconds...`);
+              console.log(`⚠️  Copy attempt ${attempt + 1} failed (${e.message}), waiting 3 seconds...`);
               await new Promise(resolve => setTimeout(resolve, 3000));
             } else {
-              throw new Error(`Failed to rename build directory after 5 attempts: ${e.message}\nThe app is available at: ${tempBuiltDir}\\SchemaTools.exe`);
+              throw new Error(`Failed to copy build directory after 5 attempts: ${e.message}\nThe app is available at: ${tempBuiltDir}\\SchemaTools.exe\n\n💡 Tip: Close Windows Explorer windows, Dropbox, and any processes accessing the SchemaTools folder.`);
             }
           }
         }
