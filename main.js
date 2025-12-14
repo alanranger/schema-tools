@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "path";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import http from "http";
@@ -10,6 +10,31 @@ const __dirname = path.dirname(__filename);
 
 let localServer;
 let mainWindow;
+
+function ensureGitOnBranch(repoPath, branchName = "main") {
+  const res = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    cwd: repoPath,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: false,
+  });
+  const current = (res.stdout || "").trim();
+  if (current && current !== "HEAD") return;
+
+  // Detached HEAD (or unknown): move back to a branch so `git push` works.
+  const checkout = spawnSync("git", ["checkout", branchName], {
+    cwd: repoPath,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: false,
+  });
+  if (checkout.status !== 0) {
+    const msg = (checkout.stderr || checkout.stdout || "").trim();
+    throw new Error(
+      `Failed to checkout branch "${branchName}" in ${repoPath}: ${msg || "unknown error"}`
+    );
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -366,6 +391,9 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
         reject(new Error(`Schema repository folder not found: ${schemaRepoPath}`));
         return;
       }
+
+      // Ensure we are on a branch (not detached HEAD) so push works
+      ensureGitOnBranch(schemaRepoPath, "main");
       
       // SAFETY: Clean up any stale Git index.lock that can cause "unable to write new index file"
       const gitLockPath = path.join(schemaRepoPath, '.git', 'index.lock');
@@ -490,6 +518,9 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
         reject(new Error(`Schema repository folder not found: ${schemaRepoPath}`));
         return;
       }
+
+      // Ensure we are on a branch (not detached HEAD) so push works
+      ensureGitOnBranch(schemaRepoPath, "main");
 
       // Write all files first
       const fileNames = [];
@@ -691,6 +722,9 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
       const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
       const filePath = path.join(schemaRepoPath, fileName);
       
+      // Ensure we are on a branch (not detached HEAD) so push works
+      ensureGitOnBranch(schemaRepoPath, "main");
+
       // Check if file exists
       if (!fs.existsSync(filePath)) {
         resolve({ success: true, message: `File ${fileName} does not exist (already deleted)` });
@@ -789,6 +823,9 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
       
       const schemaRepoPath = path.join(projectRoot, 'alanranger-schema');
       
+      // Ensure we are on a branch (not detached HEAD) so push works
+      ensureGitOnBranch(schemaRepoPath, "main");
+
       // SAFETY CHECK: Validate all filenames match expected blog schema pattern
       // Only allow deletion of files matching: slug_schema.json, slug_howto.json, slug_faq.json, slug_image.json
       const validFilePattern = /^[a-z0-9-]+_(schema|howto|faq|image)\.json$/;
