@@ -39,6 +39,20 @@ const finalAppDir = path.join(outputDir, 'SchemaTools-win32-x64');
 
 console.log(`📁 Building to: ${outputDir}`);
 
+// IMPORTANT: Avoid packaging previous packaged builds into the next build.
+// If we include ./dist (which contains prior SchemaTools-win32-x64), the packaged
+// app ends up with nested paths like:
+//   resources/app/dist/SchemaTools-win32-x64/resources/app/...
+// This can bloat builds and cause startup issues on Windows.
+const ignorePatterns = [
+  '^/dist($|/)',
+  '^/outputs($|/)',
+  '^/release($|/)',
+  '^/html - tools($|/)',
+  '^/\\.git($|/)',
+];
+const ignoreArgs = ignorePatterns.map(p => `--ignore="${p}"`).join(' ');
+
 // Kill only Electron and SchemaTools processes that might be locking files
 async function killLockingProcesses() {
   if (process.platform === 'win32') {
@@ -183,10 +197,10 @@ async function build() {
   const cleanupSuccess = await cleanupOldDirectory();
   
   // Use a temporary directory name if cleanup failed
-  const buildOutputDir = cleanupSuccess ? outputDir : outputDir;
+  const buildOutputDir = outputDir;
   const buildAppName = cleanupSuccess ? 'SchemaTools' : `SchemaTools-temp-${Date.now()}`;
   
-  const buildCommand = `electron-packager "${projectRoot}" ${buildAppName} --platform=win32 --arch=x64 --out="${buildOutputDir}" --overwrite`;
+  const buildCommand = `electron-packager "${projectRoot}" ${buildAppName} --platform=win32 --arch=x64 --out="${buildOutputDir}" --overwrite ${ignoreArgs}`;
   
   try {
     console.log('🔨 Starting build...');
