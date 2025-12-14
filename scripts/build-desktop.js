@@ -53,6 +53,19 @@ const ignorePatterns = [
 ];
 const ignoreArgs = ignorePatterns.map(p => `--ignore="${p}"`).join(' ');
 
+function runRoboCopyMirror(src, dest) {
+  // robocopy exit codes: 0-7 are success (copied, extra files deleted, etc.)
+  // 8+ indicates failure.
+  const cmd = `robocopy "${src}" "${dest}" /MIR /R:2 /W:1 /NFL /NDL /NJH /NJS /NP`;
+  try {
+    execSync(cmd, { stdio: 'ignore', shell: true });
+  } catch (e) {
+    const code = typeof e?.status === 'number' ? e.status : 999;
+    if (code <= 7) return; // treat as success
+    throw e;
+  }
+}
+
 // Kill only Electron and SchemaTools processes that might be locking files
 async function killLockingProcesses() {
   if (process.platform === 'win32') {
@@ -237,12 +250,15 @@ async function build() {
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Copy temp to final (copy is more tolerant of locks than rename)
-        // Use robocopy on Windows for better file lock handling
         for (let attempt = 0; attempt < 5; attempt++) {
           try {
-            // Use copy instead of rename - copy is more tolerant of file locks
-            // Copy recursively from temp to final location
-            fs.cpSync(tempBuiltDir, finalAppDir, { recursive: true, force: true });
+            // CRITICAL: Mirror copy (deletes leftover files from old builds)
+            if (process.platform === 'win32') {
+              runRoboCopyMirror(tempBuiltDir, finalAppDir);
+            } else {
+              fs.rmSync(finalAppDir, { recursive: true, force: true });
+              fs.cpSync(tempBuiltDir, finalAppDir, { recursive: true, force: true });
+            }
             console.log('✅ Copied temporary build to final location');
             
             // Try to remove temp directory after successful copy
