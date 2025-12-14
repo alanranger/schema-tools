@@ -209,11 +209,17 @@ async function build() {
   await killLockingProcesses();
   const cleanupSuccess = await cleanupOldDirectory();
   
-  // Use a temporary directory name if cleanup failed
-  const buildOutputDir = outputDir;
-  const buildAppName = cleanupSuccess ? 'SchemaTools' : `SchemaTools-temp-${Date.now()}`;
+  // CRITICAL: Keep app name stable so the exe is always SchemaTools.exe.
+  // If we change the app name on failure, electron-packager will emit a temp-named exe,
+  // breaking user shortcuts that point to SchemaTools.exe.
+  const appName = 'SchemaTools';
+  const tempOutDir = path.join(outputDir, `build-temp-${Date.now()}`);
+  const buildOutDir = cleanupSuccess ? outputDir : tempOutDir;
+  if (!cleanupSuccess) {
+    fs.mkdirSync(buildOutDir, { recursive: true });
+  }
   
-  const buildCommand = `electron-packager "${projectRoot}" ${buildAppName} --platform=win32 --arch=x64 --out="${buildOutputDir}" --overwrite ${ignoreArgs}`;
+  const buildCommand = `electron-packager "${projectRoot}" ${appName} --platform=win32 --arch=x64 --out="${buildOutDir}" --overwrite ${ignoreArgs}`;
   
   try {
     console.log('🔨 Starting build...');
@@ -223,59 +229,38 @@ async function build() {
       shell: true
     });
     
-    // If we used a temp name, copy it to the final name (copy is more tolerant of locks than rename)
+    // If we built to a temp output dir, mirror-copy into the stable final folder.
     if (!cleanupSuccess) {
-      const tempBuiltDir = path.join(buildOutputDir, buildAppName + '-win32-x64');
-      if (fs.existsSync(tempBuiltDir)) {
-        // Remove final dir if it exists (with retries)
-        if (fs.existsSync(finalAppDir)) {
-          for (let attempt = 0; attempt < 5; attempt++) {
-            try {
-              fs.rmSync(finalAppDir, { recursive: true, force: true });
-              console.log('✅ Removed old final directory');
-              break;
-            } catch (e) {
-              if (attempt < 4) {
-                console.log(`⚠️  Attempt ${attempt + 1} to remove old directory failed, waiting 2 seconds...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-              } else {
-                console.log('⚠️  Could not remove old final directory, will try copy anyway...');
-              }
-            }
+      const builtDir = path.join(buildOutDir, `${appName}-win32-x64`);
+      if (!fs.existsSync(builtDir)) {
+        throw new Error(`Expected build output folder not found: ${builtDir}`);
+      }
+      
+      // Wait a bit before attempting copy to let file handles release
+      console.log('⏳ Waiting before final copy...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          if (process.platform === 'win32') {
+            runRoboCopyMirror(builtDir, finalAppDir);
+          } else {
+            fs.rmSync(finalAppDir, { recursive: true, force: true });
+            fs.cpSync(builtDir, finalAppDir, { recursive: true, force: true });
           }
-        }
-        
-        // Wait a bit before attempting copy to let file handles release
-        console.log('⏳ Waiting before final copy...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Copy temp to final (copy is more tolerant of locks than rename)
-        for (let attempt = 0; attempt < 5; attempt++) {
+          console.log('✅ Copied build to final location');
+          
+          // Cleanup temp output directory (best effort)
           try {
-            // CRITICAL: Mirror copy (deletes leftover files from old builds)
-            if (process.platform === 'win32') {
-              runRoboCopyMirror(tempBuiltDir, finalAppDir);
-            } else {
-              fs.rmSync(finalAppDir, { recursive: true, force: true });
-              fs.cpSync(tempBuiltDir, finalAppDir, { recursive: true, force: true });
-            }
-            console.log('✅ Copied temporary build to final location');
-            
-            // Try to remove temp directory after successful copy
-            try {
-              fs.rmSync(tempBuiltDir, { recursive: true, force: true });
-              console.log('✅ Cleaned up temporary directory');
-            } catch (e) {
-              // Ignore cleanup errors
-            }
-            break;
-          } catch (e) {
-            if (attempt < 4) {
-              console.log(`⚠️  Copy attempt ${attempt + 1} failed (${e.message}), waiting 3 seconds...`);
-              await new Promise(resolve => setTimeout(resolve, 3000));
-            } else {
-              throw new Error(`Failed to copy build directory after 5 attempts: ${e.message}\nThe app is available at: ${tempBuiltDir}\\SchemaTools.exe\n\n💡 Tip: Close Windows Explorer windows, Dropbox, and any processes accessing the SchemaTools folder.`);
-            }
+            fs.rmSync(buildOutDir, { recursive: true, force: true });
+          } catch (e) {}
+          break;
+        } catch (e) {
+          if (attempt < 4) {
+            console.log(`⚠️  Copy attempt ${attempt + 1} failed (${e.message}), waiting 3 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          } else {
+            throw new Error(`Failed to copy build directory after 5 attempts: ${e.message}\nThe app is available at: ${builtDir}\\SchemaTools.exe\n\n💡 Tip: Close Windows Explorer windows and any processes accessing the SchemaTools folder.`);
           }
         }
       }
