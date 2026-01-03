@@ -4107,10 +4107,7 @@
   
   // Initialize Supabase client (wait for library to load)
   // Use window object to avoid conflicts with CDN-loaded supabase
-  if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = null;
-  }
-  let supabase = window.supabaseClient;
+  let supabase = null;
   let supabaseAvailable = false;
   
   // Wait for Supabase library to load
@@ -4119,6 +4116,7 @@
     if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
       try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabaseClient = supabase; // Store in window for global access
         supabaseAvailable = true;
         console.log('✅ Supabase client initialized successfully');
         
