@@ -522,6 +522,18 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
       // Ensure we are on a branch (not detached HEAD) so push works
       ensureGitOnBranch(schemaRepoPath, "main");
 
+      // SAFETY: Clean up any stale Git index.lock that can cause "unable to write new index file"
+      const gitLockPath = path.join(schemaRepoPath, '.git', 'index.lock');
+      if (fs.existsSync(gitLockPath)) {
+        try {
+          fs.unlinkSync(gitLockPath);
+          console.warn(`⚠️ Removed stale Git lock file: ${gitLockPath}`);
+        } catch (lockErr) {
+          console.error(`❌ Failed to remove stale Git lock file: ${lockErr.message}`);
+          // Don't hard-fail here; let git surface a clearer error if it still can't write
+        }
+      }
+
       // Write all files first
       const fileNames = [];
       for (const file of files) {
@@ -612,8 +624,13 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
             runNextCommand();
           } else {
             // For commit, code 1 might mean "nothing to commit" - that's OK
-            if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
-              console.log(`ℹ️ Git: No changes to commit (files unchanged)`);
+            // Check if this is a commit command (not by step number, but by command)
+            const isCommitCommand = args[0] === 'commit';
+            const hasNothingToCommit = (stderr.includes('nothing to commit') || stdout.includes('nothing to commit') || 
+                                       stderr.includes('working tree clean') || stdout.includes('working tree clean'));
+            
+            if (isCommitCommand && code === 1 && hasNothingToCommit) {
+              console.log(`ℹ️ Git: No changes to commit (files already committed during generation)`);
               currentStep++;
               runNextCommand();
             } else {
