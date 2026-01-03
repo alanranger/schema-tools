@@ -4106,7 +4106,11 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
   
   // Initialize Supabase client (wait for library to load)
-  let supabase = null;
+  // Use window object to avoid conflicts with CDN-loaded supabase
+  if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = null;
+  }
+  let supabase = window.supabaseClient;
   let supabaseAvailable = false;
   
   // Wait for Supabase library to load
@@ -4119,7 +4123,9 @@
         console.log('✅ Supabase client initialized successfully');
         
         // Update bulk buttons state when Supabase is available
-        updateBulkButtons();
+        if (typeof updateBulkButtons === 'function') {
+          updateBulkButtons();
+        }
         
         return true;
       } catch (error) {
@@ -6000,6 +6006,9 @@
     combinedLog.scrollTop = combinedLog.scrollHeight;
   }
   
+  // Make addToCombinedLog globally accessible
+  window.addToCombinedLog = addToCombinedLog;
+  
   function copyCombinedLog() {
     const combinedLog = document.getElementById('combinedDebugLog');
     if (!combinedLog) return;
@@ -6273,6 +6282,9 @@
         document.getElementById('generateBlogBtn').disabled = true;
       });
   }
+  
+  // Make handleBlogCsvUpload globally accessible
+  window.handleBlogCsvUpload = handleBlogCsvUpload;
 
   function formatDate(dateStr) {
     if (!dateStr) return null;
@@ -9440,6 +9452,9 @@
         document.getElementById('blogPostsGenerateBtn').disabled = true;
       });
   }
+  
+  // Make blogPosts_handleCSVUpload globally accessible
+  window.blogPosts_handleCSVUpload = blogPosts_handleCSVUpload;
 
   /**
    * Validate generated schema against strict rules
