@@ -24387,51 +24387,66 @@ exit`;
         }
         
         // Stream response text
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        let reader = null;
+        let decoder = null;
         let buffer = '';
         let hasError = false;
         let exitCode = null;
+        let hasSuccessIndicator = false;
+        let streamError = null;
         
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          reader = response.body.getReader();
+          decoder = new TextDecoder();
           
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
-          
-          for (const line of lines) {
-            if (line.trim()) {
-              log(line + '\n');
-              
-              // Extract exit code if present FIRST (most reliable indicator)
-              const exitMatch = line.match(/exit code (\d+)/i);
-              if (exitMatch) {
-                exitCode = parseInt(exitMatch[1]);
-                // Only set hasError if exit code is non-zero
-                if (exitCode !== 0) {
-                  hasError = true;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+            
+            for (const line of lines) {
+              if (line.trim()) {
+                log(line + '\n');
+                
+                // Extract exit code if present FIRST (most reliable indicator)
+                const exitMatch = line.match(/exit code (\d+)/i);
+                if (exitMatch) {
+                  exitCode = parseInt(exitMatch[1]);
+                  // Only set hasError if exit code is non-zero
+                  if (exitCode !== 0) {
+                    hasError = true;
+                  }
                 }
-              }
-              
-              // Check for error indicators
-              if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
-                  line.includes('exit code 1') || line.includes('exit code 2') || 
-                  line.includes('Error:') || line.includes('ERROR:') ||
-                  line.includes('FAILED:')) {
-                hasError = true;
-              }
-              
-              // Update progress based on keywords
-              if (line.includes('✅') || line.includes('complete') || line.includes('Success')) {
-                if (progressBar && !hasError) {
-                  progressBar.style.width = '90%';
-                  progressBar.style.background = '#27AE60'; // Green when complete
+                
+                // Check for success indicators (file saved, task completed)
+                if (line.includes('Success!') || line.includes('Cleaned file saved') || 
+                    line.includes('✅') || line.includes('complete') || 
+                    line.includes('saved to:') || line.includes('File saved')) {
+                  hasSuccessIndicator = true;
+                  if (progressBar && !hasError) {
+                    progressBar.style.width = '90%';
+                    progressBar.style.background = '#27AE60'; // Green when complete
+                  }
+                }
+                
+                // Check for error indicators
+                if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
+                    line.includes('exit code 1') || line.includes('exit code 2') || 
+                    line.includes('Error:') || line.includes('ERROR:') ||
+                    line.includes('FAILED:')) {
+                  hasError = true;
                 }
               }
             }
           }
+        } catch (streamErr) {
+          // Capture stream error but don't fail if task actually succeeded
+          streamError = streamErr;
+          log(`\n⚠️ Response stream error: ${streamErr.message}\n`);
+          log(`Checking if task completed successfully despite stream error...\n`);
         }
         
         // Process remaining buffer
@@ -24441,11 +24456,24 @@ exit`;
           if (buffer.includes('❌') || buffer.includes('failed') || buffer.includes('exit code 1') || buffer.includes('FAILED:')) {
             hasError = true;
           }
+          // Check buffer for success indicators
+          if (buffer.includes('Success!') || buffer.includes('Cleaned file saved') || 
+              buffer.includes('✅') || buffer.includes('saved to:')) {
+            hasSuccessIndicator = true;
+          }
         }
         
-        // If we detected an error or exit code is non-zero, throw it
-        if (hasError || (exitCode !== null && exitCode !== 0)) {
+        // If task succeeded (success indicator present) but stream failed, log warning but don't throw
+        if (hasSuccessIndicator && streamError && !hasError && (exitCode === null || exitCode === 0)) {
+          log(`\n✅ Task completed successfully (file saved), but response stream had an error.\n`);
+          log(`This is usually harmless - the file was created correctly.\n`);
+          // Continue as if successful
+        } else if (hasError || (exitCode !== null && exitCode !== 0)) {
+          // Only throw if there's an actual error, not just a stream issue
           throw new Error(`Task failed with exit code ${exitCode || 1}. Check console output above for details.`);
+        } else if (streamError && !hasSuccessIndicator) {
+          // Stream failed and no success indicator - treat as error
+          throw new Error(`Network error: ${streamError.message}. Check console output above for details.`);
         }
         
         // Complete progress
