@@ -24452,27 +24452,53 @@ exit`;
         // Process remaining buffer
         if (buffer.trim()) {
           log(buffer + '\n');
-          // Check buffer for errors too
-          if (buffer.includes('❌') || buffer.includes('failed') || buffer.includes('exit code 1') || buffer.includes('FAILED:')) {
-            hasError = true;
+          // Check buffer for exit code first
+          const bufferExitMatch = buffer.match(/exit code (\d+)/i);
+          if (bufferExitMatch) {
+            exitCode = parseInt(bufferExitMatch[1]);
+            if (exitCode === 0) {
+              hasError = false; // Exit code 0 overrides any error flags
+            } else if (exitCode !== 0) {
+              hasError = true;
+            }
+          }
+          // Only check for errors if exit code hasn't been confirmed as 0
+          if (exitCode === null || exitCode !== 0) {
+            if (buffer.includes('❌ Task') || buffer.includes('Task failed') || 
+                buffer.includes('exit code 1') || buffer.includes('exit code 2')) {
+              hasError = true;
+            }
           }
           // Check buffer for success indicators
           if (buffer.includes('Success!') || buffer.includes('Cleaned file saved') || 
-              buffer.includes('✅') || buffer.includes('saved to:')) {
+              buffer.includes('✅ Task') || buffer.includes('completed successfully') ||
+              buffer.includes('✅') || buffer.includes('saved to:') ||
+              buffer.includes('Schema generation complete')) {
             hasSuccessIndicator = true;
           }
         }
         
-        // If task succeeded (success indicator present) but stream failed, log warning but don't throw
-        if (hasSuccessIndicator && streamError && !hasError && (exitCode === null || exitCode === 0)) {
-          log(`\n✅ Task completed successfully (file saved), but response stream had an error.\n`);
-          log(`This is usually harmless - the file was created correctly.\n`);
+        // Final decision: prioritize exit code over error pattern matching
+        // If exit code is 0, the task succeeded regardless of warnings in output
+        if (exitCode === 0) {
+          // Task succeeded - clear any error flags
+          hasError = false;
+          log(`\n✅ Task completed successfully (exit code 0)\n`);
+        } else if (exitCode !== null && exitCode !== 0) {
+          // Exit code is non-zero - task failed
+          hasError = true;
+        }
+        
+        // If task succeeded (exit code 0 or success indicators) but stream failed, log warning but don't throw
+        if ((exitCode === 0 || (hasSuccessIndicator && exitCode === null)) && streamError && !hasError) {
+          log(`\n✅ Task completed successfully, but response stream had an error.\n`);
+          log(`This is usually harmless - the files were created correctly.\n`);
           // Continue as if successful
         } else if (hasError || (exitCode !== null && exitCode !== 0)) {
-          // Only throw if there's an actual error, not just a stream issue
+          // Only throw if there's an actual error
           throw new Error(`Task failed with exit code ${exitCode || 1}. Check console output above for details.`);
-        } else if (streamError && !hasSuccessIndicator) {
-          // Stream failed and no success indicator - treat as error
+        } else if (streamError && !hasSuccessIndicator && exitCode === null) {
+          // Stream failed, no success indicator, and no exit code - treat as error
           throw new Error(`Network error: ${streamError.message}. Check console output above for details.`);
         }
         
