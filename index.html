@@ -2819,17 +2819,31 @@
             • Review the generated CollectionPage schema<br>
             • Check debug log for any warnings</span>
           </li>
-          <li><strong>Save Schema (Optional):</strong><br>
+          <li><strong>Step 4 - Save Schema (Optional):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Save to alanranger-schema folder" to save as JSON<br>
             • Or copy the schema directly</span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Copy the generated schema<br>
-            • Paste into your blog index page header code injection<br>
-            • Or insert as a Code Block on the blog index page<br>
-            • Validate using Schema Validator tab</span>
+          <li><strong>Step 5 - Deploy to GitHub:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Export JSON & Deploy to GitHub" button<br>
+            • Schema file is automatically committed and pushed to GitHub<br>
+            • GitHub Pages auto-deploys schema to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
+            • <strong>Option A (Recommended):</strong> Add auto-fetch script to blog index page (see info box below)<br>
+            • <strong>Option B:</strong> Manually copy and paste schema into blog index page header code injection or Code Block</span>
           </li>
         </ol>
+      </div>
+      
+      <div style="background: #dbeafe; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 1rem; margin-bottom: 1rem;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.1rem;">✅ Auto-Fetch from GitHub Pages (Recommended)</h4>
+        <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
+          <strong>After deploying to GitHub (Step 5), you can add an auto-fetch script to your blog index page.</strong> This automatically loads the schema from GitHub Pages at <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code>.
+        </p>
+        <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
+          <strong>How it works:</strong> Add a Code Block to your blog index page with a script that fetches the schema JSON from GitHub Pages and injects it as JSON-LD. When you regenerate and deploy the schema, the blog index page automatically uses the updated schema—no manual copying or pasting needed!
+        </p>
+        <p style="margin: 0.75rem 0 0 0; color: #1e3a8a; font-size: 0.95rem; font-style: italic;">
+          <strong>Alternative:</strong> If you prefer, you can manually copy and paste the schema into the blog index page header code injection or a Code Block. This is a one-time setup since the blog index page is a single page.
+        </p>
       </div>
     </div>
 
@@ -3375,16 +3389,18 @@
             • Includes ItemList structure for blog posts<br>
             • Review the generated schema and check debug log</span>
           </li>
-          <li><strong>Save Schema (Optional):</strong><br>
+          <li><strong>Step 4 - Save Schema (Optional):</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
             • Click "Save to alanranger-schema folder" to save as JSON<br>
             • Or copy the schema directly</span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
+          <li><strong>Step 5 - Deploy to GitHub:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Copy the generated schema<br>
-            • Paste into blog index page header code injection<br>
-            • Or insert as a Code Block on the blog index page<br>
+            • Click "Export JSON & Deploy to GitHub" button<br>
+            • Schema file is automatically committed and pushed to GitHub<br>
+            • GitHub Pages auto-deploys schema to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
+            • <strong>Option A (Recommended):</strong> Add auto-fetch script to blog index page (fetches from GitHub Pages)<br>
+            • <strong>Option B:</strong> Manually copy and paste schema into blog index page header code injection or Code Block<br>
             • Validate using Schema Validator tab</span>
           </li>
         </ol>
@@ -3513,9 +3529,9 @@
       <ul>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/01-blog-posts.csv</code> - Export from Squarespace Blog</li>
       </ul>
-      <p><strong>Workflow:</strong> Export blog CSV ↽ Upload file ↽ Generate schema ↽ Save (optional) ↽ Deploy</p>
+      <p><strong>Workflow:</strong> Export blog CSV ↽ Upload file ↽ Generate schema ↽ Save (optional) ↽ Deploy to GitHub ↽ Add to Squarespace</p>
       <p><strong>Output:</strong> CollectionPage JSON-LD schema with ItemList structure for blog posts</p>
-      <p><strong>Deploy:</strong> Paste into blog index page header code injection or Code Block</p>
+      <p><strong>Deploy:</strong> Deploy to GitHub Pages via "Export JSON & Deploy to GitHub" button, then either: (A) Add auto-fetch script to blog index page, or (B) Manually paste schema into blog index page header code injection or Code Block</p>
 
       <h3> Landing / Service Pages</h3>
       <p><strong>Purpose:</strong> Generate structured data for service, category, and informational landing pages.</p>
