@@ -1445,8 +1445,8 @@
       </p>
     </div>
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('event')">Event Schema</button>
-      <button class="tab" onclick="switchTab('product')">Product Schema</button>
+      <button class="tab active" onclick="switchTab('product')">Product Schema</button>
+      <button class="tab" onclick="switchTab('event')">Event Schema</button>
       <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
       <button class="tab" onclick="switchTab('blogPosts')">Blog Posts</button>
       <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
@@ -1456,7 +1456,7 @@
     </div>
 
   <!-- Event Tab Content -->
-  <div id="eventTab" class="tab-content active">
+  <div id="eventTab" class="tab-content">
     <div class="instructions">
       <strong> Event Schema Generator v4.1 - Product+Event Hybrid Schema Generator</strong><br>
       <strong>What it does:</strong> Generates Schema.org compliant JSON-LD for workshops and courses using Product+Event hybrid schema (workshops/courses are both products AND events).<br><br>
@@ -1541,6 +1541,23 @@
       • Always validate your schema after deployment using the test URL tools below.
     </div>
 
+    <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 2px solid #ffc107;">
+      <h4 style="margin-top: 0; color: #856404;">⚠️ IMPORTANT: Generate Files First</h4>
+      <p style="margin: 0.5rem 0; font-weight: 600; color: #856404; font-size: 1rem;">
+        Before uploading files here, you must <strong>generate them in the Product Schema tab first</strong>:
+      </p>
+      <ol style="margin: 0.5rem 0; padding-left: 1.5rem; color: #856404;">
+        <li style="margin-bottom: 0.5rem;"><strong>Go to Product Schema tab</strong> (first tab at the top)</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Run Steps 1-3b</strong> to generate:
+          <ul style="margin-top: 0.25rem; padding-left: 1.25rem;">
+            <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> (from Step 2)</li>
+            <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> (from Step 3b)</li>
+          </ul>
+        </li>
+        <li style="margin-bottom: 0.5rem;"><strong>Then return to this Event Schema tab</strong> to upload the generated files</li>
+      </ol>
+    </div>
+
     <div style="margin-top: 1rem; padding: 1rem; background: #e6f3ff; border-radius: 8px; border: 1px solid #3182ce;">
       <h4 style="margin-top: 0; color: #1e40af;"> File Upload Guide</h4>
       <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Required Files:</p>
@@ -1549,11 +1566,12 @@
         <li style="margin-bottom: 0.5rem;"><strong>Mappings CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">event-product-mappings-*.csv</code> (from chat-bot ingest app)<br>
           <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚽ Required for offers and SKU - without it, events will show price = 0 errors</span></li>
       </ol>
-      <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Optional Files:</p>
+      <p style="margin: 0.5rem 0; font-weight: 600; color: #1e40af;">Optional Files (Generated in Product Schema Tab):</p>
       <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
         <li style="margin-bottom: 0.5rem;"><strong>Products Excel:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> for actual SKU values (prevents fallback to URL slug)<br>
-          <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚽ Without this: SKU will be extracted from URL slug (may exceed 40 chars and cause validation warnings)</span></li>
-        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> for review enrichment</li>
+          <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚽ Generated in Product Schema tab → Step 2. Without this: SKU will be extracted from URL slug (may exceed 40 chars and cause validation warnings)</span></li>
+        <li style="margin-bottom: 0.5rem;"><strong>Reviews CSV:</strong> Upload <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code> for review enrichment<br>
+          <span style="font-size: 1rem; font-weight: 600; color: #64748b;">⚽ Generated in Product Schema tab → Step 3b</span></li>
       </ol>
     </div>
 
@@ -1574,6 +1592,9 @@
       </label>
       <label for="productsExcelFile" style="display: block; margin-bottom: 0.75rem;">
         <strong>Products Excel (Optional - for actual SKU values):</strong><br>
+        <span style="display: block; font-size: 0.875rem; color: #dc2626; margin-top: 0.25rem; font-weight: 600;">
+          ⚽ Generate this file in Product Schema tab → Step 2 first!
+        </span>
         <input type="file" id="productsExcelFile" accept=".xlsx,.xls" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
           File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code><br>
@@ -1583,6 +1604,9 @@
       </label>
       <label for="reviewsCsvFile" style="display: block;">
         <strong>Reviews CSV (Optional - for review enrichment):</strong><br>
+        <span style="display: block; font-size: 0.875rem; color: #dc2626; margin-top: 0.25rem; font-weight: 600;">
+          ⚽ Generate this file in Product Schema tab → Step 3b first!
+        </span>
         <input type="file" id="reviewsCsvFile" accept=".csv" style="margin-top: 0.5rem; margin-left: 0;">
         <span style="display: block; font-size: 0.875rem; color: #856404; margin-top: 0.25rem;">
           File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
@@ -1839,13 +1863,27 @@
   </div>
 
   <!-- Product Tab Content -->
-  <div id="productTab" class="tab-content">
+  <div id="productTab" class="tab-content active">
     <div class="instructions">
       <strong> Product Schema Generator</strong><br><br>
       
       ✅ This tool works entirely offline in your browser.<br>
       ✅ Only includes structured data compliant with Google Rich Results and Merchant Center policies.<br>
       ✅ Automatically includes Schema Suppressor v1.3 to prevent duplicate Squarespace Product schemas.<br><br>
+      
+      <div style="margin-top: 1rem; padding: 1rem; background: #d1fae5; border-radius: 8px; border: 2px solid #10b981;">
+        <h4 style="margin-top: 0; color: #065f46;">📋 Important: Generated Files Are Used in Event Schema Tab</h4>
+        <p style="margin: 0.5rem 0; color: #065f46; font-size: 0.95rem;">
+          The files generated in Steps 2 and 3b below are <strong>required for the Event Schema tab</strong>:
+        </p>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; color: #065f46;">
+          <li><strong>Step 2 output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">02 – products_cleaned.xlsx</code> → Upload in Event Schema tab for SKU values</li>
+          <li><strong>Step 3b output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – combined_product_reviews.csv</code> → Upload in Event Schema tab for review enrichment</li>
+        </ul>
+        <p style="margin: 0.5rem 0 0 0; color: #065f46; font-size: 0.9rem; font-style: italic;">
+          After generating these files, switch to the <strong>Event Schema tab</strong> to use them.
+        </p>
+      </div>
       
       <strong> Complete Workflow - Step by Step:</strong><br>
       <div style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea; margin-top: 1rem; margin-bottom: 1rem;">
@@ -3037,6 +3075,7 @@
       <button onclick="downloadTemplateCSV()" class="secondary" style="margin-left: 0.5rem;">Download Template CSV</button>
       <button id="exportAllBtn" onclick="exportAllEnhanced()" class="secondary" style="margin-left: 0.5rem;" disabled>Export All Enhanced</button>
       <button id="saveAllBtn" onclick="saveAllToSupabase()" class="secondary" style="margin-left: 0.5rem;" disabled>Save All to Supabase</button>
+      <button id="forceSaveBtn" onclick="forceSaveAllToSupabase()" class="secondary" style="margin-left: 0.5rem; background: #48bb78; color: white; border-color: #48bb78;" title="Initialize Supabase and save all results (use if Save All button is disabled)">Force Save to Supabase</button>
 
     <div id="validatorProgress" style="display:none; margin-top: 1.5rem;">
       <div class="progress-bar">
@@ -4106,17 +4145,21 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
   
   // Initialize Supabase client (wait for library to load)
-  // Use window object to avoid conflicts with CDN-loaded supabase
-  // Don't declare supabase if CDN already created it - just assign to existing or create new
-  if (typeof supabase === 'undefined') {
-    var supabase = null;
-  }
+  // Use var instead of let to allow redeclaration if CDN already created supabase
+  // This prevents "Identifier 'supabase' has already been declared" error
+  var supabase = null;
   let supabaseAvailable = false;
   
   // Wait for Supabase library to load
   function initSupabase() {
+    // Check if CDN script loaded
+    if (typeof window.supabase === 'undefined') {
+      console.warn('⚠️ Supabase CDN script not loaded yet. Retrying...');
+      return false;
+    }
+    
     // Check for Supabase library loaded via CDN (UMD build)
-    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+    if (typeof window.supabase.createClient === 'function') {
       try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         window.supabaseClient = supabase; // Store in window for global access
@@ -4128,13 +4171,71 @@
           updateBulkButtons();
         }
         
+        // Hide any error messages
+        const errorMsg = document.getElementById('supabaseInitError');
+        if (errorMsg) errorMsg.style.display = 'none';
+        
         return true;
       } catch (error) {
-        console.error('Failed to initialize Supabase client:', error);
+        console.error('❌ Failed to initialize Supabase client:', error);
+        showSupabaseInitError(error);
+        return false;
+      }
+    } else {
+      console.error('❌ Supabase library loaded but createClient function not available');
+      showSupabaseInitError(new Error('Supabase createClient function not found'));
+      return false;
+    }
+  }
+  
+  // Show Supabase initialization error in UI
+  function showSupabaseInitError(error) {
+    // Check if error message already exists
+    let errorMsg = document.getElementById('supabaseInitError');
+    if (!errorMsg) {
+      errorMsg = document.createElement('div');
+      errorMsg.id = 'supabaseInitError';
+      errorMsg.style.cssText = 'background: #fee; border: 1px solid #fcc; color: #c33; padding: 1rem; margin: 1rem 0; border-radius: 4px;';
+      
+      const saveAllBtn = document.getElementById('saveAllBtn');
+      if (saveAllBtn && saveAllBtn.parentNode) {
+        saveAllBtn.parentNode.insertBefore(errorMsg, saveAllBtn);
       }
     }
-    return false;
+    
+    errorMsg.innerHTML = `
+      <strong>⚠️ Supabase Not Available</strong><br>
+      <small>Error: ${error.message || 'Failed to initialize'}</small><br>
+      <button onclick="retrySupabaseInit()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        🔄 Retry Initialization
+      </button>
+      <button onclick="manualSupabaseInit()" style="margin-top: 0.5rem; margin-left: 0.5rem; padding: 0.5rem 1rem; background: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        🔧 Manual Initialize
+      </button>
+    `;
+    errorMsg.style.display = 'block';
   }
+  
+  // Retry Supabase initialization
+  window.retrySupabaseInit = function() {
+    console.log('🔄 Retrying Supabase initialization...');
+    if (initSupabase()) {
+      console.log('✅ Retry successful!');
+    } else {
+      // Additional retries
+      setTimeout(initSupabase, 1000);
+      setTimeout(initSupabase, 3000);
+    }
+  };
+  
+  // Manual Supabase initialization (for console use)
+  window.manualSupabaseInit = function() {
+    if (typeof window.supabase === 'undefined') {
+      alert('Supabase CDN script not loaded. Please refresh the page.');
+      return false;
+    }
+    return initSupabase();
+  };
   
   // Try to initialize when script loads
   if (document.readyState === 'loading') {
@@ -4156,12 +4257,23 @@
   // Final retry after all scripts load
   window.addEventListener('load', function() {
     if (!supabaseAvailable) {
-      initSupabase();
+      console.log('🔄 Final attempt to initialize Supabase after page load...');
+      if (!initSupabase()) {
+        // More aggressive retries if still not initialized
+        setTimeout(() => {
+          if (!supabaseAvailable) {
+            console.warn('⚠️ Supabase still not initialized after page load. Showing error message.');
+            showSupabaseInitError(new Error('Supabase CDN script may not have loaded. Check network tab.'));
+          }
+        }, 2000);
+      }
     }
     // Load auto-run preference
     loadAutoRunPreference();
     // Load auto-save preference
     loadAutoSavePreference();
+    // Load validation results from previous session
+    loadValidationResultsFromStorage();
   });
   
   
@@ -12214,6 +12326,9 @@
       console.log('Updating table row with results...');
       updateTableRow(index, validationResults[index]);
       
+      // Auto-save to localStorage
+      saveValidationResultsToStorage();
+      
       if (typeof updateBulkButtons === 'function') {
         updateBulkButtons();
       }
@@ -18800,6 +18915,110 @@ ${minifiedJson}
   };
 
   let validationResults = [];
+  
+  // Auto-save validation results to localStorage
+  function saveValidationResultsToStorage() {
+    try {
+      if (!validationResults || validationResults.length === 0) {
+        return; // Don't save empty arrays
+      }
+      
+      // Create a simplified version for storage (remove large schema objects to save space)
+      const storageData = validationResults.map(result => ({
+        url: result.url,
+        schemaType: result.schemaType,
+        schemaFound: result.schemaFound,
+        valid: result.valid,
+        missingFields: result.missingFields || [],
+        warnings: result.warnings || [],
+        error: result.error,
+        validatorGoogleStatus: result.validatorGoogleStatus,
+        validatorSchemaOrgStatus: result.validatorSchemaOrgStatus,
+        notes: result.notes || '',
+        issuesList: result.issuesList || [],
+        // Store schema count but not full schemas to save space
+        schemaCount: result.schemas ? result.schemas.length : 0
+      }));
+      
+      localStorage.setItem('schemaValidatorResults', JSON.stringify(storageData));
+      console.log(`💾 Saved ${validationResults.length} validation results to localStorage`);
+    } catch (error) {
+      // Handle quota exceeded error gracefully
+      if (error.name === 'QuotaExceededError') {
+        console.warn('⚠️ localStorage quota exceeded. Results not saved. Consider exporting your results.');
+      } else {
+        console.warn('⚠️ Failed to save validation results to localStorage:', error);
+      }
+    }
+  }
+  
+  // Load validation results from localStorage
+  function loadValidationResultsFromStorage() {
+    try {
+      const stored = localStorage.getItem('schemaValidatorResults');
+      if (!stored) {
+        return false;
+      }
+      
+      const storedData = JSON.parse(stored);
+      if (!Array.isArray(storedData) || storedData.length === 0) {
+        return false;
+      }
+      
+      // Restore validation results
+      validationResults = storedData.map(item => ({
+        ...item,
+        schemas: [] // Schemas not stored to save space, will be regenerated if needed
+      }));
+      
+      console.log(`📂 Loaded ${validationResults.length} validation results from localStorage`);
+      
+      // Restore the table UI if results exist
+      if (validationResults.length > 0 && typeof updateBulkButtons === 'function') {
+        updateBulkButtons();
+        
+        // Show a message that results were restored
+        const resultsDiv = document.getElementById('validatorResults');
+        if (resultsDiv) {
+          resultsDiv.style.display = 'block';
+          const existingMsg = document.getElementById('restoredResultsMsg');
+          if (!existingMsg) {
+            const msg = document.createElement('div');
+            msg.id = 'restoredResultsMsg';
+            msg.style.cssText = 'background: #e6fffa; border: 1px solid #81e6d9; color: #234e52; padding: 0.75rem; margin: 1rem 0; border-radius: 4px;';
+            msg.innerHTML = `✅ Restored ${validationResults.length} validation results from previous session. <button onclick="clearRestoredResults()" style="margin-left: 1rem; padding: 0.25rem 0.5rem; background: #48bb78; color: white; border: none; border-radius: 3px; cursor: pointer;">Clear</button>`;
+            resultsDiv.insertBefore(msg, resultsDiv.firstChild);
+          }
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.warn('⚠️ Failed to load validation results from localStorage:', error);
+      return false;
+    }
+  }
+  
+  // Clear restored results
+  window.clearRestoredResults = function() {
+    if (confirm('Clear all validation results? This cannot be undone.')) {
+      validationResults = [];
+      localStorage.removeItem('schemaValidatorResults');
+      const resultsDiv = document.getElementById('validatorResults');
+      if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+        const tableBody = document.getElementById('resultsTableBody');
+        if (tableBody) {
+          tableBody.innerHTML = '';
+        }
+      }
+      const msg = document.getElementById('restoredResultsMsg');
+      if (msg) msg.remove();
+      if (typeof updateBulkButtons === 'function') {
+        updateBulkButtons();
+      }
+    }
+  };
 
   // Parse CSV and extract URLs
   function parseCSVForValidation(csvFile) {
@@ -21589,6 +21808,11 @@ ${minifiedJson}
     };
     
     console.log(`[✓] Stored result in validationResults[${index}]: schemaFound=${validationResults[index].schemaFound}, schemaType=${validationResults[index].schemaType}, error=${validationResults[index].error}`);
+    
+    // Auto-save to localStorage (throttled - save every 10 results to avoid performance issues)
+    if (index % 10 === 0 || index === validationResults.length - 1) {
+      saveValidationResultsToStorage();
+    }
     if (validationResults[index].inferredTypes && validationResults[index].inferredTypes.length > 0) {
       console.log(`[DEBUG] updateTableRow: Stored inferredTypes in validationResults[${index}]:`, validationResults[index].inferredTypes);
     }
@@ -22381,6 +22605,12 @@ ${minifiedJson}
         console.error('Error stack:', error.stack);
         addDebugLog(`   Stack: ${error.stack}`);
       }
+    } finally {
+      // Always save results to localStorage when validation completes (success or error)
+      if (validationResults && validationResults.length > 0) {
+        saveValidationResultsToStorage();
+        console.log(`💾 Saved ${validationResults.length} validation results to localStorage`);
+      }
     }
   }
   
@@ -22394,6 +22624,7 @@ ${minifiedJson}
   function updateBulkButtons() {
     const exportBtn = document.getElementById('exportAllBtn');
     const saveAllBtn = document.getElementById('saveAllBtn');
+    const forceSaveBtn = document.getElementById('forceSaveBtn');
     
     const hasResults = validationResults && validationResults.length > 0;
     
@@ -22405,7 +22636,12 @@ ${minifiedJson}
       saveAllBtn.disabled = !hasResults || !supabaseAvailable;
     }
     
-    console.log('Bulk buttons updated:', { hasResults, supabaseAvailable, exportEnabled: hasResults, saveEnabled: hasResults && supabaseAvailable });
+    // Force Save button is always enabled if there are results (it will initialize Supabase if needed)
+    if (forceSaveBtn) {
+      forceSaveBtn.disabled = !hasResults;
+    }
+    
+    console.log('Bulk buttons updated:', { hasResults, supabaseAvailable, exportEnabled: hasResults, saveEnabled: hasResults && supabaseAvailable, forceSaveEnabled: hasResults });
   }
   
   // Export all enhanced schemas
@@ -22549,6 +22785,136 @@ ${minifiedJson}
       saveAllBtn.disabled = false;
       saveAllBtn.textContent = 'Save All to Supabase';
     }
+  }
+  
+  // Force save: Initialize Supabase if needed, then save all results
+  async function forceSaveAllToSupabase() {
+    const forceSaveBtn = document.getElementById('forceSaveBtn');
+    if (!forceSaveBtn) return;
+    
+    if (!validationResults || validationResults.length === 0) {
+      alert('No validation results to save');
+      return;
+    }
+    
+    forceSaveBtn.disabled = true;
+    forceSaveBtn.textContent = 'Initializing...';
+    
+    try {
+      // Step 1: Try to initialize Supabase if not available
+      if (!supabaseAvailable || !supabase) {
+        console.log('🔄 Supabase not initialized. Attempting to initialize...');
+        
+        // Check if Supabase library is loaded
+        if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+          throw new Error('Supabase CDN script not loaded. Please refresh the page and try again.');
+        }
+        
+        // Initialize Supabase
+        try {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          window.supabaseClient = supabase;
+          supabaseAvailable = true;
+          console.log('✅ Supabase initialized successfully');
+          
+          // Hide error message if it exists
+          const errorMsg = document.getElementById('supabaseInitError');
+          if (errorMsg) errorMsg.style.display = 'none';
+          
+          // Update button states
+          if (typeof updateBulkButtons === 'function') {
+            updateBulkButtons();
+          }
+        } catch (initError) {
+          throw new Error('Failed to initialize Supabase: ' + initError.message);
+        }
+      }
+      
+      // Step 2: Save all results
+      forceSaveBtn.textContent = 'Saving...';
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+      
+      console.log(`💾 Starting to save ${validationResults.length} validation results...`);
+      
+      for (let i = 0; i < validationResults.length; i++) {
+        const result = validationResults[i];
+        if (!result || !result.url) {
+          console.warn(`⚠️ Skipping result ${i}: no URL`);
+          continue;
+        }
+        
+        try {
+          // Get validation statuses from DOM or result
+          const statuses = getValidationStatusesFromDOM(i, result);
+          const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
+          
+          // Upsert to Supabase
+          const { data, error } = await supabase
+            .from('schema_audit_logs')
+            .upsert({
+              url: result.url,
+              timestamp: new Date().toISOString(),
+              validator_google_status: statuses.googleStatus || ' Skipped',
+              validator_schemaorg_status: statuses.schemaOrgStatus || ' Skipped',
+              schema_type_detected: result.schemaType || null,
+              schema_json_raw: schemaJsonRaw,
+              schema_notes: statuses.notes || null
+            }, {
+              onConflict: 'url',
+              ignoreDuplicates: false
+            });
+          
+          if (error) {
+            throw error;
+          }
+          
+          successCount++;
+          
+          // Show progress every 50 records
+          if (successCount % 50 === 0) {
+            forceSaveBtn.textContent = `Saving... ${successCount}/${validationResults.length}`;
+            console.log(`💾 Progress: ${successCount}/${validationResults.length} saved...`);
+          }
+        } catch (error) {
+          errorCount++;
+          errors.push({ url: result.url, error: error.message });
+          console.error(`❌ Failed to save ${result.url}:`, error.message);
+        }
+      }
+      
+      // Step 3: Show results
+      console.log('\n' + '='.repeat(60));
+      console.log(`✅ Save Complete!`);
+      console.log(`   Success: ${successCount}`);
+      console.log(`   Errors: ${errorCount}`);
+      console.log('='.repeat(60));
+      
+      if (errors.length > 0 && errors.length <= 10) {
+        console.log('\nFirst 10 errors:');
+        errors.slice(0, 10).forEach(e => console.log(`  - ${e.url}: ${e.error}`));
+      }
+      
+      showSaveResultToast(successCount, errorCount);
+      
+      // Update regular save button state
+      if (typeof updateBulkButtons === 'function') {
+        updateBulkButtons();
+      }
+      
+    } catch (error) {
+      console.error('❌ Force save error:', error);
+      alert('Failed to save results: ' + error.message + '\n\nPlease check the console for details.');
+    } finally {
+      forceSaveBtn.disabled = false;
+      forceSaveBtn.textContent = 'Force Save to Supabase';
+    }
+  }
+  
+  // Make function globally available
+  if (typeof window !== 'undefined') {
+    window.forceSaveAllToSupabase = forceSaveAllToSupabase;
   }
 
   // Generate enhanced schema
