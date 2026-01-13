@@ -1651,12 +1651,22 @@
       <!-- IMPORTANT: where the schema is saved and how Squarespace loads it -->
       <div style="margin-top: 1rem; padding: 1rem 1.25rem; background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 10px;">
         <div style="font-size: 1.05rem; font-weight: 800; color: #0c4a6e; margin-bottom: 0.5rem;">
-          ⚠️ IMPORTANT — Where this schema is saved + how Squarespace loads it
+          ⚠️ IMPORTANT — Where to Save Schema Files for GitHub Pages Deployment
         </div>
         <div style="font-size: 0.95rem; color: #0f172a; line-height: 1.6;">
+          <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 2px solid #0ea5e9; border-radius: 8px;">
+            <strong style="color: #dc2626; font-size: 1rem;">📁 Save Location (Required for GitHub Pages):</strong><br>
+            <code style="background: #e0f2fe; padding: 6px 10px; border-radius: 6px; font-size: 1rem; font-weight: 700; display: inline-block; margin-top: 0.5rem;">G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema</code>
+            <p style="margin: 0.75rem 0 0 0; color: #1e40af; font-weight: 600;">
+              ✅ When you click "Export JSON File Only" or use the file save dialog, navigate to this folder and save <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 0.95rem; font-weight: 700;">lessons-schema.json</code> here.
+            </p>
+            <p style="margin: 0.5rem 0 0 0; color: #dc2626; font-size: 0.9rem; font-weight: 600;">
+              ⚠️ Don't save to Downloads! The file must be in the <code>alanranger-schema</code> folder for GitHub Pages deployment.
+            </p>
+          </div>
           <div style="margin-bottom: 0.5rem;">
-            <strong>Saved to (and deployed from) this GitHub-backed folder:</strong><br>
-            <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.95rem; font-weight: 700;">G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema</code>
+            <strong>After saving, deploy to GitHub:</strong><br>
+            Use the "Export JSON & Deploy to GitHub" button (Electron app only) to automatically commit and push to GitHub, or manually commit/push the file from the <code>alanranger-schema</code> folder.
           </div>
           <div style="margin-bottom: 0.75rem;">
             Squarespace loads the JSON dynamically via these <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 6px;">src=</code> endpoints:
@@ -1712,12 +1722,15 @@
     <div id="githubHostingVerification" style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
       <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 600; color: #1f2937;">🔍 GitHub Schema Hosting Verification</h4>
       <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 4px; border-left: 3px solid #0369a1;">
-        <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location:</strong></p>
+        <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #1e40af; font-weight: 500;"><strong>📁 Save Location (Required for GitHub Pages):</strong></p>
         <p style="margin: 0; font-size: 0.8rem; color: #1e3a8a; font-family: monospace; word-break: break-all;">
           G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema
         </p>
         <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #475569;">
           Save <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">lessons-schema.json</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">workshops-schema.json</code> to this folder for GitHub Pages hosting.
+        </p>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #dc2626; font-weight: 600;">
+          ⚠️ When the file save dialog opens, navigate to this folder (don't save to Downloads!). The file must be in <code>alanranger-schema</code> for deployment.
         </p>
       </div>
       <div style="margin-bottom: 0.75rem; padding: 0.5rem; background: #f9fafb; border-radius: 4px;">
