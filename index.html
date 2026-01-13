@@ -18776,9 +18776,56 @@ ${minifiedJson}
 
     // In Electron mode, the file was already created by Step 3b automatically
     // The Python script will automatically find and use: 03 – combined_product_reviews.csv
+    // But we should validate that required files exist before running
     if (isElectronMode && !fileToProcess) {
       console.log("ℹ Electron mode: Using automatically created file from Step 3b");
       console.log("   Expected file: shared-resources/csv processed/03 – combined_product_reviews.csv");
+      
+      // Validate required files exist before running Step 4
+      try {
+        const validationResponse = await fetch(`http://localhost:${serverPort}/validate-step4`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        
+        if (validationResponse.ok) {
+          const validation = await validationResponse.json();
+          if (!validation.valid) {
+            const missingFiles = validation.missingFiles || [];
+            const errorMsg = `❌ Step 4 cannot run - required files are missing:\n\n${missingFiles.map(f => `• ${f}`).join('\n')}\n\nPlease complete Steps 2 and 3b first to generate these files.`;
+            
+            if (output) {
+              output.value = errorMsg;
+              output.style.display = 'block';
+            }
+            
+            const statusText = document.getElementById('status-step4');
+            if (statusText) {
+              statusText.textContent = '❌ Missing required files';
+              statusText.style.color = '#dc3545';
+            }
+            
+            updateStepStatus('4', 'error', 'Missing Files');
+            
+            showStepErrorModal(
+              4,
+              'Generate Product Schema',
+              errorMsg,
+              [
+                'Complete Step 2 to generate: 02 – products_cleaned.xlsx',
+                'Complete Step 3b to generate: 03 – combined_product_reviews.csv',
+                'Verify files exist in: shared-resources/csv processed/',
+                'Then try Step 4 again'
+              ]
+            );
+            return;
+          }
+        }
+      } catch (validationError) {
+        console.warn('File validation check failed, proceeding anyway:', validationError);
+        // Continue if validation endpoint doesn't exist yet
+      }
     } else if (fileToProcess) {
       const fileName = fileToProcess.name;
       // Check if file needs to be saved to workflow directory first (browser mode only)
@@ -24779,12 +24826,23 @@ exit`;
             ];
           }
         } else {
-          troubleshootingSteps = [
-            'Check the console output above for detailed error messages',
-            'Verify all required input files exist',
-            'Ensure Python 3.10+ is installed',
-            'Check that you have write permissions to the output folder'
-          ];
+          // Step 4 specific troubleshooting
+          if (stepId === 4) {
+            troubleshootingSteps = [
+              'Verify Step 2 completed: Check that 02 – products_cleaned.xlsx exists in shared-resources/csv processed/',
+              'Verify Step 3b completed: Check that 03 – combined_product_reviews.csv exists in shared-resources/csv processed/',
+              'Check the console output above for detailed error messages',
+              'Ensure Python 3.10+ is installed',
+              'Check that you have write permissions to the output folder (shared-resources/outputs/schema/products/)'
+            ];
+          } else {
+            troubleshootingSteps = [
+              'Check the console output above for detailed error messages',
+              'Verify all required input files exist',
+              'Ensure Python 3.10+ is installed',
+              'Check that you have write permissions to the output folder'
+            ];
+          }
         }
         
         setTimeout(() => {
