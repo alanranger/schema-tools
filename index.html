@@ -24415,14 +24415,18 @@ exit`;
                 const exitMatch = line.match(/exit code (\d+)/i);
                 if (exitMatch) {
                   exitCode = parseInt(exitMatch[1]);
-                  // Only set hasError if exit code is non-zero
-                  if (exitCode !== 0) {
+                  // Exit code 0 means success - clear any error flags
+                  if (exitCode === 0) {
+                    hasError = false;
+                  } else if (exitCode !== 0) {
                     hasError = true;
                   }
                 }
                 
                 // Check for success indicators (file saved, task completed)
                 if (line.includes('Success!') || line.includes('Cleaned file saved') || 
+                    line.includes('✅ Task') || line.includes('completed successfully') ||
+                    line.includes('Schema generation complete') ||
                     line.includes('✅') || line.includes('complete') || 
                     line.includes('saved to:') || line.includes('File saved')) {
                   hasSuccessIndicator = true;
@@ -24432,12 +24436,17 @@ exit`;
                   }
                 }
                 
-                // Check for error indicators
-                if (line.includes('❌') || line.includes('failed') || line.includes('Failed') || 
-                    line.includes('exit code 1') || line.includes('exit code 2') || 
-                    line.includes('Error:') || line.includes('ERROR:') ||
-                    line.includes('FAILED:')) {
-                  hasError = true;
+                // Check for error indicators - but only if exit code hasn't been confirmed as 0
+                // Warnings (⚠️) and validation errors logged during processing are not fatal
+                if (exitCode === null || exitCode !== 0) {
+                  // Only treat as error if it's a clear failure message, not warnings or logged errors
+                  if (line.includes('❌ Task') || line.includes('Task failed') || 
+                      line.includes('Task \'') && line.includes('failed!') ||
+                      line.includes('exit code 1') || line.includes('exit code 2')) {
+                    hasError = true;
+                  }
+                  // Don't treat validation warnings (⚠️) or processing errors (❌ ERROR:) as fatal
+                  // The script will report its actual exit code at the end
                 }
               }
             }
