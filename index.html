@@ -4197,6 +4197,11 @@
   
   // Wait for Supabase library to load
   function initSupabase() {
+    // If already initialized, return true
+    if (supabaseAvailable && supabase) {
+      return true;
+    }
+    
     // Check if CDN script loaded
     if (typeof window.supabase === 'undefined') {
       console.warn('⚠️ Supabase CDN script not loaded yet. Retrying...');
@@ -4210,6 +4215,18 @@
         window.supabaseClient = supabase; // Store in window for global access
         supabaseAvailable = true;
         console.log('✅ Supabase client initialized successfully');
+        
+        // Test connection by making a simple query
+        // This helps catch authentication/connection issues early
+        supabase.from('page_html').select('url').limit(1).then(({ error }) => {
+          if (error) {
+            console.warn('⚠️ Supabase connection test returned error (may be normal if table is empty):', error.message);
+          } else {
+            console.log('✅ Supabase connection test successful');
+          }
+        }).catch(err => {
+          console.warn('⚠️ Supabase connection test failed:', err.message);
+        });
         
         // Update bulk buttons state when Supabase is available
         if (typeof updateBulkButtons === 'function') {
@@ -4286,16 +4303,20 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       if (!initSupabase()) {
-        // Retry after delays
+        // Retry after delays with more attempts
         setTimeout(initSupabase, 500);
-        setTimeout(initSupabase, 1500);
+        setTimeout(initSupabase, 1000);
+        setTimeout(initSupabase, 2000);
+        setTimeout(initSupabase, 3000);
       }
     });
   } else {
     if (!initSupabase()) {
-      // Retry after delays
+      // Retry after delays with more attempts
       setTimeout(initSupabase, 500);
-      setTimeout(initSupabase, 1500);
+      setTimeout(initSupabase, 1000);
+      setTimeout(initSupabase, 2000);
+      setTimeout(initSupabase, 3000);
     }
   }
   
@@ -4303,15 +4324,20 @@
   window.addEventListener('load', function() {
     if (!supabaseAvailable) {
       console.log('🔄 Final attempt to initialize Supabase after page load...');
-      if (!initSupabase()) {
-        // More aggressive retries if still not initialized
-        setTimeout(() => {
-          if (!supabaseAvailable) {
-            console.warn('⚠️ Supabase still not initialized after page load. Showing error message.');
-            showSupabaseInitError(new Error('Supabase CDN script may not have loaded. Check network tab.'));
-          }
-        }, 2000);
-      }
+      // More aggressive retries
+      let retryCount = 0;
+      const maxRetries = 5;
+      const retryInterval = setInterval(() => {
+        retryCount++;
+        if (initSupabase()) {
+          clearInterval(retryInterval);
+          console.log('✅ Supabase initialized after page load');
+        } else if (retryCount >= maxRetries) {
+          clearInterval(retryInterval);
+          console.warn('⚠️ Supabase still not initialized after page load. Showing error message.');
+          showSupabaseInitError(new Error('Supabase CDN script may not have loaded. Check network tab.'));
+        }
+      }, 1000);
     }
     // Load auto-run preference
     loadAutoRunPreference();
@@ -9824,6 +9850,16 @@
     if (!url) return null;
     
     // PRIORITY 1: Try Supabase (already stored, more reliable, no CORS issues)
+    // If Supabase is not available, try to initialize it once
+    if (!supabaseAvailable || !supabase) {
+      // Try to initialize Supabase if not already available
+      if (typeof initSupabase === 'function') {
+        initSupabase();
+        // Wait a moment for initialization
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
     if (supabaseAvailable && supabase) {
       try {
         const html = await fetchPageHtmlForUrl(url);
@@ -10509,6 +10545,37 @@
 
     blogPosts_log(' Starting blog post schema generation (individual files)...');
     blogPosts_log(`   Processing ${blogPostsData.length} blog posts`);
+
+    // CRITICAL: Ensure Supabase is initialized before generation starts
+    if (!supabaseAvailable || !supabase) {
+      blogPosts_log('   [Supabase] Initializing Supabase connection...');
+      let initAttempts = 0;
+      const maxAttempts = 5;
+      
+      while ((!supabaseAvailable || !supabase) && initAttempts < maxAttempts) {
+        initAttempts++;
+        blogPosts_log(`   [Supabase] Initialization attempt ${initAttempts}/${maxAttempts}...`);
+        
+        // Try to initialize
+        if (initSupabase()) {
+          blogPosts_log('   ✅ [Supabase] Connection established successfully!');
+          break;
+        }
+        
+        // Wait before retry (exponential backoff)
+        if (initAttempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * initAttempts));
+        }
+      }
+      
+      if (!supabaseAvailable || !supabase) {
+        blogPosts_log('   ⚠️ [Supabase] Could not establish connection after multiple attempts');
+        blogPosts_log('   ⚠️ [Supabase] Enhanced schemas (HowTo, FAQ, ImageObject) will be skipped');
+        blogPosts_log('   ⚠️ [Supabase] Core schemas (WebPage, BlogPosting, BreadcrumbList) will still be generated');
+      }
+    } else {
+      blogPosts_log('   ✅ [Supabase] Connection already established');
+    }
 
     const progressContainer = document.getElementById('blogPostsProgress');
     const progressText = document.getElementById('blogPostsProgressText');
