@@ -1921,13 +1921,29 @@
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
             • Includes Schema Suppressor to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema.json</code> files</span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Copy schema from generated HTML files<br>
-            • Paste into Squarespace product pages<br>
-            • Validate using Schema Validator tab</span>
+          <li><strong>Step 5 - Deploy to GitHub:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Export JSON Files & Deploy to GitHub" button<br>
+            • Schema files are automatically committed and pushed to GitHub<br>
+            • GitHub Pages auto-deploys schemas to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/</code><br>
+            • <strong>No manual pasting required!</strong> Squarespace product pages auto-fetch schemas from GitHub Pages</span>
           </li>
+        </ol>
+      </div>
+      
+      <div style="background: #dbeafe; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 1rem; margin-bottom: 1rem;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.1rem;">✅ Auto-Fetch from GitHub Pages (No Manual Pasting Required)</h4>
+        <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
+          <strong>Your Squarespace product pages already have Code Blocks that auto-fetch schemas from GitHub Pages.</strong> When you deploy schemas to GitHub (Step 5), they automatically become available at <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/</code>.
+        </p>
+        <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
+          <strong>How it works:</strong> Each product page includes a Code Block with an auto-fetch script that loads the schema JSON from GitHub Pages. When you regenerate and deploy schemas, Squarespace automatically uses the updated schemas—no manual copying or pasting needed!
+        </p>
+        <p style="margin: 0.75rem 0 0 0; color: #1e3a8a; font-size: 0.95rem; font-style: italic;">
+          <strong>Why this is better:</strong> Centralized schema management means you only need to deploy once, and all product pages automatically get the latest schemas with reviews and ratings.
+        </p>
+      </div>
         </ol>
       </div>
       
