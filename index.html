@@ -3720,7 +3720,9 @@
   window.switchTab = switchTab;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" 
+        onload="console.log('✅ Supabase CDN script loaded'); if (window.supabase) { console.log('✅ window.supabase is available:', typeof window.supabase); } else { console.error('❌ window.supabase is not available after script load'); }"
+        onerror="console.error('❌ Failed to load Supabase CDN script');"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
@@ -7469,7 +7471,7 @@
     }
   }
 
-  async function buildEnrichedBlogPosting(csvRow) {
+  async function buildEnrichedBlogPosting(csvRow, providedHtml = null, providedPlainText = null) {
     //  13. URL normalization - remove trailing slash (Google prefers canonical without slash)
     let url = csvRow.url;
     if (url && url.endsWith('/')) {
@@ -7477,13 +7479,14 @@
     }
     
     let entity = null;
-    let html = null;
+    let html = providedHtml; // Use provided HTML if available
     let chunks = [];
 
     // Log Supabase connection status
-    blogPosts_log(`   [Supabase] Connection check - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}, url: ${!!url}`);
+    blogPosts_log(`   [Supabase] Connection check - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}, url: ${!!url}, providedHtml: ${!!providedHtml}`);
     
-    if (supabaseAvailable && supabase && url) {
+    // Only fetch from Supabase if HTML wasn't already provided
+    if (!html && supabaseAvailable && supabase && url) {
       blogPosts_log(`   [Supabase] Fetching entity for: ${url}`);
       const [entityResult, htmlResult, chunksResult] = await Promise.all([
         fetchPageEntityForUrl(url),
@@ -7494,8 +7497,17 @@
       html = htmlResult;
       chunks = chunksResult || [];
       blogPosts_log(`   [Supabase] Entity fetch result: ${entity ? 'found' : 'not found'}`);
-    } else {
-      blogPosts_log(`   [Supabase] Skipping fetch - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}`);
+    } else if (!html && url) {
+      // Fallback: Try to fetch HTML from public URL if Supabase not available
+      blogPosts_log(`   [Supabase] Not available - trying public URL fetch as fallback`);
+      html = await fetchHtmlForDetection(url);
+      if (html) {
+        blogPosts_log(`   [Supabase] Fallback successful - fetched HTML from public URL (${html.length} chars)`);
+      } else {
+        blogPosts_log(`   [Supabase] Fallback failed - could not fetch HTML from public URL`);
+      }
+    } else if (html) {
+      blogPosts_log(`   [Supabase] Using provided HTML (${html.length} chars) - skipping Supabase fetch`);
     }
 
     const title = (entity && entity.title) || csvRow.title;
@@ -7521,8 +7533,15 @@
       .join(' ');
 
     // Extract FULL articleBody (HTML stripped, then navigation cleaned)
-    const articleBodySource = html || chunksText || '';
-    let articleBodyRaw = stripHtmlToText(articleBodySource);
+    // Use provided plainText if available (already extracted from HTML), otherwise extract from HTML or chunks
+    let articleBodyRaw = '';
+    if (providedPlainText) {
+      articleBodyRaw = providedPlainText;
+      blogPosts_log(`   [ArticleBody] Using provided plainText (${articleBodyRaw.length} chars)`);
+    } else {
+      const articleBodySource = html || chunksText || '';
+      articleBodyRaw = stripHtmlToText(articleBodySource);
+    }
     
     // CRITICAL: Clean articleBody to remove ALL navigation/menu pollution
     let articleBody = cleanFullArticleBody(articleBodyRaw, title);
@@ -10801,7 +10820,8 @@
         // ============================================
         
         // Get blogPosting object for additional schemas (uses row with updated imageUrl)
-        const blogPosting = await buildEnrichedBlogPosting(row);
+        // Pass the already-fetched HTML to avoid re-fetching from Supabase
+        const blogPosting = await buildEnrichedBlogPosting(row, html, plainText);
         
         // CRITICAL: Only generate additional schemas if HTML was fetched (same as single URL mode)
         if (html && blogPosting) {
