@@ -11992,7 +11992,7 @@
     window.open('https://search.google.com/test/rich-results?url=' + encodeURIComponent(blogUrl), '_blank');
   }
 
-  function saveBlogSchemaToFile() {
+  async function saveBlogSchemaToFile() {
     const scriptWrapped = document.getElementById('blogSchemaCode').textContent;
     if (!scriptWrapped || scriptWrapped.trim().length === 0) {
       alert('No schema generated yet. Please generate the schema first.');
@@ -12016,30 +12016,18 @@
       // Validate JSON
       JSON.parse(schemaCode);
 
-      // Check if we're in Electron mode (can write directly to file system)
-      if (typeof window.require !== 'undefined' || typeof require !== 'undefined') {
+      // Check if we're in Electron mode (use Electron API)
+      if (window.electronAPI && window.electronAPI.isElectron && window.electronAPI.writeFile) {
         try {
-          const fs = typeof window.require !== 'undefined' ? window.require('fs') : require('fs');
-          const path = typeof window.require !== 'undefined' ? window.require('path') : require('path');
-          const { shell } = typeof window.require !== 'undefined' ? window.require('electron') : require('electron');
+          const filePath = `${githubFolderPath}\\${fileName}`;
+          
+          // Write file directly using Electron API
+          await window.electronAPI.writeFile(filePath, schemaCode);
 
-          // Ensure directory exists
-          const repoDir = path.join(githubFolderPath);
-          if (!fs.existsSync(repoDir)) {
-            fs.mkdirSync(repoDir, { recursive: true });
-          }
+          blogLog(`✅ Saved blog schema to: ${filePath}`);
+          blogLog(`   Folder: ${githubFolderPath}`);
 
-          // Write file directly to root of repository (JSON only, no script tags)
-          const filePath = path.join(repoDir, fileName);
-          fs.writeFileSync(filePath, schemaCode, 'utf-8');
-
-          // Open folder in file explorer
-          shell.showItemInFolder(filePath);
-
-          blogLog(` Saved blog schema to: ${filePath}`);
-          blogLog(` Folder opened in Explorer`);
-
-          alert(`✅ Successfully saved ${fileName} to alanranger-schema folder!\n\nFolder opened in Explorer.`);
+          alert(`✅ Successfully saved ${fileName} to alanranger-schema folder!\n\nFile: ${filePath}\n\n⚠️ IMPORTANT: Navigate to this folder when saving (not Downloads!)`);
           return;
         } catch (electronError) {
           console.warn('Electron file system access failed, falling back to download:', electronError);
@@ -12047,7 +12035,7 @@
         }
       }
 
-      // Fallback: Download file (JSON only, no script tags)
+      // Fallback: Use browser download (but warn user about default location)
       const blob = new Blob([schemaCode], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -12058,8 +12046,9 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      blogLog(` Downloaded ${fileName} (fallback mode)`);
-      alert(`✅ Downloaded ${fileName}\n\nIn browser mode, files are downloaded to your Downloads folder.\n\nTo save directly to the alanranger-schema folder, use the Electron app.`);
+      blogLog(`⚠️ Downloaded ${fileName} to Downloads folder (browser mode)`);
+      blogLog(`   ⚠️ IMPORTANT: Navigate to alanranger-schema folder when saving!`);
+      alert(`⚠️ File downloaded to Downloads folder (browser mode)\n\n📁 CORRECT SAVE LOCATION:\n${githubFolderPath}\n\n⚠️ When the save dialog opens, navigate to the alanranger-schema folder (not Downloads!)\n\n💡 Tip: Use the Electron app for direct save to the correct folder.`);
     } catch (error) {
       blogLog(`❌ Error saving file: ${error.message}`, 'error');
       alert(`Error saving file: ${error.message}`);
