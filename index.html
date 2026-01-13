@@ -4202,14 +4202,28 @@
       return true;
     }
     
-    // Check if CDN script loaded
-    if (typeof window.supabase === 'undefined') {
-      console.warn('⚠️ Supabase CDN script not loaded yet. Retrying...');
+    // Check if CDN script is in the DOM
+    const supabaseScript = document.querySelector('script[src*="supabase"]');
+    if (!supabaseScript) {
+      console.error('❌ Supabase CDN script tag not found in DOM');
+      return false;
+    }
+    
+    // Check if CDN script loaded - must be defined AND not null AND be an object
+    if (typeof window.supabase === 'undefined' || window.supabase === null) {
+      console.warn('⚠️ Supabase CDN script not loaded yet (window.supabase is ' + (window.supabase === null ? 'null' : 'undefined') + '). Retrying...');
+      return false;
+    }
+    
+    // Additional check: window.supabase must be an object (not a primitive)
+    if (typeof window.supabase !== 'object') {
+      console.error('❌ window.supabase exists but is not an object (type: ' + typeof window.supabase + ')');
       return false;
     }
     
     // Check for Supabase library loaded via CDN (UMD build)
-    if (typeof window.supabase.createClient === 'function') {
+    // Must be an object with createClient function
+    if (window.supabase && typeof window.supabase === 'object' && typeof window.supabase.createClient === 'function') {
       try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         window.supabaseClient = supabase; // Store in window for global access
@@ -4244,8 +4258,12 @@
         return false;
       }
     } else {
-      console.error('❌ Supabase library loaded but createClient function not available');
-      showSupabaseInitError(new Error('Supabase createClient function not found'));
+      // Provide detailed error message about what's wrong
+      const supabaseType = typeof window.supabase;
+      const hasCreateClient = window.supabase && typeof window.supabase.createClient;
+      const errorMsg = `Supabase library issue: window.supabase is ${supabaseType === 'object' ? (window.supabase === null ? 'null' : 'object') : supabaseType}, createClient is ${hasCreateClient}`;
+      console.error(`❌ ${errorMsg}`);
+      showSupabaseInitError(new Error(errorMsg));
       return false;
     }
   }
