@@ -9742,9 +9742,10 @@
    * Generate WebPage schema ONLY (for <slug>_schema.json)
    * SPEC: This file must contain ONLY WebPage schema, no @graph, no BlogPosting, no ImageObject, no BreadcrumbList
    */
-  async function generateWebPageSchema(csvRow) {
+  async function generateWebPageSchema(csvRow, providedHtml = null) {
     // Build a CLEAN WebPage object for <slug>_schema.json (no @graph, no extra types)
-    const blogPosting = await buildEnrichedBlogPosting(csvRow);
+    // Pass HTML to avoid re-fetching if already available
+    const blogPosting = await buildEnrichedBlogPosting(csvRow, providedHtml);
     const url = csvRow.url;
     const WEBSITE_ID = 'https://www.alanranger.com/#website';
     const webPageId = `${url}#webpage`;
@@ -9774,9 +9775,10 @@
    * Generate BlogPosting schema ONLY (standalone, no @graph)
    * SPEC: BlogPosting must be emitted separately, not in _schema.json
    */
-  async function generateBlogPostingSchema(csvRow) {
+  async function generateBlogPostingSchema(csvRow, providedHtml = null) {
     // Build a CLEAN BlogPosting object for <slug>_blogposting.json (no extra schemas)
-    const blogPosting = await buildEnrichedBlogPosting(csvRow);
+    // Pass HTML to avoid re-fetching if already available
+    const blogPosting = await buildEnrichedBlogPosting(csvRow, providedHtml);
     const url = csvRow.url;
     const blogPostingId = `${url}#blogposting`;
     const ORG_ID = 'https://www.alanranger.com/#org';
@@ -10607,8 +10609,8 @@
       
       if (!supabaseAvailable || !supabase) {
         blogPosts_log('   ⚠️ [Supabase] Could not establish connection after multiple attempts');
-        blogPosts_log('   ⚠️ [Supabase] Enhanced schemas (HowTo, FAQ, ImageObject) will be skipped');
-        blogPosts_log('   ⚠️ [Supabase] Core schemas (WebPage, BlogPosting, BreadcrumbList) will still be generated');
+        blogPosts_log('   ℹ️ [Supabase] Will use public URL fallback for HTML fetching');
+        blogPosts_log('   ✅ [Supabase] All schemas (WebPage, BlogPosting, BreadcrumbList, HowTo, FAQ, ImageObject) will be generated');
       }
     } else {
       blogPosts_log('   ✅ [Supabase] Connection already established');
@@ -10689,7 +10691,8 @@
         
         // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
         // Now uses row with updated imageUrl from HTML extraction
-        const webPageSchema = await generateWebPageSchema(row);
+        // Pass HTML to avoid re-fetching
+        const webPageSchema = await generateWebPageSchema(row, html);
         const webPageFileName = `${slug}_schema.json`;
         const webPageJson = JSON.stringify(webPageSchema, null, 2);
         
@@ -10733,7 +10736,8 @@
         }
         
         // SPEC: Generate BlogPosting schema (standalone, separate from WebPage)
-        const blogPostingSchema = await generateBlogPostingSchema(row);
+        // Pass HTML to avoid re-fetching
+        const blogPostingSchema = await generateBlogPostingSchema(row, html);
         const blogPostingFileName = `${slug}_blogposting.json`;
         const blogPostingJson = JSON.stringify(blogPostingSchema, null, 2);
         
