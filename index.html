@@ -4192,9 +4192,9 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
   
   // Initialize Supabase client (wait for library to load)
-  // Use var instead of let to allow redeclaration if CDN already created supabase
-  // This prevents "Identifier 'supabase' has already been declared" error
-  var supabase = null;
+  // IMPORTANT: use `let` so we do not overwrite `window.supabase` from the CDN bundle.
+  // A global `var supabase = ...` aliases window.supabase and breaks createClient detection.
+  let supabase = null;
   let supabaseAvailable = false;
   
   // Wait for Supabase library to load
