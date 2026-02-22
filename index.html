@@ -4192,15 +4192,14 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
   
   // Initialize Supabase client (wait for library to load)
-  // IMPORTANT: use `let` so we do not overwrite `window.supabase` from the CDN bundle.
-  // A global `var supabase = ...` aliases window.supabase and breaks createClient detection.
-  let supabase = null;
+  // Keep the client handle separate from the CDN global `window.supabase`.
+  let supabaseClient = null;
   let supabaseAvailable = false;
   
   // Wait for Supabase library to load
   function initSupabase() {
     // If already initialized, return true
-    if (supabaseAvailable && supabase) {
+    if (supabaseAvailable && supabaseClient) {
       return true;
     }
     
@@ -4227,14 +4226,14 @@
     // Must be an object with createClient function
     if (window.supabase && typeof window.supabase === 'object' && typeof window.supabase.createClient === 'function') {
       try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        window.supabaseClient = supabase; // Store in window for global access
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabaseClient = supabaseClient; // Store in window for global access
         supabaseAvailable = true;
         console.log('✅ Supabase client initialized successfully');
         
         // Test connection by making a simple query
         // This helps catch authentication/connection issues early
-        supabase.from('page_html').select('url').limit(1).then(({ error }) => {
+        supabaseClient.from('page_html').select('url').limit(1).then(({ error }) => {
           if (error) {
             console.warn('⚠️ Supabase connection test returned error (may be normal if table is empty):', error.message);
           } else {
@@ -6611,15 +6610,15 @@
 
   // Supabase-backed helpers for blog enrichment
   async function fetchPageEntityForUrl(url) {
-    if (!supabaseAvailable || !supabase || !url) {
-      blogPosts_log(`   [Supabase] Not available - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}, url: ${!!url}`);
+    if (!supabaseAvailable || !supabaseClient || !url) {
+      blogPosts_log(`   [Supabase] Not available - supabaseAvailable: ${supabaseAvailable}, supabaseClient: ${!!supabaseClient}, url: ${!!url}`);
       return null;
     }
     try {
       // Normalize URL: remove trailing slash for consistent matching
       const normalizedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
       
-      const query = supabase
+      const query = supabaseClient
         .from('page_entities')
         .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
         .eq('page_url', normalizedUrl)
@@ -6635,7 +6634,7 @@
       if (!data) {
         blogPosts_log(`   [Supabase] No entity found for URL: ${normalizedUrl} (kind=article)`);
         // Try without kind filter as fallback
-        const fallbackQuery = supabase
+        const fallbackQuery = supabaseClient
           .from('page_entities')
           .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
           .eq('page_url', normalizedUrl)
@@ -6657,11 +6656,11 @@
   }
 
   async function fetchPageHtmlForUrl(url) {
-    if (!supabaseAvailable || !supabase || !url) {
+    if (!supabaseAvailable || !supabaseClient || !url) {
       return null;
     }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('page_html')
         .select('html_content')
         .eq('url', url)
@@ -6678,11 +6677,11 @@
   }
 
   async function fetchPageChunksForUrl(url, limit = 5) {
-    if (!supabaseAvailable || !supabase || !url) {
+    if (!supabaseAvailable || !supabaseClient || !url) {
       return [];
     }
     try {
-      const query = supabase
+      const query = supabaseClient
         .from('page_chunks')
         .select('chunk_text')
         .eq('url', url)
@@ -7483,10 +7482,10 @@
     let chunks = [];
 
     // Log Supabase connection status
-    blogPosts_log(`   [Supabase] Connection check - supabaseAvailable: ${supabaseAvailable}, supabase: ${!!supabase}, url: ${!!url}, providedHtml: ${!!providedHtml}`);
+    blogPosts_log(`   [Supabase] Connection check - supabaseAvailable: ${supabaseAvailable}, supabaseClient: ${!!supabaseClient}, url: ${!!url}, providedHtml: ${!!providedHtml}`);
     
     // Only fetch from Supabase if HTML wasn't already provided
-    if (!html && supabaseAvailable && supabase && url) {
+    if (!html && supabaseAvailable && supabaseClient && url) {
       blogPosts_log(`   [Supabase] Fetching entity for: ${url}`);
       const [entityResult, htmlResult, chunksResult] = await Promise.all([
         fetchPageEntityForUrl(url),
@@ -9890,7 +9889,7 @@
     
     // PRIORITY 1: Try Supabase (already stored, more reliable, no CORS issues)
     // If Supabase is not available, try to initialize it once
-    if (!supabaseAvailable || !supabase) {
+    if (!supabaseAvailable || !supabaseClient) {
       // Try to initialize Supabase if not already available
       if (typeof initSupabase === 'function') {
         initSupabase();
@@ -9899,7 +9898,7 @@
       }
     }
     
-    if (supabaseAvailable && supabase) {
+    if (supabaseAvailable && supabaseClient) {
       try {
         const html = await fetchPageHtmlForUrl(url);
         if (html && html.length > 0) {
@@ -10301,7 +10300,7 @@
     console.log(`\n Testing FAQ Detection for: ${url}`);
     console.log('='.repeat(60));
     
-    if (!supabaseAvailable || !supabase) {
+    if (!supabaseAvailable || !supabaseClient) {
       console.error('❌ Supabase not available for testing');
       return;
     }
@@ -10586,12 +10585,12 @@
     blogPosts_log(`   Processing ${blogPostsData.length} blog posts`);
 
     // CRITICAL: Ensure Supabase is initialized before generation starts
-    if (!supabaseAvailable || !supabase) {
+    if (!supabaseAvailable || !supabaseClient) {
       blogPosts_log('   [Supabase] Initializing Supabase connection...');
       let initAttempts = 0;
       const maxAttempts = 5;
       
-      while ((!supabaseAvailable || !supabase) && initAttempts < maxAttempts) {
+      while ((!supabaseAvailable || !supabaseClient) && initAttempts < maxAttempts) {
         initAttempts++;
         blogPosts_log(`   [Supabase] Initialization attempt ${initAttempts}/${maxAttempts}...`);
         
@@ -10607,7 +10606,7 @@
         }
       }
       
-      if (!supabaseAvailable || !supabase) {
+      if (!supabaseAvailable || !supabaseClient) {
         blogPosts_log('   ⚠️ [Supabase] Could not establish connection after multiple attempts');
         blogPosts_log('   ℹ️ [Supabase] Will use public URL fallback for HTML fetching');
         blogPosts_log('   ✅ [Supabase] All schemas (WebPage, BlogPosting, BreadcrumbList, HowTo, FAQ, ImageObject) will be generated');
@@ -12387,7 +12386,7 @@
     const autoSaveCheckbox = document.getElementById('autoSaveToSupabase');
     const shouldAutoSave = autoSaveCheckbox ? autoSaveCheckbox.checked : false;
     
-    if (shouldAutoSave && supabaseAvailable && supabase && typeof saveToSupabase === 'function') {
+    if (shouldAutoSave && supabaseAvailable && supabaseClient && typeof saveToSupabase === 'function') {
       setTimeout(async () => {
         try {
           await saveToSupabase(index, true);
@@ -22472,7 +22471,7 @@ ${minifiedJson}
 
   // Helper: Validate Supabase save prerequisites
   function validateSupabaseSave(index, silent) {
-    if (!supabaseAvailable || !supabase) {
+    if (!supabaseAvailable || !supabaseClient) {
       const msg = 'Supabase client not initialized. Please refresh the page.';
       if (!silent) showToast(msg, true);
       debugLog(msg, 'error');
@@ -22556,7 +22555,7 @@ ${minifiedJson}
 
   // Helper: Insert data into Supabase
   async function insertIntoSupabase(result, statuses, schemaJsonRaw) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('schema_audit_logs')
       .upsert({
         url: result.url,
@@ -22900,7 +22899,7 @@ ${minifiedJson}
     const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
     
     // Upsert into Supabase (update if exists, insert if not)
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('schema_audit_logs')
       .upsert({
         url: result.url,
@@ -22936,7 +22935,7 @@ ${minifiedJson}
     const saveAllBtn = document.getElementById('saveAllBtn');
     if (!saveAllBtn || saveAllBtn.disabled) return;
     
-    if (!supabaseAvailable || !supabase) {
+    if (!supabaseAvailable || !supabaseClient) {
       showToast('Supabase client not initialized. Please refresh the page.', true);
       return;
     }
@@ -22992,7 +22991,7 @@ ${minifiedJson}
     
     try {
       // Step 1: Try to initialize Supabase if not available
-      if (!supabaseAvailable || !supabase) {
+      if (!supabaseAvailable || !supabaseClient) {
         console.log('🔄 Supabase not initialized. Attempting to initialize...');
         
         // Check if Supabase library is loaded
@@ -23002,8 +23001,8 @@ ${minifiedJson}
         
         // Initialize Supabase
         try {
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          window.supabaseClient = supabase;
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          window.supabaseClient = supabaseClient;
           supabaseAvailable = true;
           console.log('✅ Supabase initialized successfully');
           
@@ -23041,7 +23040,7 @@ ${minifiedJson}
           const schemaJsonRaw = prepareSchemaJsonForSupabase(result);
           
           // Upsert to Supabase
-          const { data, error } = await supabase
+          const { data, error } = await supabaseClient
             .from('schema_audit_logs')
             .upsert({
               url: result.url,
