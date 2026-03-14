@@ -17941,6 +17941,16 @@ ${minifiedJson}
     return [...withoutDuplicates, merged];
   }
 
+  function ensureLandingFaqPageId(graph, pageUrl) {
+    const faqNode = graph.find((node) => landingHasType(node, 'FAQPage'));
+    if (!faqNode || faqNode['@id']) return graph;
+    const webPageUrl = String(graph.find((node) => landingHasType(node, 'WebPage'))?.url || '').trim();
+    const webSiteUrl = String(graph.find((node) => landingHasType(node, 'WebSite'))?.url || '').trim();
+    const baseUrl = String(pageUrl || webPageUrl || webSiteUrl || 'https://www.alanranger.com/').trim().replace(/\/+$/, '');
+    faqNode['@id'] = `${baseUrl || 'https://www.alanranger.com'}#faq`;
+    return graph;
+  }
+
   function dedupeLandingGraph(graph) {
     const seenKeys = new Set();
     return graph.filter((node) => {
@@ -17964,6 +17974,7 @@ ${minifiedJson}
     graph.forEach((node) => landingNormalizeNodeUrls(node, pageUrl));
     normalizeLandingFaqAnswers(graph);
     graph = normalizeLandingFaqPages(graph);
+    graph = ensureLandingFaqPageId(graph, pageUrl);
     graph.forEach((node) => {
       if (node && typeof node === 'object' && node['@context']) {
         delete node['@context'];
