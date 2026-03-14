@@ -4779,6 +4779,43 @@
       return nodeTypes.some(t => selectedTypes.includes(t));
     };
 
+    const hasSelectedNestedType = (obj) => {
+      if (!obj || typeof obj !== 'object') return false;
+      if (obj['@type']) {
+        const nestedTypes = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+        if (nestedTypes.some(t => selectedTypes.includes(t))) {
+          return true;
+        }
+      }
+      return Object.values(obj).some(val => {
+        if (Array.isArray(val)) {
+          return val.some(item => hasSelectedNestedType(item));
+        }
+        return hasSelectedNestedType(val);
+      });
+    };
+
+    const collectReferencedIds = (obj, idSet = new Set()) => {
+      if (!obj || typeof obj !== 'object') return idSet;
+      if (Array.isArray(obj)) {
+        obj.forEach(item => collectReferencedIds(item, idSet));
+        return idSet;
+      }
+      Object.entries(obj).forEach(([key, value]) => {
+        if (key === '@id' && typeof value === 'string' && value.trim()) {
+          idSet.add(value.trim());
+        }
+        collectReferencedIds(value, idSet);
+      });
+      return idSet;
+    };
+
+    const selectedRootBlocks = selectedTypes.length === 0
+      ? blocks
+      : blocks.filter((block) => matchesSelectedTypes(block) || hasSelectedNestedType(block));
+    const referencedIds = collectReferencedIds(selectedRootBlocks);
+    const helperTypes = new Set(['SearchAction', 'Place', 'GeoCoordinates', 'PostalAddress', 'ContactPoint', 'ImageObject']);
+
     // Merge Organization/LocalBusiness (only if selected)
     const org = {
       '@type': ['Organization','LocalBusiness'],
@@ -4799,26 +4836,10 @@
       if (!b['@id'] && (b.url || b.name)) b['@id'] = (b.url || `#${(b.name||'node').toLowerCase().replace(/\s+/g,'-')}`);
       
       // Check if block matches selected types (top-level or contains nested selected types)
-      const shouldInclude = matchesSelectedTypes(b) || 
-        // Also include if block contains nested types that are selected
-        (selectedTypes.length > 0 && (() => {
-          const hasSelectedNestedType = (obj) => {
-            if (!obj || typeof obj !== 'object') return false;
-            if (obj['@type']) {
-              const nestedTypes = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
-              if (nestedTypes.some(t => selectedTypes.includes(t))) {
-                return true;
-              }
-            }
-            return Object.values(obj).some(val => {
-              if (Array.isArray(val)) {
-                return val.some(item => hasSelectedNestedType(item));
-              }
-              return hasSelectedNestedType(val);
-            });
-          };
-          return hasSelectedNestedType(b);
-        })());
+      const shouldInclude = matchesSelectedTypes(b) ||
+        (selectedTypes.length > 0 && hasSelectedNestedType(b)) ||
+        (selectedTypes.length > 0 && typeof b['@id'] === 'string' && referencedIds.has(b['@id'].trim())) ||
+        (selectedTypes.length > 0 && ts.some((typeName) => helperTypes.has(typeName)));
       
       if (shouldInclude) {
         add(b);
@@ -17310,7 +17331,7 @@ ${minifiedJson}
 
   // Helper: Detect and normalize schema types from JSON-LD blocks
   function detectSchemaTypesFromBlocks(jsonLdBlocks) {
-    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
+    const canonicalTypes = ['WebSite', 'WebPage', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
     const detectedTypes = new Set();
     const otherDetectedTypes = new Set(); // For types not in canonical list (like FAQPage)
     
@@ -17368,6 +17389,7 @@ ${minifiedJson}
   // Schema type guidance/hints
   const SCHEMA_TYPE_GUIDANCE = {
     WebSite: { hint: 'recommended', icon: '✅', description: 'Root domain + SearchAction - Always keep' },
+    WebPage: { hint: 'recommended', icon: '✅', description: 'Canonical page entity for landing/service pages - Keep' },
     Organization: { hint: 'recommended', icon: '✅', description: 'Brand and business identity - Always keep' },
     LocalBusiness: { hint: 'recommended', icon: '✅', description: 'For physical location SEO - Always keep' },
     Product: { hint: 'optional', icon: '☐', description: 'For product or gift voucher pages - Only if selling' },
@@ -17402,7 +17424,7 @@ ${minifiedJson}
     // Create checkbox for each schema type
     detectedTypes.forEach(({ type, found }) => {
       // For non-canonical types (like FAQPage), only show if found
-      const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
+      const canonicalTypes = ['WebSite', 'WebPage', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person', 'BreadcrumbList'];
       if (!canonicalTypes.includes(type) && !found) {
         return; // Skip non-canonical types that weren't found
       }
@@ -17523,7 +17545,7 @@ ${minifiedJson}
     const selected = [];
     
     // Get all checkboxes (including non-canonical types like FAQPage)
-    const canonicalTypes = ['WebSite', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
+    const canonicalTypes = ['WebSite', 'WebPage', 'Organization', 'LocalBusiness', 'Product', 'Event', 'ItemList', 'Service', 'Person'];
     const allTypes = [...canonicalTypes];
     
     // Also check for any other types that might be in the UI (like FAQPage)
@@ -17543,6 +17565,437 @@ ${minifiedJson}
     });
     
     return selected;
+  }
+
+  function landingNodeTypes(node) {
+    if (Array.isArray(node?.['@type'])) return node['@type'];
+    return [node?.['@type']].filter(Boolean);
+  }
+
+  function landingHasType(node, typeName) {
+    return landingNodeTypes(node).includes(typeName);
+  }
+
+  function landingIncludeType(selectedTypes, typeName) {
+    return selectedTypes.length === 0 || selectedTypes.includes(typeName);
+  }
+
+  function landingNormalizeUrlValue(value, pageUrl) {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed) return trimmed;
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    if (trimmed.startsWith('http://')) return trimmed.replace(/^http:\/\//i, 'https://');
+    if (trimmed.startsWith('/') && pageUrl) {
+      try {
+        return new URL(trimmed, pageUrl).href;
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+
+  function landingNormalizeNodeUrls(node, pageUrl) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach((child) => landingNormalizeNodeUrls(child, pageUrl));
+      return;
+    }
+    ['url', 'image', 'logo', 'contentUrl', 'thumbnailUrl'].forEach((key) => {
+      if (typeof node[key] === 'string') {
+        node[key] = landingNormalizeUrlValue(node[key], pageUrl);
+      }
+    });
+    Object.keys(node).forEach((key) => {
+      landingNormalizeNodeUrls(node[key], pageUrl);
+    });
+  }
+
+  function landingCleanText(value) {
+    if (typeof value !== 'string') return value;
+    return value
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function landingToActionArray(value) {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  }
+
+  function landingMergeSearchAction(primaryNode, websiteNodes) {
+    const existingActions = landingToActionArray(primaryNode.potentialAction);
+    const candidateActions = websiteNodes.flatMap((node) => landingToActionArray(node?.potentialAction));
+    const allActions = [...existingActions, ...candidateActions];
+    const searchAction = allActions.find((action) => {
+      const types = Array.isArray(action?.['@type']) ? action['@type'] : [action?.['@type']];
+      return types.includes('SearchAction');
+    });
+    if (!searchAction) return;
+    primaryNode.potentialAction = searchAction;
+  }
+
+  function ensureLandingDefaultSearchAction(websiteNode, pageUrl) {
+    if (websiteNode.potentialAction) return;
+    let origin = 'https://www.alanranger.com';
+    try {
+      origin = new URL(pageUrl || websiteNode.url || origin).origin;
+    } catch {}
+    websiteNode.potentialAction = {
+      '@type': 'SearchAction',
+      '@id': `${origin}/#searchaction`,
+      target: `${origin}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string'
+    };
+  }
+
+  function landingFindTopLevelSearchAction(graph) {
+    return graph.find((node) => {
+      const nodeTypes = landingNodeTypes(node);
+      return nodeTypes.includes('SearchAction');
+    }) || null;
+  }
+
+  function landingReferencedIdsFromNode(node, idSet = new Set()) {
+    if (!node || typeof node !== 'object') return idSet;
+    if (Array.isArray(node)) {
+      node.forEach((item) => landingReferencedIdsFromNode(item, idSet));
+      return idSet;
+    }
+    Object.entries(node).forEach(([key, value]) => {
+      if (key === '@id' && typeof value === 'string' && value.trim()) {
+        idSet.add(value.trim());
+      }
+      landingReferencedIdsFromNode(value, idSet);
+    });
+    return idSet;
+  }
+
+  function landingKeepLinkedDependencyNodes(allExistingNodes, keptNodes) {
+    const existingById = new Map();
+    allExistingNodes.forEach((node) => {
+      if (typeof node?.['@id'] === 'string' && node['@id'].trim()) {
+        existingById.set(node['@id'].trim(), node);
+      }
+    });
+    const keptIds = new Set(
+      keptNodes
+        .map((node) => (typeof node?.['@id'] === 'string' ? node['@id'].trim() : ''))
+        .filter(Boolean)
+    );
+    const references = landingReferencedIdsFromNode(keptNodes);
+    const queue = [...references];
+    const linkedNodes = [];
+    const processed = new Set();
+    while (queue.length > 0) {
+      const nextId = queue.shift();
+      if (!nextId || processed.has(nextId) || keptIds.has(nextId)) continue;
+      processed.add(nextId);
+      const nextNode = existingById.get(nextId);
+      if (!nextNode) continue;
+      linkedNodes.push(nextNode);
+      landingReferencedIdsFromNode(nextNode).forEach((refId) => {
+        if (!processed.has(refId)) queue.push(refId);
+      });
+    }
+    return linkedNodes;
+  }
+
+  function landingFindPreferredNode(graph, indexes, preferredIdFragment) {
+    if (!indexes.length) return null;
+    let idx = indexes.find((i) => String(graph[i]?.['@id'] || '').includes(preferredIdFragment));
+    if (idx === undefined) idx = indexes.find((i) => !!graph[i]?.potentialAction);
+    if (idx === undefined) idx = indexes[0];
+    return graph[idx] || null;
+  }
+
+  function ensureLandingWebSiteNode(graph, pageUrl) {
+    const WEBSITE_ID = 'https://www.alanranger.com/#website';
+    const indexes = [];
+    graph.forEach((node, idx) => {
+      if (landingHasType(node, 'WebSite')) indexes.push(idx);
+    });
+    const websiteCandidates = indexes.map((i) => graph[i]).filter(Boolean);
+    const websiteNode = landingFindPreferredNode(graph, indexes, '#website') || {
+      '@type': 'WebSite',
+      '@id': WEBSITE_ID,
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com/'
+    };
+    websiteNode['@id'] = WEBSITE_ID;
+    websiteNode.name = websiteNode.name || 'Alan Ranger Photography';
+    websiteNode.url = landingNormalizeUrlValue(websiteNode.url || 'https://www.alanranger.com/', pageUrl);
+    websiteNode.description = landingCleanText(websiteNode.description || '');
+    landingMergeSearchAction(websiteNode, websiteCandidates);
+    const topLevelSearchAction = landingFindTopLevelSearchAction(graph);
+    if (!websiteNode.potentialAction && topLevelSearchAction) {
+      websiteNode.potentialAction = topLevelSearchAction;
+    }
+    ensureLandingDefaultSearchAction(websiteNode, pageUrl);
+    return [...graph.filter((node) => !landingHasType(node, 'WebSite')), websiteNode];
+  }
+
+  function ensureLandingPlaceNode(graph, pageUrl) {
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    let origin = 'https://www.alanranger.com';
+    try {
+      origin = new URL(pageUrl || origin).origin;
+    } catch {}
+    const placeId = `${origin}/#place`;
+    const orgNode = graph.find((node) => String(node?.['@id'] || '') === ORG_ID) || null;
+    const placeCandidates = graph.filter((node) =>
+      landingHasType(node, 'Place') ||
+      String(node?.['@id'] || '').includes('#place') ||
+      String(node?.['@id'] || '').includes('#local')
+    );
+    const placeNode = placeCandidates[0] || {};
+    placeNode['@type'] = 'Place';
+    placeNode['@id'] = placeId;
+    placeNode.name = placeNode.name || orgNode?.name || 'Alan Ranger Photography';
+    if (orgNode?.address) placeNode.address = placeNode.address || orgNode.address;
+    if (orgNode) orgNode.location = { '@id': placeId };
+    const withoutExisting = graph.filter((node) =>
+      !landingHasType(node, 'Place') &&
+      !String(node?.['@id'] || '').includes('#place') &&
+      !String(node?.['@id'] || '').includes('#local')
+    );
+    return [...withoutExisting, placeNode];
+  }
+
+  function ensureLandingOrgNode(graph, pageUrl) {
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    const orgNode = graph.find((node) =>
+      landingHasType(node, 'Organization') ||
+      landingHasType(node, 'LocalBusiness') ||
+      String(node?.['@id'] || '') === ORG_ID
+    ) || {};
+    orgNode['@id'] = ORG_ID;
+    orgNode['@type'] = ['LocalBusiness', 'Organization'];
+    orgNode.name = orgNode.name || 'Alan Ranger Photography';
+    orgNode.legalName = orgNode.legalName || orgNode.name;
+    orgNode.url = landingNormalizeUrlValue(orgNode.url || 'https://www.alanranger.com/', pageUrl);
+    orgNode.email = orgNode.email || 'info@alanranger.com';
+    orgNode.telephone = orgNode.telephone || '+44 7817 017994';
+    orgNode.image = landingNormalizeUrlValue(
+      orgNode.image || 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
+      pageUrl
+    );
+    orgNode.sameAs = Array.isArray(orgNode.sameAs) && orgNode.sameAs.length > 0
+      ? orgNode.sameAs
+      : [
+        'https://www.instagram.com/alanrangerphotography/',
+        'https://www.youtube.com/@alanrangerphotography',
+        'https://www.linkedin.com/in/alanranger',
+        'https://www.facebook.com/alanrangerphotography/',
+        'https://bsky.app/profile/alanranger.bsky.social'
+      ];
+    if (!orgNode.address) {
+      orgNode.address = {
+        '@type': 'PostalAddress',
+        streetAddress: '45 Hathaway Road',
+        addressLocality: 'Coventry',
+        addressRegion: 'West Midlands',
+        postalCode: 'CV4 9HW',
+        addressCountry: 'GB'
+      };
+    } else if (typeof orgNode.address === 'object') {
+      orgNode.address['@type'] = orgNode.address['@type'] || 'PostalAddress';
+      orgNode.address.streetAddress = orgNode.address.streetAddress || '45 Hathaway Road';
+      orgNode.address.addressLocality = orgNode.address.addressLocality || 'Coventry';
+      orgNode.address.addressRegion = orgNode.address.addressRegion || 'West Midlands';
+      orgNode.address.postalCode = orgNode.address.postalCode || 'CV4 9HW';
+      orgNode.address.addressCountry = orgNode.address.addressCountry || 'GB';
+    }
+    return [...graph.filter((node) => !(landingHasType(node, 'Organization') || landingHasType(node, 'LocalBusiness'))), orgNode];
+  }
+
+  function ensureLandingWebPageNode(graph, pageUrl, pageTitle, pageDescription, includePerson, pageImage) {
+    const WEBSITE_ID = 'https://www.alanranger.com/#website';
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    const PERSON_ID = 'https://www.alanranger.com/#person';
+    const webPageCandidates = graph.filter((node) => landingHasType(node, 'WebPage'));
+    const webPageNode = webPageCandidates.find((node) => String(node.url || '').trim() === pageUrl) || webPageCandidates[0] || {};
+    webPageNode['@type'] = 'WebPage';
+    webPageNode['@id'] = `${pageUrl}#webpage`;
+    webPageNode.url = pageUrl;
+    webPageNode.name = webPageNode.name || pageTitle || 'Landing Page';
+    webPageNode.headline = webPageNode.headline || webPageNode.name;
+    webPageNode.description = landingCleanText(webPageNode.description || pageDescription || '');
+    webPageNode.inLanguage = webPageNode.inLanguage || 'en-GB';
+    webPageNode.isPartOf = { '@id': WEBSITE_ID };
+    webPageNode.publisher = { '@id': ORG_ID };
+    if (includePerson) {
+      webPageNode.about = webPageNode.about || { '@id': PERSON_ID };
+    }
+    if (pageImage && String(pageImage).startsWith('http')) {
+      webPageNode.primaryImageOfPage = webPageNode.primaryImageOfPage || { '@id': `${pageUrl}#primaryimage` };
+    }
+    return [...graph.filter((node) => !landingHasType(node, 'WebPage')), webPageNode];
+  }
+
+  function ensureLandingServiceNode(graph, pageUrl, pageTitle, pageDescription, pageImage) {
+    const ORG_ID = 'https://www.alanranger.com/#org';
+    const serviceNode =
+      graph.find((node) => landingHasType(node, 'Service') && String(node.url || '').trim() === pageUrl) ||
+      graph.find((node) => landingHasType(node, 'Service')) ||
+      {};
+    serviceNode['@type'] = 'Service';
+    serviceNode['@id'] = `${pageUrl || serviceNode.url || 'https://www.alanranger.com'}#service`;
+    serviceNode.name = serviceNode.name || pageTitle || 'Photography Service';
+    serviceNode.description = landingCleanText(serviceNode.description || pageDescription || '');
+    if (pageUrl) serviceNode.url = pageUrl;
+    serviceNode.provider = {
+      '@id': ORG_ID,
+      '@type': 'Organization',
+      name: 'Alan Ranger Photography',
+      url: 'https://www.alanranger.com/'
+    };
+    serviceNode.areaServed = serviceNode.areaServed || { '@type': 'Country', name: 'GB' };
+    if (pageImage && String(pageImage).startsWith('http')) {
+      serviceNode.image = landingNormalizeUrlValue(serviceNode.image || pageImage, pageUrl);
+    }
+    return [...graph.filter((node) => !landingHasType(node, 'Service')), serviceNode];
+  }
+
+  function ensureLandingServiceAreaPlaceReference(graph, pageUrl) {
+    const SERVICE_ID = `${pageUrl}#service`;
+    let origin = 'https://www.alanranger.com';
+    try {
+      origin = new URL(pageUrl || origin).origin;
+    } catch {}
+    const placeId = `${origin}/#place`;
+    const serviceNode = graph.find((node) =>
+      String(node?.['@id'] || '') === SERVICE_ID || landingHasType(node, 'Service')
+    );
+    if (!serviceNode) return graph;
+    const currentAreas = Array.isArray(serviceNode.areaServed)
+      ? serviceNode.areaServed
+      : (serviceNode.areaServed ? [serviceNode.areaServed] : []);
+    const hasPlaceRef = currentAreas.some((entry) => String(entry?.['@id'] || '') === placeId);
+    if (!hasPlaceRef) {
+      serviceNode.areaServed = [...currentAreas, { '@id': placeId }].filter(Boolean);
+    }
+    return graph;
+  }
+
+  function ensureLandingPrimaryImageObject(graph, pageUrl, pageImage, pageTitle) {
+    if (!pageUrl || !pageImage || !String(pageImage).startsWith('http')) return graph;
+    const imageId = `${pageUrl}#primaryimage`;
+    const existing = graph.find((node) => node?.['@id'] === imageId) || {};
+    existing['@type'] = 'ImageObject';
+    existing['@id'] = imageId;
+    existing.url = landingNormalizeUrlValue(existing.url || pageImage, pageUrl);
+    existing.contentUrl = landingNormalizeUrlValue(existing.contentUrl || pageImage, pageUrl);
+    existing.name = existing.name || `${pageTitle || 'Page'} primary image`;
+    const withoutExisting = graph.filter((node) => node?.['@id'] !== imageId);
+    return [...withoutExisting, existing];
+  }
+
+  function normalizeLandingFaqAnswers(graph) {
+    graph.forEach((node) => {
+      if (!landingHasType(node, 'FAQPage') || !Array.isArray(node.mainEntity)) return;
+      node.mainEntity = node.mainEntity.map((question) => {
+        if (!question || typeof question !== 'object') return question;
+        const cleanedName = landingCleanText(question.name || '');
+        if (!cleanedName) return null;
+        question.name = cleanedName;
+        if (question['@type'] !== 'Question') question['@type'] = 'Question';
+        const answer = question.acceptedAnswer;
+        if (!answer || typeof answer !== 'object') return null;
+        const cleanedAnswerText = landingCleanText(answer.text || '');
+        if (!cleanedAnswerText) return null;
+        answer.text = cleanedAnswerText;
+        if (answer['@type'] !== 'Answer') answer['@type'] = 'Answer';
+        return question;
+      }).filter(Boolean);
+    });
+  }
+
+  function normalizeLandingFaqPages(graph) {
+    const faqIndexes = [];
+    graph.forEach((node, index) => {
+      if (landingHasType(node, 'FAQPage')) faqIndexes.push(index);
+    });
+    if (faqIndexes.length <= 1) return graph;
+    const score = (node) => (Array.isArray(node?.mainEntity) ? node.mainEntity.length : 0);
+    let keepIndex = faqIndexes[0];
+    faqIndexes.forEach((idx) => {
+      if (score(graph[idx]) > score(graph[keepIndex])) keepIndex = idx;
+    });
+    const merged = graph[keepIndex] || { '@type': 'FAQPage', mainEntity: [] };
+    const seenQuestions = new Set();
+    const allQuestions = faqIndexes.flatMap((idx) => {
+      const node = graph[idx];
+      return Array.isArray(node?.mainEntity) ? node.mainEntity : [];
+    });
+    merged.mainEntity = allQuestions.filter((q) => {
+      const nameKey = landingCleanText(q?.name || '').toLowerCase();
+      if (!nameKey || seenQuestions.has(nameKey)) return false;
+      seenQuestions.add(nameKey);
+      return true;
+    });
+    const withoutDuplicates = graph.filter((_, idx) => !faqIndexes.includes(idx));
+    return [...withoutDuplicates, merged];
+  }
+
+  function dedupeLandingGraph(graph) {
+    const seenKeys = new Set();
+    return graph.filter((node) => {
+      const key = node?.['@id'] || `${landingNodeTypes(node).sort().join(',')}|${node?.url || ''}|${node?.name || ''}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+  }
+
+  function normalizeLandingSchemaOutput(finalSchema, selectedTypes = [], currentUrl = '') {
+    if (!finalSchema || typeof finalSchema !== 'object') return finalSchema;
+    const normalized = JSON.parse(JSON.stringify(finalSchema));
+    const originalGraph = Array.isArray(normalized['@graph']) ? normalized['@graph'] : [normalized];
+    let graph = Array.isArray(originalGraph) ? originalGraph : [];
+    const pageUrl = String(currentUrl || '').trim();
+    const pageTitle = document.getElementById('landingPageTitle')?.value?.trim() || '';
+    const pageDescription = document.getElementById('landingPageDescription')?.value?.trim() || '';
+    const pageImage = document.getElementById('landingPageImage')?.value?.trim() || '';
+
+    graph.forEach((node) => landingNormalizeNodeUrls(node, pageUrl));
+    normalizeLandingFaqAnswers(graph);
+    graph = normalizeLandingFaqPages(graph);
+    graph.forEach((node) => {
+      if (node && typeof node === 'object' && node['@context']) {
+        delete node['@context'];
+      }
+    });
+
+    if (landingIncludeType(selectedTypes, 'WebSite')) graph = ensureLandingWebSiteNode(graph, pageUrl);
+    else graph = graph.filter((node) => !landingHasType(node, 'WebSite'));
+
+    if (landingIncludeType(selectedTypes, 'Organization') || landingIncludeType(selectedTypes, 'LocalBusiness')) {
+      graph = ensureLandingOrgNode(graph, pageUrl);
+    } else {
+      graph = graph.filter((node) => !(landingHasType(node, 'Organization') || landingHasType(node, 'LocalBusiness')));
+    }
+
+    if (landingIncludeType(selectedTypes, 'WebPage') && pageUrl) {
+      graph = ensureLandingWebPageNode(graph, pageUrl, pageTitle, pageDescription, landingIncludeType(selectedTypes, 'Person'), pageImage);
+      graph = ensureLandingPrimaryImageObject(graph, pageUrl, pageImage, pageTitle);
+    } else if (!landingIncludeType(selectedTypes, 'WebPage')) {
+      graph = graph.filter((node) => !landingHasType(node, 'WebPage'));
+    }
+
+    if (landingIncludeType(selectedTypes, 'Service')) graph = ensureLandingServiceNode(graph, pageUrl, pageTitle, pageDescription, pageImage);
+    else graph = graph.filter((node) => !landingHasType(node, 'Service'));
+
+    if (landingIncludeType(selectedTypes, 'Organization') || landingIncludeType(selectedTypes, 'LocalBusiness') || landingIncludeType(selectedTypes, 'Service')) {
+      graph = ensureLandingPlaceNode(graph, pageUrl);
+      graph = ensureLandingServiceAreaPlaceReference(graph, pageUrl);
+    }
+
+    graph = dedupeLandingGraph(graph);
+    return { '@context': 'https://schema.org', '@graph': graph };
   }
 
   async function generateLandingSchema() {
@@ -17701,6 +18154,14 @@ ${minifiedJson}
 
     // STEP 3: Get selected schema types from UI
     const selectedTypes = getSelectedSchemaTypes();
+    if (selectedTypes.length > 0 && !selectedTypes.includes(actualSchemaType)) {
+      selectedTypes.push(actualSchemaType);
+      addLandingDebugLog(`⚽ Auto-including selected main schema type: ${actualSchemaType}`);
+    }
+    if (selectedTypes.length > 0 && !selectedTypes.includes('WebPage')) {
+      selectedTypes.push('WebPage');
+      addLandingDebugLog('⚽ Auto-including WebPage for landing-page canonical entity graph');
+    }
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     addLandingDebugLog(` Schema Types Selected: ${selectedTypes.length > 0 ? selectedTypes.join(', ') : 'None (all will be included)'}`);
@@ -17823,9 +18284,14 @@ ${minifiedJson}
         const excluded = existingSchemas.length - filteredExistingSchemas.length;
         addLandingDebugLog(` Filtered out ${excluded} schema(s) based on selected types`);
       }
+
+      const linkedDependencySchemas = landingKeepLinkedDependencyNodes(existingSchemas, filteredExistingSchemas);
+      if (linkedDependencySchemas.length > 0) {
+        addLandingDebugLog(` Preserving ${linkedDependencySchemas.length} linked helper schema node(s) referenced by selected entities`);
+      }
       
       // Build enhanced schema graph that merges existing + new AND actually enhances
-      const allBlocks = [...filteredExistingSchemas];
+      const allBlocks = [...filteredExistingSchemas, ...linkedDependencySchemas];
       
       // Only add new schema if its type is selected
       if (matchesSelectedTypes(schema)) {
@@ -17956,6 +18422,7 @@ ${minifiedJson}
     addLandingDebugLog(' STEP 6: Formatting final schema...');
     
     try {
+      finalSchema = normalizeLandingSchemaOutput(finalSchema, selectedTypes, url);
       const schemaJson = JSON.stringify(finalSchema, null, 2);
       
       if (!outputText) {
@@ -18183,44 +18650,64 @@ ${minifiedJson}
       }
       
       // Build schema output with suppressor code at the top
-      const suppressorCode = '<!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->\n\n' +
+      const suppressorCode = '<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) -->\n\n' +
         '<script>\n' +
         '(function(){\n' +
-        '  // Remove Squarespace\'s built-in, short Product JSON-LD\n' +
-        '  const removeSquarespaceProduct = () => {\n' +
-        '    document.querySelectorAll(\'script[type="application/ld+json"]\').forEach(el => {\n' +
-        '      const txt = el.textContent.trim();\n' +
-        '      if (txt.includes(\'"@type":"Product"\')) {\n' +
-        '        try {\n' +
-        '          const j = JSON.parse(txt);\n' +
-        '          const looksLikeSquarespace =\n' +
-        '            txt.length < 1500 &&\n' +
-        '            !j.aggregateRating &&\n' +
-        '            !j.review &&\n' +
-        '            j.offers &&\n' +
-        '            j.name &&\n' +
-        '            !txt.includes(\'"hasMerchantReturnPolicy"\');\n' +
-        '          if (looksLikeSquarespace) el.remove();\n' +
-        '        } catch(e){}\n' +
-        '      }\n' +
+        '  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service","FAQPage"]);\n' +
+        '  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage"];\n' +
+        '  const getTypes = (node) => {\n' +
+        '    if (!node) return [];\n' +
+        '    return Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]].filter(Boolean);\n' +
+        '  };\n' +
+        '  const isCanonical = (node) => {\n' +
+        '    const id = String(node && node["@id"] || "");\n' +
+        '    if (CANONICAL_ID_SUFFIXES.some((suffix) => id.includes(suffix))) return true;\n' +
+        '    if (node && Array.isArray(node["@graph"])) return true;\n' +
+        '    return false;\n' +
+        '  };\n' +
+        '  const shouldSuppressNode = (node) => {\n' +
+        '    const nodeTypes = getTypes(node);\n' +
+        '    if (!nodeTypes.some((t) => CORE_TYPES.has(t))) return false;\n' +
+        '    if (isCanonical(node)) return false;\n' +
+        '    return true;\n' +
+        '  };\n' +
+        '  const suppressSquarespaceCore = () => {\n' +
+        '    document.querySelectorAll(\'script[type="application/ld+json"], script[data-type="application/ld+json"]\').forEach((el) => {\n' +
+        '      if (el.id === "arp-critical-schema") return;\n' +
+        '      const txt = (el.textContent || "").trim();\n' +
+        '      if (!txt) return;\n' +
+        '      try {\n' +
+        '        const json = JSON.parse(txt);\n' +
+        '        const nodes = Array.isArray(json["@graph"]) ? json["@graph"] : [json];\n' +
+        '        const kept = nodes.filter((node) => !shouldSuppressNode(node || {}));\n' +
+        '        if (kept.length === nodes.length) return;\n' +
+        '        if (kept.length === 0) {\n' +
+        '          el.remove();\n' +
+        '          return;\n' +
+        '        }\n' +
+        '        const nextJson = Array.isArray(json["@graph"])\n' +
+        '          ? { ...(json || {}), "@graph": kept }\n' +
+        '          : kept[0];\n' +
+        '        el.textContent = JSON.stringify(nextJson);\n' +
+        '      } catch (e) {}\n' +
         '    });\n' +
         '  };\n' +
         '  // Run several times to catch async Squarespace hydration\n' +
-        '  removeSquarespaceProduct();\n' +
-        '  document.addEventListener(\'DOMContentLoaded\', removeSquarespaceProduct);\n' +
-        '  window.addEventListener(\'load\', () => setTimeout(removeSquarespaceProduct, 1000));\n' +
-        '  const obs = new MutationObserver(removeSquarespaceProduct);\n' +
+        '  suppressSquarespaceCore();\n' +
+        '  document.addEventListener(\'DOMContentLoaded\', suppressSquarespaceCore);\n' +
+        '  window.addEventListener(\'load\', () => setTimeout(suppressSquarespaceCore, 1000));\n' +
+        '  const obs = new MutationObserver(suppressSquarespaceCore);\n' +
         '  obs.observe(document.documentElement, { childList: true, subtree: true });\n' +
         '})();\n' +
         '<' + '/script>\n\n' +
-        '<script type="application/ld+json">\n' +
+        '<script type="application/ld+json" id="arp-critical-schema">\n' +
         schemaJson + '\n' +
         '<' + '/script>';
       
       outputText.textContent = suppressorCode;
       
       addLandingDebugLog(`✅ Schema formatted and displayed (${suppressorCode.length} characters)`);
-      addLandingDebugLog(`   Includes Schema Suppressor v1.3 to prevent duplicate Squarespace schemas`);
+      addLandingDebugLog(`   Includes Core Schema Suppressor v2.1 to prevent duplicate Squarespace core schemas`);
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       addLandingDebugLog('✅ SCHEMA GENERATION COMPLETE!');
