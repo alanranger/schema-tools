@@ -120,33 +120,70 @@
       padding-right: 150px;
       font-weight: 700;
     }
-    .tabs {
+    .layout-shell {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      border-bottom: 2px solid #e2e8f0;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .tabs.sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      position: sticky;
+      top: 0.75rem;
+      max-height: calc(100vh - 1.5rem);
+      overflow-y: auto;
+    }
+    .tab-panels {
+      flex: 1;
+      min-width: 0;
     }
     .tab {
-      padding: 0.875rem 1.75rem;
-      background: #f7fafc;
-      border: none;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.75rem 0.85rem;
+      background: #f8fafc;
+      border: 1px solid transparent;
+      border-radius: 9px;
       cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #475569;
+      transition: all 0.2s ease;
+    }
+    .tab .tab-icon {
+      width: 1.35rem;
+      text-align: center;
       font-size: 1rem;
-      font-weight: 500;
-      border-radius: 8px 8px 0 0;
-      transition: all 0.3s ease;
-      color: #4a5568;
-      border-bottom: 3px solid transparent;
+      opacity: 0.9;
+      flex-shrink: 0;
+    }
+    .tab .tab-label {
+      line-height: 1.25;
     }
     .tab:hover {
-      background: #edf2f7;
-      color: #2d3748;
+      background: #eef2ff;
+      border-color: #c7d2fe;
+      color: #334155;
     }
     .tab.active {
-      background: white;
-      color: #667eea;
-      border-bottom-color: #667eea;
-      font-weight: 600;
+      background: linear-gradient(90deg, #fff7ed 0%, #ffffff 70%);
+      color: #9a3412;
+      border-color: #fdba74;
+      box-shadow: inset 4px 0 0 #d97706;
+      font-weight: 700;
+    }
+    .tab.active .tab-icon {
+      opacity: 1;
     }
     .tab-content {
       display: none !important;
@@ -155,6 +192,17 @@
     }
     .tab-content.active {
       display: block !important;
+    }
+    @media (max-width: 1080px) {
+      .layout-shell {
+        flex-direction: column;
+      }
+      .tabs.sidebar {
+        width: 100%;
+        min-width: 0;
+        position: static;
+        max-height: none;
+      }
     }
     .tab-content h2 {
       color: #2d3748;
@@ -1444,16 +1492,19 @@
         and schema outputs in <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/</code>.
       </p>
     </div>
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('product')">Product Schema</button>
-      <button class="tab" onclick="switchTab('event')">Event Schema</button>
-      <button class="tab" onclick="switchTab('blog')">Blog Index Schema</button>
-      <button class="tab" onclick="switchTab('blogPosts')">Blog Posts</button>
-      <button class="tab" onclick="switchTab('landing')">Landing / Service Pages</button>
-      <button class="tab" onclick="switchTab('validator')">Schema Validator</button>
-      <button class="tab" onclick="switchTab('workflow')"> Complete Workflow</button>
-      <button class="tab" onclick="switchTab('guide')"> Tab Guide</button>
+    <div class="layout-shell">
+    <div class="tabs sidebar" aria-label="Schema tools sections">
+      <button class="tab active" data-mode="product" onclick="switchTab('product')"><span class="tab-icon">🧩</span><span class="tab-label">Product Schema</span></button>
+      <button class="tab" data-mode="event" onclick="switchTab('event')"><span class="tab-icon">🗓️</span><span class="tab-label">Event Schema</span></button>
+      <button class="tab" data-mode="blog" onclick="switchTab('blog')"><span class="tab-icon">📰</span><span class="tab-label">Blog Index Schema</span></button>
+      <button class="tab" data-mode="blogPosts" onclick="switchTab('blogPosts')"><span class="tab-icon">📝</span><span class="tab-label">Blog Posts</span></button>
+      <button class="tab" data-mode="landing" onclick="switchTab('landing')"><span class="tab-icon">🧭</span><span class="tab-label">Landing / Service Pages</span></button>
+      <button class="tab" data-mode="validator" onclick="switchTab('validator')"><span class="tab-icon">✅</span><span class="tab-label">Schema Validator</span></button>
+      <button class="tab" data-mode="workflow" onclick="switchTab('workflow')"><span class="tab-icon">📚</span><span class="tab-label">Complete Workflow</span></button>
+      <button class="tab" data-mode="guide" onclick="switchTab('guide')"><span class="tab-icon">🛟</span><span class="tab-label">Tab Guide</span></button>
     </div>
+
+  <div class="tab-panels">
 
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content">
@@ -1937,7 +1988,7 @@
             • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema.json</code> files</span>
           </li>
           <li><strong>Step 5 - Deploy to GitHub:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Export JSON Files & Deploy to GitHub" button<br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Sync Product JSONs & Deploy to GitHub" button<br>
             • Schema files are automatically committed and pushed to GitHub<br>
             • GitHub Pages auto-deploys schemas to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/</code><br>
             • <strong>No manual pasting required!</strong> Squarespace product pages auto-fetch schemas from GitHub Pages</span>
@@ -2321,7 +2372,7 @@
             ✅ Schema generation complete.<br>
             Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).<br><br>
             <button id="exportAndDeployProductBtn" onclick="exportAndDeployProductSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-top: 0.5rem;">
-               Export JSON Files & Deploy to GitHub
+               Sync Product JSONs & Deploy to GitHub
             </button>
             <button id="generateProductScriptTagsBtn" onclick="generateProductScriptTags()" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-top: 0.5rem;">
                Generate Squarespace Script Tags List
@@ -2333,10 +2384,10 @@
 
         <!-- STEP 5 -->
         <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;"> Step 5 – Insert Schema into Squarespace</h3>
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;"> Step 5 – Sync to GitHub Pages (Auto-fetch live)</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            Open your product page ↽ <strong>Code Block</strong> ↽ paste generated schema.<br>
-            Validate using <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #667eea; text-decoration: underline;">Rich Results Test</a>.
+            Click <strong>Sync Product JSONs & Deploy to GitHub</strong> to copy latest files from <code>alan-shared-resources/outputs/schema/products/</code> to <code>Schema Tools/alanranger-schema/</code>, remove stale product JSONs, then commit/push.<br>
+            Your Squarespace auto-fetch scripts then load the new live JSON from <code>https://schema.alanranger.com/</code>.
           </p>
         </div>
 
@@ -3521,7 +3572,7 @@
       <p><strong>Workflow:</strong> Step 0 (setup) ↽ Step 1 (upload CSV) ↽ Step 2 (clean) ↽ Step 3a (Google reviews) ↽ Step 3b (merge reviews) ↽ Step 4 (generate schema)</p>
       <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
       <p><strong>Features:</strong> ✅ Schema Suppressor v1.3 (removes duplicate Squarespace schemas), filters weak reviews, includes aggregateRating</p>
-      <p><strong>Deploy:</strong> Copy schema from HTML files ↽ Paste into Squarespace product pages</p>
+      <p><strong>Deploy:</strong> Use Step 5 sync button to publish product JSON files to <code>alanranger-schema</code> (GitHub Pages). Squarespace product pages auto-fetch from <code>https://schema.alanranger.com/</code>.</p>
 
       <h3> Blog Index Schema</h3>
       <p><strong>Purpose:</strong> Generate CollectionPage schema for blog index/listing page.</p>
@@ -3575,7 +3626,7 @@
         <li>Export products from Squarespace ↽ <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">01 – products_*.csv</code></li>
         <li>Run Product Schema tab workflow (Steps 0-4)</li>
         <li>Review generated schemas in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code></li>
-        <li>Deploy to Squarespace product pages</li>
+        <li>Run Step 5 sync to GitHub Pages (product pages auto-fetch JSON)</li>
         <li>Validate using Schema Validator tab</li>
       </ol>
       <p><strong>New Event Schema:</strong></p>
@@ -3596,6 +3647,7 @@
     </div>
   </div>
 
+  </div>
 </div>
 
 <script>
@@ -3675,11 +3727,12 @@
     }
     
     // Reset all active tabs and contents
-    const tabs = document.querySelectorAll('.tab');
+    const tabs = document.querySelectorAll('.tab[data-mode]');
     const contents = document.querySelectorAll('.tab-content');
     
     for (const tab of tabs) {
       tab.classList.remove('active');
+      tab.removeAttribute('aria-current');
     }
     for (const content of contents) {
       content.classList.remove('active');
@@ -3687,14 +3740,14 @@
     
     // Activate correct tab based on mode
     const tabMap = {
-      'event': { tabIndex: 0, contentId: 'eventTab' },
-      'product': { tabIndex: 1, contentId: 'productTab' },
-      'blog': { tabIndex: 2, contentId: 'blogTab' },
-      'blogPosts': { tabIndex: 3, contentId: 'blogPostsTab' },
-      'landing': { tabIndex: 4, contentId: 'landingTab' },
-      'validator': { tabIndex: 5, contentId: 'validatorTab' },
-      'workflow': { tabIndex: 6, contentId: 'workflowTab' },
-      'guide': { tabIndex: 7, contentId: 'guideTab' }
+      'event': { contentId: 'eventTab' },
+      'product': { contentId: 'productTab' },
+      'blog': { contentId: 'blogTab' },
+      'blogPosts': { contentId: 'blogPostsTab' },
+      'landing': { contentId: 'landingTab' },
+      'validator': { contentId: 'validatorTab' },
+      'workflow': { contentId: 'workflowTab' },
+      'guide': { contentId: 'guideTab' }
     };
     
     const config = tabMap[mode];
@@ -3702,8 +3755,10 @@
       console.error(`[switchTab] Unknown tab mode: ${mode}`);
       return;
     }
-    if (config && tabs[config.tabIndex] && tabs[config.tabIndex] !== null) {
-      tabs[config.tabIndex].classList.add('active');
+    const activeTabBtn = document.querySelector(`.tab[data-mode="${mode}"]`);
+    if (activeTabBtn && config) {
+      activeTabBtn.classList.add('active');
+      activeTabBtn.setAttribute('aria-current', 'page');
       const content = document.getElementById(config.contentId);
       if (content) {
         content.classList.add('active');
@@ -3712,7 +3767,7 @@
         console.error(`[switchTab] Content element not found: ${config.contentId}`);
       }
     } else {
-      console.error(`[switchTab] Tab button not found at index ${config.tabIndex} for mode: ${mode}`);
+      console.error(`[switchTab] Tab button not found for mode: ${mode}`);
     }
   }
   
@@ -8759,7 +8814,7 @@
   // Export and Deploy All Product Schema JSON Files to GitHub (Electron only)
   async function exportAndDeployProductSchema() {
     if (!window.electronAPI || !window.electronAPI.isElectron) {
-      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy individual JSON files from shared-resources/outputs/schema/ to alanranger-schema folder and commit/push.');
+      alert('Auto-deployment is only available in the Electron app, not in the browser.\n\nPlease manually copy product *_schema.json files from shared-resources/outputs/schema/products/ to alanranger-schema folder, then commit/push.');
       return;
     }
 
@@ -8932,16 +8987,18 @@
       }
 
       if (statusDiv) {
-        statusDiv.innerHTML = ` Deploying ${filesToDeploy.length} files in batch...`;
+        statusDiv.innerHTML = ` Syncing ${filesToDeploy.length} product JSON files to alanranger-schema and deploying...`;
       }
 
-      // Batch deploy all files in a single commit
-      const result = await window.electronAPI.batchDeploySchemas(filesToDeploy);
+      // Batch deploy all files in a single commit, with product stale-file cleanup.
+      const result = await window.electronAPI.batchDeploySchemas(filesToDeploy, { cleanupProductSchemas: true });
       const deployedCount = filesToDeploy.length;
+      const removedCount = Number(result.deletedCount || 0);
 
       if (statusDiv) {
         statusDiv.innerHTML = `
           ✅ ${result.message}<br>
+          ${removedCount > 0 ? `🧹 Removed ${removedCount} stale product JSON file(s) from alanranger-schema<br>` : ''}
           ${failedCount > 0 ? `⚽ ${failedCount} files failed to read (check console for details)<br>` : ''}
            Git: All files committed in single commit and pushed to GitHub<br>
           ⎽  GitHub Pages will auto-deploy in 2-5 minutes<br>
@@ -8956,7 +9013,7 @@
         exportBtn.disabled = false;
         exportBtn.textContent = '✅ Deployed!';
         setTimeout(() => { 
-          exportBtn.textContent = ' Export JSON Files & Deploy to GitHub'; 
+          exportBtn.textContent = ' Sync Product JSONs & Deploy to GitHub'; 
         }, 3000);
       }
 
@@ -8976,7 +9033,7 @@
       }
       if (exportBtn) {
         exportBtn.disabled = false;
-        exportBtn.textContent = ' Export JSON Files & Deploy to GitHub';
+        exportBtn.textContent = ' Sync Product JSONs & Deploy to GitHub';
       }
       alert(`Deployment failed: ${error.message}\n\nMake sure Step 4 has completed and generated JSON files.`);
     }
@@ -16583,7 +16640,7 @@ ${minifiedJson}
     // Build product schema
     const productSchema = {
       '@type': schemaType,
-      '@id': `${productData.url}#schema`,
+      '@id': `${productData.url}#product`,
       name: productData.name,
       sku: productData.sku || '',
       brand: {
@@ -16594,8 +16651,17 @@ ${minifiedJson}
     };
 
     if (productData.description) {
-      const desc = productData.description.substring(0, 600);
-      productSchema.description = desc;
+      const normalizedDesc = String(productData.description || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (normalizedDesc.length <= 600) {
+        productSchema.description = normalizedDesc;
+      } else {
+        const softCut = normalizedDesc.lastIndexOf(' ', 600);
+        const cutAt = softCut > 360 ? softCut : 600;
+        productSchema.description = `${normalizedDesc.slice(0, cutAt).trim()}...`;
+      }
     }
 
     if (productData.image && productData.image.startsWith('https://')) {
@@ -16637,7 +16703,7 @@ ${minifiedJson}
     // Add shippingDetails (required for Product+Event hybrid, matching batch generation)
     productSchema.offers.shippingDetails = {
       '@type': 'OfferShippingDetails',
-      doesNotShip: 'http://schema.org/True',
+      doesNotShip: true,
       shippingDestination: {
         '@type': 'DefinedRegion',
         addressCountry: 'GB'

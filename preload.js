@@ -10,13 +10,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getExePath: () => ipcRenderer.invoke('get-exe-path'),
   openDevTools: () => ipcRenderer.invoke('open-devtools'),
   saveAndDeploySchema: (fileName, jsonContent) => ipcRenderer.invoke('save-and-deploy-schema', { fileName, jsonContent }),
-  batchDeploySchemas: (files) => ipcRenderer.invoke('batch-deploy-schemas', { files }),
+  batchDeploySchemas: (files, options = {}) => ipcRenderer.invoke('batch-deploy-schemas', { files, options }),
   readSchemaFile: (fileName) => ipcRenderer.invoke('read-schema-file', fileName),
   checkFileExists: (fileName) => ipcRenderer.invoke('check-file-exists', fileName),
   deleteSchemaFile: (fileName) => ipcRenderer.invoke('delete-schema-file', fileName),
   batchDeleteSchemaFiles: (fileNames) => ipcRenderer.invoke('batch-delete-schema-files', fileNames),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
+  saveSchemaToOutputs: (fileName, jsonContent) => ipcRenderer.invoke('save-schema-to-outputs', { fileName, jsonContent }),
+  runNodeScript: (scriptName, args = []) => ipcRenderer.invoke('run-node-script', { scriptName, args }),
   onServerLog: (callback) => {
     ipcRenderer.on('server-log', (event, data) => callback(data));
   },

@@ -36,6 +36,45 @@ function ensureGitOnBranch(repoPath, branchName = "main") {
   }
 }
 
+function isLikelyProductSchemaJson(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const data = JSON.parse(raw);
+    const graph = Array.isArray(data?.["@graph"]) ? data["@graph"] : [];
+    return graph.some((node) => {
+      const typeVal = node?.["@type"];
+      const types = Array.isArray(typeVal) ? typeVal : [typeVal];
+      const hasProductType = types.includes("Product");
+      const hasOffers = !!node?.offers;
+      return hasProductType && hasOffers;
+    });
+  } catch {
+    return false;
+  }
+}
+
+function removeStaleProductSchemaFiles(schemaRepoPath, keepNames) {
+  const keepSet = new Set(keepNames);
+  const deletedFileNames = [];
+  const repoSchemaFiles = fs.readdirSync(schemaRepoPath)
+    .filter((name) => name.endsWith("_schema.json"));
+
+  for (const fileName of repoSchemaFiles) {
+    if (keepSet.has(fileName)) {
+      continue;
+    }
+    const candidatePath = path.join(schemaRepoPath, fileName);
+    if (!isLikelyProductSchemaJson(candidatePath)) {
+      continue;
+    }
+    fs.unlinkSync(candidatePath);
+    deletedFileNames.push(fileName);
+    console.log(`🧹 Removed stale product schema file: ${candidatePath}`);
+  }
+
+  return deletedFileNames;
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
@@ -501,8 +540,98 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
   });
 });
 
+// IPC handler for saving test schema files into Schema Tools outputs folder
+ipcMain.handle('save-schema-to-outputs', async (event, { fileName, jsonContent }) => {
+  try {
+    // Use actual project path (not __dirname which points to AppData in built app)
+    const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+    const projectRoot = isBuiltApp
+      ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+      : __dirname;
+
+    if (!fileName || typeof fileName !== 'string' || !fileName.toLowerCase().endsWith('.json')) {
+      throw new Error(`Invalid file name: ${fileName}`);
+    }
+
+    const outputsDir = path.join(projectRoot, 'outputs');
+    if (!fs.existsSync(outputsDir)) {
+      fs.mkdirSync(outputsDir, { recursive: true });
+    }
+
+    const filePath = path.join(outputsDir, fileName);
+    fs.writeFileSync(filePath, jsonContent, 'utf-8');
+    console.log(`✅ Saved test schema file: ${filePath}`);
+
+    return {
+      success: true,
+      message: 'Test schema saved successfully',
+      filePath,
+      fileName
+    };
+  } catch (error) {
+    console.error('❌ Error saving schema to outputs:', error);
+    throw error;
+  }
+});
+
+// IPC handler for running local Node scripts from the Schema Tools root
+ipcMain.handle('run-node-script', async (event, { scriptName, args = [] }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const isBuiltApp = __dirname.includes('AppData') || __dirname.includes('SchemaTools-win32-x64');
+      const projectRoot = isBuiltApp
+        ? 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools'
+        : __dirname;
+
+      if (!scriptName || typeof scriptName !== 'string') {
+        throw new Error('Missing script name');
+      }
+      if (scriptName.includes('..') || path.isAbsolute(scriptName)) {
+        throw new Error(`Invalid script path: ${scriptName}`);
+      }
+
+      const scriptPath = path.join(projectRoot, scriptName);
+      if (!fs.existsSync(scriptPath)) {
+        throw new Error(`Script not found: ${scriptPath}`);
+      }
+
+      const nodeProcess = spawn('node', [scriptPath, ...args], {
+        cwd: projectRoot,
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      nodeProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      nodeProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      nodeProcess.on('close', (code) => {
+        const output = `${stdout}${stderr ? '\n' + stderr : ''}`.trim();
+        resolve({
+          success: code === 0,
+          exitCode: code,
+          output
+        });
+      });
+
+      nodeProcess.on('error', (err) => {
+        reject(new Error(`Failed to run ${scriptName}: ${err.message}`));
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+});
+
 // IPC handler for batch deploying multiple schema files
-ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
+ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) => {
   return new Promise((resolve, reject) => {
     try {
       // Use actual project path
@@ -543,25 +672,32 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
         console.log(`✅ Saved schema file: ${filePath}`);
       }
 
+      const deletedFileNames = options?.cleanupProductSchemas
+        ? removeStaleProductSchemaFiles(schemaRepoPath, fileNames)
+        : [];
+
       // Git operations - stage files in batches (Windows command line limit), then commit once, push once
       // Windows command line limit is ~8191 characters
       // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
+      const stageTargets = [...new Set([...fileNames, ...deletedFileNames])];
       const BATCH_SIZE = 50;
       const batches = [];
-      for (let i = 0; i < fileNames.length; i += BATCH_SIZE) {
-        batches.push(fileNames.slice(i, i + BATCH_SIZE));
+      for (let i = 0; i < stageTargets.length; i += BATCH_SIZE) {
+        batches.push(stageTargets.slice(i, i + BATCH_SIZE));
       }
       
-      console.log(`📦 Splitting ${fileNames.length} files into ${batches.length} batch(es) for git add`);
+      console.log(`📦 Splitting ${stageTargets.length} files into ${batches.length} batch(es) for git add`);
       
-      const commitMessage = `Update ${fileNames.length} schema files`;
+      const commitMessage = deletedFileNames.length > 0
+        ? `Sync ${fileNames.length} product schema files (remove ${deletedFileNames.length} stale)`
+        : `Update ${fileNames.length} schema files`;
       const gitCommands = [];
       
       // Stage files in batches
       for (let i = 0; i < batches.length; i++) {
         gitCommands.push({
           cmd: 'git',
-          args: ['add', ...batches[i]],
+          args: ['add', '-A', ...batches[i]],
           desc: `Stage files (batch ${i + 1}/${batches.length})`
         });
       }
@@ -578,7 +714,8 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files }) => {
           resolve({ 
             success: true, 
             message: `✅ ${fileNames.length} schema files saved and deployed successfully!`,
-            fileCount: fileNames.length
+            fileCount: fileNames.length,
+            deletedCount: deletedFileNames.length
           });
           return;
         }
