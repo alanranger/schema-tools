@@ -193,6 +193,20 @@
     .tab-content.active {
       display: block !important;
     }
+    .embedded-app-shell {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    .embedded-app-frame {
+      width: 100%;
+      min-height: 78vh;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+    }
     @media (max-width: 1080px) {
       .layout-shell {
         flex-direction: column;
@@ -1494,17 +1508,79 @@
     </div>
     <div class="layout-shell">
     <div class="tabs sidebar" aria-label="Schema tools sections">
-      <button class="tab active" data-mode="product" onclick="switchTab('product')"><span class="tab-icon">🧩</span><span class="tab-label">Product Schema</span></button>
+      <button class="tab active" data-mode="config" onclick="switchTab('config')"><span class="tab-icon">⚙️</span><span class="tab-label">Configuration</span></button>
+      <button class="tab" data-mode="product" onclick="switchTab('product')"><span class="tab-icon">🧩</span><span class="tab-label">Product Schema</span></button>
       <button class="tab" data-mode="event" onclick="switchTab('event')"><span class="tab-icon">🗓️</span><span class="tab-label">Event Schema</span></button>
       <button class="tab" data-mode="blog" onclick="switchTab('blog')"><span class="tab-icon">📰</span><span class="tab-label">Blog Index Schema</span></button>
       <button class="tab" data-mode="blogPosts" onclick="switchTab('blogPosts')"><span class="tab-icon">📝</span><span class="tab-label">Blog Posts</span></button>
       <button class="tab" data-mode="landing" onclick="switchTab('landing')"><span class="tab-icon">🧭</span><span class="tab-label">Landing / Service Pages</span></button>
       <button class="tab" data-mode="validator" onclick="switchTab('validator')"><span class="tab-icon">✅</span><span class="tab-label">Schema Validator</span></button>
       <button class="tab" data-mode="workflow" onclick="switchTab('workflow')"><span class="tab-icon">📚</span><span class="tab-label">Complete Workflow</span></button>
+      <button class="tab" data-mode="bau" onclick="switchTab('bau')"><span class="tab-icon">🔄</span><span class="tab-label">BAU Workflow</span></button>
       <button class="tab" data-mode="guide" onclick="switchTab('guide')"><span class="tab-icon">🛟</span><span class="tab-label">Tab Guide</span></button>
     </div>
 
   <div class="tab-panels">
+
+  <!-- Configuration Tab Content -->
+  <div id="configurationTab" class="tab-content active">
+    <div class="instructions">
+      <h2> Configuration / Electron App</h2>
+      <p>Use this section for desktop app setup and build actions. Keeping this separate avoids clutter in Product Schema workflows.</p>
+    </div>
+
+    <!-- Desktop App Launch Button (Web Mode Only) -->
+    <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6;">
+      <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;"> Want Automated Steps?</h3>
+      <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">This web version runs in read-only mode. The desktop app can automatically chain steps 2↽3a↽3b↽4 after you upload a file.</p>
+      
+      <div style="background:#f7fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; border:1px solid #e2e8f0;">
+        <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;"> How to use the desktop app:</p>
+        <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
+          <li>Open your project folder in a terminal</li>
+          <li>Run: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;">npm run build:desktop</code></li>
+          <li>Navigate to: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
+          <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
+        </ol>
+        <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
+          <strong>ℹ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
+          <strong>All input/output files are in the shared-resources repository</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv/</code>, <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/</code>, etc.).
+        </p>
+      </div>
+      
+      <div style="text-align:center;">
+        <button id="copyPathBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+           Copy Build Command
+        </button>
+        <button id="openFolderBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+           Open PowerShell Here
+        </button>
+        <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+          ℹ Show Full Path
+        </button>
+        <button id="openExeBtnWeb" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#9b59b6; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-bottom:0.5rem;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
+          ▽ Open Electron App (if built)
+        </button>
+      </div>
+    </div>
+
+    <!-- Build Desktop App Section (Electron Mode Only) -->
+    <div id="build-desktop-section" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px solid #27AE60; border-radius:12px; background:#f0fdf4;">
+      <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;"> Build Desktop App</h3>
+      <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">Build the Windows .exe file directly from this app.</p>
+      
+      <div style="text-align:center; margin-bottom:1rem;">
+        <button id="buildDesktopBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
+           Build Desktop App (npm run build:desktop)
+        </button>
+        <button id="openExeBtn" style="display:none; padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-left:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
+          ▽ Open Built App (SchemaTools.exe)
+        </button>
+      </div>
+      
+      <div id="buildOutput" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
+    </div>
+  </div>
 
   <!-- Event Tab Content -->
   <div id="eventTab" class="tab-content">
@@ -1927,7 +2003,7 @@
   </div>
 
   <!-- Product Tab Content -->
-  <div id="productTab" class="tab-content active">
+  <div id="productTab" class="tab-content">
     <div class="instructions">
       <strong> Product Schema Generator</strong><br><br>
       
@@ -2019,58 +2095,6 @@
           <li><strong>Output files:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> (products/, workshops/, lessons/, blog/ subfolders)</li>
           <li><strong>Trustpilot reviews:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> (must exist before Step 3b)</li>
         </ul>
-      </div>
-
-      <!-- Desktop App Launch Button (Web Mode Only) -->
-      <div id="desktop-launch" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px dashed #ccc; border-radius:12px; background:#fffbe6;">
-        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;"> Want Automated Steps?</h3>
-        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">This web version runs in read-only mode. The desktop app can automatically chain steps 2↽3a↽3b↽4 after you upload a file.</p>
-        
-        <div style="background:#f7fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; border:1px solid #e2e8f0;">
-          <p style="margin:0 0 0.75rem 0; font-weight:600; color:#2d3748;"> How to use the desktop app:</p>
-          <ol style="margin:0; padding-left:1.5rem; color:#4a5568; line-height:1.8;">
-            <li>Open your project folder in a terminal</li>
-            <li>Run: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;">npm run build:desktop</code></li>
-            <li>Navigate to: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700; font-family:monospace;" id="exePathDisplay">%LOCALAPPDATA%\SchemaTools\SchemaTools-win32-x64\SchemaTools.exe</code></li>
-            <li>Double-click <strong>SchemaTools.exe</strong> to launch</li>
-          </ol>
-          <p style="margin:0.75rem 0 0 0; padding:0.75rem; background:#e8f4f8; border-radius:6px; font-size:1rem; font-weight:600; color:#2c5282; border-left:3px solid #3182ce;">
-            <strong>ℹ Note:</strong> The built app (.exe) is saved to <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">%LOCALAPPDATA%</code> to avoid Dropbox file locks. 
-            <strong>All input/output files are in the shared-resources repository</strong> (<code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv/</code>, <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/</code>, etc.).
-          </p>
-        </div>
-        
-        <div style="text-align:center;">
-          <button id="copyPathBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
-             Copy Build Command
-          </button>
-          <button id="openFolderBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
-             Open PowerShell Here
-          </button>
-          <button id="showInstructionsBtn" style="padding:0.75rem 1.5rem; font-size:1rem; border:1px solid #0078D4; border-radius:8px; background:white; color:#0078D4; cursor:pointer; font-weight:600; transition:background 0.2s; margin-right:0.5rem; margin-bottom:0.5rem;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
-            ℹ Show Full Path
-          </button>
-          <button id="openExeBtnWeb" style="padding:0.75rem 1.5rem; font-size:1rem; border:none; border-radius:8px; background:#9b59b6; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-bottom:0.5rem;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
-            ▽ Open Electron App (if built)
-          </button>
-        </div>
-      </div>
-
-      <!-- Build Desktop App Section (Electron Mode Only) -->
-      <div id="build-desktop-section" style="display:none; margin-bottom:1rem; padding:1.5rem; border:2px solid #27AE60; border-radius:12px; background:#f0fdf4;">
-        <h3 style="margin-bottom:0.5rem; color:#2d3748; text-align:center;"> Build Desktop App</h3>
-        <p style="margin-bottom:1rem; color:#4a5568; text-align:center;">Build the Windows .exe file directly from this app.</p>
-        
-        <div style="text-align:center; margin-bottom:1rem;">
-          <button id="buildDesktopBtn" style="padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#27AE60; color:white; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27AE60'">
-             Build Desktop App (npm run build:desktop)
-          </button>
-          <button id="openExeBtn" style="display:none; padding:1rem 2rem; font-size:1.2rem; border:none; border-radius:8px; background:#0078D4; color:white; cursor:pointer; font-weight:600; transition:background 0.2s; margin-left:0.5rem;" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078D4'">
-            ▽ Open Built App (SchemaTools.exe)
-          </button>
-        </div>
-        
-        <div id="buildOutput" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
       </div>
 
       <!-- ===================== COMBINED DEBUG LOG ===================== -->
@@ -3541,6 +3565,28 @@
     </div>
   </div>
 
+  <!-- BAU Workflow Tab Content -->
+  <div id="bauTab" class="tab-content">
+    <div class="instructions" style="max-width: 100%;">
+      <h2> BAU Monthly Workflow</h2>
+      <p>Embedded access to the BAU monthly workflow app so you can run schema + ingest operations in one place.</p>
+      <div style="margin-top: 1rem;">
+        <button class="secondary" onclick="window.open('https://apps-dashboard-lilac.vercel.app/bau-workflow.html', '_blank', 'noopener,noreferrer')">
+          Open BAU Workflow in New Tab
+        </button>
+      </div>
+    </div>
+    <div class="embedded-app-shell">
+      <iframe
+        title="BAU Monthly Workflow"
+        src="https://apps-dashboard-lilac.vercel.app/bau-workflow.html"
+        class="embedded-app-frame"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      ></iframe>
+    </div>
+  </div>
+
   <!-- Tab Guide Tab Content -->
   <div id="guideTab" class="tab-content">
     <div class="instructions" style="max-width: 100%;">
@@ -3740,6 +3786,7 @@
     
     // Activate correct tab based on mode
     const tabMap = {
+      'config': { contentId: 'configurationTab' },
       'event': { contentId: 'eventTab' },
       'product': { contentId: 'productTab' },
       'blog': { contentId: 'blogTab' },
@@ -3747,6 +3794,7 @@
       'landing': { contentId: 'landingTab' },
       'validator': { contentId: 'validatorTab' },
       'workflow': { contentId: 'workflowTab' },
+      'bau': { contentId: 'bauTab' },
       'guide': { contentId: 'guideTab' }
     };
     
