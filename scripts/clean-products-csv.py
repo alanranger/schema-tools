@@ -25,6 +25,8 @@ import urllib.error
 from urllib.parse import urlparse
 from datetime import date, timedelta
 
+HTTPS_PREFIX = 'https://'
+
 # Fix Windows console encoding
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -50,7 +52,7 @@ def extract_first_image(image_urls):
     urls = str(image_urls).split()
     for url in urls:
         url = url.strip()
-        if url.startswith('https://'):
+        if url.startswith(HTTPS_PREFIX):
             return url
     return ''
 
@@ -91,7 +93,7 @@ def normalize_url(product_page, product_url, product_name=None):
         product_url = str(product_url).strip()
     
     # If Product URL already contains full URL, return as-is
-    if product_url.startswith('http://') or product_url.startswith('https://'):
+    if product_url.startswith('http://') or product_url.startswith(HTTPS_PREFIX):
         return product_url
     
     # List of generic slugs that should be replaced with name-based slugs
@@ -107,9 +109,9 @@ def normalize_url(product_page, product_url, product_name=None):
     
     # Build full URL: https://www.alanranger.com/{Product Page}/{Product URL}
     if product_page and product_url:
-        return f'https://www.alanranger.com/{product_page}/{product_url}'
+        return f'{HTTPS_PREFIX}www.alanranger.com/{product_page}/{product_url}'
     elif product_url:
-        return f'https://www.alanranger.com/{product_url}'
+        return f'{HTTPS_PREFIX}www.alanranger.com/{product_url}'
     else:
         return ''
 
@@ -225,6 +227,143 @@ def detect_schema_type(product_name, product_url, lessons_df, workshops_df):
     
     # Step 3: Everything else is a product
     return 'product'
+
+
+def fetch_product_price_from_page(url, timeout=8):
+    """Fetch page and try to extract a GBP price."""
+    if not url or not isinstance(url, str):
+        return None
+    try:
+        req = urllib.request.Request(url, method='GET')
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            html_text = response.read().decode('utf-8', errors='ignore')
+    except Exception:
+        return None
+
+    patterns = [
+        r'property=["\']product:price:amount["\'][^>]*content=["\'](\d+(?:\.\d{1,2})?)["\']',
+        r'name=["\']product:price:amount["\'][^>]*content=["\'](\d+(?:\.\d{1,2})?)["\']',
+        r'"price"\s*:\s*"(\d+(?:\.\d{1,2})?)"',
+        r'£\s*(\d+(?:\.\d{1,2})?)'
+    ]
+
+    for pattern in patterns:
+        text_match = re.search(pattern, html_text, flags=re.IGNORECASE)
+        if not text_match:
+            continue
+        try:
+            value = float(text_match.group(1))
+            if value > 0:
+                return value
+        except Exception:
+            continue
+
+    return None
+
+
+def normalize_optional_text(value):
+    """Return normalized text, dropping NaN-like values."""
+    text = str(value or '').strip()
+    return '' if text.lower() in {'nan', 'none', 'null'} else text
+
+
+def build_supplement_category(row):
+    """Build category from Categories + Tags fields."""
+    parts = []
+    categories = normalize_optional_text(row.get('Categories', ''))
+    tags = normalize_optional_text(row.get('Tags', ''))
+    if categories:
+        parts.append(categories)
+    if tags:
+        parts.append(tags)
+    return ', '.join(parts)
+
+
+def build_supplement_row(row, title, full_url, price_val, lessons_df, workshops_df):
+    """Create one normalized supplement row for cleaned_df."""
+    image = normalize_optional_text(row.get('Image', ''))
+    if not image.startswith(HTTPS_PREFIX):
+        image = ''
+
+    synthetic_sku = f"SUP-{slugify(title).upper()[:32]}"
+    offer = {
+        "@type": "Offer",
+        "sku": synthetic_sku,
+        "price": f"{price_val:.2f}",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        "validFrom": date.today().isoformat(),
+        "priceValidUntil": (date.today() + timedelta(days=365)).isoformat(),
+        "name": title
+    }
+
+    return {
+        'name': title,
+        'description': title,
+        'image': image,
+        'url': full_url,
+        'category': build_supplement_category(row),
+        'offers': json.dumps([offer], ensure_ascii=False),
+        'total_variants': 1,
+        'lowest_price': price_val,
+        'highest_price': price_val,
+        'skus': synthetic_sku,
+        'main_sku': synthetic_sku,
+        'schema_type': detect_schema_type(title, full_url, lessons_df, workshops_df)
+    }
+
+
+def append_missing_service_rows(cleaned_df, csv_dir, lessons_df, workshops_df):
+    """
+    Add missing services/products from the services listing CSV when not present
+    in products_cleaned, using conservative defaults. Existing rows are unchanged.
+    """
+    services_file = csv_dir / '04-photography-services-courses-mentoring.csv'
+    if not services_file.exists():
+        return cleaned_df, 0
+
+    try:
+        services_df = pd.read_csv(services_file, encoding='utf-8-sig')
+    except Exception as e:
+        print(f"⚠️  Could not load services supplement CSV: {e}")
+        return cleaned_df, 0
+
+    required_cols = {'Title', 'Full Url'}
+    if not required_cols.issubset(set(services_df.columns)):
+        return cleaned_df, 0
+
+    existing_urls = set(
+        cleaned_df['url'].astype(str).str.strip().str.lower()
+        if 'url' in cleaned_df.columns else []
+    )
+
+    added_rows = []
+    for _, row in services_df.iterrows():
+        title = normalize_optional_text(row.get('Title', ''))
+        full_url = normalize_optional_text(row.get('Full Url', ''))
+        if not title or not full_url:
+            continue
+        if '/photography-services-near-me/' not in full_url.lower():
+            continue
+        if full_url.lower() in existing_urls:
+            continue
+
+        price_val = fetch_product_price_from_page(full_url)
+        if price_val is None:
+            print(f"⚠️  Skipping supplement (no detectable price): {full_url}")
+            continue
+
+        added_rows.append(build_supplement_row(
+            row, title, full_url, price_val, lessons_df, workshops_df
+        ))
+        existing_urls.add(full_url.lower())
+
+    if not added_rows:
+        return cleaned_df, 0
+
+    combined_df = pd.concat([cleaned_df, pd.DataFrame(added_rows)], ignore_index=True)
+    return combined_df, len(added_rows)
 
 def main():
     # Updated to use shared-resources structure
@@ -436,6 +575,13 @@ def main():
         sys.exit(1)
     
     cleaned_df = pd.DataFrame(grouped_data)
+
+    # Safe supplement: append missing service products only when absent.
+    cleaned_df, supplemental_added = append_missing_service_rows(
+        cleaned_df, csv_dir, lessons_df, workshops_df
+    )
+    if supplemental_added > 0:
+        print(f"Added {supplemental_added} missing service products from services CSV")
     
     # Save as Excel
     output_file = csv_processed_dir / '02 – products_cleaned.xlsx'

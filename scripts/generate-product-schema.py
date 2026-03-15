@@ -36,6 +36,7 @@ v6.2.0 Changes (Baseline Restore Point):
 import pandas as pd
 import json
 import re
+import html as html_lib
 import warnings
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -80,7 +81,7 @@ PERFORMER = {
 # Separate Organization block (standalone, not nested in LocalBusiness)
 ORGANIZATION = {
     "@type": "Organization",
-    "@id": "https://www.alanranger.com#org",
+    "@id": "https://www.alanranger.com/#org",
     "name": "Alan Ranger Photography",
     "url": "https://www.alanranger.com/",
     "logo": ORGANIZER["logo"],
@@ -127,6 +128,32 @@ def normalize_slug(value):
     value = re.sub(r'[^a-z0-9-]+', '-', value)
     value = re.sub(r'-+', '-', value)
     return value.strip('-')
+
+
+def clean_product_description(raw_text, max_len=600):
+    """Normalize product description text and truncate at word boundary."""
+    if raw_text is None or pd.isna(raw_text):
+        return ''
+    separator_replacement = r'\1 \2'
+    text = html_lib.unescape(str(raw_text or ''))
+    if text.strip().lower() in {'nan', 'none', 'null'}:
+        return ''
+    text = re.sub(r'<[^>]+>', ' ', text)
+    # Recover spacing lost in flattened exports (e.g., "CoventrySummary", "Course3wks").
+    text = re.sub(r'([a-z])([A-Z])', separator_replacement, text)
+    text = re.sub(r'([a-z])(\d)', separator_replacement, text)
+    text = re.sub(r'(\d)([a-z])', separator_replacement, text)
+    text = re.sub(r'(\d)([A-Z][a-z])', separator_replacement, text)
+    text = re.sub(r'([A-Z]{2,})([A-Z][a-z])', separator_replacement, text)
+    text = ' '.join(text.split())
+    if not text:
+        return ''
+    if len(text) <= max_len:
+        return text
+    cutoff = text.rfind(' ', 0, max_len)
+    if cutoff < int(max_len * 0.6):
+        cutoff = max_len
+    return text[:cutoff].rstrip() + '...'
 
 def slug_matches(review_slug, product_slug, threshold=0.85):
     """Check if review slug matches product slug using multiple strategies"""
@@ -379,13 +406,9 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     # Provider removed - not valid for Product type (only for Course/Service)
     # Event information will be nested inside each Offer object instead
     
-    # Add description - limit to 600 chars and strip line breaks
+    # Add description - normalize text, strip markup, and truncate safely
     if product_description:
-        # Strip line breaks and normalize whitespace
-        description_clean = ' '.join(product_description.split())
-        # Limit to 600 characters
-        if len(description_clean) > 600:
-            description_clean = description_clean[:597] + '...'
+        description_clean = clean_product_description(product_description, max_len=600)
         product_schema["description"] = description_clean
     
     # Add image - validate HTTPS URL, else omit
@@ -683,7 +706,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     },
                     "shippingDetails": {
                         "@type": "OfferShippingDetails",
-                        "doesNotShip": "http://schema.org/True",
+                        "doesNotShip": True,
                         "shippingDestination": {
                             "@type": "DefinedRegion",
                             "addressCountry": "GB"
@@ -720,7 +743,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             if 'shippingDetails' not in offer:
                 offer['shippingDetails'] = {
                     "@type": "OfferShippingDetails",
-                    "doesNotShip": "http://schema.org/True",
+                    "doesNotShip": True,
                     "shippingDestination": {
                         "@type": "DefinedRegion",
                         "addressCountry": "GB"
@@ -1181,8 +1204,8 @@ def validate_schema_structure(schema_data, product_name):
         
         # Validate shippingDetails
         shipping = offers.get('shippingDetails', {})
-        if not isinstance(shipping, dict) or shipping.get('doesNotShip') != 'http://schema.org/True':
-            errors.append("Offers 'shippingDetails.doesNotShip' must be 'http://schema.org/True'")
+        if not isinstance(shipping, dict) or shipping.get('doesNotShip') is not True:
+            errors.append("Offers 'shippingDetails.doesNotShip' must be boolean true")
         
         # Validate hasMerchantReturnPolicy
         return_policy = offers.get('hasMerchantReturnPolicy', {})
