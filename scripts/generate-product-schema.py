@@ -1324,17 +1324,94 @@ def schema_to_script_tag_html(json_filename):
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
+    faq_filename = json_filename.replace('_schema.json', '_faq.json') if json_filename.endswith('_schema.json') else f"{json_filename}_faq.json"
+    faq_url = f"https://schema.alanranger.com/{faq_filename}"
     fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
 <script>
-fetch("{json_url}")
-  .then(r => r.json())
-  .then(json => {{
+(function() {{
+  function appendJsonLd(payload) {{
+    if (!payload || typeof payload !== "object") return;
     const s = document.createElement("script");
     s.type = "application/ld+json";
-    s.text = JSON.stringify(json);
+    s.text = JSON.stringify(payload);
     document.head.appendChild(s);
-  }})
-  .catch(console.error);
+  }}
+
+  function hasExistingFaqSignal() {{
+    const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+    const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
+    if (hasFaqSchema) return true;
+    const pageText = String(document.body?.innerText || "").toLowerCase();
+    return /\\bfaqs?\\b|frequently asked questions/.test(pageText);
+  }}
+
+  function hasExistingTldrSignal() {{
+    if (document.getElementById("ar-tldr-block")) return true;
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+    return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));
+  }}
+
+  function injectTldrBlock(summaryText) {{
+    if (hasExistingTldrSignal()) return;
+    const summary = String(summaryText || "").replace(/\\s+/g, " ").trim();
+    if (summary.length < 40) return;
+
+    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+    if (!container) return;
+
+    const block = document.createElement("section");
+    block.id = "ar-tldr-block";
+    block.style.margin = "1rem 0";
+    block.style.padding = "0.85rem 1rem";
+    block.style.border = "1px solid #dbe3ec";
+    block.style.borderRadius = "8px";
+    block.style.background = "#f8fbff";
+
+    const title = document.createElement("h2");
+    title.textContent = "TLDR";
+    title.style.margin = "0 0 0.45rem 0";
+    title.style.fontSize = "1rem";
+
+    const body = document.createElement("p");
+    body.textContent = summary;
+    body.style.margin = "0";
+    body.style.lineHeight = "1.55";
+
+    block.appendChild(title);
+    block.appendChild(body);
+
+    const firstHeading = container.querySelector("h1, h2");
+    if (firstHeading && firstHeading.parentNode) {{
+      firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);
+      return;
+    }}
+    if (container.firstChild) {{
+      container.insertBefore(block, container.firstChild);
+    }} else {{
+      container.appendChild(block);
+    }}
+  }}
+
+  fetch("{json_url}")
+    .then((r) => r.ok ? r.json() : null)
+    .then((json) => {{
+      if (!json) return;
+      appendJsonLd(json);
+      injectTldrBlock(json.description || json.name || "");
+    }})
+    .catch(console.error);
+
+  fetch("{faq_url}")
+    .then((r) => r.ok ? r.json() : null)
+    .then((faqJson) => {{
+      if (!faqJson) return;
+      const faqType = String(faqJson?.["@type"] || "").toLowerCase();
+      if (faqType !== "faqpage") return;
+      if (hasExistingFaqSignal()) return;
+      appendJsonLd(faqJson);
+    }})
+    .catch(() => {{}});
+}})();
 </script>'''
     
     # Combine suppressor block + Product fetch script (Event schema NOT included)
