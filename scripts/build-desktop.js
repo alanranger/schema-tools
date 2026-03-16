@@ -34,8 +34,9 @@ const localAppData = process.env.LOCALAPPDATA ||
 
 const outputDir = path.join(localAppData, 'SchemaTools');
 const oldAppDir = path.join(outputDir, 'SchemaTools-win32-x64');
-const tempAppDir = path.join(outputDir, 'SchemaTools-win32-x64.temp.' + Date.now());
 const finalAppDir = path.join(outputDir, 'SchemaTools-win32-x64');
+const legacyProjectDistDir = path.join(projectRoot, 'dist');
+const legacyProjectReleaseDir = path.join(projectRoot, 'release');
 
 console.log(`📁 Building to: ${outputDir}`);
 
@@ -63,6 +64,65 @@ function runRoboCopyMirror(src, dest) {
     const code = typeof e?.status === 'number' ? e.status : 999;
     if (code <= 7) return; // treat as success
     throw e;
+  }
+}
+
+function removeDirectoryIfExists(dirPath, label) {
+  try {
+    if (!fs.existsSync(dirPath)) return;
+    fs.rmSync(dirPath, { recursive: true, force: true });
+    console.log(`🧹 Removed stale ${label}: ${dirPath}`);
+  } catch (error) {
+    console.log(`⚠️  Could not remove ${label} (${dirPath}): ${error.message}`);
+  }
+}
+
+function cleanupLegacyBuildArtifacts() {
+  removeDirectoryIfExists(legacyProjectDistDir, 'project dist folder');
+  removeDirectoryIfExists(legacyProjectReleaseDir, 'project release folder');
+
+  // Remove old temporary folders in LOCALAPPDATA output directory.
+  if (!fs.existsSync(outputDir)) return;
+  try {
+    const tempFolders = fs.readdirSync(outputDir)
+      .filter((name) => name.startsWith('build-temp-') || name.startsWith('SchemaTools-win32-x64.old.'));
+    for (const folderName of tempFolders) {
+      removeDirectoryIfExists(path.join(outputDir, folderName), 'temporary build folder');
+    }
+  } catch (error) {
+    console.log(`⚠️  Could not scan ${outputDir} for temp folders: ${error.message}`);
+  }
+}
+
+function getGitCommitHash() {
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      shell: true
+    }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
+function writeBuildInfoFile() {
+  try {
+    const packageJsonPath = path.join(projectRoot, 'package.json');
+    const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const buildInfoPath = path.join(finalAppDir, 'resources', 'app', 'build-info.json');
+    const buildInfo = {
+      app: 'SchemaTools',
+      version: packageData.version || 'unknown',
+      gitCommit: getGitCommitHash(),
+      builtAtIso: new Date().toISOString(),
+      sourceProjectRoot: projectRoot
+    };
+    fs.writeFileSync(buildInfoPath, JSON.stringify(buildInfo, null, 2), 'utf-8');
+    console.log(`📝 Wrote build metadata: ${buildInfoPath}`);
+  } catch (error) {
+    console.log(`⚠️  Could not write build-info.json: ${error.message}`);
   }
 }
 
@@ -207,6 +267,7 @@ async function cleanupOldDirectory() {
 // Build command - use temporary directory name to avoid conflicts
 async function build() {
   await killLockingProcesses();
+  cleanupLegacyBuildArtifacts();
 
   // IMPORTANT:
   // Do NOT build into outputDir directly. electron-packager --overwrite tries to delete
@@ -260,6 +321,7 @@ async function build() {
 
         // Cleanup temp output directory (best effort)
         try { fs.rmSync(buildOutDir, { recursive: true, force: true }); } catch {}
+        writeBuildInfoFile();
         break;
       } catch (e) {
         if (attempt < 4) {

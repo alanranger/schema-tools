@@ -374,7 +374,10 @@ ipcMain.handle('build-desktop', async () => {
 // IPC handler for opening the built exe
 ipcMain.handle('open-exe', async (event, exePath) => {
   try {
-    await shell.openPath(exePath);
+    const openResult = await shell.openPath(exePath);
+    if (openResult) {
+      throw new Error(openResult);
+    }
     return { success: true };
   } catch (error) {
     console.error("Failed to open exe:", error);
@@ -392,14 +395,10 @@ ipcMain.handle('get-exe-path', async () => {
   if (fs.existsSync(exePath)) {
     return exePath;
   }
-  
-  // Fallback to old dist location (for backwards compatibility)
-  const oldPath = path.join(__dirname, 'dist', 'SchemaTools-win32-x64', 'SchemaTools.exe');
-  if (fs.existsSync(oldPath)) {
-    return oldPath;
-  }
-  
-  return exePath; // Return expected path even if not found yet
+
+  // Intentionally do NOT fall back to ./dist.
+  // Falling back can launch stale builds that don't match current source code.
+  return '';
 });
 
 // IPC handler for opening DevTools (Electron console)
