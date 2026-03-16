@@ -208,11 +208,16 @@ def contains_faq_signal(source_html):
     html = str(source_html or "")
     html_unescaped = html_lib.unescape(html)
 
-    # Detect inline FAQPage schema (including entity-escaped payloads).
-    if re.search(r'"@type"\s*:\s*"FAQPage"', html, flags=re.IGNORECASE):
-        return True
-    if re.search(r'"@type"\s*:\s*"FAQPage"', html_unescaped, flags=re.IGNORECASE):
-        return True
+    # Detect FAQPage only inside actual JSON-LD script tags.
+    # Important: do not treat JS variables like INLINE_FAQ_PAYLOAD as existing FAQ.
+    jsonld_blocks = re.findall(
+        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>([\s\S]*?)</script>',
+        html_unescaped,
+        flags=re.IGNORECASE
+    )
+    for block in jsonld_blocks:
+        if re.search(r'"@type"\s*:\s*"FAQPage"', block, flags=re.IGNORECASE):
+            return True
 
     # Detect deferred FAQ loaders already present in page/snippet scripts.
     if re.search(r"/[a-z0-9._\-/]*_faq\.json(?:[\"'?&#]|$)", html, flags=re.IGNORECASE):
