@@ -42,6 +42,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 import sys
 import os
+import time
 from datetime import datetime, date, timedelta
 from urllib.parse import urlparse, urljoin
 from urllib.request import Request, urlopen
@@ -255,17 +256,36 @@ def snippet_targets_contain_faq(snippet_targets):
 
 def fetch_page_snapshot(url, cache):
     """Fetch lightweight page signals (FAQ presence + text/title hints) with per-run cache."""
-    empty_snapshot = {"has_existing_faq": False, "title": "", "plain_text": ""}
+    empty_snapshot = {
+        "has_existing_faq": False,
+        "title": "",
+        "plain_text": "",
+        "fetched_ok": False,
+        "fetch_error": ""
+    }
     if not url:
         return empty_snapshot
     if url in cache:
         return cache[url]
 
-    try:
-        html = fetch_html(url, timeout_sec=12)
-    except Exception:
-        cache[url] = empty_snapshot
-        return empty_snapshot
+    html = ""
+    fetch_error = ""
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            html = fetch_html(url, timeout_sec=12)
+            fetch_error = ""
+            break
+        except Exception as err:
+            fetch_error = f"{type(err).__name__}: {err}"
+            if attempt < max_attempts - 1:
+                time.sleep(0.8)
+
+    if not html:
+        failed_snapshot = dict(empty_snapshot)
+        failed_snapshot["fetch_error"] = fetch_error
+        cache[url] = failed_snapshot
+        return failed_snapshot
 
     title = ""
     title_match = re.search(r"<title>(.*?)</title>", html, flags=re.IGNORECASE | re.DOTALL)
@@ -281,7 +301,9 @@ def fetch_page_snapshot(url, cache):
     snapshot = {
         "has_existing_faq": has_existing_faq,
         "title": title,
-        "plain_text": plain_text[:8000]
+        "plain_text": plain_text[:8000],
+        "fetched_ok": True,
+        "fetch_error": ""
     }
     cache[url] = snapshot
     return snapshot
@@ -3200,6 +3222,7 @@ def main():
             snapshot = fetch_page_snapshot(product_url, page_snapshot_cache)
             if snapshot.get("has_existing_faq"):
                 faq_skipped_existing_count += 1
+                print(f"ℹ️ FAQ skipped [{product_name_slug}] existing FAQ signal detected on page/snippet.")
                 if faq_path.exists():
                     try:
                         faq_path.unlink()
@@ -3219,6 +3242,18 @@ def main():
                     event_facts=event_facts
                 )
                 valid_pairs = validate_and_normalize_faq_pairs(candidates, terms)
+                if not valid_pairs and snapshot.get("fetch_error"):
+                    # Resilient fallback when live-page fetch fails: use known CSV facts.
+                    fallback_candidates = generate_candidate_faq_pairs(
+                        product_name=product_name,
+                        product_url=product_url,
+                        description_text=description_text,
+                        page_title=product_name,
+                        page_text=description_text,
+                        product_price=row.get("price", ""),
+                        event_facts=event_facts
+                    )
+                    valid_pairs = validate_and_normalize_faq_pairs(fallback_candidates, terms)
                 if valid_pairs:
                     faq_payload = build_faq_jsonld(product_url, valid_pairs)
                     generated_faq_payload = faq_payload
@@ -3230,6 +3265,11 @@ def main():
                         print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
                 else:
                     faq_skipped_quality_count += 1
+                    fetch_error = str(snapshot.get("fetch_error", "")).strip()
+                    if fetch_error:
+                        print(f"ℹ️ FAQ skipped [{product_name_slug}] quality rules not met after fetch fallback. Fetch issue: {fetch_error}")
+                    else:
+                        print(f"ℹ️ FAQ skipped [{product_name_slug}] quality rules not met.")
                     if faq_path.exists():
                         try:
                             faq_path.unlink()
