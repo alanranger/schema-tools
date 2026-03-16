@@ -201,11 +201,10 @@ def html_to_plain_text(html):
     return html_lib.unescape(re.sub(r"\s+", " ", cleaned)).strip()
 
 
-def contains_faq_signal(source_html, source_text):
-    """Detect FAQ by schema or strong FAQ headings/text."""
+def contains_faq_signal(source_html):
+    """Detect existing machine-readable FAQ signals only."""
     html = str(source_html or "")
     html_unescaped = html_lib.unescape(html)
-    text = str(source_text or "")
 
     # Detect inline FAQPage schema (including entity-escaped payloads).
     if re.search(r'"@type"\s*:\s*"FAQPage"', html, flags=re.IGNORECASE):
@@ -216,15 +215,7 @@ def contains_faq_signal(source_html, source_text):
     # Detect deferred FAQ loaders already present in page/snippet scripts.
     if re.search(r"/[a-z0-9._\-/]*_faq\.json(?:[\"'?&#]|$)", html, flags=re.IGNORECASE):
         return True
-
-    heading_match = re.search(
-        r"<h[1-4][^>]*>\s*(?:faqs?|frequently\s+asked\s+questions)\s*</h[1-4]>",
-        html,
-        flags=re.IGNORECASE
-    )
-    if heading_match:
-        return True
-    return re.search(r"\bfrequently asked questions\b", text, flags=re.IGNORECASE) is not None
+    return False
 
 
 def extract_snippet_targets(source_html, page_url):
@@ -254,8 +245,7 @@ def snippet_targets_contain_faq(snippet_targets):
     for snippet_url in snippet_targets:
         try:
             snippet_html = fetch_html(snippet_url, timeout_sec=8)
-            snippet_text = html_to_plain_text(snippet_html)
-            if contains_faq_signal(snippet_html, snippet_text):
+            if contains_faq_signal(snippet_html):
                 return True
         except Exception:
             continue
@@ -282,7 +272,7 @@ def fetch_page_snapshot(url, cache):
         title = html_lib.unescape(re.sub(r"\s+", " ", title_match.group(1))).strip()
 
     plain_text = html_to_plain_text(html)
-    has_existing_faq = contains_faq_signal(html, plain_text)
+    has_existing_faq = contains_faq_signal(html)
     if not has_existing_faq:
         snippet_targets = extract_snippet_targets(html, url)
         has_existing_faq = snippet_targets_contain_faq(snippet_targets)
