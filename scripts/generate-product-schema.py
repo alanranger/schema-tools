@@ -1571,8 +1571,10 @@ def schema_to_script_tag_html(json_filename):
     const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
     const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
     if (hasFaqSchema) return true;
-    // Also skip if page already has a known FAQ JSON loader reference.
-    const scriptBlocks = Array.from(document.querySelectorAll("script"));
+    // Skip only if another script (not this one) already loads an FAQ JSON endpoint.
+    const currentScript = document.currentScript;
+    const scriptBlocks = Array.from(document.querySelectorAll("script"))
+      .filter((block) => block !== currentScript);
     return scriptBlocks.some((block) => /\\/[a-z0-9._\\-/]*_faq\\.json(?:["'?#&]|$)/i.test(String(block.textContent || "") + " " + String(block.src || "")));
   }}
 
