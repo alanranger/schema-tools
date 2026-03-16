@@ -58,6 +58,7 @@ warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
 
 SCHEMA_JSON_SUFFIX = "_schema.json"
 FAQ_JSON_SUFFIX = "_faq.json"
+MAX_FAQ_QUESTIONS = 7
 
 # Static schema blocks
 ORGANIZER = {
@@ -363,10 +364,11 @@ def has_concrete_fact_signal(text):
         r"\b\d{1,2}:\d{2}\b",
         r"\b(?:\d{1,2}\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*20\d{2})\b",
         r"\b(?:\d+\s*participants?|participants?\b.*\b\d+)\b",
-        r"\b(zoom|online|in person|face to face|coventry|warwickshire|wales|devon|yorkshire|lake district)\b",
+        r"\b(zoom|online|in person|in-person|face to face|coventry|warwickshire|wales|devon|yorkshire|lake district)\b",
+        r"\b(dslr|mirrorless|tripod|filters?|laptop|lightroom|adobe)\b",
         r"\b(email delivery|same day delivery|download|pdf|checklist|bundle|voucher|redeem)\b",
-        r"\b(valid for|expires?|expiration|checkout|code)\b",
-        r"\b(beginner|beginners|laptop|lightroom|adobe)\b"
+        r"\b(valid for|expires?|expiration|checkout|code|interest-free|interest free|monthly|quarterly|annual)\b",
+        r"\b(beginner|beginners)\b"
     ]
     return any(re.search(pattern, source) for pattern in fact_patterns)
 
@@ -557,6 +559,19 @@ def parse_equipment_needed(text):
     if not m:
         return ""
     value = re.sub(r"\s+", " ", m.group(1)).strip(" .,-")
+    stop_markers = [
+        "photography workshop event details",
+        "option:",
+        "description:",
+        "experience - level",
+        "participants:"
+    ]
+    value_lower = value.lower()
+    for marker in stop_markers:
+        idx = value_lower.find(marker)
+        if idx > 20:
+            value = value[:idx].strip(" .,-")
+            value_lower = value.lower()
     return value[:220]
 
 
@@ -700,17 +715,17 @@ def add_course_faq_pairs(pairs, title, facts):
     if facts["location_text"]:
         pairs.append((
             f"Where does {title} take place?",
-            f"{title} is listed with location details for {facts['location_text']} on this page."
+            f"{title} is listed with location details for {facts['location_text']}."
         ))
     elif facts["is_online"] and not facts["is_in_person"]:
         pairs.append((
             f"Is {title} online or in person?",
-            f"{title} is positioned as an online option on this page, with delivery via Zoom or remote support."
+            f"{title} is positioned as an online option with delivery via Zoom or remote support."
         ))
     elif facts["is_in_person"] and not facts["is_online"]:
         pairs.append((
             f"Is {title} online or in person?",
-            f"{title} is presented as an in-person format on this page."
+            f"{title} is presented as an in-person format."
         ))
     if facts["duration_text"] and not facts.get("time_schedule_text"):
         pairs.append((
@@ -735,7 +750,7 @@ def add_general_faq_pairs(pairs, title, facts):
         price_hint = " / ".join(facts["prices"][:3])
         pairs.append((
             f"What price options are shown for {title}?",
-            f"The page currently shows prices from {price_hint}, with options visible at checkout."
+                f"Current listed prices start from {price_hint}, with options visible at checkout."
         ))
 
     if facts["is_course_like"] or facts["is_private"] or facts["is_subscription"]:
@@ -748,6 +763,36 @@ def add_general_faq_pairs(pairs, title, facts):
                 f"Who is {title} best suited for?",
                 audience_sentence
             ))
+
+
+def derive_subscription_terms(title, product_url):
+    """Extract cadence and payment-plan cues for subscription FAQs."""
+    source = f"{str(title or '')} {str(product_url or '')}".lower()
+    cadence = ""
+    for key in ["monthly", "quarterly", "annual"]:
+        if key in source:
+            cadence = key
+            break
+    has_interest_free = "interest free" in source or "interest-free" in source
+    return {
+        "cadence": cadence,
+        "has_interest_free": has_interest_free
+    }
+
+
+def add_subscription_faq_pairs(pairs, title, product_url):
+    """Add targeted FAQs for subscription/payment-plan products."""
+    terms = derive_subscription_terms(title, product_url)
+    if terms["cadence"]:
+        pairs.append((
+            f"What billing cadence is listed for {title}?",
+            f"This option is listed as a {terms['cadence']} payment cadence within the plan options."
+        ))
+    if terms["has_interest_free"]:
+        pairs.append((
+            f"Does {title} include an interest-free payment option?",
+            "The listing explicitly references an interest-free payment plan for this subscription."
+        ))
 
 
 def build_include_answer(title, desc, facts, sentences):
@@ -766,8 +811,47 @@ def build_include_answer(title, desc, facts, sentences):
     if facts["is_in_person"] and not facts["is_online"]:
         fact_bits.append("an in-person delivery format")
     if fact_bits:
-        return f"{title} is listed on this page with " + ", ".join(fact_bits) + "."
-    return desc or f"{title} includes the options shown on this page."
+        return f"{title} is listed with " + ", ".join(fact_bits) + "."
+    return desc or f"{title} includes the options listed in this service."
+
+
+def merge_event_fact_fallbacks(facts, event_data):
+    """Backfill missing fact fields from matched event data."""
+    fallback_map = [
+        ("time_range", "time_schedule_text"),
+        ("participants", "participants_text"),
+        ("experience_level", "experience_level_text"),
+        ("equipment_needed", "equipment_needed_text")
+    ]
+    for source_key, target_key in fallback_map:
+        source_value = event_data.get(source_key)
+        target_value = facts.get(target_key)
+        if source_value and not target_value:
+            facts[target_key] = str(source_value).replace(":00", "") if source_key == "time_range" else source_value
+
+
+def should_prioritize_fact_questions(facts, event_data):
+    """Prefer concrete fact questions for course-like pages."""
+    strong_course_facts = bool(
+        event_data.get("dates")
+        or facts.get("time_schedule_text")
+        or facts.get("participants_text")
+        or facts.get("equipment_needed_text")
+    )
+    return facts["is_course_like"] and strong_course_facts
+
+
+def add_type_specific_faq_pairs(pairs, title, product_url, facts, sentences, event_data):
+    """Append FAQ pairs based on detected product/page type."""
+    add_event_specific_faq_pairs(pairs, title, event_data)
+    if facts["is_voucher"]:
+        add_voucher_faq_pairs(pairs, title, facts, sentences)
+    if facts["is_downloadable"]:
+        add_downloadable_faq_pairs(pairs, title, sentences)
+    if facts["is_course_like"]:
+        add_course_faq_pairs(pairs, title, facts)
+    if facts["is_subscription"]:
+        add_subscription_faq_pairs(pairs, title, product_url)
 
 
 def generate_candidate_faq_pairs(product_name, product_url, description_text, page_title, page_text, product_price="", event_facts=None):
@@ -776,30 +860,17 @@ def generate_candidate_faq_pairs(product_name, product_url, description_text, pa
     desc = clean_product_description(description_text or "", max_len=800)
     context = " ".join([title, desc, str(page_text or "")[:8000]]).strip()
     facts = extract_context_facts(title, desc, product_url, context, product_price=product_price)
+    event_data = event_facts or {}
+    merge_event_fact_fallbacks(facts, event_data)
     sentences = facts["sentences"]
 
     include_answer = build_include_answer(title, desc, facts, sentences)
-    strong_course_facts = bool(
-        (event_facts or {}).get("dates")
-        or facts.get("time_schedule_text")
-        or facts.get("participants_text")
-        or facts.get("equipment_needed_text")
-    )
-    prioritize_fact_questions = facts["is_course_like"] and strong_course_facts
+    prioritize_fact_questions = should_prioritize_fact_questions(facts, event_data)
 
     pairs = []
     if not prioritize_fact_questions:
         pairs.append((f"What is included in {title}?", include_answer))
-    add_event_specific_faq_pairs(pairs, title, event_facts or {})
-
-    if facts["is_voucher"]:
-        add_voucher_faq_pairs(pairs, title, facts, sentences)
-
-    if facts["is_downloadable"]:
-        add_downloadable_faq_pairs(pairs, title, sentences)
-
-    if facts["is_course_like"]:
-        add_course_faq_pairs(pairs, title, facts)
+    add_type_specific_faq_pairs(pairs, title, product_url, facts, sentences, event_data)
 
     add_general_faq_pairs(pairs, title, facts)
     if prioritize_fact_questions:
@@ -824,7 +895,7 @@ def faq_pair_is_valid(question, answer, q_key, seen_questions, specific_terms):
 
 
 def validate_and_normalize_faq_pairs(faq_pairs, specific_terms):
-    """Apply strict QA rules; return 3-5 clean, page-anchored FAQ pairs."""
+    """Apply strict QA rules; return 3-7 clean, page-anchored FAQ pairs."""
     valid = []
     seen = set()
 
@@ -838,7 +909,7 @@ def validate_and_normalize_faq_pairs(faq_pairs, specific_terms):
         seen.add(q_key)
 
         valid.append((q, a))
-        if len(valid) == 5:
+        if len(valid) == MAX_FAQ_QUESTIONS:
             break
 
     return valid if len(valid) >= 3 else []
