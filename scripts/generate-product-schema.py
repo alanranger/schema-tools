@@ -280,7 +280,7 @@ def fetch_page_snapshot(url, cache):
     snapshot = {
         "has_existing_faq": has_existing_faq,
         "title": title,
-        "plain_text": plain_text[:3000]
+        "plain_text": plain_text[:8000]
     }
     cache[url] = snapshot
     return snapshot
@@ -305,49 +305,505 @@ def build_page_specific_terms(product_name, product_url, page_title):
     return terms[:10]
 
 
-def generate_candidate_faq_pairs(product_name, description_text, page_title, page_text):
-    """Generate deterministic FAQ candidates from known product/page context."""
+def split_context_sentences(text):
+    """Split page text into compact sentence-like chunks."""
+    compact = re.sub(r"\s+", " ", str(text or "")).strip()
+    if not compact:
+        return []
+    chunks = re.split(r"(?<=[\.\!\?])\s+|\s+\*\s+|\s{2,}", compact)
+    cleaned = []
+    for chunk in chunks:
+        item = chunk.strip(" -•\t\r\n")
+        if 30 <= len(item) <= 260 and not is_noise_sentence(item):
+            cleaned.append(item)
+    return cleaned
+
+
+def is_noise_sentence(text):
+    """Filter navigation/UI fragments that should never become FAQ answers."""
+    source = str(text or "").strip()
+    lower = source.lower()
+    if not source:
+        return True
+    bad_phrases = [
+        "contact academy back",
+        "skip to content",
+        "cookie",
+        "view cart",
+        "sign in",
+        "menu"
+    ]
+    if any(phrase in lower for phrase in bad_phrases):
+        return True
+    if source.count("|") >= 2:
+        return True
+    alpha_count = len(re.findall(r"[a-z]", lower))
+    return alpha_count < 20
+
+
+def pick_sentence_with_keywords(sentences, keywords):
+    """Pick first sentence containing any keyword."""
+    if not sentences:
+        return ""
+    for sentence in sentences:
+        s_lower = sentence.lower()
+        if is_noise_sentence(s_lower):
+            continue
+        if any(keyword in s_lower for keyword in keywords):
+            return sentence
+    return ""
+
+
+def has_concrete_fact_signal(text):
+    """Require facts/cues so FAQ output is not generic boilerplate."""
+    source = str(text or "").lower()
+    fact_patterns = [
+        r"£\s?\d+(?:\.\d{2})?",
+        r"\b\d+(?:\.\d+)?\s*(?:hr|hour|hours|day|days|week|weeks|month|months)\b",
+        r"\b\d{1,2}:\d{2}\b",
+        r"\b(?:\d{1,2}\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*20\d{2})\b",
+        r"\b(?:\d+\s*participants?|participants?\b.*\b\d+)\b",
+        r"\b(zoom|online|in person|face to face|coventry|warwickshire|wales|devon|yorkshire|lake district)\b",
+        r"\b(email delivery|same day delivery|download|pdf|checklist|bundle|voucher|redeem)\b",
+        r"\b(valid for|expires?|expiration|checkout|code)\b",
+        r"\b(beginner|beginners|laptop|lightroom|adobe)\b"
+    ]
+    return any(re.search(pattern, source) for pattern in fact_patterns)
+
+
+def derive_location_from_url(product_url):
+    """Best-effort location extraction from URL slug tokens."""
+    source = str(product_url or "").lower()
+    if not source:
+        return ""
+    known_locations = [
+        "coventry", "warwickshire", "wales", "devon", "yorkshire", "anglesey",
+        "snowdonia", "exmoor", "dartmoor", "dorset", "gower", "gloucs",
+        "peak-district", "lake-district", "north-yorkshire", "burnham-on-sea"
+    ]
+    for loc in known_locations:
+        if loc in source:
+            return loc.replace("-", " ").title()
+    return ""
+
+
+def extract_duration_from_sentences(sentences):
+    """Extract a likely course/workshop duration from cleaned sentence fragments."""
+    unit_patterns = [r"h(?:r|ours?)", r"days?", r"weeks?", r"months?"]
+    for sentence in sentences:
+        for unit_pattern in unit_patterns:
+            duration_regex = re.compile(
+                rf"\b(?:\d+\s*(?:weekly|x)\s*)?\d+(?:\.\d+)?\s*{unit_pattern}\b",
+                flags=re.IGNORECASE
+            )
+            match = duration_regex.search(sentence)
+            if match:
+                return match.group(0)
+    return ""
+
+
+def extract_context_facts(title, desc, product_url, page_text, product_price=""):
+    """Extract concrete page facts to make FAQ answers less generic."""
+    core_source = " ".join([str(title or ""), str(desc or ""), str(product_url or "")])
+    source = " ".join([core_source, str(page_text or "")])
+    core_lower = core_source.lower()
+    sentences = split_context_sentences(" ".join([str(desc or ""), str(page_text or "")]))
+
+    price_matches = re.findall(r"£\s?\d+(?:\.\d{2})?", source)
+    unique_prices = []
+    for value in price_matches:
+        v = value.replace(" ", "")
+        if v not in unique_prices:
+            unique_prices.append(v)
+
+    duration_text = extract_duration_from_sentences(sentences)
+    if not duration_text:
+        duration_match = re.search(
+            r"\b\d+(?:\.\d+)?\s*(?:hr|hour|hours|day|days|week|weeks|month|months)\b",
+            core_lower
+        )
+        duration_text = duration_match.group(0) if duration_match else ""
+    location_match = re.search(r"\blocation\s*-\s*([a-z][a-z\s-]{2,50})\b", source.lower())
+    location_text = location_match.group(1).title() if location_match else derive_location_from_url(product_url)
+
+    explicit_price = normalize_price_value(product_price)
+    if explicit_price and explicit_price not in unique_prices:
+        unique_prices.insert(0, explicit_price)
+
+    fact_flags = build_context_flags(core_lower)
+    source_text = re.sub(r"\s+", " ", source)
+    return {
+        **fact_flags,
+        "prices": unique_prices[:4],
+        "duration_text": duration_text,
+        "location_text": location_text,
+        "participants_text": parse_participants(source_text),
+        "experience_level_text": parse_experience_level(source_text),
+        "equipment_needed_text": parse_equipment_needed(source_text),
+        "time_schedule_text": parse_time_schedule(source_text),
+        "sentences": sentences
+    }
+
+
+def normalize_price_value(product_price):
+    """Normalize CSV price value to £ string."""
+    try:
+        if product_price not in [None, ""] and pd.notna(product_price):
+            return f"£{float(product_price):.2f}".rstrip("0").rstrip(".")
+    except Exception:
+        return ""
+    return ""
+
+
+def build_context_flags(core_lower):
+    """Build boolean context flags used by FAQ generation rules."""
+    return {
+        "is_voucher": bool(re.search(r"\bgift voucher|gift card|e\s*card|evoucher\b", core_lower)),
+        "is_downloadable": bool(re.search(r"\bpdf|download|checklist|bundle|ebook\b", core_lower)),
+        "is_online": bool(re.search(r"\bonline|zoom\b", core_lower)),
+        "is_in_person": bool(re.search(r"\bface to face|in person|workshop|walk\b", core_lower)),
+        "is_private": bool(re.search(r"\bprivate|1-2-1|121\b", core_lower)),
+        "is_course_like": bool(re.search(r"\bcourse|workshop|lesson|class|mentoring\b", core_lower)),
+        "is_subscription": bool(re.search(r"\bsubscription|monthly|quarterly|annual\b", core_lower)),
+        "is_beginner": bool(re.search(r"\bbeginner|new to|foundation\b", core_lower)),
+        "has_delivery_wording": bool(re.search(r"\bemail delivery|same day delivery|delivered|recipient\b", core_lower)),
+        "has_expiry_wording": bool(re.search(r"\bexpire|expiration|valid for\b", core_lower))
+    }
+
+
+def tokenize_for_match(text):
+    """Tokenize text for lightweight cross-source matching."""
+    source = re.sub(r"[^a-z0-9\s-]", " ", str(text or "").lower()).replace("-", " ")
+    stop = {
+        "alan", "ranger", "alanranger", "photography", "photo", "course", "courses", "class", "classes",
+        "workshop", "workshops", "lesson", "lessons", "service", "services", "near", "me",
+        "http", "https", "www", "com", "the", "for", "and"
+    }
+    return {tok for tok in source.split() if len(tok) >= 4 and tok not in stop}
+
+
+def score_event_row_match(row, product_tokens, product_slug, anchor_tokens):
+    """Score how well one event row matches the product."""
+    title = str(row.get("Event_Title", ""))
+    excerpt = str(row.get("Excerpt", ""))
+    event_url = str(row.get("Event_URL", ""))
+    row_tokens = tokenize_for_match(" ".join([title, excerpt, event_url]))
+    if anchor_tokens and not anchor_tokens.intersection(row_tokens):
+        return 0
+    overlap = len(product_tokens.intersection(row_tokens))
+    overlap += len(anchor_tokens.intersection(row_tokens)) * 2
+    if product_slug and product_slug in event_url.lower():
+        overlap += 2
+    if "/beginners-photography-lessons/" in event_url.lower():
+        overlap += 1
+    return overlap
+
+
+def find_related_event_rows(product_name, product_url, events_df):
+    """Find event rows likely related to the current product page."""
+    if events_df is None or len(events_df) == 0:
+        return pd.DataFrame()
+    product_slug = str(product_url or "").strip().rstrip("/").split("/")[-1].lower()
+    product_tokens = tokenize_for_match(str(product_name or ""))
+    slug_tokens = tokenize_for_match(product_slug)
+    product_tokens = product_tokens.union(slug_tokens)
+    weak_anchor_tokens = {"coventry", "online", "private", "monthly", "annual", "quarterly", "beginners"}
+    anchor_tokens = {tok for tok in product_tokens if tok not in weak_anchor_tokens}
+    if not product_tokens:
+        return pd.DataFrame()
+
+    matches = []
+    for idx, row in events_df.iterrows():
+        score = score_event_row_match(row, product_tokens, product_slug, anchor_tokens)
+        if score >= 2:
+            matches.append((idx, score))
+    if not matches:
+        return pd.DataFrame()
+
+    matches.sort(key=lambda item: item[1], reverse=True)
+    top_rows = events_df.loc[[idx for idx, _ in matches]].copy()
+    if "start_date_parsed" in top_rows.columns:
+        top_rows = top_rows.sort_values(by="start_date_parsed", ascending=True)
+    return top_rows.head(12)
+
+
+def parse_participants(text):
+    """Extract participant cap from free-text blocks."""
+    source = str(text or "")
+    m = re.search(r"participants?\s*:\s*max\s*(\d+)", source, flags=re.IGNORECASE)
+    if m:
+        return m.group(1)
+    m = re.search(r"max\s*(\d+)\s*participants?", source, flags=re.IGNORECASE)
+    return m.group(1) if m else ""
+
+
+def parse_experience_level(text):
+    """Extract experience level from free-text blocks."""
+    source = str(text or "")
+    level_match = re.search(r"\b(beginner|beginners|intermediate|advanced|all levels?)\b", source, flags=re.IGNORECASE)
+    if level_match:
+        value = level_match.group(1).strip().lower()
+        return "Beginners" if value.startswith("beginner") else value.title()
+    m = re.search(r"experience[^:]{0,20}:\s*([^\n\r:]{3,30})", source, flags=re.IGNORECASE)
+    if not m:
+        return ""
+    return re.sub(r"\s+", " ", m.group(1)).strip(" .,-")
+
+
+def parse_equipment_needed(text):
+    """Extract concise equipment guidance from free-text blocks."""
+    source = re.sub(r"\s+", " ", str(text or "")).strip()
+    m = re.search(r"equipment needed\s*:\s*(.{30,260})(?:option:|participants:|experience|$)", source, flags=re.IGNORECASE)
+    if not m:
+        return ""
+    value = re.sub(r"\s+", " ", m.group(1)).strip(" .,-")
+    return value[:220]
+
+
+def parse_time_schedule(text):
+    """Extract a simple time range from source text."""
+    source = str(text or "")
+    m = re.search(r"\bfrom\s*(\d{1,2}:\d{2})\s*(?:to|-)\s*(\d{1,2}:\d{2})\b", source, flags=re.IGNORECASE)
+    if m:
+        return f"{m.group(1)} to {m.group(2)}"
+    m = re.search(r"\b(\d{1,2}:\d{2})\s*(?:to|-)\s*(\d{1,2}:\d{2})\b", source)
+    if m:
+        return f"{m.group(1)} to {m.group(2)}"
+    return ""
+
+
+def format_event_date(date_value):
+    """Format event date consistently for FAQ output."""
+    if pd.isna(date_value):
+        return ""
+    dt = pd.to_datetime(date_value, errors="coerce")
+    if pd.isna(dt):
+        return ""
+    return dt.strftime("%d %b %Y").lstrip("0")
+
+
+def build_event_facts(product_name, product_url, events_df):
+    """Build rich event facts for FAQ generation from event datasets."""
+    rows = find_related_event_rows(product_name, product_url, events_df)
+    if rows.empty:
+        return {}
+
+    first = rows.iloc[0]
+    text_block = str(first.get("Text_Block", ""))
+    location_name = str(first.get("Location_Business_Name", "")).strip()
+    location_city = str(first.get("Location_City_State_ZIP", "")).strip()
+    location = location_name or location_city.split(",")[0].strip()
+
+    start_time = str(first.get("Start_Time", "")).strip()
+    end_time = str(first.get("End_Time", "")).strip()
+    time_range = ""
+    if start_time and end_time:
+        time_range = f"{start_time} to {end_time}"
+
+    upcoming_dates = []
+    historical_dates = []
+    today_val = date.today()
+    for _, event_row in rows.iterrows():
+        value = event_row.get("start_date_parsed", event_row.get("Start_Date", ""))
+        formatted = format_event_date(value)
+        dt = pd.to_datetime(value, errors="coerce")
+        if not formatted:
+            continue
+        if pd.notna(dt) and dt.date() >= today_val:
+            if formatted not in upcoming_dates:
+                upcoming_dates.append(formatted)
+        elif formatted not in historical_dates:
+            historical_dates.append(formatted)
+    date_values = (upcoming_dates or historical_dates)[:4]
+
+    return {
+        "location": location,
+        "time_range": time_range,
+        "dates": date_values,
+        "participants": parse_participants(text_block),
+        "experience_level": parse_experience_level(text_block),
+        "equipment_needed": parse_equipment_needed(text_block)
+    }
+
+
+def add_event_specific_faq_pairs(pairs, title, event_facts):
+    """Add high-value FAQ pairs from matched event facts."""
+    if not event_facts:
+        return
+    if event_facts.get("dates"):
+        dates_text = ", ".join(event_facts["dates"][:3])
+        if len(event_facts["dates"]) > 3:
+            dates_text += ", plus additional listed dates"
+        pairs.append((
+            f"What dates are currently listed for {title}?",
+            f"Current listed dates include {dates_text}."
+        ))
+    if event_facts.get("participants"):
+        pairs.append((
+            f"How many participants are in each session of {title}?",
+            f"The page lists a maximum of {event_facts['participants']} participants per session."
+        ))
+    if event_facts.get("experience_level"):
+        pairs.append((
+            f"What experience level is {title} aimed at?",
+            f"This is described as suitable for {event_facts['experience_level']} photographers."
+        ))
+    if event_facts.get("equipment_needed"):
+        pairs.append((
+            f"What equipment is needed for {title}?",
+            event_facts["equipment_needed"]
+        ))
+
+
+def add_voucher_faq_pairs(pairs, title, facts, sentences):
+    redeem_sentence = pick_sentence_with_keywords(sentences, ["redeem", "used against", "checkout", "code"])
+    if redeem_sentence:
+        pairs.append((f"What can {title} be used for?", redeem_sentence))
+
+    delivery_sentence = pick_sentence_with_keywords(sentences, ["email delivery", "same day delivery", "recipient", "emailed"])
+    if delivery_sentence:
+        pairs.append((f"How is {title} delivered?", delivery_sentence))
+
+    if facts["has_expiry_wording"]:
+        expiry_sentence = pick_sentence_with_keywords(sentences, ["expire", "expiration", "months", "years"])
+        if expiry_sentence:
+            pairs.append((f"Does {title} have an expiry period?", expiry_sentence))
+
+
+def add_downloadable_faq_pairs(pairs, title, sentences):
+    download_sentence = pick_sentence_with_keywords(sentences, ["pdf", "download", "bundle", "checklist"])
+    if download_sentence:
+        pairs.append((f"Is {title} delivered as downloadable resources?", download_sentence))
+
+
+def add_course_faq_pairs(pairs, title, facts):
+    if facts.get("time_schedule_text"):
+        pairs.append((
+            f"What times does {title} run?",
+            f"The listed session time is {facts['time_schedule_text']}."
+        ))
+    if facts.get("participants_text"):
+        pairs.append((
+            f"How many participants are in each session of {title}?",
+            f"The page indicates a maximum of {facts['participants_text']} participants."
+        ))
+    if facts.get("experience_level_text"):
+        pairs.append((
+            f"What experience level is {title} aimed at?",
+            f"This is described as suitable for {facts['experience_level_text']} photographers."
+        ))
+    if facts.get("equipment_needed_text"):
+        pairs.append((
+            f"What equipment is needed for {title}?",
+            facts["equipment_needed_text"]
+        ))
+    if facts["location_text"]:
+        pairs.append((
+            f"Where does {title} take place?",
+            f"{title} is listed with location details for {facts['location_text']} on this page."
+        ))
+    elif facts["is_online"] and not facts["is_in_person"]:
+        pairs.append((
+            f"Is {title} online or in person?",
+            f"{title} is positioned as an online option on this page, with delivery via Zoom or remote support."
+        ))
+    elif facts["is_in_person"] and not facts["is_online"]:
+        pairs.append((
+            f"Is {title} online or in person?",
+            f"{title} is presented as an in-person format on this page."
+        ))
+    if facts["duration_text"] and not facts.get("time_schedule_text"):
+        pairs.append((
+            f"How long is {title}?",
+            f"The page describes this as a {facts['duration_text']} format."
+        ))
+
+
+def add_general_faq_pairs(pairs, title, facts):
+    if facts["is_beginner"] or facts["is_course_like"]:
+        beginner_sentence = pick_sentence_with_keywords(
+            facts["sentences"],
+            ["beginner", "new to", "experience", "level", "foundation", "confidence"]
+        )
+        if beginner_sentence and has_concrete_fact_signal(beginner_sentence):
+            pairs.append((
+                f"Is {title} suitable for beginners?",
+                beginner_sentence
+            ))
+
+    if facts["prices"]:
+        price_hint = " / ".join(facts["prices"][:3])
+        pairs.append((
+            f"What price options are shown for {title}?",
+            f"The page currently shows prices from {price_hint}, with options visible at checkout."
+        ))
+
+    if facts["is_course_like"] or facts["is_private"] or facts["is_subscription"]:
+        audience_sentence = pick_sentence_with_keywords(
+            facts["sentences"],
+            ["ideal for", "best for", "suited for", "who this is for", "designed for"]
+        )
+        if audience_sentence and has_concrete_fact_signal(audience_sentence):
+            pairs.append((
+                f"Who is {title} best suited for?",
+                audience_sentence
+            ))
+
+
+def build_include_answer(title, desc, facts, sentences):
+    """Build include-answer with concrete facts when available."""
+    include_sentence = pick_sentence_with_keywords(sentences, ["include", "redeem", "used against", "covers", "focuses"])
+    if include_sentence:
+        return include_sentence
+
+    fact_bits = []
+    if facts["prices"]:
+        fact_bits.append(f"prices from {' / '.join(facts['prices'][:2])}")
+    if facts["duration_text"]:
+        fact_bits.append(f"a {facts['duration_text']} format")
+    if facts["is_online"] and not facts["is_in_person"]:
+        fact_bits.append("online delivery via Zoom")
+    if facts["is_in_person"] and not facts["is_online"]:
+        fact_bits.append("an in-person delivery format")
+    if fact_bits:
+        return f"{title} is listed on this page with " + ", ".join(fact_bits) + "."
+    return desc or f"{title} includes the options shown on this page."
+
+
+def generate_candidate_faq_pairs(product_name, product_url, description_text, page_title, page_text, product_price="", event_facts=None):
+    """Generate deterministic, page-specific FAQ candidates."""
     title = str(page_title or product_name or "").strip()
     desc = clean_product_description(description_text or "", max_len=800)
-    context = " ".join([title, desc, str(page_text or "")[:1200]]).strip()
+    context = " ".join([title, desc, str(page_text or "")[:8000]]).strip()
+    facts = extract_context_facts(title, desc, product_url, context, product_price=product_price)
+    sentences = facts["sentences"]
 
-    has_beginner_signal = bool(re.search(r"\bbeginner|new to|newbie\b", context, flags=re.IGNORECASE))
-    has_pdf_signal = bool(re.search(r"\bpdf|checklist|download|bundle\b", context, flags=re.IGNORECASE))
-    has_course_signal = bool(re.search(r"\bcourse|workshop|lesson|class\b", context, flags=re.IGNORECASE))
+    include_answer = build_include_answer(title, desc, facts, sentences)
+    strong_course_facts = bool(
+        (event_facts or {}).get("dates")
+        or facts.get("time_schedule_text")
+        or facts.get("participants_text")
+        or facts.get("equipment_needed_text")
+    )
+    prioritize_fact_questions = facts["is_course_like"] and strong_course_facts
 
     pairs = []
-    pairs.append((
-        f"What is included in {title}?",
-        f"{title} focuses on the content described on this page. {desc}" if desc else f"{title} includes the core content and guidance described on this page."
-    ))
-    if has_beginner_signal or has_course_signal:
-        pairs.append((
-            f"Is {title} suitable for beginners?",
-            f"Yes, {title} is designed to support learners at an early stage, based on the page description and course framing."
-        ))
-    if has_course_signal:
-        pairs.append((
-            f"What will I learn from {title}?",
-            f"The page describes practical skills, structured guidance, and hands-on learning outcomes aligned to {title}."
-        ))
-        pairs.append((
-            f"What should I bring or prepare for {title}?",
-            f"Prepare your camera kit and review the page details before attending, so you can apply the techniques covered in {title}."
-        ))
-    if has_pdf_signal:
-        pairs.append((
-            f"How can I use the {title} checklists effectively?",
-            "Use the checklists in the field as a practical reference, and review them before shooting sessions to reinforce consistent camera setup decisions."
-        ))
-        pairs.append((
-            f"Is {title} delivered as downloadable resources?",
-            f"Yes, this page presents {title} as downloadable checklist-style resources intended for practical use during planning and shooting."
-        ))
+    if not prioritize_fact_questions:
+        pairs.append((f"What is included in {title}?", include_answer))
+    add_event_specific_faq_pairs(pairs, title, event_facts or {})
 
-    pairs.append((
-        f"Who is {title} best suited for?",
-        f"{title} is best suited to photographers who want clearer guidance and practical next steps based on the topic covered on this page."
-    ))
+    if facts["is_voucher"]:
+        add_voucher_faq_pairs(pairs, title, facts, sentences)
+
+    if facts["is_downloadable"]:
+        add_downloadable_faq_pairs(pairs, title, sentences)
+
+    if facts["is_course_like"]:
+        add_course_faq_pairs(pairs, title, facts)
+
+    add_general_faq_pairs(pairs, title, facts)
+    if prioritize_fact_questions:
+        pairs.append((f"What is included in {title}?", include_answer))
     return pairs
 
 
@@ -361,6 +817,8 @@ def faq_pair_is_valid(question, answer, q_key, seen_questions, specific_terms):
     if specific_terms and not any(term in combined for term in specific_terms):
         return False
     if re.search(r"\b(guaranteed|always available|in stock now|best price)\b", combined, flags=re.IGNORECASE):
+        return False
+    if not has_concrete_fact_signal(answer):
         return False
     return True
 
@@ -1535,8 +1993,7 @@ def schema_to_html(schema_data, event_schema=None):
         return result
 
 def schema_to_script_tag_html(json_filename, faq_payload=None):
-    """Convert schema JSON filename to script_tag HTML with inline JSON-LD injection.
-    Product schema is fetched; FAQ payload is embedded inline when provided."""
+    """Convert schema JSON filename to script-tag HTML with inline FAQ injection."""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
@@ -2680,11 +3137,15 @@ def main():
             else:
                 description_text = str(row.get('description', '')).strip()
                 terms = build_page_specific_terms(product_name, product_url, snapshot.get("title", ""))
+                event_facts = build_event_facts(product_name, product_url, events_df)
                 candidates = generate_candidate_faq_pairs(
                     product_name=product_name,
+                    product_url=product_url,
                     description_text=description_text,
                     page_title=snapshot.get("title", ""),
-                    page_text=snapshot.get("plain_text", "")
+                    page_text=snapshot.get("plain_text", ""),
+                    product_price=row.get("price", ""),
+                    event_facts=event_facts
                 )
                 valid_pairs = validate_and_normalize_faq_pairs(candidates, terms)
                 if valid_pairs:
