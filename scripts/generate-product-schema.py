@@ -1571,10 +1571,9 @@ def schema_to_script_tag_html(json_filename):
     const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
     const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
     if (hasFaqSchema) return true;
-    // Only trust obvious FAQ headings in main content (avoid false positives from global nav/footer).
-    const contentRoot = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
-    const headings = Array.from((contentRoot || document).querySelectorAll("h1,h2,h3,h4"));
-    return headings.some((h) => /(^|\\s)(faqs?|frequently asked questions)(\\s|$)/i.test(String(h.textContent || "").trim()));
+    // Also skip if page already has a known FAQ JSON loader reference.
+    const scriptBlocks = Array.from(document.querySelectorAll("script"));
+    return scriptBlocks.some((block) => /\\/[a-z0-9._\\-/]*_faq\\.json(?:["'?#&]|$)/i.test(String(block.textContent || "") + " " + String(block.src || "")));
   }}
 
   function hasExistingTldrSignal() {{
