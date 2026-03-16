@@ -242,6 +242,46 @@ def fetch_html(url, timeout_sec=12):
         return resp.read().decode("utf-8", errors="ignore")
 
 
+def write_text_with_retry(file_path, content, attempts=4, wait_seconds=0.7):
+    """Write text file with short retries for transient file locks."""
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return True
+        except PermissionError as err:
+            last_error = err
+            if attempt < attempts - 1:
+                time.sleep(wait_seconds * (attempt + 1))
+        except Exception as err:
+            last_error = err
+            break
+    if last_error:
+        raise last_error
+    return False
+
+
+def write_json_with_retry(file_path, payload, attempts=4, wait_seconds=0.7):
+    """Write JSON file with short retries for transient file locks."""
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+            return True
+        except PermissionError as err:
+            last_error = err
+            if attempt < attempts - 1:
+                time.sleep(wait_seconds * (attempt + 1))
+        except Exception as err:
+            last_error = err
+            break
+    if last_error:
+        raise last_error
+    return False
+
+
 def snippet_targets_contain_faq(snippet_targets):
     """Return True if any external snippet target contains FAQ signals."""
     for snippet_url in snippet_targets:
@@ -3184,8 +3224,7 @@ def main():
         html_content = None
         try:
             html_content = schema_to_html(schema_graph, event_schema)
-            with open(html_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
+            write_text_with_retry(html_path, html_content)
         except PermissionError as e:
             print(f"❌ Permission denied when writing {html_filename}")
             print(f"   File may be open in another program (e.g., text editor, file explorer)")
@@ -3207,8 +3246,7 @@ def main():
         json_written = False
         try:
             # Use the exact same schema_graph that goes into HTML - no cleanup
-            with open(json_path, 'w', encoding='utf-8') as f:
-                json.dump(schema_graph, f, indent=2, ensure_ascii=False)
+            write_json_with_retry(json_path, schema_graph)
             json_written = True
         except PermissionError as e:
             print(f"⚠️ Permission denied when writing {json_filename} (continuing...)")
@@ -3258,8 +3296,7 @@ def main():
                     faq_payload = build_faq_jsonld(product_url, valid_pairs)
                     generated_faq_payload = faq_payload
                     try:
-                        with open(faq_path, 'w', encoding='utf-8') as f:
-                            json.dump(faq_payload, f, indent=2, ensure_ascii=False)
+                        write_json_with_retry(faq_path, faq_payload)
                         faq_generated_count += 1
                     except Exception as e:
                         print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
@@ -3283,8 +3320,7 @@ def main():
         if json_written:  # Only generate script_tag version if JSON was written
             try:
                 script_tag_html_content = schema_to_script_tag_html(json_filename, generated_faq_payload)
-                with open(script_tag_html_path, 'w', encoding='utf-8') as f:
-                    f.write(script_tag_html_content)
+                write_text_with_retry(script_tag_html_path, script_tag_html_content)
             except PermissionError as e:
                 print(f"⚠️ Permission denied when writing {script_tag_html_filename} (continuing...)")
             except Exception as e:
