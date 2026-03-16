@@ -43,7 +43,8 @@ from pathlib import Path
 import sys
 import os
 from datetime import datetime, date, timedelta
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+from urllib.request import Request, urlopen
 from collections import defaultdict
 
 # Fix Windows console encoding
@@ -54,6 +55,9 @@ if sys.platform == 'win32':
 # Silence warnings to prevent false "exit 1" in Electron
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
+
+SCHEMA_JSON_SUFFIX = "_schema.json"
+FAQ_JSON_SUFFIX = "_faq.json"
 
 # Static schema blocks
 ORGANIZER = {
@@ -187,6 +191,232 @@ def find_best_slug_match(review_slug, product_slugs):
             best_ratio = ratio
             best_match = ps
     return best_match if best_ratio > 0.74 else None  # adjustable threshold
+
+
+def html_to_plain_text(html):
+    """Convert HTML to compact plain text."""
+    cleaned = re.sub(r"<script[\s\S]*?</script>", " ", html or "", flags=re.IGNORECASE)
+    cleaned = re.sub(r"<style[\s\S]*?</style>", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+    return html_lib.unescape(re.sub(r"\s+", " ", cleaned)).strip()
+
+
+def contains_faq_signal(source_html, source_text):
+    """Detect FAQ by schema or strong FAQ headings/text."""
+    html = str(source_html or "")
+    html_unescaped = html_lib.unescape(html)
+    text = str(source_text or "")
+
+    # Detect inline FAQPage schema (including entity-escaped payloads).
+    if re.search(r'"@type"\s*:\s*"FAQPage"', html, flags=re.IGNORECASE):
+        return True
+    if re.search(r'"@type"\s*:\s*"FAQPage"', html_unescaped, flags=re.IGNORECASE):
+        return True
+
+    # Detect deferred FAQ loaders already present in page/snippet scripts.
+    if re.search(r"/[a-z0-9._\-/]*_faq\.json(?:[\"'?&#]|$)", html, flags=re.IGNORECASE):
+        return True
+
+    heading_match = re.search(
+        r"<h[1-4][^>]*>\s*(?:faqs?|frequently\s+asked\s+questions)\s*</h[1-4]>",
+        html,
+        flags=re.IGNORECASE
+    )
+    if heading_match:
+        return True
+    return re.search(r"\bfrequently asked questions\b", text, flags=re.IGNORECASE) is not None
+
+
+def extract_snippet_targets(source_html, page_url):
+    """Extract absolute snippet-loader targets from page HTML."""
+    html = str(source_html or "")
+    tags = re.findall(r"<[^>]*data-m-plugin=[\"']load[\"'][^>]*>", html, flags=re.IGNORECASE)
+    targets = []
+    for tag in tags:
+        target_match = re.search(r'data-target=["\']([^"\']+)["\']', tag, flags=re.IGNORECASE)
+        if not target_match:
+            continue
+        abs_target = urljoin(page_url, str(target_match.group(1) or "").strip())
+        if abs_target and abs_target not in targets:
+            targets.append(abs_target)
+    return targets[:6]
+
+
+def fetch_html(url, timeout_sec=12):
+    """Fetch HTML content for a URL."""
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0 (SchemaTools FAQ Builder)"})
+    with urlopen(req, timeout=timeout_sec) as resp:
+        return resp.read().decode("utf-8", errors="ignore")
+
+
+def snippet_targets_contain_faq(snippet_targets):
+    """Return True if any external snippet target contains FAQ signals."""
+    for snippet_url in snippet_targets:
+        try:
+            snippet_html = fetch_html(snippet_url, timeout_sec=8)
+            snippet_text = html_to_plain_text(snippet_html)
+            if contains_faq_signal(snippet_html, snippet_text):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def fetch_page_snapshot(url, cache):
+    """Fetch lightweight page signals (FAQ presence + text/title hints) with per-run cache."""
+    empty_snapshot = {"has_existing_faq": False, "title": "", "plain_text": ""}
+    if not url:
+        return empty_snapshot
+    if url in cache:
+        return cache[url]
+
+    try:
+        html = fetch_html(url, timeout_sec=12)
+    except Exception:
+        cache[url] = empty_snapshot
+        return empty_snapshot
+
+    title = ""
+    title_match = re.search(r"<title>(.*?)</title>", html, flags=re.IGNORECASE | re.DOTALL)
+    if title_match:
+        title = html_lib.unescape(re.sub(r"\s+", " ", title_match.group(1))).strip()
+
+    plain_text = html_to_plain_text(html)
+    has_existing_faq = contains_faq_signal(html, plain_text)
+    if not has_existing_faq:
+        snippet_targets = extract_snippet_targets(html, url)
+        has_existing_faq = snippet_targets_contain_faq(snippet_targets)
+
+    snapshot = {
+        "has_existing_faq": has_existing_faq,
+        "title": title,
+        "plain_text": plain_text[:3000]
+    }
+    cache[url] = snapshot
+    return snapshot
+
+
+def build_page_specific_terms(product_name, product_url, page_title):
+    """Extract page-specific terms used to keep FAQ prompts anchored to the actual page."""
+    raw = " ".join([str(product_name or ""), str(page_title or ""), str(product_url or "")]).lower()
+    raw = re.sub(r"https?://", " ", raw)
+    raw = re.sub(r"[^a-z0-9\s-]", " ", raw)
+    parts = [p.strip() for p in raw.replace("-", " ").split() if p.strip()]
+    stop_words = {
+        "the", "and", "for", "with", "from", "your", "this", "that", "near", "me", "www",
+        "https", "http", "alanranger", "alan", "ranger", "com", "photography", "photo", "services"
+    }
+    terms = []
+    for token in parts:
+        if len(token) < 4 or token in stop_words:
+            continue
+        if token not in terms:
+            terms.append(token)
+    return terms[:10]
+
+
+def generate_candidate_faq_pairs(product_name, description_text, page_title, page_text):
+    """Generate deterministic FAQ candidates from known product/page context."""
+    title = str(page_title or product_name or "").strip()
+    desc = clean_product_description(description_text or "", max_len=800)
+    context = " ".join([title, desc, str(page_text or "")[:1200]]).strip()
+
+    has_beginner_signal = bool(re.search(r"\bbeginner|new to|newbie\b", context, flags=re.IGNORECASE))
+    has_pdf_signal = bool(re.search(r"\bpdf|checklist|download|bundle\b", context, flags=re.IGNORECASE))
+    has_course_signal = bool(re.search(r"\bcourse|workshop|lesson|class\b", context, flags=re.IGNORECASE))
+
+    pairs = []
+    pairs.append((
+        f"What is included in {title}?",
+        f"{title} focuses on the content described on this page. {desc}" if desc else f"{title} includes the core content and guidance described on this page."
+    ))
+    if has_beginner_signal or has_course_signal:
+        pairs.append((
+            f"Is {title} suitable for beginners?",
+            f"Yes, {title} is designed to support learners at an early stage, based on the page description and course framing."
+        ))
+    if has_course_signal:
+        pairs.append((
+            f"What will I learn from {title}?",
+            f"The page describes practical skills, structured guidance, and hands-on learning outcomes aligned to {title}."
+        ))
+        pairs.append((
+            f"What should I bring or prepare for {title}?",
+            f"Prepare your camera kit and review the page details before attending, so you can apply the techniques covered in {title}."
+        ))
+    if has_pdf_signal:
+        pairs.append((
+            f"How can I use the {title} checklists effectively?",
+            "Use the checklists in the field as a practical reference, and review them before shooting sessions to reinforce consistent camera setup decisions."
+        ))
+        pairs.append((
+            f"Is {title} delivered as downloadable resources?",
+            f"Yes, this page presents {title} as downloadable checklist-style resources intended for practical use during planning and shooting."
+        ))
+
+    pairs.append((
+        f"Who is {title} best suited for?",
+        f"{title} is best suited to photographers who want clearer guidance and practical next steps based on the topic covered on this page."
+    ))
+    return pairs
+
+
+def faq_pair_is_valid(question, answer, q_key, seen_questions, specific_terms):
+    """Validate one FAQ pair against quality and safety rules."""
+    if len(question) < 8 or len(answer) < 40 or len(answer) > 320:
+        return False
+    if q_key in seen_questions:
+        return False
+    combined = f"{question} {answer}".lower()
+    if specific_terms and not any(term in combined for term in specific_terms):
+        return False
+    if re.search(r"\b(guaranteed|always available|in stock now|best price)\b", combined, flags=re.IGNORECASE):
+        return False
+    return True
+
+
+def validate_and_normalize_faq_pairs(faq_pairs, specific_terms):
+    """Apply strict QA rules; return 3-5 clean, page-anchored FAQ pairs."""
+    valid = []
+    seen = set()
+
+    for question, answer in faq_pairs:
+        q = re.sub(r"\s+", " ", str(question or "")).strip()
+        a = re.sub(r"\s+", " ", str(answer or "")).strip()
+        q_key = re.sub(r"[^a-z0-9]+", " ", q.lower()).strip()
+
+        if not faq_pair_is_valid(q, a, q_key, seen, specific_terms):
+            continue
+        seen.add(q_key)
+
+        valid.append((q, a))
+        if len(valid) == 5:
+            break
+
+    return valid if len(valid) >= 3 else []
+
+
+def build_faq_jsonld(product_url, faq_pairs):
+    """Build FAQPage JSON-LD payload from validated pairs."""
+    entities = []
+    for question, answer in faq_pairs:
+        entities.append({
+            "@type": "Question",
+            "name": question,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": answer
+            }
+        })
+
+    payload = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": entities
+    }
+    if product_url:
+        payload["@id"] = f"{product_url}#faq"
+    return payload
 
 def get_breadcrumbs(product_name, product_url):
     """Generate breadcrumb list for product with normalized casing and correct parent category"""
@@ -1324,7 +1554,7 @@ def schema_to_script_tag_html(json_filename):
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
-    faq_filename = json_filename.replace('_schema.json', '_faq.json') if json_filename.endswith('_schema.json') else f"{json_filename}_faq.json"
+    faq_filename = json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX) if json_filename.endswith(SCHEMA_JSON_SUFFIX) else f"{json_filename}{FAQ_JSON_SUFFIX}"
     faq_url = f"https://schema.alanranger.com/{faq_filename}"
     fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
 <script>
@@ -1341,8 +1571,10 @@ def schema_to_script_tag_html(json_filename):
     const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
     const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
     if (hasFaqSchema) return true;
-    const pageText = String(document.body?.innerText || "").toLowerCase();
-    return /\\bfaqs?\\b|frequently asked questions/.test(pageText);
+    // Only trust obvious FAQ headings in main content (avoid false positives from global nav/footer).
+    const contentRoot = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+    const headings = Array.from((contentRoot || document).querySelectorAll("h1,h2,h3,h4"));
+    return headings.some((h) => /(^|\\s)(faqs?|frequently asked questions)(\\s|$)/i.test(String(h.textContent || "").trim()));
   }}
 
   function hasExistingTldrSignal() {{
@@ -1823,6 +2055,10 @@ def main():
     nan_count = 0
     products_with_reviews_count = 0
     summary_rows = []
+    page_snapshot_cache = {}
+    faq_generated_count = 0
+    faq_skipped_existing_count = 0
+    faq_skipped_quality_count = 0
     
     # Track schema types
     schema_type_counts = {
@@ -2427,6 +2663,8 @@ def main():
         # JSON should match exactly what's in the HTML script tag (no cleanup needed)
         json_filename = f"{product_name_slug}_schema.json"
         json_path = outputs_dir / json_filename
+        faq_filename = json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX)
+        faq_path = outputs_dir / faq_filename
         json_written = False
         try:
             # Use the exact same schema_graph that goes into HTML - no cleanup
@@ -2437,6 +2675,43 @@ def main():
             print(f"⚠️ Permission denied when writing {json_filename} (continuing...)")
         except Exception as e:
             print(f"⚠️ Error writing {json_filename}: {e} (continuing...)")
+
+        # Generate FAQ JSON only when page has no existing FAQ signal and quality checks pass.
+        product_url = str(row.get('url', '')).strip()
+        if json_written and product_url:
+            snapshot = fetch_page_snapshot(product_url, page_snapshot_cache)
+            if snapshot.get("has_existing_faq"):
+                faq_skipped_existing_count += 1
+                if faq_path.exists():
+                    try:
+                        faq_path.unlink()
+                    except Exception:
+                        pass
+            else:
+                description_text = str(row.get('description', '')).strip()
+                terms = build_page_specific_terms(product_name, product_url, snapshot.get("title", ""))
+                candidates = generate_candidate_faq_pairs(
+                    product_name=product_name,
+                    description_text=description_text,
+                    page_title=snapshot.get("title", ""),
+                    page_text=snapshot.get("plain_text", "")
+                )
+                valid_pairs = validate_and_normalize_faq_pairs(candidates, terms)
+                if valid_pairs:
+                    faq_payload = build_faq_jsonld(product_url, valid_pairs)
+                    try:
+                        with open(faq_path, 'w', encoding='utf-8') as f:
+                            json.dump(faq_payload, f, indent=2, ensure_ascii=False)
+                        faq_generated_count += 1
+                    except Exception as e:
+                        print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
+                else:
+                    faq_skipped_quality_count += 1
+                    if faq_path.exists():
+                        try:
+                            faq_path.unlink()
+                        except Exception:
+                            pass
         
         # Write script_tag HTML file (fetch-based inline injection version - for Squarespace)
         script_tag_html_filename = f"{product_name_slug}_schema_script_tag.html"
@@ -2538,6 +2813,10 @@ def main():
     except Exception as e:
         print(f"❌ Error saving CSV: {e}")
         sys.exit(1)
+
+    print(f"✅ Product FAQ files generated: {faq_generated_count}")
+    print(f"ℹ️ FAQ skipped (already exists on page): {faq_skipped_existing_count}")
+    print(f"ℹ️ FAQ skipped (quality rules not met): {faq_skipped_quality_count}")
     
     # Save QA Summary CSV (in products folder)
     summary_df = pd.DataFrame(summary_rows)
