@@ -1544,9 +1544,9 @@ def schema_to_html(schema_data, event_schema=None):
     else:
         return result
 
-def schema_to_script_tag_html(json_filename):
-    """Convert schema JSON filename to script_tag HTML with fetch-based inline injection
-    Only includes Product schema - Event schema is NOT included in script_tag files"""
+def schema_to_script_tag_html(json_filename, faq_payload=None):
+    """Convert schema JSON filename to script_tag HTML with inline JSON-LD injection.
+    Product schema is fetched; FAQ payload is embedded inline when provided."""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
@@ -1554,11 +1554,14 @@ def schema_to_script_tag_html(json_filename):
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
-    faq_filename = json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX) if json_filename.endswith(SCHEMA_JSON_SUFFIX) else f"{json_filename}{FAQ_JSON_SUFFIX}"
-    faq_url = f"https://schema.alanranger.com/{faq_filename}"
+    inline_faq_json = "null"
+    if faq_payload and isinstance(faq_payload, dict):
+        inline_faq_json = json.dumps(faq_payload, ensure_ascii=False)
     fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
 <script>
 (function() {{
+  const INLINE_FAQ_PAYLOAD = {inline_faq_json};
+
   function appendJsonLd(payload) {{
     if (!payload || typeof payload !== "object") return;
     const s = document.createElement("script");
@@ -1631,19 +1634,14 @@ def schema_to_script_tag_html(json_filename):
       if (!json) return;
       appendJsonLd(json);
       injectTldrBlock(json.description || json.name || "");
-    }})
-    .catch(console.error);
 
-  fetch("{faq_url}")
-    .then((r) => r.ok ? r.json() : null)
-    .then((faqJson) => {{
-      if (!faqJson) return;
-      const faqType = String(faqJson?.["@type"] || "").toLowerCase();
+      if (!INLINE_FAQ_PAYLOAD) return;
+      const faqType = String(INLINE_FAQ_PAYLOAD?.["@type"] || "").toLowerCase();
       if (faqType !== "faqpage") return;
       if (hasExistingFaqSignal()) return;
-      appendJsonLd(faqJson);
+      appendJsonLd(INLINE_FAQ_PAYLOAD);
     }})
-    .catch(() => {{}});
+    .catch(console.error);
 }})();
 </script>'''
     
@@ -2679,6 +2677,7 @@ def main():
 
         # Generate FAQ JSON only when page has no existing FAQ signal and quality checks pass.
         product_url = str(row.get('url', '')).strip()
+        generated_faq_payload = None
         if json_written and product_url:
             snapshot = fetch_page_snapshot(product_url, page_snapshot_cache)
             if snapshot.get("has_existing_faq"):
@@ -2700,6 +2699,7 @@ def main():
                 valid_pairs = validate_and_normalize_faq_pairs(candidates, terms)
                 if valid_pairs:
                     faq_payload = build_faq_jsonld(product_url, valid_pairs)
+                    generated_faq_payload = faq_payload
                     try:
                         with open(faq_path, 'w', encoding='utf-8') as f:
                             json.dump(faq_payload, f, indent=2, ensure_ascii=False)
@@ -2720,7 +2720,7 @@ def main():
         script_tag_html_content = None
         if json_written:  # Only generate script_tag version if JSON was written
             try:
-                script_tag_html_content = schema_to_script_tag_html(json_filename)
+                script_tag_html_content = schema_to_script_tag_html(json_filename, generated_faq_payload)
                 with open(script_tag_html_path, 'w', encoding='utf-8') as f:
                     f.write(script_tag_html_content)
             except PermissionError as e:
