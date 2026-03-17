@@ -2176,24 +2176,44 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
   }}
 
   function hasVisibleFaqBlock() {{
-    const selectors = [
-      '[data-section-type*="faq"]',
+    const faqSelectors = [
       '.faq-block',
       '.sqs-faq-block',
-      '.accordion-block',
-      '[data-block-type="55"]',
+      '[data-section-type*="faq"]',
       '[id*="faq"]',
-      '[class*="faq"]',
-      'details summary',
-      '[aria-controls*="faq"]',
-      '[data-accordion]'
+      '[class*="faq"]'
     ].join(',');
-    if (document.querySelector(selectors)) return true;
+
     const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
-    return headings.some((h) => /\\bfaq\\b|frequently asked/i.test(String(h.textContent || "")));
+    const faqHeading = headings.find((h) => /\\bfaq\\b|frequently asked questions?/i.test(String(h.textContent || "")));
+    if (!faqHeading) return false;
+
+    // Require explicit FAQ-labeled elements near the FAQ heading to avoid
+    // false positives from generic product accordions/collapsibles.
+    const headingScope =
+      faqHeading.closest("section, article, [data-section-id], [id], [class]") ||
+      faqHeading.parentElement ||
+      document.body;
+    if (!headingScope) return false;
+    if (headingScope.querySelector(faqSelectors)) return true;
+
+    // Fallback: allow a small sibling scan near the heading.
+    const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
+    return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
   }}
 
   function shouldSkipExternalFaq() {{
+    // Temporary debug mode: set to true to skip external FAQ only when a real
+    // FAQPage schema already exists, ignoring visible-FAQ DOM heuristics.
+    const SCHEMA_ONLY_SKIP_DEBUG = false;
+    if (SCHEMA_ONLY_SKIP_DEBUG) {{
+      const hasSchema = hasExistingFaqSchema();
+      if (hasSchema) {{
+        console.info("[Schema Loader] FAQ skip: existing FAQPage schema found (schema-only debug)");
+      }}
+      return hasSchema;
+    }}
+
     if (hasExistingFaqSchema()) {{
       console.info("[Schema Loader] FAQ skip: existing FAQPage schema found");
       return true;
