@@ -2389,6 +2389,16 @@
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
           <p id="status-step4" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
+          <div id="step4VisibleProgress" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+              <strong style="font-size:0.85rem; color:#1e3a8a;">Step 4 Progress</strong>
+              <span id="step4VisibleProgressPct" style="font-size:0.8rem; color:#1e40af;">0%</span>
+            </div>
+            <div style="height:10px; background:#dbeafe; border-radius:999px; overflow:hidden;">
+              <div id="step4VisibleProgressBar" style="height:10px; width:0%; background:#2563eb; transition:width 0.3s ease;"></div>
+            </div>
+            <div id="step4VisibleProgressText" style="margin-top:0.45rem; font-size:0.8rem; color:#1e40af;">Waiting to start...</div>
+          </div>
           <div id="step4MatchStatus" style="display:none; margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
             <strong> Products Matched:</strong> <span id="step4MatchCount">0</span> products have reviews embedded in their schema
           </div>
@@ -3021,8 +3031,8 @@
             • Files will be saved as <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;slug&gt;_schema.json</code> in alanranger-schema repo</span>
           </li>
           <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Add script tag to each blog post page:<br>
-            <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">&lt;script type="application/ld+json" src="https://schema.alanranger.com/&lt;slug&gt;_schema.json"&gt;&lt;/script&gt;</code><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Add one global loader script in Blog header injection (not per-post)<br>
+            • The loader auto-detects slug and fetches <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">_schema.json</code>, <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">_faq.json</code>, <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">_howto.json</code>, <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">_image.json</code><br>
             • Validate using Schema Validator tab</span>
           </li>
         </ol>
@@ -8993,7 +9003,31 @@
       }
 
       // Read and prepare all JSON files for batch deployment
+      const normalizeCanonicalUrl = (rawUrl) => {
+        const value = String(rawUrl || '').trim();
+        if (!value) return '';
+        try {
+          const parsed = new URL(value);
+          const cleanPath = parsed.pathname.replace(/\/+$/, '') || '/';
+          return `${parsed.origin}${cleanPath}`.toLowerCase();
+        } catch (error) {
+          return value.toLowerCase().replace(/[?#].*$/, '').replace(/\/+$/, '');
+        }
+      };
+      const derivePathKeyFromUrl = (rawUrl) => {
+        const value = String(rawUrl || '').trim();
+        if (!value) return '';
+        try {
+          const parsed = new URL(value);
+          return (parsed.pathname || '/').replace(/\/+$/, '').toLowerCase() || '/';
+        } catch (error) {
+          const stripped = value.replace(/^[a-z]+:\/\/[^/]+/i, '').replace(/[?#].*$/, '');
+          return (stripped || '/').replace(/\/+$/, '').toLowerCase() || '/';
+        }
+      };
+
       const filesToDeploy = [];
+      const manifestEntries = [];
       let failedCount = 0;
       const errors = [];
 
@@ -9021,6 +9055,39 @@
             jsonContent: jsonString
           });
 
+          // If a matching FAQ JSON exists, deploy it too.
+          let faqFileName = '';
+          let faqDeployed = false;
+          if (fileInfo.fileName.endsWith('_schema.json')) {
+            faqFileName = fileInfo.fileName.replace('_schema.json', '_faq.json');
+            const faqFilePath = `${schemaDir}\\${faqFileName}`;
+            try {
+              const faqResult = await window.electronAPI.readFile(faqFilePath);
+              if (faqResult && faqResult.success && String(faqResult.content || '').trim()) {
+                // Normalize FAQ JSON formatting before deploy.
+                const faqJson = JSON.parse(faqResult.content);
+                filesToDeploy.push({
+                  fileName: faqFileName,
+                  jsonContent: JSON.stringify(faqJson, null, 2)
+                });
+                faqDeployed = true;
+              }
+            } catch (faqError) {
+              // FAQ is optional per page; skip silently when not present.
+            }
+          }
+
+          const canonicalUrl = normalizeCanonicalUrl(fileInfo.url);
+          const pathKey = derivePathKeyFromUrl(fileInfo.url);
+          if (canonicalUrl && pathKey) {
+            manifestEntries.push({
+              url: canonicalUrl,
+              pathKey,
+              schemaFileName: fileInfo.fileName,
+              faqFileName: faqDeployed ? faqFileName : ''
+            });
+          }
+
           if (statusDiv && filesToDeploy.length % 10 === 0) {
             statusDiv.innerHTML = ` Read ${filesToDeploy.length}/${jsonFiles.length} files...`;
           }
@@ -9034,8 +9101,32 @@
         throw new Error('No valid JSON files to deploy. Check errors above.');
       }
 
+      const dedupedManifestMap = new Map();
+      for (const entry of manifestEntries) {
+        if (!entry.pathKey) continue;
+        if (!dedupedManifestMap.has(entry.pathKey)) {
+          dedupedManifestMap.set(entry.pathKey, entry);
+          continue;
+        }
+        const existing = dedupedManifestMap.get(entry.pathKey);
+        // Prefer the entry that includes FAQ file mapping when duplicates exist.
+        if (!existing.faqFileName && entry.faqFileName) {
+          dedupedManifestMap.set(entry.pathKey, entry);
+        }
+      }
+      const dedupedManifestEntries = Array.from(dedupedManifestMap.values());
+      const manifestPayload = {
+        generatedAt: new Date().toISOString(),
+        totalProducts: dedupedManifestEntries.length,
+        entries: dedupedManifestEntries
+      };
+      filesToDeploy.push({
+        fileName: 'products-manifest.json',
+        jsonContent: JSON.stringify(manifestPayload, null, 2)
+      });
+
       if (statusDiv) {
-        statusDiv.innerHTML = ` Syncing ${filesToDeploy.length} product JSON files to alanranger-schema and deploying...`;
+        statusDiv.innerHTML = ` Syncing ${filesToDeploy.length} files (product JSON + manifest) to alanranger-schema and deploying...`;
       }
 
       // Batch deploy all files in a single commit, with product stale-file cleanup.
@@ -9047,6 +9138,7 @@
         statusDiv.innerHTML = `
           ✅ ${result.message}<br>
           ${removedCount > 0 ? `🧹 Removed ${removedCount} stale product JSON file(s) from alanranger-schema<br>` : ''}
+          📋 Manifest updated: <code>products-manifest.json</code> (${manifestPayload.totalProducts} entries)<br>
           ${failedCount > 0 ? `⚽ ${failedCount} files failed to read (check console for details)<br>` : ''}
            Git: All files committed in single commit and pushed to GitHub<br>
           ⎽  GitHub Pages will auto-deploy in 2-5 minutes<br>
@@ -9221,6 +9313,7 @@
       }
       
       console.log(`✅ Successfully parsed ${products.length} products from CSV`);
+      const productsOutputDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
 
       // Load suppressor block (read from file if available, otherwise use hardcoded version)
       let suppressorBlock = '';
@@ -9296,23 +9389,105 @@
       const allScriptTags = [];
 
       for (const product of products) {
-        // Generate fetch-based script that loads JSON and injects it inline
-        // This replaces the broken <script src=""> approach with working fetch-based inline injection
-        const scriptTagOnly = '<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->\n' +
-          '<' + 'script>\n' +
-          'fetch("https://schema.alanranger.com/' + product.jsonFileName + '")\n' +
-          '  .then(r => r.json())\n' +
-          '  .then(json => {\n' +
-          '    const s = document.createElement("script");\n' +
-          '    s.type = "application/ld+json";\n' +
-          '    s.text = JSON.stringify(json);\n' +
-          '    document.head.appendChild(s);\n' +
-          '  })\n' +
-          '  .catch(console.error);\n' +
-          '<' + '/script>';
+        // Prefer the per-product script file generated by Step 4 (source of truth).
+        // This ensures each code block includes the latest unique loader logic.
+        let fullCodeBlock = '';
+        const generatedScriptTagFile = `${productsOutputDir}\\${product.jsonFileName.replace('.json', '_script_tag.html')}`;
+        if (window.electronAPI && window.electronAPI.readFile) {
+          try {
+            const generatedResult = await window.electronAPI.readFile(generatedScriptTagFile);
+            if (generatedResult && generatedResult.success && String(generatedResult.content || '').trim()) {
+              fullCodeBlock = String(generatedResult.content).trim();
+            }
+          } catch (error) {
+            // Fall back to inline template if file read fails.
+          }
+        }
         
-        // Combine suppressor block + script tag
-        const fullCodeBlock = suppressorBlock + '\n\n' + scriptTagOnly;
+        // Fallback for environments where generated script-tag files are unavailable.
+        if (!fullCodeBlock) {
+          const faqFileName = product.jsonFileName.endsWith('_schema.json')
+            ? product.jsonFileName.replace('_schema.json', '_faq.json')
+            : `${product.jsonFileName}_faq.json`;
+          const scriptTagOnly = '<!-- Auto-fetch Product Schema + FAQ from GitHub and inject inline JSON-LD -->\n' +
+            '<' + 'script>\n' +
+            '(function(){\n' +
+            '  function appendJsonLd(payload){\n' +
+            '    if(!payload || typeof payload !== "object") return;\n' +
+            '    const s = document.createElement("script");\n' +
+            '    s.type = "application/ld+json";\n' +
+            '    s.text = JSON.stringify(payload);\n' +
+            '    document.head.appendChild(s);\n' +
+            '  }\n' +
+            '  function hasExistingFaqSignal(){\n' +
+            '    const schemaBlocks = Array.from(document.querySelectorAll(\'script[type="application/ld+json"]\'));\n' +
+            '    const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(String(block.textContent || "")));\n' +
+            '    if (hasFaqSchema) return true;\n' +
+            '    const currentScript = document.currentScript;\n' +
+            '    const scriptBlocks = Array.from(document.querySelectorAll("script")).filter((block) => block !== currentScript);\n' +
+            '    return scriptBlocks.some((block) => /\\/[a-z0-9._\\-/]*_faq\\.json(?:["\'?#&]|$)/i.test(String(block.textContent || "") + " " + String(block.src || "")));\n' +
+            '  }\n' +
+            '  function hasExistingTldrSignal(){\n' +
+            '    if (document.getElementById("ar-tldr-block")) return true;\n' +
+            '    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));\n' +
+            '    return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));\n' +
+            '  }\n' +
+            '  function injectTldrBlock(summaryText){\n' +
+            '    if (hasExistingTldrSignal()) return;\n' +
+            '    const summary = String(summaryText || "").replace(/\\s+/g, " ").trim();\n' +
+            '    if (summary.length < 40) return;\n' +
+            '    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;\n' +
+            '    if (!container) return;\n' +
+            '    const block = document.createElement("section");\n' +
+            '    block.id = "ar-tldr-block";\n' +
+            '    block.style.margin = "1rem 0";\n' +
+            '    block.style.padding = "0.85rem 1rem";\n' +
+            '    block.style.border = "1px solid #dbe3ec";\n' +
+            '    block.style.borderRadius = "8px";\n' +
+            '    block.style.background = "#f8fbff";\n' +
+            '    const title = document.createElement("h2");\n' +
+            '    title.textContent = "TLDR";\n' +
+            '    title.style.margin = "0 0 0.45rem 0";\n' +
+            '    title.style.fontSize = "1rem";\n' +
+            '    const body = document.createElement("p");\n' +
+            '    body.textContent = summary;\n' +
+            '    body.style.margin = "0";\n' +
+            '    body.style.lineHeight = "1.55";\n' +
+            '    block.appendChild(title);\n' +
+            '    block.appendChild(body);\n' +
+            '    const firstHeading = container.querySelector("h1, h2");\n' +
+            '    if (firstHeading && firstHeading.parentNode) {\n' +
+            '      firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);\n' +
+            '      return;\n' +
+            '    }\n' +
+            '    if (container.firstChild) {\n' +
+            '      container.insertBefore(block, container.firstChild);\n' +
+            '    } else {\n' +
+            '      container.appendChild(block);\n' +
+            '    }\n' +
+            '  }\n' +
+            '  fetch("https://schema.alanranger.com/' + product.jsonFileName + '")\n' +
+            '    .then((r) => r.ok ? r.json() : null)\n' +
+            '    .then((json) => {\n' +
+            '      if (!json) return;\n' +
+            '      appendJsonLd(json);\n' +
+            '      injectTldrBlock(json.description || json.name || "");\n' +
+            '    })\n' +
+            '    .catch(console.error);\n' +
+            '  fetch("https://schema.alanranger.com/' + faqFileName + '")\n' +
+            '    .then((r) => r.ok ? r.json() : null)\n' +
+            '    .then((faqJson) => {\n' +
+            '      if (!faqJson) return;\n' +
+            '      const faqType = String(faqJson?.["@type"] || "").toLowerCase();\n' +
+            '      if (faqType !== "faqpage") return;\n' +
+            '      if (hasExistingFaqSignal()) return;\n' +
+            '      appendJsonLd(faqJson);\n' +
+            '    })\n' +
+            '    .catch(() => {});\n' +
+            '})();\n' +
+            '<' + '/script>';
+          fullCodeBlock = suppressorBlock + '\n\n' + scriptTagOnly;
+        }
 
         allScriptTags.push({
           name: product.name,
@@ -9354,19 +9529,18 @@
         addToCombinedLog(errorMsg + '\n', '4', 'script-tags');
         console.error(errorMsg);
       } else {
-        const outputsDir = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\products';
         let filesWritten = 0;
         let filesFailed = 0;
         const errors = [];
         
-        addToCombinedLog(` Output directory: ${outputsDir}\n Processing ${allScriptTags.length} products...\n`, '4', 'script-tags');
+        addToCombinedLog(` Output directory: ${productsOutputDir}\n Processing ${allScriptTags.length} products...\n`, '4', 'script-tags');
         
         for (const product of allScriptTags) {
           try {
             // Create filename: [json-filename-base]_script_tag.html
             const baseName = product.jsonFileName.replace('.json', '');
             const htmlFileName = `${baseName}_script_tag.html`;
-            const htmlFilePath = `${outputsDir}\\${htmlFileName}`;
+            const htmlFilePath = `${productsOutputDir}\\${htmlFileName}`;
             
             // Write the full code block (suppressor + script tag) to HTML file
             const result = await window.electronAPI.writeFile(htmlFilePath, product.scriptTag);
@@ -9387,11 +9561,11 @@
           }
         }
         
-        const summaryMsg = `\n============================================================\n✅ Script Tag HTML Files Generation Complete\n============================================================\n✅ Files created: ${filesWritten}\n${filesFailed > 0 ? `❌ Files failed: ${filesFailed}\n` : ''} Location: ${outputsDir}\n`;
+        const summaryMsg = `\n============================================================\n✅ Script Tag HTML Files Generation Complete\n============================================================\n✅ Files created: ${filesWritten}\n${filesFailed > 0 ? `❌ Files failed: ${filesFailed}\n` : ''} Location: ${productsOutputDir}\n`;
         addToCombinedLog(summaryMsg, '4', 'script-tags');
         
         if (filesWritten > 0) {
-          console.log(`✅ Generated ${filesWritten} individual HTML files in ${outputsDir}`);
+          console.log(`✅ Generated ${filesWritten} individual HTML files in ${productsOutputDir}`);
           scriptTagsHtml += `<div style="margin-top: 1rem; padding: 0.75rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-size: 0.875rem;">✅ Generated ${filesWritten} HTML files in products folder</div>`;
         }
         if (filesFailed > 0) {
@@ -10373,6 +10547,71 @@
     return false;
   }
 
+  function extractSnippetLoadTargets(html, pageUrl = '') {
+    if (!html) return [];
+    const targets = [];
+    const re = /data-m-plugin=["']load["'][^>]*data-target=["']([^"']+)["']/gi;
+    let match;
+    while ((match = re.exec(html)) !== null) {
+      const raw = String(match[1] || '').trim();
+      if (!raw) continue;
+      let absolute = raw;
+      try {
+        absolute = pageUrl ? new URL(raw, pageUrl).toString() : raw;
+      } catch (_) {
+        absolute = raw;
+      }
+      if (!targets.includes(absolute)) targets.push(absolute);
+      if (targets.length >= 6) break;
+    }
+    return targets;
+  }
+
+  async function hasExistingFAQBlockWithSnippets(pageUrl, html, plainText, debugLog = null) {
+    const baseDetection = hasExistingFAQBlock(html, plainText, debugLog);
+    if (baseDetection) return true;
+
+    const snippetTargets = extractSnippetLoadTargets(html, pageUrl);
+    if (!snippetTargets.length) return false;
+    if (debugLog) debugLog(`  - Found ${snippetTargets.length} snippet-loader target(s); checking snippet content...`);
+
+    for (const targetUrl of snippetTargets) {
+      try {
+        const snippetHtml = await fetchHtmlForDetection(targetUrl);
+        if (!snippetHtml) continue;
+        const snippetText = htmlToPlainText(snippetHtml);
+        const snippetDetected = hasExistingFAQBlock(snippetHtml, snippetText, debugLog ? (msg) => debugLog(`  [snippet] ${msg}`) : null);
+        if (snippetDetected) {
+          if (debugLog) debugLog(`  ✅ FAQ DETECTED in snippet target: ${targetUrl}`);
+          return true;
+        }
+      } catch (err) {
+        if (debugLog) debugLog(`  ⚠️ Snippet check failed: ${targetUrl} (${err.message})`);
+      }
+    }
+    return false;
+  }
+
+  async function enrichHtmlWithSnippetLoaderContent(pageUrl, html, debugLog = null) {
+    if (!html) return html;
+    const snippetTargets = extractSnippetLoadTargets(html, pageUrl);
+    if (!snippetTargets.length) return html;
+
+    const parts = [html];
+    for (const targetUrl of snippetTargets) {
+      try {
+        const snippetHtml = await fetchHtmlForDetection(targetUrl);
+        if (snippetHtml) {
+          parts.push(snippetHtml);
+        }
+      } catch (err) {
+        if (debugLog) debugLog(`⚠️ Failed to fetch snippet target for schema scan: ${targetUrl} (${err.message})`);
+      }
+    }
+    if (debugLog) debugLog(`ℹ Included ${parts.length - 1} snippet payload(s) in schema scan input`);
+    return parts.join('\n');
+  }
+
   /**
    * TEST FUNCTION: Test detection logic for a specific URL
    * Call this from browser console: testBlogDetection('https://www.alanranger.com/blog-on-photography/the-art-of-storytelling-photography')
@@ -10395,7 +10634,7 @@
       console.log(' FAQ DETECTION TEST');
       console.log('='.repeat(60));
       const faqDebugLog = (msg) => console.log(`  ${msg}`);
-      const hasFAQ = hasExistingFAQBlock(html, plainText, faqDebugLog);
+      const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, faqDebugLog);
       console.log(`\n✅ RESULT: ${hasFAQ ? 'FAQ DETECTED - Will SKIP FAQ generation' : 'NO FAQ - Will GENERATE FAQ'}`);
       
       // Test HowTo Detection
@@ -10454,7 +10693,7 @@
       
       // Test detection with debug logging
       const debugLog = (msg) => console.log(`  ${msg}`);
-      const hasFAQ = hasExistingFAQBlock(articleBody, html, debugLog);
+      const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, articleBody, debugLog);
       
       console.log(`\n${'='.repeat(60)}`);
       if (hasFAQ) {
@@ -10493,7 +10732,7 @@
       blogPosts_log(`   ⚽  WARNING: No articleBody provided for FAQ detection`);
     }
     
-    const hasFAQ = hasExistingFAQBlock(html, articleBody, debugLog);
+    const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, articleBody, debugLog);
     
     if (hasFAQ) {
       // FAQ block detected - skip generation entirely
@@ -11012,7 +11251,7 @@
         // Generate FAQ schema (MASTER RULE: skip if FAQ markers detected)
         try {
           const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
-          const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, debugLog);
           
           if (hasFAQ) {
             blogPosts_log(`   ⎽  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
@@ -11403,7 +11642,7 @@
       blogPosts_log('\n FAQ DETECTION TEST');
       blogPosts_log('='.repeat(60));
       const faqDebugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
-      const hasFAQ = hasExistingFAQBlock(html, plainText, faqDebugLog);
+      const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, faqDebugLog);
       
       // Test HowTo Detection
       blogPosts_log('\n HOWTO DETECTION TEST');
@@ -11703,7 +11942,7 @@
         // Generate FAQ if eligible
         try {
           const debugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
-          const hasFAQ = hasExistingFAQBlock(html, plainText, debugLog);
+          const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, debugLog);
           
           if (hasFAQ) {
             blogPosts_log(`   ⎽  FAQ SKIPPED: Existing FAQ detected`);
@@ -15957,9 +16196,9 @@
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
 
-      // ARP Hybrid Schema Loader v3.2 – Critical Inline + Deferred Full Load
+      // ARP Hybrid Schema Loader v3.3 – Critical Inline + Deferred Full Load
       // FIXED: Runtime replacement of <PAGE_URL> placeholder to ensure valid JSON-LD
-      const scriptSrcTag = `<!--  ARP Hybrid Schema Loader v3.2 – Critical Inline + Deferred Full Load -->
+      const scriptSrcTag = `<!--  ARP Hybrid Schema Loader v3.3 – Critical Inline + Deferred Full Load -->
 
 <script type="application/ld+json" id="arp-critical-schema">
 {
@@ -15985,26 +16224,176 @@
   if (!slug) return;
 
   const base = "https://schema.alanranger.com/";
+  const schemaUrl = base + slug + "_schema.json";
+  const faqUrl = base + slug + "_faq.json";
+  const howToUrl = base + slug + "_howto.json";
+  const imageUrl = base + slug + "_image.json";
 
-  const files = [
-    base + slug + "_schema.json",
-    base + slug + "_faq.json",
-    base + slug + "_howto.json",
-    base + slug + "_image.json"
-  ];
+  function appendJsonLd(payload) {
+    if (!payload || typeof payload !== "object") return;
+    const el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.textContent = JSON.stringify(payload);
+    document.head.appendChild(el);
+  }
 
-  files.forEach(file => {
-    fetch(file)
-      .then(r => r.ok ? r.text() : null)
-      .then(json => {
-        if (!json) return;
-        const el = document.createElement("script");
-        el.type = "application/ld+json";
-        el.textContent = json.trim();
-        document.head.appendChild(el);
+  function hasExistingFaqSchema() {
+    return Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+      .some((block) => {
+        try {
+          const json = JSON.parse(block.textContent || "{}");
+          if (json && json["@type"] === "FAQPage") return true;
+          if (Array.isArray(json && json["@graph"])) {
+            return json["@graph"].some((node) => {
+              if (!node) return false;
+              const t = node["@type"];
+              if (Array.isArray(t)) return t.includes("FAQPage");
+              return t === "FAQPage";
+            });
+          }
+          return false;
+        } catch (_err) {
+          return /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || "");
+        }
+      });
+  }
+
+  function hasVisibleFaqBlock() {
+    const faqSelectors = [
+      ".faq-block",
+      ".sqs-faq-block",
+      '[data-section-type*="faq"]',
+      '[id*="faq"]',
+      '[class*="faq"]'
+    ].join(",");
+
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+    const faqHeading = headings.find((h) => /\\bfaq\\b|frequently asked questions?/i.test(String(h.textContent || "")));
+    if (!faqHeading) return false;
+
+    const headingScope =
+      faqHeading.closest("section, article, [data-section-id], [id], [class]") ||
+      faqHeading.parentElement ||
+      document.body;
+    if (!headingScope) return false;
+    if (headingScope.querySelector(faqSelectors)) return true;
+
+    const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
+    return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
+  }
+
+  function shouldSkipExternalFaq() {
+    if (hasExistingFaqSchema()) {
+      console.info("[Blog Schema Loader] FAQ skip: existing FAQPage schema found");
+      return true;
+    }
+    if (hasVisibleFaqBlock()) {
+      console.info("[Blog Schema Loader] FAQ skip: visible FAQ block found");
+      return true;
+    }
+    return false;
+  }
+
+  function hasExistingTldrSignal() {
+    if (document.getElementById("ar-tldr-block")) return true;
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+    return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));
+  }
+
+  function injectTldrBlock(summaryText) {
+    if (hasExistingTldrSignal()) return;
+    const summary = String(summaryText || "").replace(/\\s+/g, " ").trim();
+    if (summary.length < 40) return;
+
+    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+    if (!container) return;
+
+    const block = document.createElement("section");
+    block.id = "ar-tldr-block";
+    block.style.margin = "1rem 0";
+    block.style.padding = "0.85rem 1rem";
+    block.style.border = "1px solid #dbe3ec";
+    block.style.borderRadius = "8px";
+    block.style.background = "#f8fbff";
+
+    const title = document.createElement("h2");
+    title.textContent = "TLDR";
+    title.style.margin = "0 0 0.45rem 0";
+    title.style.fontSize = "1rem";
+
+    const body = document.createElement("p");
+    body.textContent = summary;
+    body.style.margin = "0";
+    body.style.lineHeight = "1.55";
+
+    block.appendChild(title);
+    block.appendChild(body);
+
+    const firstHeading = container.querySelector("h1, h2");
+    if (firstHeading && firstHeading.parentNode) {
+      firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);
+      return;
+    }
+    if (container.firstChild) {
+      container.insertBefore(block, container.firstChild);
+    } else {
+      container.appendChild(block);
+    }
+  }
+
+  function loadOptionalJsonLd(url, label) {
+    return fetch(url)
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => {
+        if (!json || typeof json !== "object") return;
+        appendJsonLd(json);
+        console.info("[Blog Schema Loader] " + label + " injected");
       })
-      .catch(() => {});
-  });
+      .catch((err) => {
+        console.warn("[Blog Schema Loader] " + label + " load failed", err);
+      });
+  }
+
+  fetch(schemaUrl)
+    .then((r) => r.ok ? r.json() : null)
+    .then((schemaJson) => {
+      if (!schemaJson || typeof schemaJson !== "object") {
+        console.warn("[Blog Schema Loader] schema payload missing/invalid");
+        return;
+      }
+      appendJsonLd(schemaJson);
+      console.info("[Blog Schema Loader] schema injected");
+      injectTldrBlock(schemaJson.description || schemaJson.name || "");
+
+      // FAQ: only inject when no real FAQ schema/UI exists.
+      if (!shouldSkipExternalFaq()) {
+        fetch(faqUrl)
+          .then((r) => r.ok ? r.json() : null)
+          .then((faqJson) => {
+            if (!faqJson || typeof faqJson !== "object") {
+              console.warn("[Blog Schema Loader] FAQ fetch returned invalid payload");
+              return;
+            }
+            const faqType = String(faqJson["@type"] || "").toLowerCase();
+            if (faqType !== "faqpage") {
+              console.warn("[Blog Schema Loader] FAQ payload rejected: @type is not FAQPage");
+              return;
+            }
+            appendJsonLd(faqJson);
+            console.info("[Blog Schema Loader] FAQ injected");
+          })
+          .catch((err) => {
+            console.warn("[Blog Schema Loader] FAQ load failed", err);
+          });
+      }
+
+      // Optional extra schema files.
+      loadOptionalJsonLd(howToUrl, "HowTo");
+      loadOptionalJsonLd(imageUrl, "ImageObject");
+    })
+    .catch((err) => {
+      console.warn("[Blog Schema Loader] schema load failed", err);
+    });
 })();
 <\/script>`;
 
@@ -17169,7 +17558,8 @@ ${minifiedJson}
       // Scan for existing schema types and show selector panel
       addLandingDebugLog(' Scanning for existing schema types...');
       try {
-        const existingBlocks = extractJsonLdBlocksFromHtml(html);
+        const htmlForSchemaScan = await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog);
+        const existingBlocks = extractJsonLdBlocksFromHtml(htmlForSchemaScan);
         const detectedSchemaTypes = detectSchemaTypesFromBlocks(existingBlocks);
         
         if (detectedSchemaTypes.some(dt => dt.found)) {
@@ -18181,7 +18571,8 @@ ${minifiedJson}
       addLandingDebugLog(` Fetched HTML (${html.length} characters)`);
       addLandingDebugLog(` Searching for JSON-LD blocks...`);
       
-      const existingBlocks = extractJsonLdBlocksFromHtml(html);
+      const htmlForSchemaScan = await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog);
+      const existingBlocks = extractJsonLdBlocksFromHtml(htmlForSchemaScan);
       
       if (existingBlocks.length > 0) {
         existingSchemas = existingBlocks;
@@ -19489,6 +19880,30 @@ ${minifiedJson}
   }
 
   // Product Schema Generation
+  function setStep4VisibleProgress(percent, text, isError = false) {
+    const wrap = document.getElementById('step4VisibleProgress');
+    const bar = document.getElementById('step4VisibleProgressBar');
+    const pct = document.getElementById('step4VisibleProgressPct');
+    const label = document.getElementById('step4VisibleProgressText');
+    if (!wrap || !bar || !pct || !label) return;
+
+    const safePct = Math.max(0, Math.min(100, Number(percent) || 0));
+    wrap.style.display = 'block';
+    bar.style.width = `${safePct}%`;
+    pct.textContent = `${Math.round(safePct)}%`;
+    label.textContent = text || '';
+
+    if (isError) {
+      bar.style.background = '#dc2626';
+      pct.style.color = '#991b1b';
+      label.style.color = '#991b1b';
+    } else {
+      bar.style.background = '#2563eb';
+      pct.style.color = '#1e40af';
+      label.style.color = '#1e40af';
+    }
+  }
+
   async function generateProductSchema() {
     // Check server status first (skip alert in Electron mode or web deployment)
     const isRunning = await ensureLocalExecutorRunning();
@@ -19594,6 +20009,9 @@ ${minifiedJson}
       }
     }
 
+    // Make progress state obvious in the Step 4 card before script output starts.
+    setStep4VisibleProgress(5, 'Starting Step 4...');
+
     // Use local task runner for schema generation
     await runLocalTask('schema', 4, '⚽ Generating Product Schema...', () => {
       output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON/HTML files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
@@ -19601,6 +20019,7 @@ ${minifiedJson}
         successMsg.style.display = 'block';
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+      setStep4VisibleProgress(100, 'Step 4 complete. Files generated successfully.');
       
       // Optionally stop the server after completion (commented out by default)
       // fetch("http://localhost:8000/exit").then(() => console.log(" Local executor stopped."));
@@ -25068,6 +25487,10 @@ exit`;
       }
       if (wrap) wrap.style.display = 'none';
       if (status) status.textContent = '';
+      if (String(step) === '4') {
+        const step4Wrap = document.getElementById('step4VisibleProgress');
+        if (step4Wrap) step4Wrap.style.display = 'none';
+      }
     }
 
     // Local task runner - executes Python scripts via local server
@@ -25148,6 +25571,8 @@ exit`;
         let exitCode = null;
         let hasSuccessIndicator = false;
         let streamError = null;
+        let step4TotalProducts = null;
+        let step4ProcessedProducts = 0;
         
         try {
           reader = response.body.getReader();
@@ -25164,6 +25589,25 @@ exit`;
             for (const line of lines) {
               if (line.trim()) {
                 log(line + '\n');
+
+                if (stepId === 4) {
+                  const loadedProductsMatch = line.match(/✅\s*Loaded\s+(\d+)\s+products?/i);
+                  if (loadedProductsMatch) {
+                    step4TotalProducts = parseInt(loadedProductsMatch[1], 10);
+                    setStep4VisibleProgress(18, `Loaded ${step4TotalProducts} products. Building schemas...`);
+                  } else if (/^\s*(✅|⚠️)\s*\[/.test(line)) {
+                    step4ProcessedProducts += 1;
+                    if (step4TotalProducts && step4TotalProducts > 0) {
+                      const estimatedPct = 18 + (step4ProcessedProducts / step4TotalProducts) * 72;
+                      setStep4VisibleProgress(Math.min(92, estimatedPct), `Processing ${step4ProcessedProducts}/${step4TotalProducts} products...`);
+                    } else {
+                      const fallbackPct = Math.min(85, 20 + (step4ProcessedProducts * 1.4));
+                      setStep4VisibleProgress(fallbackPct, `Processing products (${step4ProcessedProducts} done)...`);
+                    }
+                  } else if (/Generated\s+\d+\s+HTML\s+files?/i.test(line)) {
+                    setStep4VisibleProgress(95, 'Finalizing outputs...');
+                  }
+                }
                 
                 // Extract exit code if present FIRST (most reliable indicator)
                 const exitMatch = line.match(/exit code (\d+)/i);
@@ -25269,6 +25713,9 @@ exit`;
         if (progressBar) {
           progressBar.style.width = '100%';
           progressBar.style.background = '#27AE60'; // Green for complete
+        }
+        if (stepId === 4) {
+          setStep4VisibleProgress(100, 'Step 4 complete. Files generated successfully.');
         }
         
         // Mark step as complete FIRST
@@ -25597,6 +26044,9 @@ exit`;
         if (progressBar) {
           progressBar.style.background = '#dc3545'; // Red on error
           progressBar.style.width = '0%';
+        }
+        if (stepId === 4) {
+          setStep4VisibleProgress(100, `Step 4 failed: ${errorMsg}`, true);
         }
         
         // Update status text
