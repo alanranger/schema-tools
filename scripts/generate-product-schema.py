@@ -2131,9 +2131,7 @@ def schema_to_html(schema_data, event_schema=None):
         return result
 
 def schema_to_script_tag_html(json_filename, faq_payload=None):
-    """Convert schema JSON filename to script-tag HTML.
-    FAQ (when present) is emitted as static JSON-LD for validator visibility.
-    """
+    """Convert schema JSON filename to script-tag HTML with fetched FAQ injection."""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
@@ -2141,22 +2139,34 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
-    static_faq_script = ""
-    if faq_payload and isinstance(faq_payload, dict):
-        static_faq_script = (
-            '<script type="application/ld+json">\n'
-            + json.dumps(faq_payload, indent=2, ensure_ascii=False)
-            + '\n</script>\n'
-        )
+    faq_url = ""
+    if json_filename.endswith(SCHEMA_JSON_SUFFIX):
+        faq_url = f"https://schema.alanranger.com/{json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX)}"
     fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
 <script>
 (function() {{
+  const FAQ_JSON_URL = "{faq_url}";
+
   function appendJsonLd(payload) {{
     if (!payload || typeof payload !== "object") return;
     const s = document.createElement("script");
     s.type = "application/ld+json";
     s.text = JSON.stringify(payload);
     document.head.appendChild(s);
+  }}
+
+  function hasExistingFaqSignal() {{
+    const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+    const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
+    if (hasFaqSchema) return true;
+
+    // Skip only if another script (not this one) already references an FAQ JSON endpoint.
+    const currentScript = document.currentScript;
+    const scriptBlocks = Array.from(document.querySelectorAll("script"))
+      .filter((block) => block !== currentScript);
+    return scriptBlocks.some((block) =>
+      /\\/[a-z0-9._\\-/]*_faq\\.json(?:["'?#&]|$)/i.test(String(block.textContent || "") + " " + String(block.src || ""))
+    );
   }}
 
   function hasExistingTldrSignal() {{
@@ -2212,16 +2222,28 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
       if (!json) return;
       appendJsonLd(json);
       injectTldrBlock(json.description || json.name || "");
+
+      if (!FAQ_JSON_URL) return;
+      if (hasExistingFaqSignal()) return;
+
+      fetch(FAQ_JSON_URL)
+        .then((r) => r.ok ? r.json() : null)
+        .then((faqJson) => {{
+          if (!faqJson || typeof faqJson !== "object") return;
+          const faqType = String(faqJson["@type"] || "").toLowerCase();
+          if (faqType !== "faqpage") return;
+          appendJsonLd(faqJson);
+        }})
+        .catch(console.error);
     }})
     .catch(console.error);
 }})();
 </script>'''
     
     # Combine suppressor block + Product fetch script (Event schema NOT included)
-    combined = static_faq_script + fetch_script
     if suppressor_block:
-        return suppressor_block + '\n' + combined
-    return combined
+        return suppressor_block + '\n' + fetch_script
+    return fetch_script
 
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
