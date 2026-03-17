@@ -1510,7 +1510,8 @@
     <div class="tabs sidebar" aria-label="Schema tools sections">
       <button class="tab active" data-mode="config" onclick="switchTab('config')"><span class="tab-icon">⚙️</span><span class="tab-label">Configuration</span></button>
       <button class="tab" data-mode="product" onclick="switchTab('product')"><span class="tab-icon">🧩</span><span class="tab-label">Product Schema</span></button>
-      <button class="tab" data-mode="event" onclick="switchTab('event')"><span class="tab-icon">🗓️</span><span class="tab-label">Event Schema</span></button>
+      <button class="tab" data-mode="event" onclick="switchTab('event')"><span class="tab-icon">🗓️</span><span class="tab-label">Event Index Schema</span></button>
+      <button class="tab" data-mode="eventPosts" onclick="switchTab('eventPosts')"><span class="tab-icon">🎫</span><span class="tab-label">Event Posts</span></button>
       <button class="tab" data-mode="blog" onclick="switchTab('blog')"><span class="tab-icon">📰</span><span class="tab-label">Blog Index Schema</span></button>
       <button class="tab" data-mode="blogPosts" onclick="switchTab('blogPosts')"><span class="tab-icon">📝</span><span class="tab-label">Blog Posts</span></button>
       <button class="tab" data-mode="landing" onclick="switchTab('landing')"><span class="tab-icon">🧭</span><span class="tab-label">Landing / Service Pages</span></button>
@@ -1989,6 +1990,53 @@
       
       <div id="buildOutputEvent" style="display:none; margin-top:1rem; padding:1rem; background:#1e1e1e; color:#d4d4d4; border-radius:8px; font-family:'Courier New', monospace; font-size:0.75rem; max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
     </div>
+  </div>
+
+  <!-- Event Posts Tab Content -->
+  <div id="eventPostsTab" class="tab-content">
+    <div class="instructions">
+      <strong> Event Posts Schema Generator</strong><br><br>
+      ✅ Generates per-event files for individual lessons/workshops pages.<br>
+      ✅ Fully independent from Event Index workflow.<br>
+      ✅ Uses one global loader script for both Squarespace event groups.<br><br>
+      <strong>Workflow:</strong><br>
+      1) Upload the two event CSV exports in this tab.<br>
+      2) Click <strong>Build Event Post Files</strong>.<br>
+      3) Deploy files + manifest to `schema.alanranger.com`.<br>
+      4) Add the global loader once in Squarespace header injection.
+    </div>
+
+    <div style="margin-top: 1rem; padding: 1rem; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px;">
+      <div style="margin-bottom: 1rem; padding: 0.85rem; background: #ffffff; border: 1px solid #dbeafe; border-radius: 8px;">
+        <label for="eventPostsLessonsCsvFile" style="display:block; font-weight:600; margin-bottom:0.35rem;">Lessons CSV (required)</label>
+        <input type="file" id="eventPostsLessonsCsvFile" accept=".csv" aria-label="Event Posts lessons CSV upload">
+        <div style="margin-top:0.35rem; color:#475569; font-size:0.85rem;">
+          Upload: <code>02-beginners-photography-lessons.csv</code>
+        </div>
+      </div>
+      <div style="margin-bottom: 1rem; padding: 0.85rem; background: #ffffff; border: 1px solid #dbeafe; border-radius: 8px;">
+        <label for="eventPostsWorkshopsCsvFile" style="display:block; font-weight:600; margin-bottom:0.35rem;">Workshops CSV (required)</label>
+        <input type="file" id="eventPostsWorkshopsCsvFile" accept=".csv" aria-label="Event Posts workshops CSV upload">
+        <div style="margin-top:0.35rem; color:#475569; font-size:0.85rem;">
+          Upload: <code>03-photographic-workshops-near-me.csv</code>
+        </div>
+      </div>
+      <button onclick="generateEventPostBundle()" style="padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+        Build Event Post Files
+      </button>
+      <button onclick="copyEventPostsLoaderScript()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem; margin-bottom: 0.5rem;">
+        Copy Global Event Posts Loader
+      </button>
+      <button onclick="deployEventPostBundle()" style="padding: 0.75rem 1.5rem; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">
+        Deploy Event Post Bundle (Electron)
+      </button>
+      <p style="margin-top: 0.75rem; color: #475569; font-size: 0.875rem;">
+        Outputs: <code>events-manifest.json</code>, <code>&lt;slug&gt;_event_schema.json</code>, <code>&lt;slug&gt;_event_faq.json</code>
+      </p>
+    </div>
+
+    <h3 style="margin-top: 1rem;">Event Posts Output</h3>
+    <pre id="eventPostsOutput" style="max-height: 420px; overflow-y: auto;"></pre>
   </div>
 
   <!-- Field Verification Modal -->
@@ -3798,6 +3846,7 @@
     const tabMap = {
       'config': { contentId: 'configurationTab' },
       'event': { contentId: 'eventTab' },
+      'eventPosts': { contentId: 'eventPostsTab' },
       'product': { contentId: 'productTab' },
       'blog': { contentId: 'blogTab' },
       'blogPosts': { contentId: 'blogPostsTab' },
@@ -13580,6 +13629,457 @@
     if (!url) return '';
     return url.toLowerCase().replace(/\/$/, '');
   }
+
+  function deriveEventGroupFromUrl(url) {
+    const value = normalizeUrl(url);
+    if (value.includes('/beginners-photography-lessons/')) return 'lessons';
+    if (value.includes('/photographic-workshops-near-me/')) return 'workshops';
+    return 'unknown';
+  }
+
+  function derivePathKeyFromUrl(url) {
+    try {
+      const parsed = new URL(String(url || ''));
+      return (parsed.pathname || '/').replace(/\/+$/, '').toLowerCase() || '/';
+    } catch (_err) {
+      return '';
+    }
+  }
+
+  function deriveEventSlugFromUrl(url) {
+    const pathKey = derivePathKeyFromUrl(url);
+    if (!pathKey) return '';
+    const parts = pathKey.split('/').filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : '';
+  }
+
+  function buildEventFaqPayload(eventSchema) {
+    const name = String(eventSchema?.name || 'Photography event').trim();
+    const url = String(eventSchema?.url || '').trim();
+    const locationName = String(eventSchema?.location?.name || 'the listed venue').trim();
+    const startDate = String(eventSchema?.startDate || '').split('T')[0];
+    const endDate = String(eventSchema?.endDate || '').split('T')[0];
+    const price = String(eventSchema?.offers?.price || '').trim();
+    const currency = String(eventSchema?.offers?.priceCurrency || 'GBP').trim();
+
+    const dateText = startDate && endDate
+      ? `${startDate} to ${endDate}`
+      : (startDate || 'the published event date');
+    const priceText = price ? `${price} ${currency}` : 'the current listed price';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      '@id': `${url || ''}#faq`,
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: `Where does "${name}" take place?`,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `${name} takes place at ${locationName}. Check the event page for final joining and location details.`
+          }
+        },
+        {
+          '@type': 'Question',
+          name: `When is "${name}" running?`,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `${name} is scheduled for ${dateText}. Always confirm times on the event page before booking.`
+          }
+        },
+        {
+          '@type': 'Question',
+          name: `How much does "${name}" cost?`,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `The listed price for ${name} is ${priceText}. Availability and pricing can change, so check the booking page for the latest details.`
+          }
+        },
+        {
+          '@type': 'Question',
+          name: `How do I book "${name}"?`,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `Use the booking link on the event page for ${name}. You can review event details, availability, and next steps there before completing your booking.`
+          }
+        }
+      ]
+    };
+  }
+
+  function buildPerEventArtifacts(eventList, breadcrumbs) {
+    const breadcrumbByUrl = new Map();
+    (breadcrumbs || []).forEach((crumb) => {
+      const crumbId = String(crumb?.['@id'] || '');
+      const url = normalizeUrl(crumbId.replace(/#breadcrumbs$/i, ''));
+      if (url) breadcrumbByUrl.set(url, crumb);
+    });
+
+    const files = [];
+    const manifestEntries = [];
+
+    (eventList || []).forEach((eventSchema) => {
+      const eventUrl = normalizeUrl(eventSchema?.url || '');
+      if (!eventUrl) return;
+      const slug = deriveEventSlugFromUrl(eventUrl);
+      if (!slug) return;
+
+      const group = deriveEventGroupFromUrl(eventUrl);
+      const schemaFileName = `${slug}_event_schema.json`;
+      const faqFileName = `${slug}_event_faq.json`;
+      const pathKey = derivePathKeyFromUrl(eventUrl);
+      const breadcrumb = breadcrumbByUrl.get(eventUrl);
+
+      const pageSchema = {
+        '@context': 'https://schema.org',
+        '@graph': breadcrumb ? [eventSchema, breadcrumb] : [eventSchema]
+      };
+      const faqSchema = buildEventFaqPayload(eventSchema);
+
+      files.push({ fileName: schemaFileName, jsonContent: JSON.stringify(pageSchema, null, 2) });
+      files.push({ fileName: faqFileName, jsonContent: JSON.stringify(faqSchema, null, 2) });
+      manifestEntries.push({
+        url: eventUrl,
+        pathKey,
+        group,
+        slug,
+        schemaFileName,
+        faqFileName
+      });
+    });
+
+    const deduped = new Map();
+    manifestEntries.forEach((entry) => {
+      if (!entry.pathKey) return;
+      deduped.set(entry.pathKey, entry);
+    });
+    const entries = Array.from(deduped.values());
+
+    return {
+      files,
+      manifest: {
+        generatedAt: new Date().toISOString(),
+        totalEvents: entries.length,
+        entries
+      }
+    };
+  }
+
+  function getEventPostsLoaderScript() {
+    return `<!-- ARP Event Loader v1.0 (manifest-driven) -->
+<script type="application/ld+json" id="arp-critical-schema">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "<PAGE_URL>#webpage",
+  "isPartOf": { "@id": "https://www.alanranger.com/#website" },
+  "about": { "@id": "<PAGE_URL>#article" }
+}
+<\/script>
+
+<script>
+(function() {
+  const pageUrl = window.location.href.split("#")[0];
+  const critical = document.getElementById("arp-critical-schema");
+  if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
+
+  const path = window.location.pathname.replace(/\\/+$/, "").toLowerCase() || "/";
+  const isEventPath =
+    path.startsWith("/photographic-workshops-near-me/") ||
+    path.startsWith("/beginners-photography-lessons/");
+  if (!isEventPath) return;
+
+  const MANIFEST_URL = "https://schema.alanranger.com/events-manifest.json";
+  const base = "https://schema.alanranger.com/";
+
+  function appendJsonLd(payload) {
+    if (!payload || typeof payload !== "object") return;
+    const el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.textContent = JSON.stringify(payload);
+    document.head.appendChild(el);
+  }
+
+  function hasExistingFaqSchema() {
+    return Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+      .some((block) => {
+        try {
+          const json = JSON.parse(block.textContent || "{}");
+          if (json && json["@type"] === "FAQPage") return true;
+          if (Array.isArray(json && json["@graph"])) {
+            return json["@graph"].some((node) => {
+              if (!node) return false;
+              const t = node["@type"];
+              if (Array.isArray(t)) return t.includes("FAQPage");
+              return t === "FAQPage";
+            });
+          }
+          return false;
+        } catch (_err) {
+          return /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || "");
+        }
+      });
+  }
+
+  function hasVisibleFaqBlock() {
+    const faqSelectors = [
+      ".faq-block",
+      ".sqs-faq-block",
+      '[data-section-type*="faq"]',
+      '[id*="faq"]',
+      '[class*="faq"]'
+    ].join(",");
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+    const faqHeading = headings.find((h) => /\\bfaq\\b|frequently asked questions?/i.test(String(h.textContent || "")));
+    if (!faqHeading) return false;
+    const headingScope =
+      faqHeading.closest("section, article, [data-section-id], [id], [class]") ||
+      faqHeading.parentElement ||
+      document.body;
+    if (!headingScope) return false;
+    if (headingScope.querySelector(faqSelectors)) return true;
+    const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
+    return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
+  }
+
+  function shouldSkipExternalFaq() {
+    return hasExistingFaqSchema() || hasVisibleFaqBlock();
+  }
+
+  function hasExistingTldrSignal() {
+    if (document.getElementById("ar-tldr-block")) return true;
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+    return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));
+  }
+
+  function injectTldrBlock(summaryText) {
+    if (hasExistingTldrSignal()) return;
+    const summary = String(summaryText || "").replace(/\\s+/g, " ").trim();
+    if (summary.length < 40) return;
+    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+    if (!container) return;
+    const block = document.createElement("section");
+    block.id = "ar-tldr-block";
+    block.style.margin = "1rem 0";
+    block.style.padding = "0.85rem 1rem";
+    block.style.border = "1px solid #dbe3ec";
+    block.style.borderRadius = "8px";
+    block.style.background = "#f8fbff";
+    const title = document.createElement("h2");
+    title.textContent = "TLDR";
+    title.style.margin = "0 0 0.45rem 0";
+    title.style.fontSize = "1rem";
+    const body = document.createElement("p");
+    body.textContent = summary;
+    body.style.margin = "0";
+    body.style.lineHeight = "1.55";
+    block.appendChild(title);
+    block.appendChild(body);
+    const firstHeading = container.querySelector("h1, h2");
+    if (firstHeading && firstHeading.parentNode) {
+      firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);
+      return;
+    }
+    if (container.firstChild) container.insertBefore(block, container.firstChild);
+    else container.appendChild(block);
+  }
+
+  function getEntryByPath(entries) {
+    if (!Array.isArray(entries) || !entries.length) return null;
+    const exact = entries.find((entry) => String(entry.pathKey || "").toLowerCase() === path);
+    if (exact) return exact;
+    const slug = path.split("/").filter(Boolean).pop() || "";
+    if (!slug) return null;
+    return entries.find((entry) => String(entry.slug || "").toLowerCase() === slug) || null;
+  }
+
+  fetch(MANIFEST_URL)
+    .then((r) => r.ok ? r.json() : null)
+    .then((manifest) => {
+      const entry = getEntryByPath(manifest && manifest.entries ? manifest.entries : []);
+      if (!entry || !entry.schemaFileName) return;
+      const schemaUrl = base + String(entry.schemaFileName);
+      const faqUrl = entry.faqFileName ? base + String(entry.faqFileName) : "";
+
+      fetch(schemaUrl)
+        .then((r) => r.ok ? r.json() : null)
+        .then((schemaJson) => {
+          if (!schemaJson || typeof schemaJson !== "object") return;
+          appendJsonLd(schemaJson);
+          const graph = Array.isArray(schemaJson["@graph"]) ? schemaJson["@graph"] : [];
+          const primaryNode = graph.find((node) => {
+            if (!node) return false;
+            const t = node["@type"];
+            if (Array.isArray(t)) return t.includes("Event");
+            return t === "Event";
+          }) || schemaJson;
+          injectTldrBlock(primaryNode.description || primaryNode.name || "");
+
+          if (!faqUrl || shouldSkipExternalFaq()) return;
+          fetch(faqUrl)
+            .then((r) => r.ok ? r.json() : null)
+            .then((faqJson) => {
+              if (!faqJson || typeof faqJson !== "object") return;
+              const faqType = String(faqJson["@type"] || "").toLowerCase();
+              if (faqType !== "faqpage") return;
+              appendJsonLd(faqJson);
+            });
+        });
+    });
+})();
+<\/script>`;
+  }
+
+  function parseEventPostsCsvFile(file) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const rows = Array.isArray(results?.data) ? results.data : [];
+          resolve(rows);
+        },
+        error: function(error) {
+          reject(error || new Error('CSV parse failed'));
+        }
+      });
+    });
+  }
+
+  async function generateEventPostBundle() {
+    const output = document.getElementById('eventPostsOutput');
+    const lessonsFile = document.getElementById('eventPostsLessonsCsvFile')?.files?.[0] || null;
+    const workshopsFile = document.getElementById('eventPostsWorkshopsCsvFile')?.files?.[0] || null;
+
+    if (!lessonsFile || !workshopsFile) {
+      const message = 'Upload both Event Posts CSV files first: 02-beginners-photography-lessons.csv and 03-photographic-workshops-near-me.csv.';
+      if (output) output.textContent = message;
+      alert(message);
+      return false;
+    }
+
+    let lessonsRows = [];
+    let workshopsRows = [];
+    try {
+      if (output) output.textContent = 'Parsing lessons/workshops CSV files...';
+      lessonsRows = await parseEventPostsCsvFile(lessonsFile);
+      workshopsRows = await parseEventPostsCsvFile(workshopsFile);
+    } catch (error) {
+      const message = `Could not parse Event Posts CSV files: ${error.message}`;
+      if (output) output.textContent = message;
+      alert(message);
+      return false;
+    }
+
+    const combinedRows = [...lessonsRows, ...workshopsRows];
+    if (!combinedRows.length) {
+      const message = 'Both Event Posts CSV files were empty after parsing.';
+      if (output) output.textContent = message;
+      alert(message);
+      return false;
+    }
+
+    const categorySelect = document.getElementById('eventCategoryFilter');
+    if (categorySelect) {
+      if (!Array.from(categorySelect.options || []).some((opt) => opt.value === '__ALL__')) {
+        categorySelect.innerHTML = '<option value="__ALL__">All Categories</option>';
+      }
+      categorySelect.value = '__ALL__';
+      categorySelect.style.display = 'block';
+    }
+    const categoryContainer = document.getElementById('eventCategoryFilterContainer');
+    if (categoryContainer) categoryContainer.style.display = 'block';
+    const optionsContainer = document.getElementById('eventOptionsContainer');
+    if (optionsContainer) optionsContainer.style.display = 'block';
+
+    events = combinedRows;
+    await generateEventSchema();
+
+    if (!window.currentEventList || !window.currentEventList.length || !window.currentEventBreadcrumbs) {
+      const message = 'Event Posts generation did not produce event list output. Check CSV data and debug log.';
+      if (output) output.textContent = message;
+      return false;
+    }
+
+    const artifacts = buildPerEventArtifacts(window.currentEventList, window.currentEventBreadcrumbs);
+    window.currentEventPerPageFiles = artifacts.files;
+    window.currentEventManifest = artifacts.manifest;
+
+    const lines = [
+      'Event post bundle generated successfully.',
+      `Source rows: lessons=${lessonsRows.length}, workshops=${workshopsRows.length}, combined=${combinedRows.length}`,
+      `Event rows used after filters: ${window.currentEventList.length}`,
+      `Manifest entries: ${artifacts.manifest.totalEvents}`,
+      `Per-event schema files: ${Math.round(artifacts.files.length / 2)}`,
+      `Per-event FAQ files: ${Math.round(artifacts.files.length / 2)}`,
+      '',
+      'Files:',
+      ' - events-manifest.json',
+      ' - <slug>_event_schema.json',
+      ' - <slug>_event_faq.json'
+    ];
+    if (output) output.textContent = lines.join('\n');
+    return true;
+  }
+
+  function copyEventPostsLoaderScript() {
+    const script = getEventPostsLoaderScript();
+    const output = document.getElementById('eventPostsOutput');
+    navigator.clipboard.writeText(script).then(() => {
+      if (output) output.textContent = 'Global Event Posts loader copied to clipboard.\n\nPaste once into Squarespace header injection.';
+    }).catch((err) => {
+      if (output) output.textContent = `Copy failed: ${err.message}\n\n${script}`;
+      alert('Could not copy loader script to clipboard. See Event Posts output panel.');
+    });
+  }
+
+  async function deployEventPostBundle() {
+    const output = document.getElementById('eventPostsOutput');
+    if (!window.currentEventPerPageFiles || !window.currentEventPerPageFiles.length || !window.currentEventManifest) {
+      const built = await generateEventPostBundle();
+      if (!built || !window.currentEventPerPageFiles || !window.currentEventPerPageFiles.length || !window.currentEventManifest) {
+        return;
+      }
+    }
+
+    if (!window.electronAPI || !window.electronAPI.isElectron) {
+      const msg = 'Electron app required for auto-deploy. Use this tab in Electron or deploy files manually to alanranger-schema.';
+      if (output) output.textContent = msg;
+      alert(msg);
+      return;
+    }
+
+    if (!window.electronAPI.batchDeploySchemas) {
+      const msg = 'batchDeploySchemas is not available in this app build. Rebuild the Electron app, then retry Event Posts deploy.';
+      if (output) output.textContent = msg;
+      alert(msg);
+      return;
+    }
+
+    try {
+      const deployFiles = [
+        ...window.currentEventPerPageFiles,
+        {
+          fileName: 'events-manifest.json',
+          jsonContent: JSON.stringify(window.currentEventManifest, null, 2)
+        }
+      ];
+      const result = await window.electronAPI.batchDeploySchemas(deployFiles);
+      const msg = [
+        'Event post bundle deployed.',
+        `Files deployed: ${deployFiles.length}`,
+        `${result.message}`,
+        'Manifest URL: https://schema.alanranger.com/events-manifest.json'
+      ].join('\n');
+      if (output) output.textContent = msg;
+      alert('Event post bundle deployed successfully.');
+    } catch (error) {
+      const msg = `Deploy failed: ${error.message}`;
+      if (output) output.textContent = msg;
+      alert(msg);
+    }
+  }
   
   // Match product URLs even when one has path prefix (e.g., /photography-services-near-me/)
   function matchProductUrl(mappingUrl, reviewUrl) {
@@ -15427,7 +15927,7 @@
       addDebugLog(`\n GitHub Hosting Status:`);
       addDebugLog(`   ✅ Repository: alanranger-schema (public)`);
       addDebugLog(`    Hosted via GitHub Pages at https://schema.alanranger.com/`);
-      addDebugLog(`    Files synced: lessons-schema.json, workshops-schema.json`);
+      addDebugLog(`    Aggregate files: lessons-schema.json, workshops-schema.json`);
       addDebugLog(`   ⚽ Auto-sync enabled via GitHub Actions`);
       addDebugLog(`    Tip: Update via 'Export JSON' to push new schema automatically`);
       
@@ -15442,6 +15942,7 @@
       // Store current schema for export
       window.currentEventSchema = fullSchema;
       window.currentEventList = eventList;
+      window.currentEventBreadcrumbs = breadcrumbs;
       window.currentMappingsDict = mappingsDict;
       window.currentEventSchemaCsvType = stats.csvType;
       
@@ -15999,7 +16500,6 @@
       addDebugLog(`\n Export & Deploy:`);
       addDebugLog(`    Saving to alanranger-schema folder...`);
 
-      // Deploy using Electron API
       const result = await window.electronAPI.saveAndDeploySchema(fileName, jsonString);
       
       addDebugLog(`   ✅ ${result.message}`);
@@ -16196,205 +16696,9 @@
       const fileSizeKB = minifiedJson.length / 1024;
       const isValid = hasContext && hasGraph && fileSizeKB < 250;
 
-      // ARP Hybrid Schema Loader v3.3 – Critical Inline + Deferred Full Load
-      // FIXED: Runtime replacement of <PAGE_URL> placeholder to ensure valid JSON-LD
-      const scriptSrcTag = `<!--  ARP Hybrid Schema Loader v3.3 – Critical Inline + Deferred Full Load -->
-
-<script type="application/ld+json" id="arp-critical-schema">
-{
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "@id": "<PAGE_URL>#webpage",
-  "isPartOf": { "@id": "https://www.alanranger.com/#website" },
-  "about": { "@id": "<PAGE_URL>#article" }
-}
-<\/script>
-
-<script>
-(function() {
-  // Dynamic page URL
-  const pageUrl = window.location.href.split("#")[0];
-
-  // Replace placeholder inside inline critical schema (CRITICAL: Must happen immediately)
-  const critical = document.getElementById("arp-critical-schema");
-  if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
-
-  // Extract slug from blog-on-photography path
-  const slug = pageUrl.split("/blog-on-photography/")[1]?.replace(/\\/$/, "");
-  if (!slug) return;
-
-  const base = "https://schema.alanranger.com/";
-  const schemaUrl = base + slug + "_schema.json";
-  const faqUrl = base + slug + "_faq.json";
-  const howToUrl = base + slug + "_howto.json";
-  const imageUrl = base + slug + "_image.json";
-
-  function appendJsonLd(payload) {
-    if (!payload || typeof payload !== "object") return;
-    const el = document.createElement("script");
-    el.type = "application/ld+json";
-    el.textContent = JSON.stringify(payload);
-    document.head.appendChild(el);
-  }
-
-  function hasExistingFaqSchema() {
-    return Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
-      .some((block) => {
-        try {
-          const json = JSON.parse(block.textContent || "{}");
-          if (json && json["@type"] === "FAQPage") return true;
-          if (Array.isArray(json && json["@graph"])) {
-            return json["@graph"].some((node) => {
-              if (!node) return false;
-              const t = node["@type"];
-              if (Array.isArray(t)) return t.includes("FAQPage");
-              return t === "FAQPage";
-            });
-          }
-          return false;
-        } catch (_err) {
-          return /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || "");
-        }
-      });
-  }
-
-  function hasVisibleFaqBlock() {
-    const faqSelectors = [
-      ".faq-block",
-      ".sqs-faq-block",
-      '[data-section-type*="faq"]',
-      '[id*="faq"]',
-      '[class*="faq"]'
-    ].join(",");
-
-    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
-    const faqHeading = headings.find((h) => /\\bfaq\\b|frequently asked questions?/i.test(String(h.textContent || "")));
-    if (!faqHeading) return false;
-
-    const headingScope =
-      faqHeading.closest("section, article, [data-section-id], [id], [class]") ||
-      faqHeading.parentElement ||
-      document.body;
-    if (!headingScope) return false;
-    if (headingScope.querySelector(faqSelectors)) return true;
-
-    const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
-    return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
-  }
-
-  function shouldSkipExternalFaq() {
-    if (hasExistingFaqSchema()) {
-      console.info("[Blog Schema Loader] FAQ skip: existing FAQPage schema found");
-      return true;
-    }
-    if (hasVisibleFaqBlock()) {
-      console.info("[Blog Schema Loader] FAQ skip: visible FAQ block found");
-      return true;
-    }
-    return false;
-  }
-
-  function hasExistingTldrSignal() {
-    if (document.getElementById("ar-tldr-block")) return true;
-    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
-    return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));
-  }
-
-  function injectTldrBlock(summaryText) {
-    if (hasExistingTldrSignal()) return;
-    const summary = String(summaryText || "").replace(/\\s+/g, " ").trim();
-    if (summary.length < 40) return;
-
-    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
-    if (!container) return;
-
-    const block = document.createElement("section");
-    block.id = "ar-tldr-block";
-    block.style.margin = "1rem 0";
-    block.style.padding = "0.85rem 1rem";
-    block.style.border = "1px solid #dbe3ec";
-    block.style.borderRadius = "8px";
-    block.style.background = "#f8fbff";
-
-    const title = document.createElement("h2");
-    title.textContent = "TLDR";
-    title.style.margin = "0 0 0.45rem 0";
-    title.style.fontSize = "1rem";
-
-    const body = document.createElement("p");
-    body.textContent = summary;
-    body.style.margin = "0";
-    body.style.lineHeight = "1.55";
-
-    block.appendChild(title);
-    block.appendChild(body);
-
-    const firstHeading = container.querySelector("h1, h2");
-    if (firstHeading && firstHeading.parentNode) {
-      firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);
-      return;
-    }
-    if (container.firstChild) {
-      container.insertBefore(block, container.firstChild);
-    } else {
-      container.appendChild(block);
-    }
-  }
-
-  function loadOptionalJsonLd(url, label) {
-    return fetch(url)
-      .then((r) => r.ok ? r.json() : null)
-      .then((json) => {
-        if (!json || typeof json !== "object") return;
-        appendJsonLd(json);
-        console.info("[Blog Schema Loader] " + label + " injected");
-      })
-      .catch((err) => {
-        console.warn("[Blog Schema Loader] " + label + " load failed", err);
-      });
-  }
-
-  fetch(schemaUrl)
-    .then((r) => r.ok ? r.json() : null)
-    .then((schemaJson) => {
-      if (!schemaJson || typeof schemaJson !== "object") {
-        console.warn("[Blog Schema Loader] schema payload missing/invalid");
-        return;
-      }
-      appendJsonLd(schemaJson);
-      console.info("[Blog Schema Loader] schema injected");
-      injectTldrBlock(schemaJson.description || schemaJson.name || "");
-
-      // FAQ: only inject when no real FAQ schema/UI exists.
-      if (!shouldSkipExternalFaq()) {
-        fetch(faqUrl)
-          .then((r) => r.ok ? r.json() : null)
-          .then((faqJson) => {
-            if (!faqJson || typeof faqJson !== "object") {
-              console.warn("[Blog Schema Loader] FAQ fetch returned invalid payload");
-              return;
-            }
-            const faqType = String(faqJson["@type"] || "").toLowerCase();
-            if (faqType !== "faqpage") {
-              console.warn("[Blog Schema Loader] FAQ payload rejected: @type is not FAQPage");
-              return;
-            }
-            appendJsonLd(faqJson);
-            console.info("[Blog Schema Loader] FAQ injected");
-          })
-          .catch((err) => {
-            console.warn("[Blog Schema Loader] FAQ load failed", err);
-          });
-      }
-
-      // Optional extra schema files.
-      loadOptionalJsonLd(howToUrl, "HowTo");
-      loadOptionalJsonLd(imageUrl, "ImageObject");
-    })
-    .catch((err) => {
-      console.warn("[Blog Schema Loader] schema load failed", err);
-    });
-})();
+      const scriptSrcTag = `<!-- ${schemaType} Schema -->
+<script type="application/ld+json"
+        src="https://schema.alanranger.com/${fileName}">
 <\/script>`;
 
       const inlineScriptTag = `<!-- ${schemaType} Schema (Inline) -->
