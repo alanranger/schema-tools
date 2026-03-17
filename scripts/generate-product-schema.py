@@ -218,10 +218,9 @@ def contains_faq_signal(source_html):
     for block in jsonld_blocks:
         if re.search(r'"@type"\s*:\s*"FAQPage"', block, flags=re.IGNORECASE):
             return True
-
-    # Detect deferred FAQ loaders already present in page/snippet scripts.
-    if re.search(r"/[a-z0-9._\-/]*_faq\.json(?:[\"'?&#]|$)", html, flags=re.IGNORECASE):
-        return True
+    # Do NOT treat _faq.json URL references as existing FAQ.
+    # In fetched-FAQ mode, those references appear in page scripts even when no FAQPage
+    # is currently published, and using them here incorrectly suppresses generation.
     return False
 
 
