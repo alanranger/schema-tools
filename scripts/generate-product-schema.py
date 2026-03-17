@@ -2154,18 +2154,55 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
     document.head.appendChild(s);
   }}
 
-  function hasExistingFaqSignal() {{
-    const schemaBlocks = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
-    const hasFaqSchema = schemaBlocks.some((block) => /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || ""));
-    if (hasFaqSchema) return true;
+  function hasExistingFaqSchema() {{
+    return Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+      .some((block) => {{
+        try {{
+          const json = JSON.parse(block.textContent || "{{}}");
+          if (json && json["@type"] === "FAQPage") return true;
+          if (Array.isArray(json && json["@graph"])) {{
+            return json["@graph"].some((node) => {{
+              if (!node) return false;
+              const t = node["@type"];
+              if (Array.isArray(t)) return t.includes("FAQPage");
+              return t === "FAQPage";
+            }});
+          }}
+          return false;
+        }} catch (_err) {{
+          return /"@type"\\s*:\\s*"FAQPage"/i.test(block.textContent || "");
+        }}
+      }});
+  }}
 
-    // Skip only if another script (not this one) already references an FAQ JSON endpoint.
-    const currentScript = document.currentScript;
-    const scriptBlocks = Array.from(document.querySelectorAll("script"))
-      .filter((block) => block !== currentScript);
-    return scriptBlocks.some((block) =>
-      /\\/[a-z0-9._\\-/]*_faq\\.json(?:["'?#&]|$)/i.test(String(block.textContent || "") + " " + String(block.src || ""))
-    );
+  function hasVisibleFaqBlock() {{
+    const selectors = [
+      '[data-section-type*="faq"]',
+      '.faq-block',
+      '.sqs-faq-block',
+      '.accordion-block',
+      '[data-block-type="55"]',
+      '[id*="faq"]',
+      '[class*="faq"]',
+      'details summary',
+      '[aria-controls*="faq"]',
+      '[data-accordion]'
+    ].join(',');
+    if (document.querySelector(selectors)) return true;
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+    return headings.some((h) => /\\bfaq\\b|frequently asked/i.test(String(h.textContent || "")));
+  }}
+
+  function shouldSkipExternalFaq() {{
+    if (hasExistingFaqSchema()) {{
+      console.info("[Schema Loader] FAQ skip: existing FAQPage schema found");
+      return true;
+    }}
+    if (hasVisibleFaqBlock()) {{
+      console.info("[Schema Loader] FAQ skip: visible FAQ block found");
+      return true;
+    }}
+    return false;
   }}
 
   function hasExistingTldrSignal() {{
@@ -2220,22 +2257,34 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
     .then((json) => {{
       if (!json) return;
       appendJsonLd(json);
+      console.info("[Schema Loader] Product schema injected");
       injectTldrBlock(json.description || json.name || "");
 
       if (!FAQ_JSON_URL) return;
-      if (hasExistingFaqSignal()) return;
+      if (shouldSkipExternalFaq()) return;
 
       fetch(FAQ_JSON_URL)
         .then((r) => r.ok ? r.json() : null)
         .then((faqJson) => {{
-          if (!faqJson || typeof faqJson !== "object") return;
+          if (!faqJson || typeof faqJson !== "object") {{
+            console.warn("[Schema Loader] FAQ fetch returned invalid payload");
+            return;
+          }}
           const faqType = String(faqJson["@type"] || "").toLowerCase();
-          if (faqType !== "faqpage") return;
+          if (faqType !== "faqpage") {{
+            console.warn("[Schema Loader] FAQ payload rejected: @type is not FAQPage");
+            return;
+          }}
           appendJsonLd(faqJson);
+          console.info("[Schema Loader] FAQ schema injected");
         }})
-        .catch(console.error);
+        .catch((err) => {{
+          console.error("[Schema Loader] FAQ fetch failed", err);
+        }});
     }})
-    .catch(console.error);
+    .catch((err) => {{
+      console.error("[Schema Loader] Product schema fetch failed", err);
+    }});
 }})();
 </script>'''
     
