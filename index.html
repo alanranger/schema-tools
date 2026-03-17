@@ -6995,6 +6995,32 @@
 
   const BLOG_URL_GLOBAL = 'https://www.alanranger.com/blog-on-photography';
 
+  function stripSocialShareNoise(text) {
+    if (!text) return '';
+    return String(text)
+      // Fix merged author/date fragments (e.g. "Ranger2 January 2026composition")
+      .replace(/([A-Za-z])(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/gi, '$1 $2')
+      .replace(/(\d{4})([A-Za-z])/g, '$1 $2')
+      // Remove social counter labels and share fragments
+      .replace(/\b(Facebook|LinkedIn|Pinterest|Tumblr|Twitter|Reddit)\s*0\b/gi, ' ')
+      .replace(/\b(Facebook|LinkedIn|Pinterest|Tumblr|Twitter|Reddit)\b/gi, ' ')
+      .replace(/\bAlan\s+Ranger\s*\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/gi, ' ')
+      .replace(/\b(?:field\s+)?checklist\b/gi, ' ')
+      .replace(/\b0\s*Likes?\b/gi, ' ')
+      .replace(/\b(?:share|shares?)\b/gi, ' ')
+      // Remove encoded URL fragments that often leak into snippets
+      .replace(/\b(?:https?:\/\/|www\.)\S+/gi, ' ')
+      .replace(/%2F|%3A|%3F|%26|%3D|%5B|%5D/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function isLikelySocialShareJunk(text) {
+    if (!text) return false;
+    const value = String(text).toLowerCase();
+    return /linkedin(?:\s*0)?|pinterest(?:\s*0)?|reddit(?:\s*0)?|facebook(?:\s*0)?|tumblr|twitter|0\s*likes?|composition checklist|%2f|%3a/.test(value);
+  }
+
   // Clean FULL articleBody - removes navigation but preserves all content
   function cleanFullArticleBody(articleBody, title) {
     if (!articleBody) return '';
@@ -7084,11 +7110,8 @@
     text = text.replace(/searchBack/gi, 'Back'); // "searchBack" is navigation
     text = text.replace(/\bsearch\s+Back/gi, 'Back');
     
-    // Remove social sharing URLs (anywhere)
-    text = text.replace(/https:\/\/www\.(facebook|linkedin|tumblr|pinterest)\.com[^\s]*/gi, '');
-    
-    // Remove social sharing text patterns (Facebook0, LinkedIn0, etc.) - anywhere
-    text = text.replace(/\s+(Facebook0|LinkedIn0|Tumblr|Pinterest0|0\s+Likes)\s*/gi, ' ');
+    // Remove social-share artifacts that leak into extracted body text
+    text = stripSocialShareNoise(text);
     
     // Remove author/date footer patterns
     text = text.replace(/Alan Ranger\s*\/blog-on-photography[^\n]*/gi, '');
@@ -7131,7 +7154,8 @@
     text = text.replace(/Cart\s+\d+/gi, '');
     text = text.replace(/Sign In My Account/gi, '');
     text = text.replace(/My Account/gi, '');
-    text = text.replace(/Back\s+[^]*?/gi, '');
+    // Remove "Back ..." nav labels without eating full content blocks.
+    text = text.replace(/\bBack\s+[A-Z][A-Za-z\s&-]{1,80}\b/g, '');
     text = text.replace(/\[.*?\]/g, ''); // Remove any remaining bracket patterns
     // Remove "Photography Workshops Coventry" and similar location-based nav
     text = text.replace(/Photography\s+(Workshops|Courses|Classes|Lessons)\s+(Coventry|Near Me|Online)/gi, '');
@@ -7211,7 +7235,8 @@
       text = sentences[0];
     }
     
-    // Clean up whitespace
+    // Remove social-share artifacts and clean whitespace
+    text = stripSocialShareNoise(text);
     text = text.replace(/\s+/g, ' ').trim();
     
     return text;
@@ -7257,7 +7282,7 @@
     
     // PRIORITY 1: Use meta description (rawDescription) if it exists and is good quality
     if (rawDescription) {
-      const rawDesc = String(rawDescription).trim();
+      const rawDesc = stripSocialShareNoise(rawDescription);
       // Check if raw description is usable (not just title, has meaningful content)
       if (rawDesc.length >= 20) {
         const rawDescLower = rawDesc.toLowerCase();
@@ -7268,13 +7293,14 @@
         // If it's longer than title by more than 10 chars, it has additional content - accept it
         const hasSubstantialContent = rawDesc.length > (title ? title.length + 10 : 0);
         
-        if (!isExactlyTitle && hasSubstantialContent) {
+        if (!isExactlyTitle && hasSubstantialContent && !isLikelySocialShareJunk(rawDesc)) {
           desc = rawDesc;
           // Clean it up but preserve the good content
           desc = desc.replace(/^[\-\s]+/, ''); // Remove leading hyphens/spaces
           desc = desc.replace(/https?:\/\/[^\s]+/g, ''); // Remove URLs
           desc = desc.replace(/\[\/[^\]]+\]/g, ''); // Remove bracket patterns
           desc = desc.replace(/\[[^\]]+\]/g, '');
+          desc = stripSocialShareNoise(desc);
           desc = desc.replace(/\s+/g, ' ').trim();
           // If still good after cleaning, use it
           if (desc.length >= 20 && desc.length <= 200) {
@@ -7368,7 +7394,8 @@
       desc = desc.replace(/\/Cart\s+\d+/gi, '');
       desc = desc.replace(/Sign In My Account/gi, '');
       
-      // Clean whitespace
+      // Remove social-share artifacts and clean whitespace
+      desc = stripSocialShareNoise(desc);
       desc = desc.replace(/\s+/g, ' ').trim();
       
       // Remove leading/trailing punctuation artifacts
