@@ -10542,7 +10542,20 @@
       }
     }
     
-    // PRIORITY 3: Check for FAQ markers in MAIN CONTENT ONLY (exclude navigation/footer)
+    // PRIORITY 3: Check for explicit FAQ block selectors in HTML (reliable block-level signal)
+    if (html) {
+      const explicitFaqBlockSignals = [
+        /class=["'][^"']*faq-block[^"']*["']/i,
+        /class=["'][^"']*sqs-faq-block[^"']*["']/i,
+        /data-section-type=["'][^"']*faq[^"']*["']/i
+      ];
+      if (explicitFaqBlockSignals.some((pattern) => pattern.test(html))) {
+        if (debugLog) debugLog('  ✅ FAQ DETECTED: Found explicit FAQ block selector in HTML');
+        return true;
+      }
+    }
+
+    // PRIORITY 4: Check for FAQ markers in MAIN CONTENT ONLY (exclude navigation/footer)
     // Extract main content area (between article tags or main content divs)
     let mainContentHtml = '';
     let mainContentText = '';
@@ -10584,14 +10597,11 @@
     const searchText = mainContentText || plainText || '';
     const searchTextLower = searchText.toLowerCase();
     
-    // STRICT FAQ markers - must appear in main content
+    // STRICT FAQ markers - avoid vague phrases like "common questions" to reduce false positives
     const strictFaqMarkers = [
       'frequently asked questions',
-      'common questions',
-      'faqs -',
-      'faq -',
-      'faqs:',
-      'faq:'
+      'faq section',
+      'faqs section'
     ];
     
     // Check for strict markers in main content
@@ -19053,7 +19063,7 @@ ${minifiedJson}
         }
       }
 
-      addLandingDebugLog(`   FAQ content detected on page: ${hasExistingLandingFaqContent ? 'Yes (will not auto-generate new FAQPage)' : 'No (FAQPage fallback can be generated)'}`);
+      addLandingDebugLog(`   FAQ content detected on page: ${hasExistingLandingFaqContent ? 'Yes (FAQPage injection will be skipped)' : 'No (FAQPage can be generated if missing)'}`);
     } catch (error) {
       addLandingDebugLog(`⚽ Could not fetch page for analysis: ${error.message}`);
       addLandingDebugLog(`   Continuing with new schema generation...`);
@@ -19366,7 +19376,7 @@ ${minifiedJson}
       }
     }
 
-    // STEP 5B: Add fallback FAQPage only when page has no existing FAQ signals.
+    // STEP 5B: Add FAQPage only when the page does not already contain FAQ content/signals.
     const hasFaqInFinalSchema = landingSchemaHasFaqPage(finalSchema);
     if (!hasExistingLandingFaqContent && !hasFaqInFinalSchema && String(url || '').trim()) {
       const generatedLandingFaq = generateLandingFaqSchema(url, title, finalDescription, actualSchemaType);
