@@ -19375,7 +19375,10 @@ ${minifiedJson}
           ? finalSchema['@graph']
           : (finalSchema ? [finalSchema] : []);
         const mergedNodes = [...baseNodes, generatedLandingFaq];
-        finalSchema = buildEnhancedSchema(mergedNodes, selectedTypes);
+        const faqAwareSelectedTypes = selectedTypes.includes('FAQPage')
+          ? selectedTypes
+          : [...selectedTypes, 'FAQPage'];
+        finalSchema = buildEnhancedSchema(mergedNodes, faqAwareSelectedTypes);
         improvements.push('✅ Added fallback FAQPage (no existing FAQ content/signals detected on page)');
         addLandingDebugLog('✅ Added fallback FAQPage because no existing FAQ was detected');
       }
