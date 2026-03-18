@@ -18233,7 +18233,7 @@ ${minifiedJson}
     Service: { hint: 'recommended', icon: '✅', description: 'For general offerings (workshops, tuition, mentoring) - Keep' },
     Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' },
     BreadcrumbList: { hint: 'optional', icon: '', description: 'Navigation breadcrumbs - Keep if present' },
-    FAQPage: { hint: 'existing only', icon: '', description: 'Keep existing FAQ schema (cannot add new)' },
+    FAQPage: { hint: 'conditional', icon: '✅', description: 'Keep existing FAQ schema, or auto-add fallback FAQPage when page has no FAQ content/signals' },
     Review: { hint: 'existing only', icon: '⭐', description: 'Keep existing review snippets (nested in Product/Service)' },
     Rating: { hint: 'existing only', icon: '⭐', description: 'Keep existing rating data (nested in Review)' },
     AggregateRating: { hint: 'existing only', icon: '⭐', description: 'Keep existing aggregate rating (nested in Product/Service)' },
@@ -18786,6 +18786,94 @@ ${minifiedJson}
     return graph;
   }
 
+  function landingSchemaHasFaqPage(schema) {
+    if (!schema || typeof schema !== 'object') return false;
+    const nodes = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
+    return nodes.some((node) => landingHasType(node, 'FAQPage'));
+  }
+
+  function buildLandingFaqQuestions(title, description, schemaType) {
+    const safeTitle = String(title || 'this page').trim() || 'this page';
+    const safeDescription = landingCleanText(String(description || '').trim());
+    const introText = safeDescription
+      ? `${safeDescription}`
+      : `This page explains ${safeTitle.toLowerCase()} and what to expect.`;
+    const mode = String(schemaType || '').toLowerCase();
+
+    if (mode === 'itemlist') {
+      return [
+        {
+          '@type': 'Question',
+          name: `What is included in ${safeTitle}?`,
+          acceptedAnswer: { '@type': 'Answer', text: introText }
+        },
+        {
+          '@type': 'Question',
+          name: `How do I choose the right option from ${safeTitle}?`,
+          acceptedAnswer: { '@type': 'Answer', text: 'Review each listed option, compare suitability, and choose the one that best matches your experience level, goals, and preferred format.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'How do I book or get started?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Use the links and call-to-action options on this page to choose a suitable option and complete the booking or enquiry process.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'Who is this page for?',
+          acceptedAnswer: { '@type': 'Answer', text: 'This page is suitable for photographers who want a clear overview of available options before selecting the best fit for their needs.' }
+        }
+      ];
+    }
+
+    return [
+      {
+        '@type': 'Question',
+        name: `What is ${safeTitle} about?`,
+        acceptedAnswer: { '@type': 'Answer', text: introText }
+      },
+      {
+        '@type': 'Question',
+        name: 'Who is this suitable for?',
+        acceptedAnswer: { '@type': 'Answer', text: 'This is suitable for photographers at beginner, intermediate, and advanced levels, depending on the option and goals described on this page.' }
+      },
+      {
+        '@type': 'Question',
+        name: 'How do I get started?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Use the call-to-action on this page to book, enquire, or request guidance on the best next step for your photography goals.' }
+      },
+      {
+        '@type': 'Question',
+        name: 'Can I get help choosing the right option?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. You can contact Alan Ranger Photography for advice on the most suitable option based on your experience level, interests, and preferred learning format.' }
+      }
+    ];
+  }
+
+  function generateLandingFaqSchema(url, title, description, schemaType) {
+    const pageUrl = String(url || '').trim();
+    if (!pageUrl) return null;
+    const questions = buildLandingFaqQuestions(title, description, schemaType)
+      .filter((q) => q && q.name && q.acceptedAnswer && q.acceptedAnswer.text);
+    if (!questions.length) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      mainEntity: questions
+    };
+  }
+
+  function buildLandingTldrSummary(title, description, schemaType) {
+    const safeTitle = String(title || '').trim();
+    const safeDescription = landingCleanText(String(description || '').trim());
+    if (safeDescription && safeDescription.length >= 40) return safeDescription;
+    const mode = String(schemaType || '').toLowerCase();
+    if (mode === 'itemlist') {
+      return `TLDR: ${safeTitle || 'This page'} provides a clear list of photography options so you can compare, choose the best fit, and book with confidence.`;
+    }
+    return `TLDR: ${safeTitle || 'This page'} explains the offer, who it is for, and how to book or enquire so you can choose the best next step quickly.`;
+  }
+
   function dedupeLandingGraph(graph) {
     const seenKeys = new Set();
     return graph.filter((node) => {
@@ -18891,6 +18979,7 @@ ${minifiedJson}
     let existingSchemaTypes = [];
     let existingAnalysis = null;
     let detectedSchemaTypes = [];
+    let hasExistingLandingFaqContent = false;
     
     try {
       addLandingDebugLog('');
@@ -18903,6 +18992,18 @@ ${minifiedJson}
       addLandingDebugLog(` Searching for JSON-LD blocks...`);
       
       const htmlForSchemaScan = await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog);
+      const plainTextForFaqCheck = htmlToPlainText(htmlForSchemaScan || html || '');
+      try {
+        hasExistingLandingFaqContent = await hasExistingFAQBlockWithSnippets(
+          url,
+          htmlForSchemaScan || html || '',
+          plainTextForFaqCheck,
+          (msg) => addLandingDebugLog(`   [Landing FAQ Detection] ${msg}`)
+        );
+      } catch (faqDetectError) {
+        hasExistingLandingFaqContent = false;
+        addLandingDebugLog(`   ⚽ FAQ detection check failed: ${faqDetectError.message}`);
+      }
       const existingBlocks = extractJsonLdBlocksFromHtml(htmlForSchemaScan);
       
       if (existingBlocks.length > 0) {
@@ -18951,6 +19052,8 @@ ${minifiedJson}
           updateSchemaTypeSelector(detectedSchemaTypes);
         }
       }
+
+      addLandingDebugLog(`   FAQ content detected on page: ${hasExistingLandingFaqContent ? 'Yes (will not auto-generate new FAQPage)' : 'No (FAQPage fallback can be generated)'}`);
     } catch (error) {
       addLandingDebugLog(`⚽ Could not fetch page for analysis: ${error.message}`);
       addLandingDebugLog(`   Continuing with new schema generation...`);
@@ -19263,6 +19366,25 @@ ${minifiedJson}
       }
     }
 
+    // STEP 5B: Add fallback FAQPage only when page has no existing FAQ signals.
+    const hasFaqInFinalSchema = landingSchemaHasFaqPage(finalSchema);
+    if (!hasExistingLandingFaqContent && !hasFaqInFinalSchema && String(url || '').trim()) {
+      const generatedLandingFaq = generateLandingFaqSchema(url, title, finalDescription, actualSchemaType);
+      if (generatedLandingFaq) {
+        const baseNodes = Array.isArray(finalSchema?.['@graph'])
+          ? finalSchema['@graph']
+          : (finalSchema ? [finalSchema] : []);
+        const mergedNodes = [...baseNodes, generatedLandingFaq];
+        finalSchema = buildEnhancedSchema(mergedNodes, selectedTypes);
+        improvements.push('✅ Added fallback FAQPage (no existing FAQ content/signals detected on page)');
+        addLandingDebugLog('✅ Added fallback FAQPage because no existing FAQ was detected');
+      }
+    } else if (hasFaqInFinalSchema) {
+      addLandingDebugLog('ℹ FAQPage already present in final schema graph — skipping fallback FAQ generation');
+    } else if (hasExistingLandingFaqContent) {
+      addLandingDebugLog('ℹ Existing FAQ content/signals detected on page — skipping fallback FAQ generation');
+    }
+
     // STEP 6: Format and display
     addLandingDebugLog('');
     addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -19497,6 +19619,7 @@ ${minifiedJson}
       }
       
       // Build schema output with suppressor code at the top
+      const tldrSummary = buildLandingTldrSummary(title, finalDescription, actualSchemaType);
       const suppressorCode = '<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) -->\n\n' +
         '<script>\n' +
         '(function(){\n' +
@@ -19550,11 +19673,52 @@ ${minifiedJson}
         '<script type="application/ld+json" id="arp-critical-schema">\n' +
         schemaJson + '\n' +
         '<' + '/script>';
+
+      const tldrSignalScript = '\n\n<script>\n' +
+        '(function(){\n' +
+        '  try {\n' +
+        `    const summaryText = ${JSON.stringify(tldrSummary)};\n` +
+        '    function hasExistingTldrSignal(){\n' +
+        '      if (document.getElementById("ar-tldr-block")) return true;\n' +
+        '      const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));\n' +
+        '      return headings.some((h) => /(^|\\s)(tl;?dr|tldr|summary|quick answer)(\\s|$)/i.test(String(h.textContent || "")));\n' +
+        '    }\n' +
+        '    function injectTldrBlock(text){\n' +
+        '      if (hasExistingTldrSignal()) return;\n' +
+        '      const summary = String(text || "").replace(/\\s+/g, " ").trim();\n' +
+        '      if (summary.length < 40) return;\n' +
+        '      const host = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;\n' +
+        '      if (!host) return;\n' +
+        '      const block = document.createElement("section");\n' +
+        '      block.id = "ar-tldr-block";\n' +
+        '      block.setAttribute("aria-hidden", "true");\n' +
+        '      block.style.position = "absolute";\n' +
+        '      block.style.left = "-99999px";\n' +
+        '      block.style.width = "1px";\n' +
+        '      block.style.height = "1px";\n' +
+        '      block.style.overflow = "hidden";\n' +
+        '      block.style.whiteSpace = "nowrap";\n' +
+        '      const titleEl = document.createElement("h2");\n' +
+        '      titleEl.textContent = "TLDR";\n' +
+        '      const bodyEl = document.createElement("p");\n' +
+        '      bodyEl.textContent = summary;\n' +
+        '      block.appendChild(titleEl);\n' +
+        '      block.appendChild(bodyEl);\n' +
+        '      if (host.firstChild) host.insertBefore(block, host.firstChild);\n' +
+        '      else host.appendChild(block);\n' +
+        '    }\n' +
+        '    injectTldrBlock(summaryText);\n' +
+        '  } catch (e) {\n' +
+        '    console.warn("Landing TLDR signal injection failed:", e);\n' +
+        '  }\n' +
+        '})();\n' +
+        '<' + '/script>';
+
+      outputText.textContent = suppressorCode + tldrSignalScript;
       
-      outputText.textContent = suppressorCode;
-      
-      addLandingDebugLog(`✅ Schema formatted and displayed (${suppressorCode.length} characters)`);
+      addLandingDebugLog(`✅ Schema formatted and displayed (${(suppressorCode + tldrSignalScript).length} characters)`);
       addLandingDebugLog(`   Includes Core Schema Suppressor v2.1 to prevent duplicate Squarespace core schemas`);
+      addLandingDebugLog(`   Includes hidden TLDR signal injector for extractability detection`);
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       addLandingDebugLog('✅ SCHEMA GENERATION COMPLETE!');
