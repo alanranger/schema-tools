@@ -13006,10 +13006,12 @@
       .replace(/(^-|-$)/g, "");
   }
 
-  // Use a stable base for @id (page canonical if available, else window.location)
+  // Use a stable HTTP base for @id generation (never file:// from local Electron context)
   function getBaseId() {
     const canonical = document.querySelector('link[rel="canonical"]');
-    return (canonical?.href || window.location.href || "").split("#")[0];
+    const candidate = String(canonical?.href || window.location.href || "").split("#")[0];
+    if (/^https?:\/\//i.test(candidate)) return candidate;
+    return "https://www.alanranger.com";
   }
 
   function seriesIdFromName(name) {
