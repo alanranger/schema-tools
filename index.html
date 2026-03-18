@@ -13822,8 +13822,10 @@
   if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
 
   const path = window.location.pathname.replace(/\\/+$/, "").toLowerCase() || "/";
-  const isWorkshopPath = path === "/photographic-workshops-near-me" || path.startsWith("/photographic-workshops-near-me/");
-  const isLessonsPath = path === "/beginners-photography-lessons" || path.startsWith("/beginners-photography-lessons/");
+  const isWorkshopHubPath = path === "/photographic-workshops-near-me";
+  const isLessonsHubPath = path === "/beginners-photography-lessons";
+  const isWorkshopPath = isWorkshopHubPath || path.startsWith("/photographic-workshops-near-me/");
+  const isLessonsPath = isLessonsHubPath || path.startsWith("/beginners-photography-lessons/");
   const isEventPath = isWorkshopPath || isLessonsPath;
   if (!isEventPath) return;
 
@@ -13943,7 +13945,8 @@
         .then((r) => r.ok ? r.json() : null)
         .then((schemaJson) => {
           if (!schemaJson || typeof schemaJson !== "object") return;
-          appendJsonLd(schemaJson);
+          const isHubPath = isWorkshopHubPath || isLessonsHubPath;
+          if (!isHubPath) appendJsonLd(schemaJson);
           const graph = Array.isArray(schemaJson["@graph"]) ? schemaJson["@graph"] : [];
           const primaryNode = graph.find((node) => {
             if (!node) return false;
