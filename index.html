@@ -13822,9 +13822,9 @@
   if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
 
   const path = window.location.pathname.replace(/\\/+$/, "").toLowerCase() || "/";
-  const isEventPath =
-    path.startsWith("/photographic-workshops-near-me/") ||
-    path.startsWith("/beginners-photography-lessons/");
+  const isWorkshopPath = path === "/photographic-workshops-near-me" || path.startsWith("/photographic-workshops-near-me/");
+  const isLessonsPath = path === "/beginners-photography-lessons" || path.startsWith("/beginners-photography-lessons/");
+  const isEventPath = isWorkshopPath || isLessonsPath;
   if (!isEventPath) return;
 
   const MANIFEST_URL = "https://schema.alanranger.com/events-manifest.json";
