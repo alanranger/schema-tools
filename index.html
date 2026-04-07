@@ -10318,6 +10318,11 @@
     if (blogPosting.mentions && blogPosting.mentions.length) {
       blogPostingSchema.mentions = blogPosting.mentions;
     }
+    if (blogPosting.video) {
+      // Keep embedded VideoObject data in the final BlogPosting output.
+      // This is intentionally embedded in *_blogposting.json (no separate video file).
+      blogPostingSchema.video = blogPosting.video;
+    }
     
     return blogPostingSchema;
   }
@@ -11888,7 +11893,7 @@
       resultHtml += `<p><strong>HowTo Schema:</strong> ${howToResult ? '✅ GENERATE <code>${slug}_howto.json</code>' : '❌ SKIP — no <code>${slug}_howto.json</code>'}</p>`;
       
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE <code>${slug}_image.json</code> (if image exists)</p>`;
-      resultHtml += `<p><strong>VideoObject Schema:</strong> ${detectedVideos.length > 0 ? `✅ GENERATE (detected ${detectedVideos.length} embedded video${detectedVideos.length === 1 ? '' : 's'})` : '❌ SKIP — no embedded video detected'}</p>`;
+      resultHtml += `<p><strong>VideoObject Schema:</strong> ${detectedVideos.length > 0 ? `✅ GENERATE (detected ${detectedVideos.length} embedded video${detectedVideos.length === 1 ? '' : 's'}; included in <code>${slug}_blogposting.json</code>)` : '❌ SKIP — no embedded video detected'}</p>`;
       resultHtml += '</div>';
       
       if (resultDiv) {
@@ -12255,7 +12260,7 @@
         resultHtml += `<p><strong>BreadcrumbList Schema:</strong> <code>${breadcrumbFileName}</code></p>`;
         const generatedVideoCount = getBlogPostingVideoObjectCount(blogPostingSchema);
         if (generatedVideoCount > 0) {
-          resultHtml += `<p><strong>VideoObject:</strong> ✅ Included (${generatedVideoCount} embedded video${generatedVideoCount === 1 ? '' : 's'})</p>`;
+          resultHtml += `<p><strong>VideoObject:</strong> ✅ Included in <code>${blogPostingFileName}</code> (${generatedVideoCount} embedded video${generatedVideoCount === 1 ? '' : 's'})</p>`;
         } else {
           resultHtml += '<p><strong>VideoObject:</strong> ⎽ Not included (no embedded video detected)</p>';
         }
