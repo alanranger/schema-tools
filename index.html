@@ -7680,6 +7680,85 @@
     }
   }
 
+  function extractEmbeddedVideoObjectsFromHtml(html, pageUrl, title, description, publishDate, modifiedDate) {
+    if (!html || !pageUrl) return [];
+
+    const videos = [];
+    const seenKeys = new Set();
+    const safeTitle = (title || 'Video').trim();
+    const safeDescription = (description || '').trim().slice(0, 240);
+    const uploadDate = (publishDate || modifiedDate || '').trim();
+
+    const addYoutube = (videoId) => {
+      const id = String(videoId || '').trim();
+      if (!id) return;
+      const dedupeKey = `yt:${id}`;
+      if (seenKeys.has(dedupeKey)) return;
+      seenKeys.add(dedupeKey);
+
+      videos.push({
+        '@type': 'VideoObject',
+        '@id': `${pageUrl}#video-youtube-${id}`,
+        name: `${safeTitle} - Video`,
+        description: safeDescription || safeTitle,
+        url: `https://www.youtube.com/watch?v=${id}`,
+        embedUrl: `https://www.youtube.com/embed/${id}`,
+        thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        ...(uploadDate ? { uploadDate } : {}),
+        publisher: { '@id': 'https://www.alanranger.com/#org' }
+      });
+    };
+
+    const addVimeo = (videoId) => {
+      const id = String(videoId || '').trim();
+      if (!id) return;
+      const dedupeKey = `vimeo:${id}`;
+      if (seenKeys.has(dedupeKey)) return;
+      seenKeys.add(dedupeKey);
+
+      videos.push({
+        '@type': 'VideoObject',
+        '@id': `${pageUrl}#video-vimeo-${id}`,
+        name: `${safeTitle} - Video`,
+        description: safeDescription || safeTitle,
+        url: `https://vimeo.com/${id}`,
+        embedUrl: `https://player.vimeo.com/video/${id}`,
+        ...(uploadDate ? { uploadDate } : {}),
+        publisher: { '@id': 'https://www.alanranger.com/#org' }
+      });
+    };
+
+    const youtubePatterns = [
+      /youtube\.com\\?\/embed\\?\/([A-Za-z0-9_-]{6,})/gi,
+      /youtu\.be\\?\/([A-Za-z0-9_-]{6,})/gi,
+      /youtube\.com\\?\/watch\?v=([A-Za-z0-9_-]{6,})/gi
+    ];
+    youtubePatterns.forEach((re) => {
+      let match;
+      while ((match = re.exec(html)) !== null) {
+        addYoutube(match[1]);
+      }
+    });
+
+    const vimeoPatterns = [
+      /player\.vimeo\.com\\?\/video\\?\/(\d{6,12})/gi,
+      /vimeo\.com\\?\/(\d{6,12})/gi
+    ];
+    vimeoPatterns.forEach((re) => {
+      let match;
+      while ((match = re.exec(html)) !== null) {
+        addVimeo(match[1]);
+      }
+    });
+
+    return videos;
+  }
+
+  function getBlogPostingVideoObjectCount(blogPostingSchema) {
+    if (!blogPostingSchema || !blogPostingSchema.video) return 0;
+    return Array.isArray(blogPostingSchema.video) ? blogPostingSchema.video.length : 1;
+  }
+
   async function buildEnrichedBlogPosting(csvRow, providedHtml = null, providedPlainText = null) {
     //  13. URL normalization - remove trailing slash (Google prefers canonical without slash)
     let url = csvRow.url;
@@ -7935,6 +8014,16 @@
       });
     }
     
+    // Build video objects from embedded players in article HTML
+    const embeddedVideos = extractEmbeddedVideoObjectsFromHtml(
+      html || '',
+      url,
+      title,
+      description,
+      publishDate,
+      modifiedDate
+    );
+
     // Build BlogPosting using EXACT canonical template - ALL FIELDS REQUIRED (NO CONDITIONALS)
     // CRITICAL: All fields must always be present - never undefined
     const blogPosting = {
@@ -7976,6 +8065,9 @@
       //  4. thumbnailUrl - duplicate image URL (only when we have a valid image URL)
       ...(imageUrl ? { thumbnailUrl: imageUrl } : {}),
       // NOTE: primaryImageOfPage removed from BlogPosting (only allowed in WebPage)
+      // Add embedded video schema when video embeds are detected in page HTML
+      ...(embeddedVideos.length === 1 ? { video: embeddedVideos[0] } : {}),
+      ...(embeddedVideos.length > 1 ? { video: embeddedVideos } : {}),
       speakable: {
         '@type': 'SpeakableSpecification',
         xpath: ['/html/head/title', '//h1']
@@ -11078,6 +11170,8 @@
     let processed = 0;
     let saved = 0;
     let errors = 0;
+    let postsWithEmbeddedVideo = 0;
+    let totalEmbeddedVideoObjects = 0;
     const generatedFiles = []; // Store files for browser ZIP download
 
     function updateProgress() {
@@ -11195,6 +11289,14 @@
         try {
           JSON.parse(blogPostingJson);
           const validationErrors = validateSchema(blogPostingSchema, 'BlogPosting', slug);
+          const embeddedVideoCount = getBlogPostingVideoObjectCount(blogPostingSchema);
+          if (embeddedVideoCount > 0) {
+            postsWithEmbeddedVideo++;
+            totalEmbeddedVideoObjects += embeddedVideoCount;
+            blogPosts_log(`   [Video] ${slug}: detected ${embeddedVideoCount} embedded video(s) -> VideoObject added to BlogPosting.video`);
+          } else {
+            blogPosts_log(`   [Video] ${slug}: no embedded video detected`);
+          }
           if (validationErrors.length > 0) {
             blogPosts_log(`⚽  BlogPosting validation warnings for ${slug}:`);
             validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
@@ -11527,6 +11629,7 @@
     if (outputDiv && summaryText) {
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
+      summary += `• VideoObject: ${postsWithEmbeddedVideo}/${processed} posts included video schema (${totalEmbeddedVideoObjects} VideoObject total)<br>`;
       summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + BreadcrumbList <code>_breadcrumb.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
       if (saveToGithub) {
         if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
@@ -11552,6 +11655,8 @@
       summaryText.innerHTML = summary;
       outputDiv.style.display = 'block';
     }
+
+    blogPosts_log(`\n [Video Summary] Posts with embedded video schema: ${postsWithEmbeddedVideo}/${processed} (VideoObject total: ${totalEmbeddedVideoObjects})`);
 
     if (generateBtn) {
       generateBtn.disabled = false;
@@ -11921,6 +12026,12 @@
       try {
         JSON.parse(blogPostingJson);
         const validationErrors = validateSchema(blogPostingSchema, 'BlogPosting', slug);
+        const embeddedVideoCount = getBlogPostingVideoObjectCount(blogPostingSchema);
+        if (embeddedVideoCount > 0) {
+          blogPosts_log(`   [Video] Detected ${embeddedVideoCount} embedded video(s) -> VideoObject included in BlogPosting schema`);
+        } else {
+          blogPosts_log('   [Video] No embedded video detected for this URL');
+        }
         if (validationErrors.length > 0) {
           blogPosts_log('⚽  BlogPosting validation warnings:');
           validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
@@ -12116,6 +12227,12 @@
         resultHtml += `<p><strong>WebPage Schema:</strong> <code>${webPageFileName}</code></p>`;
         resultHtml += `<p><strong>BlogPosting Schema:</strong> <code>${blogPostingFileName}</code></p>`;
         resultHtml += `<p><strong>BreadcrumbList Schema:</strong> <code>${breadcrumbFileName}</code></p>`;
+        const generatedVideoCount = getBlogPostingVideoObjectCount(blogPostingSchema);
+        if (generatedVideoCount > 0) {
+          resultHtml += `<p><strong>VideoObject:</strong> ✅ Included (${generatedVideoCount} embedded video${generatedVideoCount === 1 ? '' : 's'})</p>`;
+        } else {
+          resultHtml += '<p><strong>VideoObject:</strong> ⎽ Not included (no embedded video detected)</p>';
+        }
         
         // Show WebPage schema preview (first 500 chars)
         const webPagePreview = webPageJson.length > 500 ? webPageJson.substring(0, 500) + '...' : webPageJson;
