@@ -7683,6 +7683,15 @@
   function extractEmbeddedVideoObjectsFromHtml(html, pageUrl, title, description, publishDate, modifiedDate) {
     if (!html || !pageUrl) return [];
 
+    // Normalize common escaped/encoded URL forms seen in Squarespace HTML/script blocks.
+    const normalizedHtml = String(html)
+      .replace(/\\u002[fF]/g, '/')
+      .replace(/\\u0026/g, '&')
+      .replace(/&#x2[fF];/g, '/')
+      .replace(/&#47;/g, '/')
+      .replace(/&sol;/gi, '/')
+      .replace(/\\\//g, '/');
+
     const videos = [];
     const seenKeys = new Set();
     const safeTitle = (title || 'Video').trim();
@@ -7729,24 +7738,27 @@
     };
 
     const youtubePatterns = [
-      /youtube\.com\\?\/embed\\?\/([A-Za-z0-9_-]{6,})/gi,
-      /youtu\.be\\?\/([A-Za-z0-9_-]{6,})/gi,
-      /youtube\.com\\?\/watch\?v=([A-Za-z0-9_-]{6,})/gi
+      /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/gi,
+      /youtu\.be\/([A-Za-z0-9_-]{6,})/gi,
+      /youtube\.com\/watch\?v=([A-Za-z0-9_-]{6,})/gi,
+      /youtube\.com%2[Ff]embed%2[Ff]([A-Za-z0-9_-]{6,})/gi,
+      /youtu\.be%2[Ff]([A-Za-z0-9_-]{6,})/gi
     ];
     youtubePatterns.forEach((re) => {
       let match;
-      while ((match = re.exec(html)) !== null) {
+      while ((match = re.exec(normalizedHtml)) !== null) {
         addYoutube(match[1]);
       }
     });
 
     const vimeoPatterns = [
-      /player\.vimeo\.com\\?\/video\\?\/(\d{6,12})/gi,
-      /vimeo\.com\\?\/(\d{6,12})/gi
+      /player\.vimeo\.com\/video\/(\d{6,12})/gi,
+      /vimeo\.com\/(\d{6,12})/gi,
+      /player\.vimeo\.com%2[Ff]video%2[Ff](\d{6,12})/gi
     ];
     vimeoPatterns.forEach((re) => {
       let match;
-      while ((match = re.exec(html)) !== null) {
+      while ((match = re.exec(normalizedHtml)) !== null) {
         addVimeo(match[1]);
       }
     });
@@ -11841,12 +11853,23 @@
       const howToDebugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
       const shouldHowTo = shouldGenerateHowTo(html, plainText, howToDebugLog);
       
+      const slug = extractSlug(url);
+
       // CRITICAL: Log the actual return value to verify
       blogPosts_log(`\n DETECTION RESULT: shouldHowTo = ${shouldHowTo} (${typeof shouldHowTo})`);
       blogPosts_log(`   ↽ Summary will show: ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}`);
+
+      const detectedVideos = extractEmbeddedVideoObjectsFromHtml(
+        html || '',
+        url,
+        slug.replace(/-/g, ' '),
+        '',
+        '',
+        ''
+      );
+      blogPosts_log(`\n VIDEO DETECTION RESULT: ${detectedVideos.length} embedded video(s) found`);
       
       // Show results - use EXACT same result value
-      const slug = extractSlug(url);
       let resultHtml = '<h4 style="margin-top: 0; color: #1e40af;"> Detection Results</h4>';
       resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
       resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
@@ -11865,6 +11888,7 @@
       resultHtml += `<p><strong>HowTo Schema:</strong> ${howToResult ? '✅ GENERATE <code>${slug}_howto.json</code>' : '❌ SKIP — no <code>${slug}_howto.json</code>'}</p>`;
       
       resultHtml += `<p><strong>ImageObject Schema:</strong> ✅ GENERATE <code>${slug}_image.json</code> (if image exists)</p>`;
+      resultHtml += `<p><strong>VideoObject Schema:</strong> ${detectedVideos.length > 0 ? `✅ GENERATE (detected ${detectedVideos.length} embedded video${detectedVideos.length === 1 ? '' : 's'})` : '❌ SKIP — no embedded video detected'}</p>`;
       resultHtml += '</div>';
       
       if (resultDiv) {
