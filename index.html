@@ -11960,11 +11960,12 @@
         }
         
         // Build enriched BlogPosting now that mockRow.imageUrl is populated (if available)
-        blogPosting = await buildEnrichedBlogPosting(mockRow);
+        // Pass fetched HTML/plainText so video and content detection use the same page source.
+        blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
       } else {
         blogPosts_log('   ⚽  Could not fetch HTML (may be CORS or network). Proceeding without HTML-based enrichment.');
         // Fallback: still build BlogPosting from mockRow (without HTML enrichment)
-        blogPosting = await buildEnrichedBlogPosting(mockRow);
+        blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
       }
       
       // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
@@ -12012,7 +12013,8 @@
       blogPosts_log(' Generating BlogPosting schema...');
       let blogPostingSchema;
       try {
-        blogPostingSchema = await generateBlogPostingSchema(mockRow);
+        // Reuse the same fetched HTML to avoid mismatched detection between UI and generated schema.
+        blogPostingSchema = await generateBlogPostingSchema(mockRow, html);
         blogPosts_log('✅ BlogPosting schema generated successfully');
       } catch (schemaError) {
         blogPosts_log(`❌ Error generating BlogPosting schema: ${schemaError.message}`);
