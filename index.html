@@ -11352,7 +11352,7 @@
               }
             }
           } else {
-            blogPosts_log(`   ⎽  HowTo SKIPPED: No HowTo markers detected for ${slug}`);
+            blogPosts_log(`   ⎽  HowTo SKIPPED: Page HTML already includes HowTo JSON-LD (no duplicate file) — ${slug}`);
           }
         } catch (e) {
           blogPosts_log(`   ⚽  Error generating HowTo for ${slug}: ${e.message}`);
@@ -12073,7 +12073,7 @@
               }
             }
           } else {
-            blogPosts_log(`   ⎽  HowTo SKIPPED: No HowTo markers detected`);
+            blogPosts_log(`   ⎽  HowTo SKIPPED: Page HTML already includes HowTo JSON-LD (no duplicate file)`);
           }
         } catch (e) {
           blogPosts_log(`   ⚽  Error generating HowTo: ${e.message}`);
@@ -12209,8 +12209,8 @@
         redeployBtn.style.display = 'inline-block';
         redeployBtn.textContent = ' Redeploy Schemas to GitHub';
         redeployBtn.disabled = false;
-        // Store the filenames for this slug so the redeploy handler knows what to send
-        window.blogPostsSingleUrlLastFiles = [
+        // Only list files that actually exist on disk (HowTo/FAQ may be skipped with no file written)
+        const redeployCandidates = [
           `${slug}_schema.json`,
           `${slug}_blogposting.json`,
           `${slug}_breadcrumb.json`,
@@ -12218,6 +12218,20 @@
           `${slug}_faq.json`,
           `${slug}_image.json`
         ];
+        const redeployActual = [];
+        if (typeof window.electronAPI.checkFileExists === 'function') {
+          for (const fn of redeployCandidates) {
+            try {
+              if (await window.electronAPI.checkFileExists(fn)) redeployActual.push(fn);
+            } catch (_) {
+              // Treat as absent
+            }
+          }
+        } else {
+          redeployActual.push(...redeployCandidates);
+        }
+        window.blogPostsSingleUrlLastFiles = redeployActual;
+        blogPosts_log(`   ℹ Redeploy list (${redeployActual.length} file(s) on disk): ${redeployActual.join(', ') || '(none)'}`);
       }
       
     } catch (error) {
