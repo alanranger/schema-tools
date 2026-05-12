@@ -2,10 +2,11 @@
 
 /**
  * Bulk-regenerate blog `_howto.json` and `_faq.json` from live HTML (force overwrite on disk).
- * Skips slugs whose filenames contain `_event_`. Commits every `--batch` URLs (default 50).
+ * Skips slugs whose filenames contain `_event` (events / event-style posts). Commits every `--batch` URLs (default 50).
  *
  * Usage (from Schema Tools repo root):
  *   node scripts/bulk-regen-blog-howto-faq.mjs --from-schema-dir [--repo=alanranger-schema] [--batch=50] [--max=500] [--no-commit]
+ *   (--from-schema-dir only includes *_schema.json whose canonical WebPage URL is under /blog-on-photography/.)
  *   node scripts/bulk-regen-blog-howto-faq.mjs --csv=path/to.csv [--repo=...] ...
  *
  * CSV must include a `url` column (header row). Only blog-on-photography URLs are processed.
@@ -52,13 +53,36 @@ function slugFromSchemaFileName(name) {
   return name.slice(0, -'_schema.json'.length);
 }
 
+/** Only blog posts: canonical WebPage URL must include /blog-on-photography/. Skips products, events, etc. */
+function canonicalBlogUrlFromSchemaFile(filePath) {
+  let doc;
+  try {
+    doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+  const blogPath = '/blog-on-photography/';
+  if (doc && doc['@type'] === 'WebPage' && typeof doc.url === 'string' && doc.url.includes(blogPath)) {
+    return doc.url;
+  }
+  const graph = doc && Array.isArray(doc['@graph']) ? doc['@graph'] : [];
+  for (const node of graph) {
+    if (node && node['@type'] === 'WebPage' && typeof node.url === 'string' && node.url.includes(blogPath)) {
+      return node.url;
+    }
+  }
+  return null;
+}
+
 function buildUrlsFromSchemaDir(repo, max) {
   const names = fs.readdirSync(repo).filter((n) => n.endsWith('_schema.json'));
   const urls = [];
   for (const n of names) {
     const slug = slugFromSchemaFileName(n);
-    if (!slug || /_event_/i.test(slug)) continue;
-    urls.push(`https://www.alanranger.com/blog-on-photography/${slug}`);
+    if (!slug || /_event/i.test(slug)) continue;
+    const canonical = canonicalBlogUrlFromSchemaFile(path.join(repo, n));
+    if (!canonical) continue;
+    urls.push(canonical);
   }
   return urls.sort().slice(0, max);
 }
@@ -76,7 +100,7 @@ function readUrlsFromCsv(csvPath, max) {
     const u = (cells[urlIdx] || '').trim().replace(/^"|"$/g, '');
     if (!u || !u.includes('alanranger.com/blog-on-photography/')) continue;
     const slug = u.split('/').pop() || '';
-    if (!slug || /_event_/i.test(slug)) continue;
+    if (!slug || /_event/i.test(slug)) continue;
     urls.push(u);
   }
   return urls;
