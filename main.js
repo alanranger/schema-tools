@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "path";
-import { spawn, spawnSync } from "child_process";
+import { spawn, spawnSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import http from "http";
@@ -104,7 +104,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 900,
-    title: "Alan Ranger Schema Tools v1.5.8",
+    title: "Alan Ranger Schema Tools v1.5.9",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -433,6 +433,34 @@ ipcMain.handle('open-devtools', async () => {
     return { success: true };
   }
   return { success: false, error: 'Window not available' };
+});
+
+/** Build metadata for the version pill (build-info.json from desktop packaging, or git in dev). */
+ipcMain.handle('get-app-build-metadata', async () => {
+  try {
+    const buildInfoPath = path.join(__dirname, 'build-info.json');
+    if (fs.existsSync(buildInfoPath)) {
+      const j = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
+      return {
+        ok: true,
+        gitCommit: String(j.gitCommit || '').trim() || 'unknown',
+        builtAtIso: String(j.builtAtIso || '').trim(),
+        version: String(j.version || '').trim()
+      };
+    }
+  } catch (e) {
+    console.warn('get-app-build-metadata: could not read build-info.json', e.message);
+  }
+  try {
+    const sha = execSync('git rev-parse --short HEAD', {
+      cwd: __dirname,
+      encoding: 'utf8',
+      shell: true
+    }).trim();
+    return { ok: true, gitCommit: sha, builtAtIso: new Date().toISOString(), version: 'dev' };
+  } catch {
+    return { ok: false, gitCommit: 'unknown', builtAtIso: '', version: '' };
+  }
 });
 
 // IPC handler for saving schema to alanranger-schema folder and deploying

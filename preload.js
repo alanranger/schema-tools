@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExe: (exePath) => ipcRenderer.invoke('open-exe', exePath),
   getExePath: () => ipcRenderer.invoke('get-exe-path'),
   openDevTools: () => ipcRenderer.invoke('open-devtools'),
+  getAppBuildMetadata: () => ipcRenderer.invoke('get-app-build-metadata'),
   saveAndDeploySchema: (fileName, jsonContent) => ipcRenderer.invoke('save-and-deploy-schema', { fileName, jsonContent }),
   batchDeploySchemas: (files, options = {}) => ipcRenderer.invoke('batch-deploy-schemas', { files, options }),
   readSchemaFile: (fileName) => ipcRenderer.invoke('read-schema-file', fileName),
