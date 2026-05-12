@@ -13,7 +13,8 @@
     "postbuild:inject-suppressor": "node scripts/inject-schema-suppressor.js dist",
     "postbuild:inject-suppressor:out": "node scripts/inject-schema-suppressor.js out",
     "test:faq-extraction": "node scripts/test-faq-extraction.js",
-    "test:howto-extraction": "node scripts/test-howto-extraction.js"
+    "test:howto-extraction": "node scripts/test-howto-extraction.js",
+    "bulk:blog-howto-faq": "node scripts/bulk-regen-blog-howto-faq.mjs"
   },
   "keywords": [
     "schema",

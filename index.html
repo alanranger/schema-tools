@@ -3261,6 +3261,15 @@
             </span>
           </span>
         </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+          <input type="checkbox" id="blogPostsForceOverwrite">
+          <span>Force overwrite existing HowTo / FAQ JSON in <code>alanranger-schema</code>
+            <span class="tooltip-container">
+              <span class="tooltip-icon">?</span>
+              <span class="tooltip-text">When enabled, HowTo and FAQ files are regenerated even if they already exist. Leave off for normal runs so existing files are not replaced.</span>
+            </span>
+          </span>
+        </label>
         <div class="help-text" style="margin-bottom: 1rem;">
           <strong> Workflow:</strong> 1) Upload CSV ↽ 2) Audit existing files (optional) ↽ 3) Generate schemas ↽ 4) Files are automatically saved and deployed if "Save to GitHub" is checked.
         </div>
@@ -11097,6 +11106,7 @@
     const generateBtn = document.getElementById('blogPostsGenerateBtn');
     const stopBtn = document.getElementById('blogPostsStopBtn');
     const saveToGithub = document.getElementById('blogPostsSaveToGithub')?.checked || false;
+    const forceOverwrite = document.getElementById('blogPostsForceOverwrite')?.checked === true;
     
     if (generateBtn) {
       generateBtn.disabled = true;
@@ -11110,6 +11120,9 @@
 
     blogPosts_log(' Starting blog post schema generation (individual files)...');
     blogPosts_log(`   Processing ${blogPostsData.length} blog posts`);
+    if (forceOverwrite) {
+      blogPosts_log('   Force overwrite: HowTo / FAQ files will be regenerated when eligible, replacing any existing copies.');
+    }
 
     // CRITICAL: Ensure Supabase is initialized before generation starts
     if (!supabaseAvailable || !supabaseClient) {
@@ -11374,9 +11387,9 @@
           if (shouldGenerate) {
             // Check if file already exists (SAFETY RULE)
             const howToFileName = `${slug}_howto.json`;
-            const fileExists = await fileExistsInGithub(howToFileName);
-            
-            if (fileExists) {
+            const howToExists = await fileExistsInGithub(howToFileName);
+
+            if (howToExists && !forceOverwrite) {
               blogPosts_log(`   ⎽  HowTo SKIPPED: File already exists in GitHub: ${howToFileName}`);
             } else {
               const howToSchema = await generateHowToSchema(row, blogPosting, plainText, html);
@@ -11424,9 +11437,9 @@
         try {
             // Check if file already exists (SAFETY RULE)
             const faqFileName = `${slug}_faq.json`;
-            const fileExists = await fileExistsInGithub(faqFileName);
-            
-            if (fileExists) {
+            const faqExists = await fileExistsInGithub(faqFileName);
+
+            if (faqExists && !forceOverwrite) {
               blogPosts_log(`   ⎽  FAQ SKIPPED: File already exists in GitHub: ${faqFileName}`);
             } else {
               const faqSchema = await generateFAQSchema(row, blogPosting, plainText, html);
@@ -11900,7 +11913,7 @@
     const resultDiv = document.getElementById('blogPostsSingleUrlResult');
     const generateBtn = document.getElementById('blogPostsGenerateSingleBtn');
     const saveToGithub = document.getElementById('blogPostsSaveToGithub')?.checked || false;
-    
+    const forceOverwrite = document.getElementById('blogPostsForceOverwrite')?.checked === true;
     if (!url) {
       alert('Please enter a blog post URL');
       return;
@@ -12103,9 +12116,9 @@
           
           if (shouldGenerate) {
             const howToFileName = `${slug}_howto.json`;
-            const fileExists = await fileExistsInGithub(howToFileName);
-            
-            if (fileExists) {
+            const howToExists = await fileExistsInGithub(howToFileName);
+
+            if (howToExists && !forceOverwrite) {
               blogPosts_log(`   ⎽  HowTo SKIPPED: File already exists: ${howToFileName}`);
             } else {
               const howToSchema = await generateHowToSchema(mockRow, blogPosting, plainText, html);
@@ -12144,9 +12157,9 @@
         // Generate FAQ from on-page Q&A (no generic template fallback)
         try {
             const faqFileName = `${slug}_faq.json`;
-            const fileExists = await fileExistsInGithub(faqFileName);
-            
-            if (fileExists) {
+            const faqExists = await fileExistsInGithub(faqFileName);
+
+            if (faqExists && !forceOverwrite) {
               blogPosts_log(`   ⎽  FAQ SKIPPED: File already exists: ${faqFileName}`);
             } else {
               const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);

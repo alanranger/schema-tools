@@ -6,6 +6,13 @@
 const QUESTION_PREFIX_RE = /^(How|What|Why|When|Where|Which|Should|Can|Do|Does|Is|Are)\s+/i;
 const CRUFT_PREFIX_RE = /^(read more|click here|learn more|find out more)\b/i;
 
+/** Stray author byline / sign-off before end of answer (JSON-LD Strategy A). */
+const FAQ_ANSWER_BYLINE_TAIL_RE =
+  /\b(Alan Ranger|Alan)\b\s*[.\u2014\u2013\u2012\u2212-]?\s*(Remember|Note|See|Read|Check|Visit|Browse)\b[\s\S]*$/i;
+const FAQ_ANSWER_PROMO_READ_POST_RE = /\bRead my post on\b[\s\S]*$/i;
+const FAQ_ANSWER_PROMO_SEE_POST_RE = /\bSee my (?:post|guide|article) on\b[\s\S]*$/i;
+const FAQ_ANSWER_PROMO_MORE_RE = /\bMore on this in\b[\s\S]*$/i;
+
 function stripTags(html) {
   if (!html) return '';
   return String(html).replace(/<[^>]+>/g, ' ');
@@ -55,6 +62,22 @@ export function extractMainContentHtml(html) {
   return mainContentHtml;
 }
 
+/**
+ * Strip stray bylines / internal promos from FAQ answers taken from JSON-LD (Strategy A).
+ * Conservative: only removes known trailing patterns, not mid-sentence "Alan teaches…".
+ */
+export function cleanExtractedFaqAnswerText(text) {
+  let s = String(text ?? '').trim();
+  if (!s) return s;
+  s = s.replace(FAQ_ANSWER_PROMO_READ_POST_RE, '').trimEnd();
+  s = s.replace(FAQ_ANSWER_PROMO_SEE_POST_RE, '').trimEnd();
+  s = s.replace(FAQ_ANSWER_PROMO_MORE_RE, '').trimEnd();
+  s = s.replace(FAQ_ANSWER_BYLINE_TAIL_RE, '').trimEnd();
+  s = s.replace(/[ \t\u00a0]+$/g, '');
+  s = s.replace(/(?:\s*[,;:])+$/g, '');
+  return s.trimEnd();
+}
+
 function collectMainEntityPairs(mainEntity, pairs) {
   const list = Array.isArray(mainEntity) ? mainEntity : mainEntity ? [mainEntity] : [];
   for (const item of list) {
@@ -67,7 +90,10 @@ function collectMainEntityPairs(mainEntity, pairs) {
       const t = ans.text;
       text = Array.isArray(t) ? t.join('\n\n') : t || '';
     }
-    if (q && text) pairs.push({ question: String(q).trim(), answer: String(text).trim() });
+    if (q && text) {
+      const cleaned = cleanExtractedFaqAnswerText(String(text).trim());
+      pairs.push({ question: String(q).trim(), answer: cleaned });
+    }
   }
 }
 
