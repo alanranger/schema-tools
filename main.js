@@ -36,6 +36,31 @@ function ensureGitOnBranch(repoPath, branchName = "main") {
   }
 }
 
+const GIT_INDEX_WRITE_HINT =
+  " Fixes: pause Dropbox/OneDrive on Schema Tools/alanranger-schema, close other Git tools, free disk space, delete alanranger-schema/.git/index.lock only if no git process is running, then retry.";
+
+function removeStaleGitIndexLock(repoPath) {
+  const gitLockPath = path.join(repoPath, ".git", "index.lock");
+  if (!fs.existsSync(gitLockPath)) return false;
+  try {
+    fs.unlinkSync(gitLockPath);
+    console.warn(`Removed stale Git lock file: ${gitLockPath}`);
+    return true;
+  } catch (e) {
+    console.error(`Failed to remove Git lock file: ${e.message}`);
+    return false;
+  }
+}
+
+function gitOutputSuggestsIndexWriteFailure(stdout, stderr) {
+  return `${stderr || ""}${stdout || ""}`.toLowerCase().includes("unable to write new index file");
+}
+
+function formatGitFailureError(desc, code, stdout, stderr) {
+  const base = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+  return gitOutputSuggestsIndexWriteFailure(stdout, stderr) ? `${base}${GIT_INDEX_WRITE_HINT}` : base;
+}
+
 function isLikelyProductSchemaJson(filePath) {
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
@@ -79,7 +104,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 900,
-    title: "Alan Ranger Schema Tools v1.5.3",
+    title: "Alan Ranger Schema Tools v1.5.8",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -432,18 +457,7 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
 
       // Ensure we are on a branch (not detached HEAD) so push works
       ensureGitOnBranch(schemaRepoPath, "main");
-      
-      // SAFETY: Clean up any stale Git index.lock that can cause "unable to write new index file"
-      const gitLockPath = path.join(schemaRepoPath, '.git', 'index.lock');
-      if (fs.existsSync(gitLockPath)) {
-        try {
-          fs.unlinkSync(gitLockPath);
-          console.warn(`⚠️ Removed stale Git lock file: ${gitLockPath}`);
-        } catch (lockErr) {
-          console.error(`❌ Failed to remove stale Git lock file: ${lockErr.message}`);
-          // Don't hard-fail here; let git surface a clearer error if it still can't write
-        }
-      }
+      removeStaleGitIndexLock(schemaRepoPath);
       
       // Write JSON file
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
@@ -458,6 +472,7 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       ];
       
       let currentStep = 0;
+      let indexWriteRetries = 0;
       const runNextCommand = () => {
         if (currentStep >= gitCommands.length) {
           resolve({ 
@@ -506,16 +521,23 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
             } else {
               console.log(`✅ Git: ${desc} completed`);
             }
+            indexWriteRetries = 0;
             currentStep++;
             runNextCommand();
           } else {
             // For commit, code 1 might mean "nothing to commit" - that's OK
             if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
               console.log(`ℹ️ Git: No changes to commit (file unchanged)`);
+              indexWriteRetries = 0;
               currentStep++;
               runNextCommand();
+            } else if (gitOutputSuggestsIndexWriteFailure(stdout, stderr) && indexWriteRetries < 3) {
+              indexWriteRetries++;
+              removeStaleGitIndexLock(schemaRepoPath);
+              console.warn(`Git index write failed; retry ${indexWriteRetries}/3 after short delay...`);
+              setTimeout(() => runNextCommand(), 800);
             } else {
-              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              const error = formatGitFailureError(desc, code, stdout, stderr);
               console.error(`❌ ${error}`);
               reject(new Error(error));
             }
@@ -649,18 +671,7 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
 
       // Ensure we are on a branch (not detached HEAD) so push works
       ensureGitOnBranch(schemaRepoPath, "main");
-
-      // SAFETY: Clean up any stale Git index.lock that can cause "unable to write new index file"
-      const gitLockPath = path.join(schemaRepoPath, '.git', 'index.lock');
-      if (fs.existsSync(gitLockPath)) {
-        try {
-          fs.unlinkSync(gitLockPath);
-          console.warn(`⚠️ Removed stale Git lock file: ${gitLockPath}`);
-        } catch (lockErr) {
-          console.error(`❌ Failed to remove stale Git lock file: ${lockErr.message}`);
-          // Don't hard-fail here; let git surface a clearer error if it still can't write
-        }
-      }
+      removeStaleGitIndexLock(schemaRepoPath);
 
       // Write all files first
       const fileNames = [];
@@ -708,6 +719,7 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
       );
       
       let currentStep = 0;
+      let indexWriteRetries = 0;
       const runNextCommand = () => {
         if (currentStep >= gitCommands.length) {
           resolve({ 
@@ -756,6 +768,7 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
             } else {
               console.log(`✅ Git: ${desc} completed`);
             }
+            indexWriteRetries = 0;
             currentStep++;
             runNextCommand();
           } else {
@@ -767,10 +780,16 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
             
             if (isCommitCommand && code === 1 && hasNothingToCommit) {
               console.log(`ℹ️ Git: No changes to commit (files already committed during generation)`);
+              indexWriteRetries = 0;
               currentStep++;
               runNextCommand();
+            } else if (gitOutputSuggestsIndexWriteFailure(stdout, stderr) && indexWriteRetries < 3) {
+              indexWriteRetries++;
+              removeStaleGitIndexLock(schemaRepoPath);
+              console.warn(`Git index write failed; retry ${indexWriteRetries}/3 after short delay...`);
+              setTimeout(() => runNextCommand(), 800);
             } else {
-              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              const error = formatGitFailureError(desc, code, stdout, stderr);
               console.error(`❌ ${error}`);
               reject(new Error(error));
             }
@@ -877,6 +896,7 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
       
       // Ensure we are on a branch (not detached HEAD) so push works
       ensureGitOnBranch(schemaRepoPath, "main");
+      removeStaleGitIndexLock(schemaRepoPath);
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
@@ -942,7 +962,7 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
             currentStep++;
             runNextCommand();
           } else {
-            const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+            const error = formatGitFailureError(desc, code, stdout, stderr);
             console.error(`❌ ${error}`);
             reject(new Error(error));
           }
@@ -978,6 +998,7 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
       
       // Ensure we are on a branch (not detached HEAD) so push works
       ensureGitOnBranch(schemaRepoPath, "main");
+      removeStaleGitIndexLock(schemaRepoPath);
 
       // SAFETY CHECK: Validate all filenames match expected blog schema pattern
       // Only allow deletion of files matching: slug_schema.json, slug_howto.json, slug_faq.json, slug_image.json
@@ -1101,7 +1122,7 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
               currentStep++;
               runNextCommand();
             } else {
-              const error = `Git ${desc} failed with code ${code}: ${stderr || stdout}`;
+              const error = formatGitFailureError(desc, code, stdout, stderr);
               console.error(`❌ ${error}`);
               reject(new Error(error));
             }
