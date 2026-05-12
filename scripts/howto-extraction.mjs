@@ -59,11 +59,11 @@ const SECTION_LABEL_RE =
   /^(how\s+to|steps|step\s*[-–—]?\s*by\s*[-–—]?\s*step|method|procedure)\b/i;
 
 const IMPERATIVE_START_RE =
-  /^(Set|Choose|Use|Adjust|Mount|Press|Open|Close|Select|Focus|Compose|Meter|Check|Switch|Connect|Activate|Position|Frame|Take|Capture|Review|Save|Export|Apply|Add|Remove|Increase|Decrease)\s+/i;
+  /^(Set|Choose|Use|Adjust|Mount|Press|Open|Close|Select|Focus|Compose|Meter|Check|Switch|Connect|Activate|Position|Frame|Take|Capture|Review|Save|Export|Apply|Add|Remove|Increase|Decrease|Go|Get|Find|Look|Watch|Wait|Plan|Prepare|Avoid|Try|Keep|Bring|Pack|Pick|Visit|Arrive|Start|Stop|Make|Allow|Consider|Think|Decide|Remember|Note)\s+/i;
 const STEP_HEADING_RE = /^step\s*\d+/i;
 const NUM_PREFIX_HEADING_RE = /^\d+[\.)]\s+/;
-/** Headings that read like FAQ questions, not procedural steps */
-const FAQ_LIKE_HEADING_RE = /^(What|Why|When|Where|Which|Should|Can|Do|Does|Is|Are)\b/i;
+/** FAQ-shaped lead-ins only — allows "Do not…", "Do this…", imperative "Do" */
+const FAQ_LEAD_IN_RE = /^(do\s+you\b|do\s+i\b|do\s+they\b|do\s+we\b|does\s+(?!not\b))/i;
 
 function walkJsonLdNodes(node, visitor) {
   if (!node) return;
@@ -160,7 +160,7 @@ export function extractFromProcedureNumberedParagraphs(html) {
       const afterQ = inner.slice(inner.indexOf(qm[0]) + qm[0].length);
       const answerHtml = afterQ.replace(/^\s*(?:<br\s*\/?>)\s*/i, '');
       const text = htmlBlockToPlainText(answerHtml).replace(/\s+/g, ' ').trim();
-      if (FAQ_LIKE_HEADING_RE.test(name.replace(NUM_PREFIX_HEADING_RE, '').trim())) continue;
+      if (FAQ_LEAD_IN_RE.test(name.replace(NUM_PREFIX_HEADING_RE, '').trim())) continue;
       steps.push({ name, text });
     }
     if (steps.length >= 3) return steps;
@@ -183,11 +183,10 @@ export function extractFromImperativeHeadings(html) {
     if (!text) continue;
     if (/\?\s*$/.test(text)) continue;
     const afterNumber = text.replace(NUM_PREFIX_HEADING_RE, '').trim();
-    if (FAQ_LIKE_HEADING_RE.test(text) || FAQ_LIKE_HEADING_RE.test(afterNumber)) continue;
+    if (FAQ_LEAD_IN_RE.test(text) || FAQ_LEAD_IN_RE.test(afterNumber)) continue;
     const isImperative = IMPERATIVE_START_RE.test(text);
-    const isStepHeading =
-      STEP_HEADING_RE.test(text) ||
-      (NUM_PREFIX_HEADING_RE.test(text) && IMPERATIVE_START_RE.test(afterNumber));
+    /** Numbered "1. …" / "1) …" tips are Strategy E — avoid a short partial C pass. */
+    const isStepHeading = STEP_HEADING_RE.test(text);
     if (!isImperative && !isStepHeading) continue;
     let endPos = main.length;
     for (let j = i + 1; j < matches.length; j++) {
@@ -204,11 +203,66 @@ export function extractFromImperativeHeadings(html) {
   return steps;
 }
 
+/** Plain h2/h3 text → stripped tip title for Strategy E, or empty if no match. */
+function numberedTipTitleFromPlainHeading(rawText) {
+  if (!rawText) return '';
+  const dotM = rawText.match(/^(\d{1,2})\.\s+(.+)$/);
+  if (dotM) {
+    const n = Number.parseInt(dotM[1], 10);
+    if (n >= 1 && n <= 10) return dotM[2].trim();
+  }
+  const parM = rawText.match(/^(\d{1,2})\)\s+(.+)$/);
+  if (parM) {
+    const n = Number.parseInt(parM[1], 10);
+    if (n >= 1 && n <= 10) return parM[2].trim();
+  }
+  const tipM = rawText.match(/^tip\s+(\d{1,2})\b\s*[.:)\-–]?\s*(.*)$/i);
+  if (tipM?.[2]?.trim()) return tipM[2].trim();
+  const stepM = rawText.match(/^step\s+(\d{1,2})\b\s*[.:)\-–]?\s*(.*)$/i);
+  if (stepM?.[2]?.trim()) return stepM[2].trim();
+  return '';
+}
+
+/**
+ * Strategy E: numbered tip headings (1. …, 1) …, Tip N …, Step N …) on h2/h3.
+ * Catches guides that use numbered headings instead of <ol> or imperative-only titles.
+ */
+export function extractFromNumberedTipHeadings(html) {
+  const main = extractMainContentHtml(html) || html || '';
+  const headingRe = /<h([23])([^>]*)>([\s\S]*?)<\/h\1>/gi;
+  const matches = [];
+  let m;
+  while ((m = headingRe.exec(main)) !== null) {
+    matches.push({ level: +m[1], index: m.index, end: headingRe.lastIndex, inner: m[3] });
+  }
+  const steps = [];
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i];
+    const rawText = htmlBlockToPlainText(cur.inner).replace(/\s+/g, ' ').trim();
+    const nameBody = numberedTipTitleFromPlainHeading(rawText);
+    if (!nameBody || FAQ_LEAD_IN_RE.test(nameBody)) continue;
+
+    let endPos = main.length;
+    for (let j = i + 1; j < matches.length; j++) {
+      if (matches[j].level <= cur.level) {
+        endPos = matches[j].index;
+        break;
+      }
+    }
+    const segment = main.slice(cur.end, endPos);
+    if (/BlogItem-pagination|newsletter-form|sqs-block-newsletter/i.test(segment)) continue;
+    const body = htmlBlockToPlainText(segment).replace(/\s+/g, ' ').trim();
+    const text = body.length ? body : nameBody;
+    steps.push({ name: nameBody, text });
+  }
+  return steps;
+}
+
 function trailingNamePunctuationOk(name) {
   const t = (name || '').trim();
   if (!t) return false;
   const last = t[t.length - 1];
-  if (/[,:;!]/.test(last)) return false;
+  if (/[,;:]/.test(last)) return false;
   return true;
 }
 
@@ -227,9 +281,17 @@ export function validateHowToSteps(rawSteps, debugLog) {
       dbg(`Step dropped: name length ${name.length} — ${name.slice(0, 60)}`);
       continue;
     }
-    if (text.length < 20 || text.length > 600) {
-      dbg(`Step dropped: text length ${text.length} — ${name.slice(0, 60)}`);
+    if (FAQ_LEAD_IN_RE.test(name)) {
+      dbg(`Step dropped: name reads like a FAQ lead-in — ${name.slice(0, 60)}`);
       continue;
+    }
+    if (text.length < 20) {
+      dbg(`Step dropped: text too short (${text.length}) — ${name.slice(0, 60)}`);
+      continue;
+    }
+    if (text.length > 600) {
+      text = `${text.slice(0, 597).trimEnd()}...`;
+      dbg(`Step note: text trimmed to 600 characters for schema limit — ${name.slice(0, 60)}`);
     }
     if (!trailingNamePunctuationOk(name)) {
       dbg(`Step dropped: name trailing punctuation invalid — ${name.slice(0, 60)}`);
@@ -275,23 +337,24 @@ export function extractHowToFromArticle(html, articleBody = '', debugLog = null)
     const extractedCount = raw.length;
     const steps = validateHowToSteps(raw, dbg);
     dbg(`${label}: ${extractedCount} raw step(s), ${steps.length} passed validation`);
-    if (steps.length >= 3) {
-      dbg(
-        `${label} succeeded (preview step: ${steps[0].name.slice(0, 80)}${steps[0].name.length > 80 ? '…' : ''})`
-      );
-      return { strategy: label, steps, extractedCount, acceptedCount: steps.length };
-    }
-    return null;
+    if (steps.length < 3) return null;
+    dbg(
+      `${label} succeeded (preview step: ${steps[0].name.slice(0, 80)}${steps[0].name.length > 80 ? '…' : ''})`
+    );
+    return { strategy: label, steps, extractedCount, acceptedCount: steps.length };
   };
 
-  let r = run('A', extractFromJsonLdHowTo(primaryHtml));
-  if (r) return r;
-  r = run('B', extractFromOrderedListSection(primaryHtml));
-  if (r) return r;
-  r = run('B-paragraphs', extractFromProcedureNumberedParagraphs(primaryHtml));
-  if (r) return r;
-  r = run('C', extractFromImperativeHeadings(primaryHtml));
-  if (r) return r;
+  const attempts = [
+    ['A', () => extractFromJsonLdHowTo(primaryHtml)],
+    ['B', () => extractFromOrderedListSection(primaryHtml)],
+    ['B-paragraphs', () => extractFromProcedureNumberedParagraphs(primaryHtml)],
+    ['C', () => extractFromImperativeHeadings(primaryHtml)],
+    ['E', () => extractFromNumberedTipHeadings(primaryHtml)]
+  ];
+  for (const [label, getRaw] of attempts) {
+    const r = run(label, getRaw());
+    if (r) return r;
+  }
 
   dbg('HowTo extraction: no strategy returned 3+ valid steps');
   return { strategy: 'none', steps: [], extractedCount: 0, acceptedCount: 0 };
