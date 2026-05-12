@@ -12,7 +12,8 @@
     "build": "node -e \"if (process.env.VERCEL || process.env.CI) { console.log('Skipping Electron build for web deployment'); process.exit(0); } else { require('child_process').execSync('npm run build:desktop', {stdio:'inherit'}); }\"",
     "postbuild:inject-suppressor": "node scripts/inject-schema-suppressor.js dist",
     "postbuild:inject-suppressor:out": "node scripts/inject-schema-suppressor.js out",
-    "test:faq-extraction": "node scripts/test-faq-extraction.js"
+    "test:faq-extraction": "node scripts/test-faq-extraction.js",
+    "test:howto-extraction": "node scripts/test-howto-extraction.js"
   },
   "keywords": [
     "schema",
