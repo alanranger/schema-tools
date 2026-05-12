@@ -13,6 +13,40 @@ const FAQ_ANSWER_PROMO_READ_POST_RE = /\bRead my post on\b[\s\S]*$/i;
 const FAQ_ANSWER_PROMO_SEE_POST_RE = /\bSee my (?:post|guide|article) on\b[\s\S]*$/i;
 const FAQ_ANSWER_PROMO_MORE_RE = /\bMore on this in\b[\s\S]*$/i;
 
+/** Legacy in-app generic FAQ template — one match poisons the whole strategy output. */
+export const KNOWN_BAD_FAQ_QUESTIONS = [
+  'What is this photography technique about?',
+  'How do I apply these techniques?',
+  'What camera settings should I use?',
+  'Do I need special equipment?',
+  'How can I improve my results?',
+  'Is this suitable for beginners?',
+  'What are the most common mistakes to avoid?',
+  'Where can I practice these techniques?'
+];
+
+const KNOWN_BAD_FAQ_QUESTION_SET = new Set(KNOWN_BAD_FAQ_QUESTIONS);
+
+function normaliseQuestionForDenyList(q) {
+  return String(q ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function rawPairsContainDenyListedQuestion(rawList, dbg) {
+  if (!Array.isArray(rawList) || !rawList.length) return false;
+  for (const raw of rawList) {
+    const qn = normaliseQuestionForDenyList(raw?.question);
+    if (KNOWN_BAD_FAQ_QUESTION_SET.has(qn)) {
+      if (typeof dbg === 'function') {
+        dbg('FAQ extraction: rejected — deny-list-match (legacy template question detected)');
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 function stripTags(html) {
   if (!html) return '';
   return String(html).replace(/<[^>]+>/g, ' ');
@@ -285,6 +319,10 @@ export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
   const mainHtml = extractMainContentHtml(primaryHtml);
 
   const run = (strategyLabel, rawList) => {
+    if (rawPairsContainDenyListedQuestion(rawList, dbg)) {
+      dbg(`${strategyLabel}: rejected — deny-list-match`);
+      return null;
+    }
     const extractedCount = rawList.length;
     const pairs = validateAndDedupePairs(rawList, dbg);
     dbg(`${strategyLabel}: ${extractedCount} raw pair(s), ${pairs.length} passed validation`);

@@ -2,12 +2,14 @@
 
 /**
  * Bulk-regenerate blog `_howto.json` and `_faq.json` from live HTML (force overwrite on disk).
+ * Waits 300 ms between URLs to reduce HTTP 429 throttling from the origin server.
  * Skips slugs whose filenames contain `_event` (events / event-style posts). Commits every `--batch` URLs (default 50).
  *
  * Usage (from Schema Tools repo root):
  *   node scripts/bulk-regen-blog-howto-faq.mjs --from-schema-dir [--repo=alanranger-schema] [--batch=50] [--max=500] [--no-commit]
  *   (--from-schema-dir only includes *_schema.json whose canonical WebPage URL is under /blog-on-photography/.)
  *   node scripts/bulk-regen-blog-howto-faq.mjs --csv=path/to.csv [--repo=...] ...
+ *   node scripts/bulk-regen-blog-howto-faq.mjs --url=https://www.alanranger.com/blog-on-photography/slug [--url=...] [--no-commit]
  *
  * CSV must include a `url` column (header row). Only blog-on-photography URLs are processed.
  */
@@ -27,6 +29,7 @@ function parseArgs() {
   const o = {
     fromSchemaDir: false,
     csv: null,
+    explicitUrls: [],
     repo: path.join(root, 'alanranger-schema'),
     batch: 50,
     max: Number.POSITIVE_INFINITY,
@@ -35,7 +38,10 @@ function parseArgs() {
   for (const x of a) {
     if (x === '--from-schema-dir') o.fromSchemaDir = true;
     else if (x === '--no-commit') o.noCommit = true;
-    else if (x.startsWith('--csv=')) o.csv = path.resolve(x.slice(6));
+    else if (x.startsWith('--url=')) {
+      const u = x.slice(6).trim();
+      if (u) o.explicitUrls.push(u);
+    } else if (x.startsWith('--csv=')) o.csv = path.resolve(x.slice(6));
     else if (x.startsWith('--repo=')) o.repo = path.resolve(x.slice(7));
     else if (x.startsWith('--batch=')) o.batch = Math.max(1, Number.parseInt(x.slice(8), 10) || 50);
     else if (x.startsWith('--max=')) o.max = Math.max(1, Number.parseInt(x.slice(6), 10) || o.max);
@@ -143,7 +149,14 @@ function writeHowTo(repo, slug, url, extracted, headline) {
 }
 
 function writeFaq(repo, slug, url, extracted) {
-  if (!extracted || extracted.pairs.length < 3) return 'skip-faq';
+  const filePath = path.join(repo, `${slug}_faq.json`);
+  if (!extracted || extracted.pairs.length < 3) {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return 'delete-faq';
+    }
+    return 'skip-faq';
+  }
   const mainEntity = extracted.pairs.map((p) => ({
     '@type': 'Question',
     name: p.question,
@@ -155,7 +168,7 @@ function writeFaq(repo, slug, url, extracted) {
     '@id': `${url}#faq`,
     mainEntity
   };
-  fs.writeFileSync(path.join(repo, `${slug}_faq.json`), `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(filePath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
   return 'ok-faq';
 }
 
@@ -167,16 +180,21 @@ function gitCommitBatch(repo, batchNum) {
 
 async function main() {
   const opts = parseArgs();
-  if (!opts.fromSchemaDir && !opts.csv) {
+  if (!opts.fromSchemaDir && !opts.csv && !opts.explicitUrls.length) {
     console.error(
-      'Usage: node scripts/bulk-regen-blog-howto-faq.mjs (--from-schema-dir|--csv=path) [--repo=alanranger-schema] [--batch=50] [--max=N] [--no-commit]'
+      'Usage: node scripts/bulk-regen-blog-howto-faq.mjs (--from-schema-dir|--csv=path|--url=https://...) [--repo=alanranger-schema] [--batch=50] [--max=N] [--no-commit]'
     );
     process.exit(1);
   }
 
-  const urls = opts.fromSchemaDir
-    ? buildUrlsFromSchemaDir(opts.repo, opts.max)
-    : readUrlsFromCsv(opts.csv, opts.max);
+  let urls;
+  if (opts.explicitUrls.length) {
+    urls = opts.explicitUrls.filter((u) => u.includes('alanranger.com/blog-on-photography/'));
+  } else {
+    urls = opts.fromSchemaDir
+      ? buildUrlsFromSchemaDir(opts.repo, opts.max)
+      : readUrlsFromCsv(opts.csv, opts.max);
+  }
 
   if (!urls.length) {
     console.error('No URLs to process.');
@@ -187,6 +205,9 @@ async function main() {
 
   let batchNum = 1;
   let batchErrors = 0;
+  let faqOk = 0;
+  let faqDelete = 0;
+  let faqSkip = 0;
 
   const finishBatch = () => {
     if (!opts.noCommit) {
@@ -219,11 +240,16 @@ async function main() {
       const faq = extractFAQFromArticle(html, plain, null);
       const hRes = writeHowTo(opts.repo, slug, url, how, headline);
       const fRes = writeFaq(opts.repo, slug, url, faq);
+      if (fRes === 'ok-faq') faqOk += 1;
+      else if (fRes === 'delete-faq') faqDelete += 1;
+      else if (fRes === 'skip-faq') faqSkip += 1;
       appendLog(`${slug} howto=${how.strategy}/${how.steps.length} faq=${faq.strategy}/${faq.pairs.length} files=${hRes},${fRes}`);
     } catch (e) {
       batchErrors += 1;
       appendLog(`${slug} ERROR ${e.message}`);
     }
+
+    await new Promise((r) => setTimeout(r, 300));
 
     const posInBatch = (i + 1) % opts.batch;
     const countInBatch = posInBatch === 0 ? opts.batch : posInBatch;
@@ -238,8 +264,12 @@ async function main() {
     }
   }
 
-  appendLog(`Finished bulk HowTo/FAQ regen (${urls.length} URL(s)).`);
-  console.log(`Done. ${urls.length} URL(s) processed. Log appended to BULK-REGEN-LOG.md`);
+  appendLog(
+    `Finished bulk HowTo/FAQ regen (${urls.length} URL(s)). FAQ files: ok-faq=${faqOk}, delete-faq=${faqDelete}, skip-faq=${faqSkip}.`
+  );
+  console.log(
+    `Done. ${urls.length} URL(s) processed. FAQ: ok-faq=${faqOk} delete-faq=${faqDelete} skip-faq=${faqSkip}. Log appended to BULK-REGEN-LOG.md`
+  );
 }
 
 main().catch((e) => {
