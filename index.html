@@ -10905,117 +10905,66 @@
     }
   }
 
+  let faqExtractionModulePromise = null;
+  async function loadFaqExtractionModule() {
+    if (!faqExtractionModulePromise) {
+      faqExtractionModulePromise = import('./scripts/faq-extraction.mjs');
+    }
+    return faqExtractionModulePromise;
+  }
+
   /**
-   * Generate FAQ schema for a blog post
-   * ONLY generates if no existing FAQ block is detected
-   * Returns null if FAQ block exists (skip generation)
+   * Generate FAQ schema for a blog post from on-page Q&A content only.
+   * Returns null when fewer than three valid pairs are extracted (no generic fallback).
    */
   async function generateFAQSchema(csvRow, blogPosting, articleBody, html) {
     const url = csvRow.url;
-    const headline = blogPosting.headline || csvRow.title || 'Photography Guide';
     const slug = extractSlug(url);
-    
-    // STEP 1: Check if FAQ block already exists (with debug logging)
-    blogPosts_log(`    Checking for existing FAQ block: ${slug}`);
-    const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
-    
-    // CRITICAL: Log what we're checking
+    const debugLog = (msg) => blogPosts_log(`   [FAQ Extraction] ${msg}`);
+
     if (!html) {
-      blogPosts_log(`   ⚽  WARNING: No HTML provided for FAQ detection - detection may fail!`);
+      blogPosts_log(`   ⚽  WARNING: No HTML supplied for FAQ extraction — ${slug}`);
     }
     if (!articleBody) {
-      blogPosts_log(`   ⚽  WARNING: No articleBody provided for FAQ detection`);
+      blogPosts_log(`   ⚽  WARNING: No articleBody supplied for FAQ extraction — ${slug}`);
     }
-    
-    const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, articleBody, debugLog);
-    
-    if (hasFAQ) {
-      // FAQ block detected - skip generation entirely
-      blogPosts_log(`   ⎽  FAQ SKIPPED (existing FAQ block detected): ${slug}`);
+
+    let extracted;
+    try {
+      const mod = await loadFaqExtractionModule();
+      extracted = mod.extractFAQFromArticle(html, articleBody, debugLog);
+    } catch (e) {
+      blogPosts_log(`   ❌ FAQ extraction module failed to load: ${e.message}`);
       return null;
-    } else {
-      blogPosts_log(`   ✅ No existing FAQ detected - will generate new FAQ: ${slug}`);
     }
-    
-    // STEP 2: No FAQ block exists - generate generic FAQ schema
-    // Use standard photography Q&A pattern (5-8 questions)
-    const faqItems = [
-      {
-        '@type': 'Question',
-        name: 'What is this photography technique about?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `This article covers ${headline.toLowerCase()}. It provides guidance on photography techniques, camera settings, and practical tips to help you improve your photography skills.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'How do I apply these techniques?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `Follow the step-by-step guidance provided in the article. Practice the techniques in real-world conditions, adjust your camera settings as recommended, and review your results to refine your approach.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'What camera settings should I use?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `The optimal camera settings depend on your specific equipment, lighting conditions, and the photography technique being demonstrated. Refer to the article for detailed recommendations tailored to different scenarios.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'Do I need special equipment?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `The equipment requirements vary depending on the technique. While some methods can be achieved with basic camera gear, others may benefit from specific lenses, filters, or accessories. Check the article for detailed equipment recommendations.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'How can I improve my results?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `Practice regularly, pay attention to lighting conditions, experiment with different settings, and review your images critically. The article provides specific tips and common mistakes to avoid that will help you achieve better results.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'Is this suitable for beginners?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `The article is designed to be accessible to photographers of various skill levels. Beginners will find clear explanations and step-by-step guidance, while more experienced photographers can use it as a reference for refining their technique.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'What are the most common mistakes to avoid?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `Common mistakes include incorrect camera settings for the conditions, poor composition choices, and not paying attention to lighting. The article addresses these issues and provides solutions to help you avoid these pitfalls.`
-        }
-      },
-      {
-        '@type': 'Question',
-        name: 'Where can I practice these techniques?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `You can practice these photography techniques in various locations depending on the specific method. The article may suggest ideal locations, but many techniques can be practiced in your local area with the right conditions and approach.`
-        }
+
+    if (!extracted || extracted.pairs.length < 3) {
+      const n = extracted?.pairs?.length ?? 0;
+      blogPosts_log(
+        `   ⎽ FAQ schema skipped for ${slug}: only ${n} real Q&A pair(s) after validation (strategy ${extracted?.strategy || 'none'})`
+      );
+      return null;
+    }
+
+    const faqItems = extracted.pairs.map((p) => ({
+      '@type': 'Question',
+      name: p.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: p.answer
       }
-    ];
-    
-    // Build FAQPage schema (exact structure as specified)
-    // Note: @context required for valid JSON-LD, but structure matches user spec
-    const faqPage = {
+    }));
+
+    blogPosts_log(
+      `   ✅ FAQ schema built for ${slug} via ${extracted.strategy} (${extracted.acceptedCount} pair(s))`
+    );
+
+    return {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       '@id': `${url}#faq`,
       mainEntity: faqItems
     };
-    
-    return faqPage;
   }
 
   /**
@@ -11453,14 +11402,8 @@
           blogPosts_log(`   ⚽  Error generating HowTo for ${slug}: ${e.message}`);
         }
         
-        // Generate FAQ schema (MASTER RULE: skip if FAQ markers detected)
+        // Generate FAQ schema from on-page Q&A (no generic template fallback)
         try {
-          const debugLog = (msg) => blogPosts_log(`   [FAQ Detection] ${msg}`);
-          const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, debugLog);
-          
-          if (hasFAQ) {
-            blogPosts_log(`   ⎽  FAQ SKIPPED: Existing FAQ detected for ${slug}`);
-          } else {
             // Check if file already exists (SAFETY RULE)
             const faqFileName = `${slug}_faq.json`;
             const fileExists = await fileExistsInGithub(faqFileName);
@@ -11502,7 +11445,6 @@
                 }
               }
             }
-          }
         } catch (e) {
           blogPosts_log(`   ⚽  Error generating FAQ for ${slug}: ${e.message}`);
         }
@@ -11846,11 +11788,20 @@
       blogPosts_log(`✅ HTML fetched: ${html ? html.length : 0} chars`);
       blogPosts_log(`✅ Plain text: ${plainText.length} chars`);
       
-      // Test FAQ Detection
-      blogPosts_log('\n FAQ DETECTION TEST');
+      // FAQ block signal (on-page markers / JSON-LD) — informational only
+      blogPosts_log('\n FAQ BLOCK DETECTION (on-page signal)');
       blogPosts_log('='.repeat(60));
       const faqDebugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
-      const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, faqDebugLog);
+      await hasExistingFAQBlockWithSnippets(url, html, plainText, faqDebugLog);
+
+      // FAQ extraction preview (mirrors generateFAQSchema behaviour)
+      blogPosts_log('\n FAQ EXTRACTION PREVIEW');
+      blogPosts_log('='.repeat(60));
+      const faqExtractMod = await loadFaqExtractionModule();
+      const faqExtract = faqExtractMod.extractFAQFromArticle(html, plainText, faqDebugLog);
+      blogPosts_log(
+        `   Extraction outcome: strategy ${faqExtract.strategy}, ${faqExtract.acceptedCount} accepted pair(s) (raw candidates: ${faqExtract.extractedCount})`
+      );
       
       // Test HowTo Detection
       blogPosts_log('\n HOWTO DETECTION TEST');
@@ -11886,7 +11837,12 @@
       resultHtml += `<p><strong>WebPage Schema:</strong> ✅ Will generate <code>${slug}_schema.json</code></p>`;
       resultHtml += `<p><strong>BlogPosting Schema:</strong> ✅ Will generate <code>${slug}_blogposting.json</code></p>`;
       resultHtml += `<p><strong>BreadcrumbList Schema:</strong> ✅ Will generate <code>${slug}_breadcrumb.json</code></p>`;
-      resultHtml += `<p><strong>FAQ Schema:</strong> ${hasFAQ ? '❌ SKIP (existing FAQ detected) — no <code>${slug}_faq.json</code>' : '✅ GENERATE <code>${slug}_faq.json</code>'}</p>`;
+      const faqWillGenerate = faqExtract.pairs.length >= 3;
+      resultHtml += `<p><strong>FAQ Schema:</strong> ${
+        faqWillGenerate
+          ? `✅ GENERATE <code>${slug}_faq.json</code> (${faqExtract.strategy}, ${faqExtract.pairs.length} pair(s))`
+          : `❌ SKIP — only ${faqExtract.pairs.length} valid pair(s) (${faqExtract.strategy})`
+      }</p>`;
       
       // Use the EXACT same variable - no logic, just direct use
       const howToResult = shouldHowTo;
@@ -11898,7 +11854,7 @@
       
       if (resultDiv) {
         resultDiv.innerHTML = resultHtml;
-        resultDiv.style.borderColor = hasFAQ || shouldHowTo ? '#10b981' : '#f59e0b';
+        resultDiv.style.borderColor = faqExtract.pairs.length >= 3 || shouldHowTo ? '#10b981' : '#f59e0b';
       }
       
       blogPosts_log('\n✅ Test complete!');
@@ -12167,14 +12123,8 @@
           blogPosts_log(`   ⚽  Error generating HowTo: ${e.message}`);
         }
         
-        // Generate FAQ if eligible
+        // Generate FAQ from on-page Q&A (no generic template fallback)
         try {
-          const debugLog = (msg) => blogPosts_log(`   [FAQ] ${msg}`);
-          const hasFAQ = await hasExistingFAQBlockWithSnippets(url, html, plainText, debugLog);
-          
-          if (hasFAQ) {
-            blogPosts_log(`   ⎽  FAQ SKIPPED: Existing FAQ detected`);
-          } else {
             const faqFileName = `${slug}_faq.json`;
             const fileExists = await fileExistsInGithub(faqFileName);
             
@@ -12207,7 +12157,6 @@
                 }
               }
             }
-          }
         } catch (e) {
           blogPosts_log(`   ⚽  Error generating FAQ: ${e.message}`);
         }
