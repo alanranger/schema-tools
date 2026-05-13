@@ -4878,12 +4878,13 @@
     
     summaryHtml += '<div style="background: #e6f3ff; padding: 1rem; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 1rem;">';
     summaryHtml += '<p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #004085;"> Next Steps:</p>';
-    summaryHtml += '<ul style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
-    summaryHtml += '<li>Find your schema files in the <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">shared-resources/outputs/schema/</code> folders</li>';
-    summaryHtml += '<li>Each product has a Squarespace-ready HTML file</li>';
-    summaryHtml += '<li>Copy-paste the HTML into Squarespace Code Blocks</li>';
-    summaryHtml += '<li>Validate with <a href="https://search.google.com/test/rich-results" target="_blank" style="color: #007bff; text-decoration: underline;">Google Rich Results Test</a></li>';
-    summaryHtml += '</ul>';
+    summaryHtml += '<ol style="margin: 0; padding-left: 1.5rem; color: #004085; line-height: 1.8;">';
+    summaryHtml += '<li>Click <strong>“Sync Product JSONs &amp; Deploy to GitHub”</strong> below to copy the new <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">_schema.json</code> files into <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">alanranger-schema/</code>, remove stale ones, then commit + push to GitHub Pages.</li>';
+    summaryHtml += '<li>GitHub Pages auto-deploys to <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">https://schema.alanranger.com/&lt;slug&gt;_schema.json</code> (1–5 min, may take longer to clear Fastly CDN).</li>';
+    summaryHtml += '<li>The global Product Schema script loader (already injected site-wide in the Squarespace header) auto-fetches the JSON for each product page — <strong>no per-page copy-paste required</strong>.</li>';
+    summaryHtml += '<li>Spot-check a live product page with <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener" style="color: #007bff; text-decoration: underline;">Google Rich Results Test</a> once the CDN has refreshed.</li>';
+    summaryHtml += '</ol>';
+    summaryHtml += '<p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: #004085; font-style: italic;">The legacy “copy-paste HTML into a Squarespace Code Block” workflow is no longer used — products are served from <code style="background: #cbd5e0; padding: 2px 4px; border-radius: 3px;">schema.alanranger.com</code> via the script loader.</p>';
     summaryHtml += '</div>';
     
     summaryHtml += '<div style="text-align: center; margin-top: 1.5rem;">';
