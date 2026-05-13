@@ -2478,18 +2478,23 @@
           <div id="mergeConsoleOutput" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.75rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
         </div>
 
-        <!-- STEP 3c: Upload Merged Dataset (for Step 4) -->
-        <div style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
-          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;"> Step 3c – Upload Merged Dataset</h3>
+        <!-- STEP 3c: Upload Merged Dataset (HIDDEN — vestigial from earlier pipeline design).
+             The current pipeline doesn't read this XLSX. Step 3b's merge script writes
+             `shared-resources/csv processed/03 – combined_product_reviews.csv` directly, and
+             Step 4 (`scripts/generate-product-schema.py`) consumes that CSV. The DOM elements
+             (file input, progress bar, status text) are kept so existing change-listeners + the
+             `markComplete(3, ...)` call at the bottom of this file don't throw, but the panel
+             is hidden so users get a fully automatic 3a → 3b → 4 flow without a manual upload. -->
+        <div style="display: none; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; background: #f7fafc;">
+          <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;"> Step 3c – Upload Merged Dataset (hidden — auto-handled by Step 3b)</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
-            After merging reviews, upload the final merged file for schema generation.<br>
-            File: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">03 – products_with_review_data_final.xlsx</code>
+            Vestigial. Step 3b already produces the file Step 4 reads.
           </p>
-          <input type="file" id="file-step3" accept=".xlsx" style="margin-top: 0.75rem; display: block; font-size: 0.875rem;" />
-          <div id="progress-step3" class="progress" style="display: none; margin-top: 0.75rem; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+          <input type="file" id="file-step3" accept=".xlsx" aria-label="Hidden vestigial upload" />
+          <div id="progress-step3" class="progress" style="display: none; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
             <div class="progress-bar" style="height: 8px; background: #E57200; border-radius: 4px; transition: width 0.3s ease; width: 0%;"></div>
           </div>
-          <p id="status-step3" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.5rem;"></p>
+          <p id="status-step3" style="font-size: 0.875rem; color: #4a5568;"></p>
         </div>
 
         <!-- STEP 4 -->
@@ -2497,8 +2502,8 @@
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">⚽ Step 4 – Generate Product Schema</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             <strong>What happens:</strong> Generates JSON-LD schema files from your merged review data.<br>
-            <strong>When:</strong> Runs when you click <strong>"Generate Schema (Step 4)"</strong> below — after you've uploaded the reviewed XLSX in Step 3c.<br>
-            <strong>What you need to do:</strong> Complete Step 3c first (upload <code>03 – products_with_review_data_final.xlsx</code>), then click the button. Schema files will be ready in a couple of minutes.
+            <strong>When:</strong> Runs automatically after Step 3b completes (the merge script in 3b produces the canonical <code>03 – combined_product_reviews.csv</code> that Step 4 reads).<br>
+            <strong>What you need to do:</strong> Nothing — just wait. The button below is a manual fallback if you need to re-run Step 4 in isolation.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></li>
@@ -26485,7 +26490,7 @@ exit`;
             nextStep: 'Step 3b will start automatically to merge reviews.', 
             file: 'inputs-files/workflow/03b – google_reviews.csv' 
           },
-          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Upload your final reviewed XLSX in Step 3c, then click "Generate Schema (Step 4)".', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
+          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products. Reviews that couldn\'t be tied to a specific product are dropped per Google policy.', nextStep: 'Step 4 will start automatically to generate product schemas.', file: 'shared-resources/csv processed/03 – combined_product_reviews.csv' },
           4: { 
             name: 'Generate Product Schema', 
             message: productCount 
@@ -27083,15 +27088,16 @@ exit`;
         if (consoleOutput) {
           consoleOutput.textContent += '\n Merge Summary:\n';
           consoleOutput.textContent += '   - Trustpilot + Google reviews combined\n';
-          consoleOutput.textContent += '   - Low ratings filtered out\n';
-          consoleOutput.textContent += '   - Reviews mapped to products\n';
-          consoleOutput.textContent += '   - Duplicates removed\n';
-          consoleOutput.textContent += '\n Next: upload your reviewed XLSX in Step 3c, then click "Generate Schema (Step 4)".\n';
+          consoleOutput.textContent += '   - Low ratings filtered out (<4 stars)\n';
+          consoleOutput.textContent += '   - Reviews mapped to products (unmatched dropped per Google policy)\n';
+          consoleOutput.textContent += '   - Duplicates removed; output sorted by date (newest first)\n';
+          consoleOutput.textContent += '\n Step 4 will start automatically in 2 seconds...\n';
         }
 
-        // NOTE: do not auto-chain to Step 4 here.
-        // Step 3c is the user's "reviewed XLSX" checkpoint and was previously swallowed by a 2-second
-        // chainNextStep(generateProductSchema) timer. Step 4 is fired manually via #run-step4.
+        // Auto-chain to Step 4. The merge script already produces the canonical
+        // `03 – combined_product_reviews.csv` that Step 4 reads — there is no manual
+        // checkpoint between 3b and 4 in the current pipeline.
+        chainNextStep(generateProductSchema, 2000);
       });
     }
 

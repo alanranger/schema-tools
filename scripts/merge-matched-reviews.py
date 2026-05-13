@@ -125,17 +125,33 @@ elif 'comment' in google_df.columns:
 elif 'reviewBody' not in google_df.columns:
     google_df['reviewBody'] = ''
 
-# Ensure date column exists
-if 'date' not in trustpilot_df.columns:
-    # Try to find date column
-    for col in ['review_created_(utc)', 'date', 'created_at']:
-        if col in trustpilot_df.columns:
-            trustpilot_df['date'] = trustpilot_df[col]
-            break
-if 'date' not in google_df.columns:
-    google_df['date'] = ''
+# Coalesce date column from source-specific columns so every row has a usable `date`.
+# Both matched CSVs already have a `date` column, but it can be partly-populated (Trustpilot)
+# or fully empty (Google — dates live in `date_parsed`). Without this coalesce, the sort step
+# below puts all Google reviews at the bottom regardless of how recent they are.
+def _coalesce_date(df, candidate_cols):
+    """Return a Series of parsed datetimes, taking the first non-null across candidate columns."""
+    parsed = []
+    for col in candidate_cols:
+        if col in df.columns:
+            parsed.append(pd.to_datetime(df[col], errors='coerce'))
+    if not parsed:
+        return pd.Series([pd.NaT] * len(df), index=df.index)
+    combined = parsed[0]
+    for s in parsed[1:]:
+        combined = combined.fillna(s)
+    return combined
+
+trustpilot_df['date'] = _coalesce_date(
+    trustpilot_df, ['date', 'review_created_(utc)', 'created_at']
+)
+google_df['date'] = _coalesce_date(
+    google_df, ['date', 'date_parsed', 'createTime']
+)
 
 print("Column standardization complete")
+print(f"   Trustpilot rows with a usable date: {trustpilot_df['date'].notna().sum()}/{len(trustpilot_df)}")
+print(f"   Google rows with a usable date:     {google_df['date'].notna().sum()}/{len(google_df)}")
 print()
 
 # Deduplicate
