@@ -2497,8 +2497,8 @@
           <h3 style="font-weight: 600; font-size: 1.125rem; color: #2d3748; margin: 0 0 0.5rem 0;">⚽ Step 4 – Generate Product Schema</h3>
           <p style="font-size: 0.875rem; color: #4a5568; margin: 0.25rem 0; line-height: 1.6;">
             <strong>What happens:</strong> Generates JSON-LD schema files from your merged review data.<br>
-            <strong>When:</strong> Runs automatically after Step 3b completes.<br>
-            <strong>What you need to do:</strong> Nothing - just wait for it to finish. Your schema files will be ready!
+            <strong>When:</strong> Runs when you click <strong>"Generate Schema (Step 4)"</strong> below — after you've uploaded the reviewed XLSX in Step 3c.<br>
+            <strong>What you need to do:</strong> Complete Step 3c first (upload <code>03 – products_with_review_data_final.xlsx</code>), then click the button. Schema files will be ready in a couple of minutes.
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></li>
@@ -26485,7 +26485,7 @@ exit`;
             nextStep: 'Step 3b will start automatically to merge reviews.', 
             file: 'inputs-files/workflow/03b – google_reviews.csv' 
           },
-          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Step 4 will start automatically to generate product schema.', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
+          '3b': { name: 'Merge Reviews', message: 'Trustpilot and Google reviews have been combined, filtered (≥4★), and mapped to products.', nextStep: 'Upload your final reviewed XLSX in Step 3c, then click "Generate Schema (Step 4)".', file: 'inputs-files/workflow/03 – combined_product_reviews.csv' },
           4: { 
             name: 'Generate Product Schema', 
             message: productCount 
@@ -27086,11 +27086,12 @@ exit`;
           consoleOutput.textContent += '   - Low ratings filtered out\n';
           consoleOutput.textContent += '   - Reviews mapped to products\n';
           consoleOutput.textContent += '   - Duplicates removed\n';
-          consoleOutput.textContent += '\n Step 4 will start automatically in 2 seconds...\n';
+          consoleOutput.textContent += '\n Next: upload your reviewed XLSX in Step 3c, then click "Generate Schema (Step 4)".\n';
         }
-        
-        // Auto-chain to Step 4
-        chainNextStep(generateProductSchema, 2000);
+
+        // NOTE: do not auto-chain to Step 4 here.
+        // Step 3c is the user's "reviewed XLSX" checkpoint and was previously swallowed by a 2-second
+        // chainNextStep(generateProductSchema) timer. Step 4 is fired manually via #run-step4.
       });
     }
 
