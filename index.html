@@ -18140,45 +18140,50 @@ ${minifiedJson}
     return '';
   }
 
+  // Head-tag source of truth for landing WebPage/Service name + description.
+  // Reads ONLY from live HTML head — never from existing on-page JSON-LD.
+  // Priority: name ← og:title → <title>; description ← meta description → og:description
+  function extractLandingHeadTags(html, url) {
+    if (!html) return { title: '', description: '' };
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(html, 'text/html');
+    } catch (e) {
+      return { title: '', description: '' };
+    }
+
+    let title = '';
+    const ogTitle = doc.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      title = landingCleanText(ogTitle.getAttribute('content') || '');
+    }
+    if (!title) {
+      const titleEl = doc.querySelector('title');
+      if (titleEl) title = landingCleanText(titleEl.textContent || '');
+    }
+    if (title) {
+      title = title.replace(/\s*[-|]\s*Alan Ranger Photography.*$/i, '').trim();
+    }
+
+    let description = '';
+    const metaDesc = doc.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      description = landingCleanText(metaDesc.getAttribute('content') || '');
+    }
+    if (!description) {
+      const ogDesc = doc.querySelector('meta[property="og:description"]');
+      if (ogDesc) description = landingCleanText(ogDesc.getAttribute('content') || '');
+    }
+
+    return { title, description };
+  }
+
   function extractLandingPageMetadata(html, url) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-
-    // Extract title
-    let title = '';
-    const titleSelectors = [
-      'meta[property="og:title"]',
-      'meta[name="twitter:title"]',
-      'title',
-      'h1'
-    ];
-    for (const selector of titleSelectors) {
-      const element = doc.querySelector(selector);
-      if (element) {
-        title = element.getAttribute('content') || element.textContent.trim();
-        if (title) {
-          // Clean up title (remove site name suffix if present)
-          title = title.replace(/\s*[-|]\s*Alan Ranger Photography.*$/i, '').trim();
-          break;
-        }
-      }
-    }
-
-    // Extract description
-    let description = '';
-    const descSelectors = [
-      'meta[name="description"]',
-      'meta[property="og:description"]',
-      'meta[name="twitter:description"]'
-    ];
-    for (const selector of descSelectors) {
-      const element = doc.querySelector(selector);
-      if (element) {
-        description = element.getAttribute('content') || '';
-        if (description) break;
-      }
-    }
-
+    const head = extractLandingHeadTags(html, url);
+    const title = head.title;
+    const description = head.description;
     // Extract image: prefer og:image, but the site icon/logo is not a real page image,
     // so fall back to the first genuine in-content image when og:image is missing/icon/logo.
     let image = '';
@@ -18834,10 +18839,17 @@ ${minifiedJson}
     webPageNode['@type'] = 'WebPage';
     webPageNode['@id'] = `${pageUrl}#webpage`;
     webPageNode.url = pageUrl;
-    // Live page is the source of truth: live title/description override any stale on-page values.
-    webPageNode.name = pageTitle || webPageNode.name || 'Landing Page';
-    webPageNode.headline = webPageNode.name;
-    webPageNode.description = landingCleanText(pageDescription || webPageNode.description || '');
+    // Head tags are the only source for name/description — never inherit from merged JSON-LD.
+    delete webPageNode.name;
+    delete webPageNode.headline;
+    delete webPageNode.description;
+    if (pageTitle) {
+      webPageNode.name = pageTitle;
+      webPageNode.headline = pageTitle;
+    }
+    if (pageDescription) {
+      webPageNode.description = landingCleanText(pageDescription);
+    }
     webPageNode.inLanguage = webPageNode.inLanguage || 'en-GB';
     webPageNode.isPartOf = { '@id': WEBSITE_ID };
     webPageNode.publisher = { '@id': ORG_ID };
@@ -18858,8 +18870,11 @@ ${minifiedJson}
       {};
     serviceNode['@type'] = 'Service';
     serviceNode['@id'] = `${pageUrl || serviceNode.url || 'https://www.alanranger.com'}#service`;
-    serviceNode.name = pageTitle || serviceNode.name || 'Photography Service';
-    serviceNode.description = landingCleanText(pageDescription || serviceNode.description || '');
+    // Head tags are the only source for name/description — never inherit from merged JSON-LD.
+    delete serviceNode.name;
+    delete serviceNode.description;
+    if (pageTitle) serviceNode.name = pageTitle;
+    if (pageDescription) serviceNode.description = landingCleanText(pageDescription);
     if (pageUrl) serviceNode.url = pageUrl;
     serviceNode.provider = {
       '@id': ORG_ID,
@@ -19154,15 +19169,16 @@ ${minifiedJson}
     });
   }
 
-  function normalizeLandingSchemaOutput(finalSchema, selectedTypes = [], currentUrl = '') {
+  function normalizeLandingSchemaOutput(finalSchema, selectedTypes = [], currentUrl = '', headMeta = null) {
     if (!finalSchema || typeof finalSchema !== 'object') return finalSchema;
     const normalized = JSON.parse(JSON.stringify(finalSchema));
     const originalGraph = Array.isArray(normalized['@graph']) ? normalized['@graph'] : [normalized];
     let graph = Array.isArray(originalGraph) ? originalGraph : [];
     const pageUrl = String(currentUrl || '').trim();
-    const pageTitle = document.getElementById('landingPageTitle')?.value?.trim() || '';
-    const pageDescription = document.getElementById('landingPageDescription')?.value?.trim() || '';
-    const pageImage = document.getElementById('landingPageImage')?.value?.trim() || '';
+    // WebPage/Service name + description come ONLY from head tags (never form fields or merged JSON-LD).
+    const pageTitle = landingCleanText(String(headMeta?.title || '').trim());
+    const pageDescription = landingCleanText(String(headMeta?.description || '').trim());
+    const pageImage = document.getElementById('landingPageImage')?.value?.trim() || headMeta?.image || '';
 
     graph.forEach((node) => landingNormalizeNodeUrls(node, pageUrl));
     normalizeLandingFaqAnswers(graph);
@@ -19270,26 +19286,27 @@ ${minifiedJson}
       landingPageHtml = html;
       addLandingDebugLog(` Fetched HTML (${html.length} characters)`);
 
-      // R1: the live page is the single source of truth. Refresh title/description/image
-      // from the freshly fetched DOM so output can never lag behind stale form fields.
+      // R1: head tags are the single source of truth for title/description (never JSON-LD).
       try {
         landingLiveMeta = extractLandingPageMetadata(html, url);
-        if (landingLiveMeta.title) {
-          title = landingLiveMeta.title;
-          document.getElementById('landingPageTitle').value = landingLiveMeta.title;
+        const head = extractLandingHeadTags(html, url);
+        if (head.title) {
+          title = head.title;
+          document.getElementById('landingPageTitle').value = head.title;
         }
-        if (landingLiveMeta.description) {
-          description = landingLiveMeta.description;
-          document.getElementById('landingPageDescription').value = landingLiveMeta.description.substring(0, 170);
+        if (head.description) {
+          description = head.description;
+          document.getElementById('landingPageDescription').value = head.description.substring(0, 170);
         }
         if (landingLiveMeta.image) {
           image = landingLiveMeta.image;
           document.getElementById('landingPageImage').value = landingLiveMeta.image;
         }
+        landingLiveMeta = { ...landingLiveMeta, title: head.title || landingLiveMeta.title, description: head.description || landingLiveMeta.description };
         if (typeof updateLandingDescriptionCounter === 'function') updateLandingDescriptionCounter();
-        addLandingDebugLog('✅ Refreshed title/description/image from live page (live wins)');
+        addLandingDebugLog(`✅ Head tags: title="${head.title || 'n/a'}", description="${(head.description || '').substring(0, 60)}..."`);
       } catch (metaErr) {
-        addLandingDebugLog(`⚽ Could not refresh live metadata: ${metaErr.message}`);
+        addLandingDebugLog(`⚽ Could not refresh head-tag metadata: ${metaErr.message}`);
       }
 
       addLandingDebugLog(` Searching for JSON-LD blocks...`);
@@ -19370,12 +19387,12 @@ ${minifiedJson}
 
     progressBar.style.width = '40%';
 
-    // Truncate description to 170 chars
-    let finalDescription = description;
-    if (finalDescription.length > 170) {
-      finalDescription = finalDescription.substring(0, 170);
-      addLandingDebugLog(`⚽ Description truncated to 170 characters`);
-    }
+    // Schema name/description always from head tags when available (full description, not form-truncated).
+    const headTitle = landingLiveMeta?.title || title;
+    const headDescription = landingLiveMeta?.description || description;
+    title = headTitle;
+    description = headDescription;
+    let finalDescription = headDescription;
 
     // STEP 2: Determine actual schema type (auto-detect if needed)
     addLandingDebugLog('');
@@ -19713,7 +19730,7 @@ ${minifiedJson}
     addLandingDebugLog(' STEP 6: Formatting final schema...');
     
     try {
-      finalSchema = normalizeLandingSchemaOutput(finalSchema, selectedTypes, url);
+      finalSchema = normalizeLandingSchemaOutput(finalSchema, selectedTypes, url, landingLiveMeta);
       const schemaJson = JSON.stringify(finalSchema, null, 2);
       
       if (!outputText) {
