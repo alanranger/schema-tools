@@ -2996,6 +2996,23 @@
         </div>
       </div>
       
+      <!-- Self-check: live page vs generated schema (landing only) -->
+      <div id="landingSelfCheckPanel" style="display: none; margin-bottom: 1.5rem; padding: 1.25rem; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px;">
+        <h4 style="margin: 0 0 0.75rem 0; color: #92400e; font-size: 1.05rem; font-weight: 600;">Self-check — live page vs generated schema</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+              <tr style="background:#fef3c7;">
+                <th style="padding:.5rem;text-align:left;border-bottom:2px solid #fcd34d;color:#92400e;">Field</th>
+                <th style="padding:.5rem;text-align:center;border-bottom:2px solid #fcd34d;color:#92400e;">Match</th>
+                <th style="padding:.5rem;text-align:left;border-bottom:2px solid #fcd34d;color:#92400e;">Detail</th>
+              </tr>
+            </thead>
+            <tbody id="landingSelfCheckBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="code-card" style="position: relative;">
         <button onclick="copyLandingSchema()" 
                 style="position: absolute; top: 0.75rem; right: 0.75rem; background:#2563eb; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; font-size:0.875rem; font-weight: 500; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
@@ -18298,12 +18315,8 @@ ${minifiedJson}
       return 'Product';
     }
 
-    // ItemList detection (category/gateway pages)
-    if (text.includes('category') || text.includes('list') || text.includes('all ') || 
-        url.includes('/category/') || url.includes('/all-') || url.includes('/shop') ||
-        text.includes('browse') || text.includes('view all')) {
-      return 'ItemList';
-    }
+    // R3: ItemList is intentionally NOT auto-detected for landing pages. It is only
+    // emitted when the user explicitly selects "ItemList" from the dropdown.
 
     // Default to Service for most landing pages (services are more common than products)
     return 'Service';
@@ -18758,7 +18771,7 @@ ${minifiedJson}
     orgNode.legalName = orgNode.legalName || orgNode.name;
     orgNode.url = landingNormalizeUrlValue(orgNode.url || 'https://www.alanranger.com/', pageUrl);
     orgNode.email = orgNode.email || 'info@alanranger.com';
-    orgNode.telephone = orgNode.telephone || '+44 7817 017994';
+    orgNode.telephone = orgNode.telephone || '+44 781 701 7994';
     orgNode.image = landingNormalizeUrlValue(
       orgNode.image || 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
       pageUrl
@@ -19019,6 +19032,97 @@ ${minifiedJson}
     return `TLDR: ${safeTitle || 'This page'} explains the offer, who it is for, and how to book or enquire so you can choose the best next step quickly.`;
   }
 
+  // R2: Mirror the visible FAQ accordion exactly. Parses the page's .ar-faq block
+  // (summary = question, joined <p> = answer). Returns a FAQPage node, or null when
+  // the page has no .ar-faq block (in which case no FAQPage is emitted). Landing-only.
+  function scrapeLandingFaqFromHtml(html, pageUrl) {
+    if (!html) return null;
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(html, 'text/html');
+    } catch (e) {
+      return null;
+    }
+    const faqRoots = doc.querySelectorAll('.ar-faq');
+    if (!faqRoots.length) return null;
+    const questions = [];
+    faqRoots.forEach((root) => {
+      root.querySelectorAll('details').forEach((det) => {
+        const summary = det.querySelector('summary');
+        const question = summary ? landingCleanText(summary.textContent || '') : '';
+        const answer = Array.from(det.querySelectorAll('p'))
+          .map((p) => landingCleanText(p.textContent || ''))
+          .filter(Boolean)
+          .join(' ');
+        if (question && answer) {
+          questions.push({
+            '@type': 'Question',
+            name: question,
+            acceptedAnswer: { '@type': 'Answer', text: answer }
+          });
+        }
+      });
+    });
+    if (!questions.length) return null;
+    const base = String(pageUrl || '').trim().replace(/\/+$/, '') || 'https://www.alanranger.com';
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      '@id': `${base}#faq`,
+      mainEntity: questions
+    };
+  }
+
+  function stripLandingFaqPages(schema) {
+    if (!schema || typeof schema !== 'object') return schema;
+    if (Array.isArray(schema['@graph'])) {
+      return { ...schema, '@graph': schema['@graph'].filter((node) => !landingHasType(node, 'FAQPage')) };
+    }
+    return landingHasType(schema, 'FAQPage') ? { '@context': 'https://schema.org', '@graph': [] } : schema;
+  }
+
+  function landingFindGraphNode(schema, typeName) {
+    const nodes = Array.isArray(schema?.['@graph']) ? schema['@graph'] : (schema ? [schema] : []);
+    return nodes.find((node) => landingHasType(node, typeName)) || null;
+  }
+
+  // R6: Self-check panel — compares the live page metadata against the generated schema.
+  function renderLandingSelfCheck(liveMeta, finalSchema) {
+    const panel = document.getElementById('landingSelfCheckPanel');
+    const body = document.getElementById('landingSelfCheckBody');
+    if (!panel || !body) return;
+    const webPage = landingFindGraphNode(finalSchema, 'WebPage');
+    const imageNode = landingFindGraphNode(finalSchema, 'ImageObject');
+    const faqNode = landingFindGraphNode(finalSchema, 'FAQPage');
+    const itemListNode = landingFindGraphNode(finalSchema, 'ItemList');
+    const live = liveMeta || {};
+    const norm = (v) => landingCleanText(String(v || '')).toLowerCase().replace(/\s+/g, ' ').trim();
+    const matchText = (a, b, n = 25) => {
+      const A = norm(a);
+      const B = norm(b);
+      if (!A || !B) return false;
+      return A === B || A.startsWith(B.slice(0, n)) || B.startsWith(A.slice(0, n));
+    };
+    const rows = [];
+    const addRow = (label, ok, detail) => rows.push(
+      `<tr><td style="padding:.5rem;border-bottom:1px solid #fde68a;">${label}</td>` +
+      `<td style="padding:.5rem;text-align:center;border-bottom:1px solid #fde68a;">${ok ? '\u2705' : '\u26A0\uFE0F'}</td>` +
+      `<td style="padding:.5rem;border-bottom:1px solid #fde68a;color:#475569;">${detail}</td></tr>`
+    );
+    addRow('WebPage.name vs live title', matchText(webPage?.name, live.title),
+      `live: "${(live.title || '\u2014')}" \u2192 schema: "${(webPage?.name || '\u2014')}"`);
+    addRow('WebPage.description vs live meta', matchText(webPage?.description, live.description, 40),
+      `schema: "${((webPage?.description || '\u2014')).slice(0, 90)}"`);
+    addRow('primaryImage vs og:image', !!(imageNode && live.image && norm(imageNode.contentUrl || imageNode.url) === norm(live.image)),
+      live.image ? 'og:image used as primaryImage' : 'no og:image found on page');
+    addRow('FAQ mirrors visible .ar-faq', true,
+      faqNode ? `${(faqNode.mainEntity || []).length} Q&As scraped from .ar-faq` : 'no .ar-faq block \u2192 FAQPage omitted');
+    addRow('ItemList absent (landing rule)', !itemListNode,
+      itemListNode ? 'ItemList present \u2014 was this opted in?' : 'absent (correct for landing pages)');
+    body.innerHTML = rows.join('');
+    panel.style.display = 'block';
+  }
+
   function dedupeLandingGraph(graph) {
     const seenKeys = new Set();
     return graph.filter((node) => {
@@ -19081,9 +19185,9 @@ ${minifiedJson}
     landingDebugLog = '';
     addLandingDebugLog(' Starting enhanced schema generation with analysis...');
     
-    const title = document.getElementById('landingPageTitle').value.trim();
-    const description = document.getElementById('landingPageDescription').value.trim();
-    const image = document.getElementById('landingPageImage').value.trim();
+    let title = document.getElementById('landingPageTitle').value.trim();
+    let description = document.getElementById('landingPageDescription').value.trim();
+    let image = document.getElementById('landingPageImage').value.trim();
     const url = document.getElementById('landingPageUrlFinal').value.trim();
     const schemaType = document.getElementById('landingSchemaType').value;
     const outputDiv = document.getElementById('landingSchemaOutput');
@@ -19125,6 +19229,8 @@ ${minifiedJson}
     let existingAnalysis = null;
     let detectedSchemaTypes = [];
     let hasExistingLandingFaqContent = false;
+    let landingPageHtml = '';
+    let landingLiveMeta = null;
     
     try {
       addLandingDebugLog('');
@@ -19133,7 +19239,31 @@ ${minifiedJson}
       progressBar.style.width = '20%';
       
       const html = await fetchProductPage(url);
+      landingPageHtml = html;
       addLandingDebugLog(` Fetched HTML (${html.length} characters)`);
+
+      // R1: the live page is the single source of truth. Refresh title/description/image
+      // from the freshly fetched DOM so output can never lag behind stale form fields.
+      try {
+        landingLiveMeta = extractLandingPageMetadata(html, url);
+        if (landingLiveMeta.title) {
+          title = landingLiveMeta.title;
+          document.getElementById('landingPageTitle').value = landingLiveMeta.title;
+        }
+        if (landingLiveMeta.description) {
+          description = landingLiveMeta.description;
+          document.getElementById('landingPageDescription').value = landingLiveMeta.description.substring(0, 170);
+        }
+        if (landingLiveMeta.image) {
+          image = landingLiveMeta.image;
+          document.getElementById('landingPageImage').value = landingLiveMeta.image;
+        }
+        if (typeof updateLandingDescriptionCounter === 'function') updateLandingDescriptionCounter();
+        addLandingDebugLog('✅ Refreshed title/description/image from live page (live wins)');
+      } catch (metaErr) {
+        addLandingDebugLog(`⚽ Could not refresh live metadata: ${metaErr.message}`);
+      }
+
       addLandingDebugLog(` Searching for JSON-LD blocks...`);
       
       const htmlForSchemaScan = await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog);
@@ -19249,6 +19379,24 @@ ${minifiedJson}
 
     // STEP 3: Get selected schema types from UI
     const selectedTypes = getSelectedSchemaTypes();
+
+    // R3: Landing pages do not emit an ItemList. It is only included when the user
+    // explicitly chooses "ItemList" from the schema-type dropdown (explicit opt-in).
+    // This stops auto-detected/auto-checked ItemList nodes leaking into landing schema.
+    const landingItemListOptIn = (schemaType === 'ItemList');
+    if (!landingItemListOptIn) {
+      let removedItemList = false;
+      for (let i = selectedTypes.length - 1; i >= 0; i--) {
+        if (selectedTypes[i] === 'ItemList') {
+          selectedTypes.splice(i, 1);
+          removedItemList = true;
+        }
+      }
+      if (removedItemList) {
+        addLandingDebugLog('⚽ ItemList removed — landing pages omit ItemList unless explicitly selected in the dropdown');
+      }
+    }
+
     if (selectedTypes.length > 0 && !selectedTypes.includes(actualSchemaType)) {
       selectedTypes.push(actualSchemaType);
       addLandingDebugLog(`⚽ Auto-including selected main schema type: ${actualSchemaType}`);
@@ -19441,7 +19589,7 @@ ${minifiedJson}
         if (enhanced['@id'] === 'https://www.alanranger.com/#org' || 
             (Array.isArray(enhanced['@type']) && enhanced['@type'].includes('Organization'))) {
           if (!enhanced.telephone) {
-            enhanced.telephone = '+44 7817 017994';
+            enhanced.telephone = '+44 781 701 7994';
           }
           if (!enhanced.image) {
             enhanced.image = 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w';
@@ -19511,26 +19659,24 @@ ${minifiedJson}
       }
     }
 
-    // STEP 5B: Add FAQPage only when the page does not already contain FAQ content/signals.
-    const hasFaqInFinalSchema = landingSchemaHasFaqPage(finalSchema);
-    if (!hasExistingLandingFaqContent && !hasFaqInFinalSchema && String(url || '').trim()) {
-      const generatedLandingFaq = generateLandingFaqSchema(url, title, finalDescription, actualSchemaType);
-      if (generatedLandingFaq) {
-        const baseNodes = Array.isArray(finalSchema?.['@graph'])
-          ? finalSchema['@graph']
-          : (finalSchema ? [finalSchema] : []);
-        const mergedNodes = [...baseNodes, generatedLandingFaq];
-        const faqAwareSelectedTypes = selectedTypes.includes('FAQPage')
-          ? selectedTypes
-          : [...selectedTypes, 'FAQPage'];
-        finalSchema = buildEnhancedSchema(mergedNodes, faqAwareSelectedTypes);
-        improvements.push('✅ Added fallback FAQPage (no existing FAQ content/signals detected on page)');
-        addLandingDebugLog('✅ Added fallback FAQPage because no existing FAQ was detected');
-      }
-    } else if (hasFaqInFinalSchema) {
-      addLandingDebugLog('ℹ FAQPage already present in final schema graph — skipping fallback FAQ generation');
-    } else if (hasExistingLandingFaqContent) {
-      addLandingDebugLog('ℹ Existing FAQ content/signals detected on page — skipping fallback FAQ generation');
+    // STEP 5B: FAQPage must mirror the visible .ar-faq accordion exactly (R2).
+    // The visible accordion is the single source of truth, so we strip any pre-existing
+    // or auto-generated FAQPage nodes and rebuild from the scraped page. If the page has
+    // no .ar-faq block, FAQPage is omitted entirely — we never fabricate Q&As.
+    const scrapedLandingFaq = scrapeLandingFaqFromHtml(landingPageHtml, url);
+    finalSchema = stripLandingFaqPages(finalSchema);
+    if (scrapedLandingFaq) {
+      const baseNodes = Array.isArray(finalSchema?.['@graph'])
+        ? finalSchema['@graph']
+        : (finalSchema ? [finalSchema] : []);
+      const faqAwareSelectedTypes = selectedTypes.includes('FAQPage')
+        ? selectedTypes
+        : [...selectedTypes, 'FAQPage'];
+      finalSchema = buildEnhancedSchema([...baseNodes, scrapedLandingFaq], faqAwareSelectedTypes);
+      improvements.push(`✅ FAQPage mirrors the visible .ar-faq accordion (${scrapedLandingFaq.mainEntity.length} Q&As)`);
+      addLandingDebugLog(`✅ FAQPage built from visible .ar-faq accordion (${scrapedLandingFaq.mainEntity.length} questions)`);
+    } else {
+      addLandingDebugLog('ℹ No .ar-faq block found on page — FAQPage omitted (no fabricated FAQ)');
     }
 
     // STEP 6: Format and display
@@ -19558,6 +19704,13 @@ ${minifiedJson}
       outputText.textContent = schemaJson;
       outputDiv.style.display = 'block';
       progressBar.style.width = '100%';
+
+      // R6: show the live-vs-generated self-check checklist
+      try {
+        renderLandingSelfCheck(landingLiveMeta, finalSchema);
+      } catch (selfCheckErr) {
+        addLandingDebugLog(`⚽ Self-check render skipped: ${selfCheckErr.message}`);
+      }
       
       // Build and display results table
       const resultsPanel = document.getElementById('landingSchemaResultsPanel');
