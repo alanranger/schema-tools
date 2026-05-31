@@ -18115,6 +18115,31 @@ ${minifiedJson}
     }
   }
 
+  function landingIsIconOrLogo(url) {
+    const u = String(url || '').toLowerCase();
+    return u.includes('icon') || u.includes('logo');
+  }
+
+  function landingNormalizeImageUrl(image, pageUrl) {
+    if (!image) return '';
+    if (image.startsWith('//')) image = 'https:' + image;
+    else if (image.startsWith('/')) {
+      try { image = new URL(pageUrl).origin + image; } catch (e) { /* keep as-is */ }
+    }
+    if (image.startsWith('http://')) image = image.replace('http://', 'https://');
+    return image;
+  }
+
+  // Picks the first genuine in-content image, skipping the site icon/logo.
+  function landingPickContentImage(doc) {
+    const imgs = Array.from(doc.querySelectorAll('img'));
+    for (const img of imgs) {
+      const src = img.getAttribute('data-src') || img.getAttribute('src') || '';
+      if (/^https?:\/\//i.test(src) && !landingIsIconOrLogo(src)) return src;
+    }
+    return '';
+  }
+
   function extractLandingPageMetadata(html, url) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
@@ -18154,7 +18179,8 @@ ${minifiedJson}
       }
     }
 
-    // Extract image
+    // Extract image: prefer og:image, but the site icon/logo is not a real page image,
+    // so fall back to the first genuine in-content image when og:image is missing/icon/logo.
     let image = '';
     const imageSelectors = [
       'meta[property="og:image"]',
@@ -18164,21 +18190,15 @@ ${minifiedJson}
     for (const selector of imageSelectors) {
       const element = doc.querySelector(selector);
       if (element) {
-        image = element.getAttribute('content') || '';
-        if (image) {
-          // Normalize image URL
-          if (image.startsWith('//')) image = 'https:' + image;
-          else if (image.startsWith('/')) {
-            const urlObj = new URL(url);
-            image = urlObj.origin + image;
-          }
-          if (image.startsWith('http://')) {
-            image = image.replace('http://', 'https://');
-          }
-          break;
-        }
+        const candidate = element.getAttribute('content') || '';
+        if (candidate) { image = candidate; break; }
       }
     }
+    if (!image || landingIsIconOrLogo(image)) {
+      const contentImage = landingPickContentImage(doc);
+      if (contentImage) image = contentImage;
+    }
+    image = landingNormalizeImageUrl(image, url);
 
     return { title, description, image, url };
   }
@@ -18771,7 +18791,7 @@ ${minifiedJson}
     orgNode.legalName = orgNode.legalName || orgNode.name;
     orgNode.url = landingNormalizeUrlValue(orgNode.url || 'https://www.alanranger.com/', pageUrl);
     orgNode.email = orgNode.email || 'info@alanranger.com';
-    orgNode.telephone = orgNode.telephone || '+44 781 701 7994';
+    orgNode.telephone = '+44 781 701 7994';
     orgNode.image = landingNormalizeUrlValue(
       orgNode.image || 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
       pageUrl
@@ -18814,9 +18834,10 @@ ${minifiedJson}
     webPageNode['@type'] = 'WebPage';
     webPageNode['@id'] = `${pageUrl}#webpage`;
     webPageNode.url = pageUrl;
-    webPageNode.name = webPageNode.name || pageTitle || 'Landing Page';
-    webPageNode.headline = webPageNode.headline || webPageNode.name;
-    webPageNode.description = landingCleanText(webPageNode.description || pageDescription || '');
+    // Live page is the source of truth: live title/description override any stale on-page values.
+    webPageNode.name = pageTitle || webPageNode.name || 'Landing Page';
+    webPageNode.headline = webPageNode.name;
+    webPageNode.description = landingCleanText(pageDescription || webPageNode.description || '');
     webPageNode.inLanguage = webPageNode.inLanguage || 'en-GB';
     webPageNode.isPartOf = { '@id': WEBSITE_ID };
     webPageNode.publisher = { '@id': ORG_ID };
@@ -18837,8 +18858,8 @@ ${minifiedJson}
       {};
     serviceNode['@type'] = 'Service';
     serviceNode['@id'] = `${pageUrl || serviceNode.url || 'https://www.alanranger.com'}#service`;
-    serviceNode.name = serviceNode.name || pageTitle || 'Photography Service';
-    serviceNode.description = landingCleanText(serviceNode.description || pageDescription || '');
+    serviceNode.name = pageTitle || serviceNode.name || 'Photography Service';
+    serviceNode.description = landingCleanText(pageDescription || serviceNode.description || '');
     if (pageUrl) serviceNode.url = pageUrl;
     serviceNode.provider = {
       '@id': ORG_ID,
@@ -18848,7 +18869,7 @@ ${minifiedJson}
     };
     serviceNode.areaServed = serviceNode.areaServed || { '@type': 'Country', name: 'GB' };
     if (pageImage && String(pageImage).startsWith('http')) {
-      serviceNode.image = landingNormalizeUrlValue(serviceNode.image || pageImage, pageUrl);
+      serviceNode.image = landingNormalizeUrlValue(pageImage, pageUrl);
     }
     return [...graph.filter((node) => !landingHasType(node, 'Service')), serviceNode];
   }
@@ -18880,9 +18901,9 @@ ${minifiedJson}
     const existing = graph.find((node) => node?.['@id'] === imageId) || {};
     existing['@type'] = 'ImageObject';
     existing['@id'] = imageId;
-    existing.url = landingNormalizeUrlValue(existing.url || pageImage, pageUrl);
-    existing.contentUrl = landingNormalizeUrlValue(existing.contentUrl || pageImage, pageUrl);
-    existing.name = existing.name || `${pageTitle || 'Page'} primary image`;
+    existing.url = landingNormalizeUrlValue(pageImage, pageUrl);
+    existing.contentUrl = landingNormalizeUrlValue(pageImage, pageUrl);
+    existing.name = `${pageTitle || 'Page'} primary image`;
     const withoutExisting = graph.filter((node) => node?.['@id'] !== imageId);
     return [...withoutExisting, existing];
   }
@@ -19175,6 +19196,13 @@ ${minifiedJson}
     if (landingIncludeType(selectedTypes, 'Organization') || landingIncludeType(selectedTypes, 'LocalBusiness') || landingIncludeType(selectedTypes, 'Service')) {
       graph = ensureLandingPlaceNode(graph, pageUrl);
       graph = ensureLandingServiceAreaPlaceReference(graph, pageUrl);
+    }
+
+    // R3: landing pages never carry an ItemList unless the user explicitly opted in
+    // (which pushes 'ItemList' into selectedTypes). This also removes a stale ItemList
+    // inherited from the page's previously-published schema.
+    if (!selectedTypes.includes('ItemList')) {
+      graph = graph.filter((node) => !landingHasType(node, 'ItemList'));
     }
 
     graph = dedupeLandingGraph(graph);
