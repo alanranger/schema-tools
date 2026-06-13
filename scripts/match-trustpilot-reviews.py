@@ -227,9 +227,9 @@ def match_ref_id_to_product(ref_id, name_by_slug, product_by_slug, aliases):
             if ref_id_classes_base in name_base or name_base in ref_id_classes_base:
                 return slug
     
-    # Strategy 4: Alias matching
+    # Strategy 4: Alias matching (longest phrase first)
     ref_id_lower = ref_id_normalized.lower()
-    for alias_key, alias_slug in aliases.items():
+    for alias_key, alias_slug in sorted(aliases.items(), key=lambda x: len(x[0]), reverse=True):
         if alias_slug is None:  # Skip None aliases
             continue
         if alias_key in ref_id_lower and alias_slug in product_by_slug:

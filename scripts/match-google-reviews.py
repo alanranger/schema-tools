@@ -257,8 +257,8 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
                     if event_slug in product_by_slug:
                         return event_slug
     
-    # Strategy 1: Check aliases in review text
-    for alias_key, alias_slug in aliases.items():
+    # Strategy 1: Check aliases in review text (longest phrase first — e.g. "yorkshire dales" before "yorkshire")
+    for alias_key, alias_slug in sorted(aliases.items(), key=lambda x: len(x[0]), reverse=True):
         if alias_key in combined_lower and alias_slug in product_by_slug:
             return alias_slug
     

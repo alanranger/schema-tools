@@ -25,6 +25,11 @@ PROPOSALS = CSV_PROCESSED / "13-unmatched-google-booking-proposals.csv"
 CURATED_OUT = CSV_PROCESSED / "14-google-curated-attributions.csv"
 PRODUCTS = CSV_PROCESSED / "02 – products_cleaned.xlsx"
 
+ALAN_CONFIRMED = [
+    ("Shelly Soo", "2024-12-15", "lake-district-photography-workshop"),
+    ("Dennis Jeffrey", "2020-04-27", "lake-district-photography-workshop"),
+]
+
 TEXT_RULES = [
     (r"\b(sensor clean|dust free|camera is dust)\b", "camera-sensor-clean"),
     (r"\b(lightroom|lr classic|lrc\b|light room)\b", "lightroom-courses-for-beginners-coventry"),
@@ -107,25 +112,23 @@ def main():
         proposals = pd.read_csv(PROPOSALS, encoding="utf-8-sig")
         curated = build_curated_rows(proposals)
 
-        # Explicit overrides (Alan confirmed)
-        for reviewer, date, slug in [
-            ("Shelly Soo", "2024-12-15", "lake-district-photography-workshop"),
-            ("Dennis Jeffrey", "2020-04-27", "lake-district-photography-workshop"),
-        ]:
-            mask = (curated["reviewer_name"].str.lower() == reviewer.lower()) & (
-                curated["review_date"].astype(str).str.startswith(date)
+    for reviewer, date, slug in ALAN_CONFIRMED:
+        if len(curated) > 0:
+            mask = (
+                curated["reviewer_name"].str.lower().eq(reviewer.lower())
+                & curated["review_date"].astype(str).str.startswith(date)
             )
             if mask.any():
                 curated.loc[mask, "product_slug"] = slug
                 curated.loc[mask, "source_rule"] = "alan_confirmed"
-            else:
-                curated = pd.concat([curated, pd.DataFrame([{
-                    "reviewer_name": reviewer,
-                    "review_date": date,
-                    "product_slug": slug,
-                    "source_rule": "alan_confirmed",
-                    "category": "booking_match",
-                }])], ignore_index=True)
+                continue
+        curated = pd.concat([curated, pd.DataFrame([{
+            "reviewer_name": reviewer,
+            "review_date": date,
+            "product_slug": slug,
+            "source_rule": "alan_confirmed",
+            "category": "booking_match",
+        }])], ignore_index=True)
 
     if len(curated):
         curated = curated.drop_duplicates(subset=["reviewer_name", "review_date", "product_slug"], keep="last")
