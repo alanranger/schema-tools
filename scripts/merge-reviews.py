@@ -73,6 +73,28 @@ except Exception as e:
 
 print()
 
+# Step 2b: Apply booking-curated + course/1-2-1 attributions
+print("Step 2b: Applying curated Google attributions (booking sheet + courses)...")
+print()
+try:
+    result = subprocess.run(
+        [sys.executable, str(script_dir / "apply-curated-google-attributions.py")],
+        capture_output=True,
+        text=True,
+        encoding='utf-8'
+    )
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+    if result.returncode != 0:
+        print(f"ERROR: Curated attribution step failed with code {result.returncode}")
+        sys.exit(1)
+except Exception as e:
+    print(f"ERROR running curated attribution script: {e}")
+    sys.exit(1)
+
+print()
+
 # Step 3: Merge matched reviews
 print("Step 3: Merging matched reviews...")
 print()

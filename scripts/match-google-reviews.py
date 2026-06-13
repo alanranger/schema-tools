@@ -162,11 +162,13 @@ ALIASES = {
     'urban architecture': 'urban-architecture-photography-workshops-coventry',
     'beginners': 'beginners-photography-course',
     'lightroom': 'lightroom-courses-for-beginners-coventry',
-    'macro': 'macro-photography-workshops-warwickshire',
-    'macro photography': 'macro-photography-workshops-warwickshire',
-    'abstract and macro': 'macro-photography-workshops-warwickshire',
-    'abstract macro': 'macro-photography-workshops-warwickshire',
-    'macro abstract': 'macro-photography-workshops-warwickshire',
+    'macro': 'abstract-and-macro-photography-workshops',
+    'macro photography': 'abstract-and-macro-photography-workshops',
+    'abstract and macro': 'abstract-and-macro-photography-workshops',
+    'abstract macro': 'abstract-and-macro-photography-workshops',
+    'macro abstract': 'abstract-and-macro-photography-workshops',
+    'northumberland': 'coastal-northumberland-photography-workshops',
+    'coastal northumberland': 'coastal-northumberland-photography-workshops',
     'woodland': 'secrets-of-woodland-photography-workshop',
     'christmas': 'christmas-photography-workshops',
     'fireworks': 'fireworks-photography-workshop-kenilworth',
@@ -395,16 +397,14 @@ for idx, row in google_df.iterrows():
     review_title = str(row.get('title', '') or '').strip()
     review_date = row.get('date_parsed')
     
-    # Check cluster assignment first
-    matched_slug = cluster_assignments.get(idx)
-    if matched_slug:
-        date_cluster_matched += 1
-    else:
-        # Check first pass match
-        matched_slug = first_pass_matches.get(idx)
-        if not matched_slug:
-            # Try full matching again with date cluster map
-            matched_slug = match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, date_cluster_map)
+    # Prefer text/alias first-pass matches; date clusters only fill gaps.
+    matched_slug = first_pass_matches.get(idx)
+    if not matched_slug:
+        matched_slug = cluster_assignments.get(idx)
+        if matched_slug:
+            date_cluster_matched += 1
+    if not matched_slug:
+        matched_slug = match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, date_cluster_map)
     
     review_dict = row.to_dict()
     review_dict['source'] = 'Google'

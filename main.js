@@ -82,7 +82,7 @@ function removeStaleProductSchemaFiles(schemaRepoPath, keepNames) {
   const keepSet = new Set(keepNames);
   const deletedFileNames = [];
   const repoSchemaFiles = fs.readdirSync(schemaRepoPath)
-    .filter((name) => name.endsWith("_schema.json"));
+    .filter((name) => name.endsWith("_schema.json") && !name.endsWith("_event_schema.json"));
 
   for (const fileName of repoSchemaFiles) {
     if (keepSet.has(fileName)) {
