@@ -179,6 +179,14 @@ ALIASES = {
     'wales': 'wales-photography-workshop-pistyll-rhaeadr',
     'north yorkshire': 'north-yorkshire-landscape-photography',
     'yorkshire dales': 'yorkshire-dales-photography-workshops',
+    'rps mentoring': 'rps-mentoring-photography-course',
+    'rps course': 'rps-mentoring-photography-course',
+    'royal photographic': 'rps-mentoring-photography-course',
+    'lrps': 'rps-mentoring-photography-course',
+    'distinction panel': 'rps-mentoring-photography-course',
+    'distinction qualification': 'rps-mentoring-photography-course',
+    'distinction submission': 'rps-mentoring-photography-course',
+    'working towards a distinction': 'rps-mentoring-photography-course',
 }
 
 def fuzzy_match(text1, text2):

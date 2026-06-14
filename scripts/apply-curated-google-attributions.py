@@ -35,10 +35,17 @@ TEXT_RULES = [
     (r"\b(lightroom|lr classic|lrc\b|light room)\b", "lightroom-courses-for-beginners-coventry"),
     (r"\b(bracketing|stacking|intentions)\b", "intermediates-intentions-photography-project-course"),
     (r"\b(pick n mix|online courses|academy membership)\b", "premium-photography-academy-membership"),
-    (r"\b(lrps|distinction|mentoring|1-2-1|1-1|one to one|one-to-one|monthly session|feedback session|tutor)\b", "monthly-online-photography-mentoring"),
+    (
+        r"\b(lrps|rps mentoring|rps course|royal photographic|distinction panel|"
+        r"distinction qualification|distinction submission|working towards a distinction)\b",
+        "rps-mentoring-photography-course",
+    ),
+    (r"\b(mentoring|1-2-1|1-1|one to one|one-to-one|monthly session|feedback session|tutor)\b", "monthly-online-photography-mentoring"),
     (r"\b(beginner|get off manual|basic photography|camera class|camera course|novice|auto mode)\b", "beginners-photography-course"),
     (r"\b(zoom class|webinar|online teaching)\b", "lightroom-courses-for-beginners-coventry"),
 ]
+
+RPS_TEXT_RULES = TEXT_RULES[4:5]
 
 
 def norm_reviewer(s):
@@ -56,6 +63,30 @@ def slug_from_quote(text):
         if re.search(pat, t, re.I):
             return slug
     return ""
+
+
+def apply_rps_text_routing(matched, raw, name_by_slug):
+    raw_by_key = {review_key(r.get("reviewer"), r.get("date")): r for _, r in raw.iterrows()}
+    updates = 0
+    for idx, row in matched.iterrows():
+        key = review_key(row.get("reviewer"), row.get("date"))
+        raw_row = raw_by_key.get(key)
+        if raw_row is None:
+            continue
+        text = str(raw_row.get("review", "") or "")
+        for pat, slug in RPS_TEXT_RULES:
+            if not re.search(pat, text, re.I):
+                continue
+            if slug not in name_by_slug:
+                break
+            if str(row.get("product_slug", "")) == slug:
+                break
+            matched.loc[idx, "product_slug"] = slug
+            matched.loc[idx, "product_name"] = name_by_slug.get(slug, "")
+            matched.loc[idx, "attribution_source"] = "text_rps_routed"
+            updates += 1
+            break
+    return updates
 
 
 def load_products():
@@ -171,6 +202,10 @@ def main():
             matched = pd.concat([matched, pd.DataFrame([row_dict])], ignore_index=True)
             matched_keys.add(key)
             added += 1
+
+    routed = apply_rps_text_routing(matched, raw, name_by_slug)
+    if routed:
+        print(f"RPS text routing: {routed} reviews -> rps-mentoring-photography-course")
 
     matched.to_csv(MATCHED_GOOGLE, index=False, encoding="utf-8-sig")
     print(f"Google matched file: +{added} added, {updated} updated -> {len(matched)} total")
