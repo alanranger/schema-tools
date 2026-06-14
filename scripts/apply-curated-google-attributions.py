@@ -27,7 +27,6 @@ PRODUCTS = CSV_PROCESSED / "02 – products_cleaned.xlsx"
 
 ALAN_CONFIRMED = [
     ("Shelly Soo", "2024-12-15", "lake-district-photography-workshop"),
-    ("Dennis Jeffrey", "2020-04-27", "lake-district-photography-workshop"),
 ]
 
 TEXT_RULES = [
@@ -45,7 +44,91 @@ TEXT_RULES = [
     (r"\b(zoom class|webinar|online teaching)\b", "lightroom-courses-for-beginners-coventry"),
 ]
 
+RPS_SLUG = "rps-mentoring-photography-course"
 RPS_TEXT_RULES = TEXT_RULES[4:5]
+
+# From https://www.alanranger.com/photography-news-blog/?tag=rps%20distinctions (18 case studies, full scrape)
+RPS_BLOG_CLIENTS = [
+    "Patricia Pearl", "Mary Hamilton", "Peter Orton", "John Simpson", "Alistair Willis",
+    "Barbara Voules", "Ian Slater", "Janice Jordan", "Kirsten Pearce", "Max Dobres",
+    "Dennis Jeffrey", "Janet Boulter", "Francis Peckham", "Vincenzo Albano", "Jacki Rosin",
+    "Anne Watkinson", "Paul Kirby", "Joyce James",
+]
+
+WORKSHOP_REVIEW_PATTERNS = [
+    r"northumbria", r"northumberland", r"woodland masterclass", r"woodland walk",
+    r"\b3 day workshop\b", r"workshop in the", r"residential workshop",
+]
+
+RPS_SERVICE_PATTERNS = [
+    r"\b(lrps|rps|distinction|panel|royal photographic)\b",
+    r"\b(1-2-1|one to one|mentor|mentoring|tutor|tuition|webinar|zoom)\b",
+    r"processing instruction", r"highly recommended.*tutor",
+]
+
+
+def norm_name(s):
+    return re.sub(r"[^a-z0-9 ]", "", str(s or "").lower()).strip()
+
+
+def blog_client_match(reviewer, client_name):
+    r, c = norm_name(reviewer), norm_name(client_name)
+    if not r or not c:
+        return False
+    if r == c or c in r or r in c:
+        return True
+    parts = c.split()
+    if len(parts) >= 2 and parts[0] in r:
+        rparts = r.split()
+        if parts[-1] in r or (rparts and rparts[-1] == parts[-1][:1]):
+            return True
+    return False
+
+
+def is_workshop_review(text):
+    t = str(text or "").lower()
+    if re.search(r"\b(lrps|rps mentoring|distinction panel|distinction qualification)\b", t):
+        return False
+    return any(re.search(p, t) for p in WORKSHOP_REVIEW_PATTERNS)
+
+
+def is_rps_service_review(text):
+    t = str(text or "").lower()
+    return any(re.search(p, t) for p in RPS_SERVICE_PATTERNS)
+
+
+def apply_rps_blog_client_routing(matched, raw, name_by_slug):
+    raw_by_key = {review_key(r.get("reviewer"), r.get("date")): r for _, r in raw.iterrows()}
+    matched_keys = {review_key(r.get("reviewer"), r.get("date")) for _, r in matched.iterrows()}
+    added = 0
+    updated = 0
+    for _, raw_row in raw.iterrows():
+        reviewer = str(raw_row.get("reviewer", "")).strip()
+        if not reviewer:
+            continue
+        if not any(blog_client_match(reviewer, client) for client in RPS_BLOG_CLIENTS):
+            continue
+        text = str(raw_row.get("review", "") or "")
+        if is_workshop_review(text) or not is_rps_service_review(text):
+            continue
+        key = review_key(reviewer, raw_row.get("date"))
+        row_dict = raw_row.to_dict()
+        row_dict["source"] = "Google"
+        row_dict["product_slug"] = RPS_SLUG
+        row_dict["product_name"] = name_by_slug.get(RPS_SLUG, "")
+        row_dict["attribution_source"] = "rps_blog_client"
+        if key in matched_keys:
+            idx = matched.apply(lambda r, k=key: review_key(r.get("reviewer"), r.get("date")) == k, axis=1)
+            if str(matched.loc[idx, "product_slug"].iloc[0]) == RPS_SLUG:
+                continue
+            for col, val in row_dict.items():
+                matched.loc[idx, col] = val
+            updated += 1
+        else:
+            matched = pd.concat([matched, pd.DataFrame([row_dict])], ignore_index=True)
+            matched_keys.add(key)
+            added += 1
+    return matched, added, updated
 
 
 def norm_reviewer(s):
@@ -205,7 +288,11 @@ def main():
 
     routed = apply_rps_text_routing(matched, raw, name_by_slug)
     if routed:
-        print(f"RPS text routing: {routed} reviews -> rps-mentoring-photography-course")
+        print(f"RPS text routing: {routed} reviews -> {RPS_SLUG}")
+
+    matched, blog_added, blog_updated = apply_rps_blog_client_routing(matched, raw, name_by_slug)
+    if blog_added or blog_updated:
+        print(f"RPS blog client routing: +{blog_added} added, {blog_updated} updated -> {RPS_SLUG}")
 
     matched.to_csv(MATCHED_GOOGLE, index=False, encoding="utf-8-sig")
     print(f"Google matched file: +{added} added, {updated} updated -> {len(matched)} total")
