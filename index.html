@@ -7129,6 +7129,62 @@
     return /wf-loading|document\.documentElement|@keyframes|fonts-loading|classList\.add/i.test(s);
   }
 
+  function isCorruptArticleBody(text) {
+    if (!text) return true;
+    const s = String(text);
+    if (s.length > 50000) {
+      let ctrl = 0;
+      const sample = s.slice(0, 5000);
+      for (let i = 0; i < sample.length; i++) {
+        const code = sample.charCodeAt(i);
+        if (code < 32 && code !== 9 && code !== 10 && code !== 13) ctrl++;
+        if (ctrl > 20) return true;
+      }
+    }
+    let ctrl = 0;
+    for (let i = 0; i < Math.min(s.length, 2000); i++) {
+      const code = s.charCodeAt(i);
+      if (code < 32 && code !== 9 && code !== 10 && code !== 13) ctrl++;
+      if (ctrl > 10) return true;
+    }
+    return isJunkSchemaText(s.slice(0, 300));
+  }
+
+  function isWeakSchemaDescription(text, title) {
+    const d = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!d || d.length < 40) return true;
+    if (isJunkSchemaText(d)) return true;
+    const low = d.toLowerCase();
+    if (low.startsWith('webpage for a blog article')) return true;
+    if (/1-page field checklist/i.test(d) && /alan ranger/i.test(d)) return true;
+    if (/checklists?\s*alan\s*ranger/i.test(d)) return true;
+    if (/^table of contents show\.?$/i.test(d)) return true;
+    if (/^guest post by\b/i.test(d) && d.length < 60) return true;
+    if (/^this guide removes the guesswork\.?$/i.test(d)) return true;
+    if (title) {
+      const t = String(title).replace(/\s+/g, ' ').trim().toLowerCase();
+      if (low === t || low === `${t}.`) return false; // title-only is acceptable fallback
+    }
+    return false;
+  }
+
+  function descriptionFromTitle(title) {
+    let t = String(title || '').replace(/\s+/g, ' ').trim();
+    if (!t) return 'Photography guide from Alan Ranger Photography.';
+    t = t.replace(/^\d+\s+/, ''); // strip leading lesson numbers like "05 "
+    if (/checklist|1-?page|field checklist/i.test(t)) {
+      const topic = t
+        .replace(/\s*[-–—:|]?\s*1-?page.*$/i, '')
+        .replace(/\s*field checklist.*$/i, '')
+        .replace(/\s*checklist.*$/i, '')
+        .replace(/\s*photography guide.*$/i, '')
+        .trim() || t;
+      return `A one-page field checklist covering ${topic.replace(/\s+/g, ' ').trim()} for photographers.`;
+    }
+    if (!/[.!?]$/.test(t)) t += '.';
+    return t.length > 160 ? `${t.slice(0, 157).trim()}...` : t;
+  }
+
   function forceHttpsUrl(url) {
     if (!url || typeof url !== 'string') return url;
     return url.replace(/^http:\/\//i, 'https://');
@@ -7136,8 +7192,9 @@
 
   function sanitizeSchemaDescription(text, fallback) {
     let d = String(text || '').replace(/\s+/g, ' ').trim();
-    if (isJunkSchemaText(d)) d = '';
+    if (isJunkSchemaText(d) || isWeakSchemaDescription(d)) d = '';
     if (!d) d = String(fallback || '').replace(/\s+/g, ' ').trim();
+    if (!d || isWeakSchemaDescription(d)) d = descriptionFromTitle(fallback);
     if (d && !/[.!?]$/.test(d)) d += '.';
     return d;
   }
@@ -7557,10 +7614,9 @@
       }
     }
     
-    // Last resort: use title (truncated)
-    if (!desc || desc.length < 20) {
-      desc = title ? title.substring(0, 160) : '';
-      if (desc && !desc.endsWith('.')) desc = desc + '.';
+    // Last resort: use cleaned title (never leave footer bleed / tiny stubs)
+    if (!desc || isWeakSchemaDescription(desc, title)) {
+      desc = descriptionFromTitle(title);
     }
     
     return desc;
@@ -7976,6 +8032,12 @@
       articleBody = articleBody.replace(/\/Cart\s+\d+/gi, '');
       articleBody = articleBody.replace(/Sign In My Account/gi, '');
     }
+
+    // Reject binary / corrupt bodies (e.g. JPEG bytes scraped into text)
+    if (isCorruptArticleBody(articleBody)) {
+      blogPosts_log(`   [ArticleBody] Corrupt/binary body detected — falling back to title summary`);
+      articleBody = descriptionFromTitle(title);
+    }
     
     const wordCount = countWords(articleBody);
     const timeRequired = estimateReadingTime(wordCount);
@@ -7988,7 +8050,10 @@
     const cleanedForDescription = cleanArticleBodyForDescription(articleBody, title);
     
     // Use helper function for clean description
-    const description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
+    let description = createCleanDescription(cleanedForDescription || articleBody, title, rawEntityDescription);
+    if (isWeakSchemaDescription(description, title)) {
+      description = descriptionFromTitle(title);
+    }
     
     // Use cleaned version for classification to avoid nav text affecting classification
     const classificationBody = cleanedForDescription || articleBody;
@@ -10356,7 +10421,7 @@
     // WebPage description must be neutral metadata-only, not BlogPosting content
     const description = sanitizeSchemaDescription(
       blogPosting.description || csvRow.metaDescription,
-      'Webpage for a blog article on Alan Ranger Photography'
+      title || 'Webpage for a blog article on Alan Ranger Photography'
     );
     
     const webPage = {
@@ -10389,7 +10454,7 @@
     const WEBSITE_ID = 'https://www.alanranger.com/#website';
     
     const title = blogPosting.headline || csvRow.title || '';
-    const description = blogPosting.description || '';
+    const description = sanitizeSchemaDescription(blogPosting.description, title);
     
     // Convert dates to ISO-8601 format (YYYY-MM-DD -> YYYY-MM-DDTHH:mm:ss+00:00)
     const rawDatePublished = blogPosting.datePublished || csvRow.publishDate || '';
@@ -10398,8 +10463,11 @@
     const dateModified = rawDateModified ? new Date(rawDateModified).toISOString() : null;
     const dateCreated = blogPosting.dateCreated ? new Date(blogPosting.dateCreated).toISOString() : datePublished;
     
-    const articleBody = blogPosting.articleBody || '';
-    const wordCount = blogPosting.wordCount || 0;
+    let articleBody = blogPosting.articleBody || '';
+    if (isCorruptArticleBody(articleBody)) {
+      articleBody = descriptionFromTitle(title);
+    }
+    const wordCount = blogPosting.wordCount || countWords(articleBody) || 0;
     
     // Image reference (no inline ImageObject) - use slug-based @id for schema merging
     let imageUrl = null;
