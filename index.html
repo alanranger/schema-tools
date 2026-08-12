@@ -7115,6 +7115,31 @@
     return /linkedin(?:\s*0)?|pinterest(?:\s*0)?|reddit(?:\s*0)?|facebook(?:\s*0)?|tumblr|twitter|0\s*likes?|composition checklist|%2f|%3a/.test(value);
   }
 
+  function isJunkSchemaText(text) {
+    if (!text) return true;
+    const s = String(text);
+    let ctrl = 0;
+    for (let i = 0; i < s.length; i++) {
+      const code = s.charCodeAt(i);
+      if (code < 32 && code !== 9 && code !== 10 && code !== 13) ctrl++;
+      if (ctrl > 3) return true;
+    }
+    return /wf-loading|document\.documentElement|@keyframes|fonts-loading|classList\.add/i.test(s);
+  }
+
+  function forceHttpsUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    return url.replace(/^http:\/\//i, 'https://');
+  }
+
+  function sanitizeSchemaDescription(text, fallback) {
+    let d = String(text || '').replace(/\s+/g, ' ').trim();
+    if (isJunkSchemaText(d)) d = '';
+    if (!d) d = String(fallback || '').replace(/\s+/g, ' ').trim();
+    if (d && !/[.!?]$/.test(d)) d += '.';
+    return d;
+  }
+
   // Clean FULL articleBody - removes navigation but preserves all content
   function cleanFullArticleBody(articleBody, title) {
     if (!articleBody) return '';
@@ -7251,8 +7276,8 @@
     // Remove "Back ..." nav labels without eating full content blocks.
     text = text.replace(/\bBack\s+[A-Z][A-Za-z\s&-]{1,80}\b/g, '');
     text = text.replace(/\[.*?\]/g, ''); // Remove any remaining bracket patterns
-    // Remove "Photography Workshops Coventry" and similar location-based nav
-    text = text.replace(/Photography\s+(Workshops|Courses|Classes|Lessons)\s+(Coventry|Near Me|Online)/gi, '');
+    // Only strip location nav labels at the start of extracted text, not mid-sentence copy
+    text = text.replace(/^(Photography\s+(Workshops|Courses|Classes|Lessons)\s+(Coventry|Near Me|Online)\s*)+/gi, '');
     text = text.replace(/\/\s*photography[-\s]courses[-\s]coventry/gi, '');
     text = text.replace(/\/\s*cart/gi, '');
     
@@ -7375,7 +7400,7 @@
     console.log('[createCleanDescription] rawDescription:', rawDescription ? rawDescription.substring(0, 100) : 'null', 'title:', title);
     
     // PRIORITY 1: Use meta description (rawDescription) if it exists and is good quality
-    if (rawDescription) {
+    if (rawDescription && !isJunkSchemaText(rawDescription)) {
       const rawDesc = stripSocialShareNoise(rawDescription);
       // Check if raw description is usable (not just title, has meaningful content)
       if (rawDesc.length >= 20) {
@@ -7419,6 +7444,7 @@
         const trimmed = s.trim();
         // Must be at least 20 chars, not navigation, not title
         if (trimmed.length < 20) return false;
+        if (isJunkSchemaText(trimmed)) return false;
         if (/^(back|cart|sign|search|menu|home|blog)/i.test(trimmed)) return false;
         if (title && trimmed.toLowerCase() === title.toLowerCase()) return false;
         // Skip sentences that are entirely ALL CAPS (headers) or start with ALL CAPS + hyphen
@@ -10326,7 +10352,10 @@
     // Titles and descriptions
     const title = blogPosting.headline || csvRow.title || '';
     // WebPage description must be neutral metadata-only, not BlogPosting content
-    const description = blogPosting.description || csvRow.metaDescription || 'Webpage for a blog article on Alan Ranger Photography.';
+    const description = sanitizeSchemaDescription(
+      blogPosting.description || csvRow.metaDescription,
+      'Webpage for a blog article on Alan Ranger Photography'
+    );
     
     const webPage = {
       '@context': 'https://schema.org',
@@ -10624,7 +10653,7 @@
       '@type': 'HowTo',
       '@id': `${url}#howto`,
       name: headline,
-      description: blogPosting.description || '',
+      description: sanitizeSchemaDescription(blogPosting.description, headline),
       inLanguage: 'en-GB',
       image: (blogPosting.thumbnailUrl || csvRow.imageUrl) ? { '@id': `${url}#primaryimage` } : undefined,
       author: { '@id': 'https://www.alanranger.com/#person' },
@@ -11061,6 +11090,7 @@
     if (!imageUrl) {
       return null;
     }
+    imageUrl = forceHttpsUrl(imageUrl);
     
     // Extract dimensions and caption from blogPosting inline ImageObject or use defaults
     // RULE 2 & 3: The separate _image.json MUST include width/height/caption
@@ -14811,8 +14841,10 @@
   // Trim description if too long
   function trimDescription(description, maxLength = 5000) {
     if (!description) return '';
-    if (description.length <= maxLength) return description;
-    return description.substring(0, maxLength - 3) + '...';
+    let text = String(description).replace(/(\d{1,2}\/\d{1,2}\/\d{4})([A-Za-z])/g, '$1 $2');
+    text = text.replace(/(\d{4}-\d{2}-\d{2})([A-Za-z])/g, '$1 $2');
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
   }
 
   // Validate Event schema structure
@@ -15414,7 +15446,7 @@
       // Add shippingDetails (required for Product+Event hybrid)
       eventSchema.offers.shippingDetails = {
         "@type": "OfferShippingDetails",
-        "doesNotShip": "http://schema.org/True",
+        "doesNotShip": true,
         "shippingDestination": {
           "@type": "DefinedRegion",
           "addressCountry": "GB"

@@ -132,12 +132,29 @@ function writeHowTo(repo, slug, url, extracted, headline) {
     name: s.name,
     text: s.text
   }));
+  let description = '';
+  for (const suffix of ['_schema.json', '_blogposting.json']) {
+    const sibling = path.join(repo, `${slug}${suffix}`);
+    if (!fs.existsSync(sibling)) continue;
+    try {
+      const doc = JSON.parse(fs.readFileSync(sibling, 'utf8'));
+      const d = String(doc.description || '').trim();
+      if (d && !/wf-loading|document\.documentElement|@keyframes/i.test(d)) {
+        description = d;
+        break;
+      }
+    } catch {
+      /* ignore sibling parse errors */
+    }
+  }
+  if (!description) description = headline || slug.replace(/-/g, ' ');
+  if (description && !/[.!?]$/.test(description)) description += '.';
   const doc = {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
     '@id': `${url}#howto`,
     name: headline || slug.replace(/-/g, ' '),
-    description: '',
+    description,
     inLanguage: 'en-GB',
     image: { '@id': `${url}#primaryimage` },
     author: { '@id': 'https://www.alanranger.com/#person' },
