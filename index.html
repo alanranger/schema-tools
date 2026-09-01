@@ -7874,7 +7874,7 @@
     const seenKeys = new Set();
     const safeTitle = (title || 'Video').trim();
     const safeDescription = (description || '').trim().slice(0, 240);
-    const uploadDate = (publishDate || modifiedDate || '').trim();
+    const uploadDate = formatDate((publishDate || modifiedDate || '').trim());
 
     const addYoutube = (videoId) => {
       const id = String(videoId || '').trim();
@@ -10514,7 +10514,14 @@
     if (blogPosting.video) {
       // Keep embedded VideoObject data in the final BlogPosting output.
       // This is intentionally embedded in *_blogposting.json (no separate video file).
-      blogPostingSchema.video = blogPosting.video;
+      const rawVideo = blogPosting.video;
+      const videos = Array.isArray(rawVideo) ? rawVideo : [rawVideo];
+      const normalizedVideos = videos.map((v) => {
+        if (!v || !v.uploadDate) return v;
+        const fixed = formatDate(v.uploadDate);
+        return fixed ? { ...v, uploadDate: fixed } : v;
+      });
+      blogPostingSchema.video = normalizedVideos.length === 1 ? normalizedVideos[0] : normalizedVideos;
     }
     
     return blogPostingSchema;
