@@ -10567,47 +10567,69 @@
   // ============================================
 
   /**
-   * Fetch HTML - tries Supabase first (more reliable), then public URL as fallback
+   * Fetch live page HTML (server proxy avoids browser CORS).
    */
-  async function fetchHtmlForDetection(url) {
+  async function fetchLiveHtmlForUrl(url) {
     if (!url) return null;
-    
-    // PRIORITY 1: Try Supabase (already stored, more reliable, no CORS issues)
-    // If Supabase is not available, try to initialize it once
+    try {
+      const res = await fetch(`/api/fetch-html?url=${encodeURIComponent(url)}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const html = await res.text();
+        if (html && html.length > 100) return html;
+      }
+    } catch (e) {
+      console.warn(`Live /api/fetch-html failed for ${url}:`, e.message);
+    }
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        const html = await response.text();
+        if (html && html.length > 100) return html;
+      }
+    } catch (error) {
+      console.warn(`Direct live fetch failed for ${url}:`, error.message);
+    }
+    return null;
+  }
+
+  /**
+   * Fetch HTML for detection/generation.
+   * preferLive=true (single URL): live page first, cached ingest only as fallback.
+   * preferLive=false (bulk): cached page_html first for speed.
+   */
+  async function fetchHtmlForDetection(url, opts = {}) {
+    if (!url) return null;
+    const preferLive = opts.preferLive === true;
+
+    if (preferLive) {
+      const live = await fetchLiveHtmlForUrl(url);
+      if (live) return live;
+    }
+
     if (!supabaseAvailable || !supabaseClient) {
-      // Try to initialize Supabase if not already available
       if (typeof initSupabase === 'function') {
         initSupabase();
-        // Wait a moment for initialization
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
-    
+
     if (supabaseAvailable && supabaseClient) {
       try {
         const html = await fetchPageHtmlForUrl(url);
-        if (html && html.length > 0) {
-          return html;
-        }
+        if (html && html.length > 0) return html;
       } catch (e) {
         console.warn(`Supabase HTML fetch failed for ${url}:`, e.message);
       }
     }
-    
-    // PRIORITY 2: Fallback to public URL (may fail due to CORS in browser, but works in Electron)
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        const html = await response.text();
-        if (html && html.length > 0) {
-          return html;
-        }
-      }
-    } catch (error) {
-      // CORS or network error - expected in browser, but works in Electron
-      console.warn(`Public URL fetch failed for ${url} (may be CORS):`, error.message);
+
+    if (!preferLive) {
+      const live = await fetchLiveHtmlForUrl(url);
+      if (live) return live;
     }
-    
+
     return null;
   }
 
@@ -11970,12 +11992,12 @@
     blogPosts_log('='.repeat(60));
     
     try {
-      // Fetch HTML
-      blogPosts_log(' Fetching HTML...');
-      const html = await fetchHtmlForDetection(url);
+      // Fetch live page HTML (single-URL mode — not stale ingest cache)
+      blogPosts_log(' Fetching live page HTML...');
+      const html = await fetchHtmlForDetection(url, { preferLive: true });
       const plainText = html ? htmlToPlainText(html) : '';
       
-      blogPosts_log(`✅ HTML fetched: ${html ? html.length : 0} chars`);
+      blogPosts_log(`✅ HTML fetched: ${html ? html.length : 0} chars (live preferred)`);
       blogPosts_log(`✅ Plain text: ${plainText.length} chars`);
       
       // FAQ block signal (on-page markers / JSON-LD) — informational only
@@ -12115,14 +12137,14 @@
       
       blogPosts_log(` Created mock row for: ${slug}`);
       
-      // Fetch HTML FIRST so we can detect the main image before building the main schema
-      blogPosts_log('\n Fetching HTML for this URL (single-URL mode)...');
-      const html = await fetchHtmlForDetection(url);
+      // Fetch live HTML FIRST (single-URL mode — not stale ingest cache)
+      blogPosts_log('\n Fetching live page HTML for this URL (single-URL mode)...');
+      const html = await fetchHtmlForDetection(url, { preferLive: true });
       const plainText = html ? htmlToPlainText(html) : '';
       let blogPosting = null;
       
       if (html) {
-        blogPosts_log(`✅ HTML fetched: ${html.length} chars`);
+        blogPosts_log(`✅ HTML fetched: ${html.length} chars (live preferred)`);
         
         // For single-URL mode, ALWAYS try to detect the main image from HTML
         const extractedImageUrl = extractMainImageFromHtml(html, url);
