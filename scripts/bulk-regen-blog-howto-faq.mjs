@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { extractHowToFromArticle, htmlBlockToPlainText } from './howto-extraction.mjs';
 import { extractFAQFromArticle } from './faq-extraction.mjs';
+import { upsertSlugsIntoBlogSchema } from './lib/upsert-blog-schema-nodes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -125,7 +126,14 @@ async function fetchHtml(url) {
 }
 
 function writeHowTo(repo, slug, url, extracted, headline) {
-  if (!extracted || extracted.steps.length < 3) return 'skip-howto';
+  const filePath = path.join(repo, `${slug}_howto.json`);
+  if (!extracted || extracted.steps.length < 3) {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return 'delete-howto';
+    }
+    return 'skip-howto';
+  }
   const steps = extracted.steps.map((s, idx) => ({
     '@type': 'HowToStep',
     position: typeof s.position === 'number' && s.position > 0 ? s.position : idx + 1,
@@ -161,7 +169,7 @@ function writeHowTo(repo, slug, url, extracted, headline) {
     publisher: { '@id': 'https://www.alanranger.com/#org' },
     step: steps
   };
-  fs.writeFileSync(path.join(repo, `${slug}_howto.json`), `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(filePath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
   return 'ok-howto';
 }
 
@@ -284,6 +292,17 @@ async function main() {
   appendLog(
     `Finished bulk HowTo/FAQ regen (${urls.length} URL(s)). FAQ files: ok-faq=${faqOk}, delete-faq=${faqDelete}, skip-faq=${faqSkip}.`
   );
+
+  const slugs = [...new Set(urls.map((u) => u.split('/').pop()).filter(Boolean))];
+  try {
+    const upsert = upsertSlugsIntoBlogSchema(opts.repo, slugs);
+    appendLog(`Upserted ${upsert.upserted} nodes (pruned ${upsert.pruned || 0}) into blog-schema.json`);
+    console.log(`Upserted ${upsert.upserted} nodes into blog-schema.json (pruned ${upsert.pruned || 0}).`);
+  } catch (e) {
+    appendLog(`blog-schema upsert failed: ${e.message}`);
+    console.warn(`blog-schema upsert skipped: ${e.message}`);
+  }
+
   console.log(
     `Done. ${urls.length} URL(s) processed. FAQ: ok-faq=${faqOk} delete-faq=${faqDelete} skip-faq=${faqSkip}. Log appended to BULK-REGEN-LOG.md`
   );

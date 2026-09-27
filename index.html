@@ -8053,8 +8053,9 @@
     } else {
       blogPosts_log(`   [Description] No entity found in Supabase`);
     }
-    const publishDate = (entity && entity.publish_date) || csvRow.publishDate || null;
-    const modifiedDate = (entity && entity.update_date) || publishDate || null;
+    const publishDate = csvRow.publishDate || (entity && entity.publish_date) || null;
+    const modifiedDate =
+      csvRow.update_date || csvRow.updateDate || (entity && entity.update_date) || publishDate || null;
     let imageUrl = (entity && entity.image_url) || csvRow.imageUrl || null;
     //  3. Image dimensions - use 1500x1000 as default (or from metadata)
     const imageWidth = entity && entity.image_width ? entity.image_width : 1500;
@@ -10513,12 +10514,16 @@
     const title = blogPosting.headline || csvRow.title || '';
     const description = sanitizeSchemaDescription(blogPosting.description, title);
     
-    // Convert dates to ISO-8601 format (YYYY-MM-DD -> YYYY-MM-DDTHH:mm:ss+00:00)
+    // Convert dates to calendar-day UTC midnight (preserve publish day; only bump modified day).
+    const toUtcMidnightIso = (dateStr) => {
+      const m = String(dateStr || '').match(/(\d{4}-\d{2}-\d{2})/);
+      return m ? `${m[1]}T00:00:00.000Z` : null;
+    };
     const rawDatePublished = blogPosting.datePublished || csvRow.publishDate || '';
-    const rawDateModified = blogPosting.dateModified || rawDatePublished;
-    const datePublished = rawDatePublished ? new Date(rawDatePublished).toISOString() : null;
-    const dateModified = rawDateModified ? new Date(rawDateModified).toISOString() : null;
-    const dateCreated = blogPosting.dateCreated ? new Date(blogPosting.dateCreated).toISOString() : datePublished;
+    const rawDateModified = blogPosting.dateModified || csvRow.update_date || csvRow.updateDate || rawDatePublished;
+    const datePublished = toUtcMidnightIso(rawDatePublished);
+    const dateModified = toUtcMidnightIso(rawDateModified);
+    const dateCreated = toUtcMidnightIso(blogPosting.dateCreated || rawDatePublished);
     
     let articleBody = blogPosting.articleBody || '';
     if (isCorruptArticleBody(articleBody)) {
@@ -12192,7 +12197,8 @@
         categories: [],
         tags: [],
         imageUrl: '',
-        publishDate: new Date().toISOString().split('T')[0]
+        publishDate: null,
+        update_date: null
       };
       
       blogPosts_log(` Created mock row for: ${slug}`);
@@ -12205,6 +12211,48 @@
       
       if (html) {
         blogPosts_log(`✅ HTML fetched: ${html.length} chars (live preferred)`);
+
+        // Preserve real publish day from live Article LD; only dateModified tracks update day.
+        // Prefer @type Article (Squarespace) over injected BlogPosting which may carry stale dates.
+        const liveDates = (() => {
+          const out = { publishDate: null, update_date: null };
+          const posts = [];
+          const blocks = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+          for (const b of blocks) {
+            try {
+              const j = JSON.parse(b[1]);
+              const nodes = Array.isArray(j) ? j : j['@graph'] ? j['@graph'] : [j];
+              for (const n of nodes) {
+                const t = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+                const isArticle = t.includes('Article');
+                const isBlog = t.includes('BlogPosting');
+                if (!isArticle && !isBlog) continue;
+                if (!n.datePublished && !n.dateModified) continue;
+                posts.push({ isArticle, datePublished: n.datePublished, dateModified: n.dateModified });
+              }
+            } catch { /* ignore bad LD blocks */ }
+          }
+          const chosen = posts.find((p) => p.isArticle) || posts[0];
+          if (!chosen) return out;
+          const pub = String(chosen.datePublished || '').match(/(\d{4}-\d{2}-\d{2})/);
+          const mod = String(chosen.dateModified || chosen.datePublished || '').match(/(\d{4}-\d{2}-\d{2})/);
+          if (pub) out.publishDate = pub[1];
+          if (mod) out.update_date = mod[1];
+          return out;
+        })();
+        if (liveDates.publishDate) {
+          mockRow.publishDate = liveDates.publishDate;
+          blogPosts_log(`   [LiveDates] publishDate <= ${liveDates.publishDate}`);
+        } else {
+          mockRow.publishDate = new Date().toISOString().split('T')[0];
+          blogPosts_log(`   [LiveDates] publishDate fallback today ${mockRow.publishDate}`);
+        }
+        if (liveDates.update_date) {
+          mockRow.update_date = liveDates.update_date;
+          blogPosts_log(`   [LiveDates] update_date <= ${liveDates.update_date}`);
+        } else {
+          mockRow.update_date = mockRow.publishDate;
+        }
         
         // For single-URL mode, ALWAYS try to detect the main image from HTML
         const extractedImageUrl = extractMainImageFromHtml(html, url);
@@ -12363,43 +12411,46 @@
       // Use the same HTML/plainText/BlogPosting instance for additional schemas
       if (html && blogPosting) {
         
-        // Generate HowTo if eligible
+        // Generate HowTo if eligible (single-URL always regenerates — stale files must not be retained)
         try {
           const debugLog = (msg) => blogPosts_log(`   [HowTo] ${msg}`);
           const shouldGenerate = shouldGenerateHowTo(html, plainText, debugLog);
+          const howToFileName = `${slug}_howto.json`;
           
           if (shouldGenerate) {
-            const howToFileName = `${slug}_howto.json`;
-            const howToExists = await fileExistsInGithub(howToFileName);
-
-            if (howToExists && !forceOverwrite) {
-              blogPosts_log(`   ⎽  HowTo SKIPPED: File already exists: ${howToFileName}`);
-            } else {
-              const howToSchema = await generateHowToSchema(mockRow, blogPosting, plainText, html);
-              if (howToSchema) {
-                const howToJson = JSON.stringify(howToSchema, null, 2);
-                
-                // Validate HowTo JSON and schema rules
-                try {
-                  JSON.parse(howToJson);
-                  const validationErrors = validateSchema(howToSchema, 'HowTo', slug);
-                  if (validationErrors.length > 0) {
-                    blogPosts_log('⚽  HowTo validation warnings:');
-                    validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
-                  } else {
-                    blogPosts_log('✅ HowTo JSON is valid');
-                  }
-                } catch (e) {
-                  blogPosts_log(`⚽  Invalid HowTo JSON: ${e.message}`);
-                }
-                
-                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                  await window.electronAPI.saveAndDeploySchema(howToFileName, howToJson);
-                  blogPosts_log(`   ✅ Saved HowTo: ${howToFileName}`);
+            const howToSchema = await generateHowToSchema(mockRow, blogPosting, plainText, html);
+            if (howToSchema) {
+              const howToJson = JSON.stringify(howToSchema, null, 2);
+              
+              // Validate HowTo JSON and schema rules
+              try {
+                JSON.parse(howToJson);
+                const validationErrors = validateSchema(howToSchema, 'HowTo', slug);
+                if (validationErrors.length > 0) {
+                  blogPosts_log('⚽  HowTo validation warnings:');
+                  validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
                 } else {
-                  blogPosts_log(`    Generated HowTo: ${howToFileName}`);
+                  blogPosts_log('✅ HowTo JSON is valid');
                 }
+              } catch (e) {
+                blogPosts_log(`⚽  Invalid HowTo JSON: ${e.message}`);
               }
+              
+              if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                await window.electronAPI.saveAndDeploySchema(howToFileName, howToJson);
+                blogPosts_log(`   ✅ Saved HowTo: ${howToFileName}`);
+              } else {
+                blogPosts_log(`    Generated HowTo: ${howToFileName}`);
+              }
+            } else if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+              try {
+                await window.electronAPI.deleteSchemaFile(howToFileName);
+                blogPosts_log(`   ⎽ Removed stale HowTo (no valid exercise sequence): ${howToFileName}`);
+              } catch (delErr) {
+                blogPosts_log(`   ⎽ HowTo omitted (delete skipped): ${delErr.message}`);
+              }
+            } else {
+              blogPosts_log(`   ⎽ HowTo omitted — no valid visible exercise sequence`);
             }
           } else {
             blogPosts_log(`   ⎽  HowTo SKIPPED: Page HTML already includes HowTo JSON-LD (no duplicate file)`);
@@ -12408,38 +12459,39 @@
           blogPosts_log(`   ⚽  Error generating HowTo: ${e.message}`);
         }
         
-        // Generate FAQ from on-page Q&A (no generic template fallback)
+        // Generate FAQ from on-page Q&A (single-URL always regenerates so stale FAQ files are replaced)
         try {
             const faqFileName = `${slug}_faq.json`;
-            const faqExists = await fileExistsInGithub(faqFileName);
-
-            if (faqExists && !forceOverwrite) {
-              blogPosts_log(`   ⎽  FAQ SKIPPED: File already exists: ${faqFileName}`);
-            } else {
-              const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);
-              if (faqSchema) {
-                const faqJson = JSON.stringify(faqSchema, null, 2);
-                
-                // Validate FAQ JSON and schema rules
-                try {
-                  JSON.parse(faqJson);
-                  const validationErrors = validateSchema(faqSchema, 'FAQPage', slug);
-                  if (validationErrors.length > 0) {
-                    blogPosts_log('⚽  FAQPage validation warnings:');
-                    validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
-                  } else {
-                    blogPosts_log('✅ FAQPage JSON is valid');
-                  }
-                } catch (e) {
-                  blogPosts_log(`⚽  Invalid FAQPage JSON: ${e.message}`);
-                }
-                
-                if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
-                  await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
-                  blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
+            const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);
+            if (faqSchema) {
+              const faqJson = JSON.stringify(faqSchema, null, 2);
+              
+              // Validate FAQ JSON and schema rules
+              try {
+                JSON.parse(faqJson);
+                const validationErrors = validateSchema(faqSchema, 'FAQPage', slug);
+                if (validationErrors.length > 0) {
+                  blogPosts_log('⚽  FAQPage validation warnings:');
+                  validationErrors.forEach(err => blogPosts_log(`   - ${err}`));
                 } else {
-                  blogPosts_log(`    Generated FAQ: ${faqFileName}`);
+                  blogPosts_log('✅ FAQPage JSON is valid');
                 }
+              } catch (e) {
+                blogPosts_log(`⚽  Invalid FAQPage JSON: ${e.message}`);
+              }
+              
+              if (saveToGithub && window.electronAPI && window.electronAPI.isElectron) {
+                await window.electronAPI.saveAndDeploySchema(faqFileName, faqJson);
+                blogPosts_log(`   ✅ Saved FAQ: ${faqFileName}`);
+              } else {
+                blogPosts_log(`    Generated FAQ: ${faqFileName}`);
+              }
+            } else if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+              try {
+                await window.electronAPI.deleteSchemaFile(faqFileName);
+                blogPosts_log(`   ⎽ Removed stale FAQ (no valid on-page Q&A): ${faqFileName}`);
+              } catch (delErr) {
+                blogPosts_log(`   ⎽ FAQ omitted (delete skipped): ${delErr.message}`);
               }
             }
         } catch (e) {

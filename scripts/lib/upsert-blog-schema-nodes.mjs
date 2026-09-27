@@ -84,6 +84,39 @@ export function collectIndividualNodes(repoDir, slug) {
   return nodes;
 }
 
+function canonicalUrlForSlug(repoDir, slug) {
+  for (const suffix of ['_blogposting.json', '_schema.json']) {
+    const file = path.join(repoDir, `${slug}${suffix}`);
+    if (!fs.existsSync(file)) continue;
+    try {
+      const doc = loadJson(file);
+      const url = normalizeUrl(doc.url || '');
+      if (url) return url;
+    } catch {
+      /* ignore */
+    }
+  }
+  return '';
+}
+
+/** Drop FAQ/HowTo graph nodes when the matching individual file was removed. */
+export function pruneMissingOptionalNodes(graph, repoDir, slugs) {
+  const remove = new Set();
+  for (const slug of slugs) {
+    const url = canonicalUrlForSlug(repoDir, slug);
+    if (!url) continue;
+    if (!fs.existsSync(path.join(repoDir, `${slug}_faq.json`))) {
+      remove.add(`${url}#faq`);
+    }
+    if (!fs.existsSync(path.join(repoDir, `${slug}_howto.json`))) {
+      remove.add(`${url}#howto`);
+    }
+  }
+  if (!remove.size) return { graph, pruned: 0 };
+  const next = graph.filter((n) => !remove.has(nodeKey(n)));
+  return { graph: next, pruned: graph.length - next.length };
+}
+
 export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
   const blogPath = path.join(repoDir, 'blog-schema.json');
   const blog = loadJson(blogPath);
@@ -93,7 +126,8 @@ export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
   const incoming = [];
   for (const slug of slugs) incoming.push(...collectIndividualNodes(repoDir, slug));
   const { graph, upserted } = upsertNodes(blog['@graph'], incoming);
-  blog['@graph'] = graph;
+  const pruned = pruneMissingOptionalNodes(graph, repoDir, slugs);
+  blog['@graph'] = pruned.graph;
   fs.writeFileSync(blogPath, `${JSON.stringify(blog)}\n`, 'utf8');
-  return { upserted, total: graph.length, blogPath };
+  return { upserted, pruned: pruned.pruned, total: pruned.graph.length, blogPath };
 }

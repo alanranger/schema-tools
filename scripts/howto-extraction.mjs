@@ -112,6 +112,67 @@ export function extractFromJsonLdHowTo(html) {
   return bucket;
 }
 
+function shortStepName(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  const sentence = t.split(/(?<=[.!?])\s+/)[0] || t;
+  return sentence.length > 120 ? `${sentence.slice(0, 117).trimEnd()}...` : sentence;
+}
+
+/** Visible Academy exercise: .arp-exercise ol > li (e.g. #arp-l32-practice). */
+export function extractFromArpExercise(html) {
+  const steps = [];
+  if (!html) return steps;
+  const blockRe = /<div[^>]*class=["'][^"']*arp-exercise[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+  let blockMatch;
+  while ((blockMatch = blockRe.exec(html)) !== null) {
+    const block = blockMatch[1];
+    if (/arp-download|download\s+panel|wf-loading/i.test(block)) continue;
+    const lis = [...block.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)];
+    if (lis.length < 3) continue;
+    for (let i = 0; i < lis.length; i++) {
+      const text = htmlBlockToPlainText(lis[i][1]).replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      steps.push({ name: shortStepName(text), text, position: i + 1 });
+    }
+    if (steps.length >= 3) return steps;
+  }
+  return steps;
+}
+
+/** Visible Academy practice cards: #arp-*-practice .arp-step with h3 + p. */
+export function extractFromArpPracticeSteps(html) {
+  const steps = [];
+  if (!html) return steps;
+  const sectionRe = /<section[^>]*\bid=["'](arp-[^"']*-practice)["'][^>]*>([\s\S]*?)<\/section>/gi;
+  let sectionMatch;
+  while ((sectionMatch = sectionRe.exec(html)) !== null) {
+    const scope = sectionMatch[2] || '';
+    const cardRe = /<div[^>]*class=["'][^"']*arp-step[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+    let card;
+    let pos = 0;
+    while ((card = cardRe.exec(scope)) !== null) {
+      const inner = card[1];
+      const h3 = inner.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+      const name = h3
+        ? htmlBlockToPlainText(h3[1]).replace(/\s+/g, ' ').trim()
+        : '';
+      const text = htmlBlockToPlainText(inner).replace(/\s+/g, ' ').trim();
+      if (!name || !text) continue;
+      pos += 1;
+      steps.push({ name, text, position: pos });
+    }
+    if (steps.length >= 3) return steps;
+  }
+  return steps;
+}
+
+export function pageHasArpInstructionalSequence(html) {
+  if (!html) return false;
+  return /class=["'][^"']*arp-exercise[^"']*["']/i.test(html)
+    || /id=["']arp-[^"']*-practice["']/i.test(html);
+}
+
 export function extractFromOrderedListSection(html) {
   const main = extractMainContentHtml(html) || html || '';
   const headingRe = /<h([23])[^>]*>([\s\S]*?)<\/h\1>/gi;
@@ -343,6 +404,20 @@ export function extractHowToFromArticle(html, articleBody = '', debugLog = null)
     );
     return { strategy: label, steps, extractedCount, acceptedCount: steps.length };
   };
+
+  // Academy lesson pages: only use visible exercise/practice sequences (never stale headings).
+  if (pageHasArpInstructionalSequence(primaryHtml)) {
+    const arpAttempts = [
+      ['arp-exercise', () => extractFromArpExercise(primaryHtml)],
+      ['arp-practice-steps', () => extractFromArpPracticeSteps(primaryHtml)]
+    ];
+    for (const [label, getRaw] of arpAttempts) {
+      const r = run(label, getRaw());
+      if (r) return r;
+    }
+    dbg('HowTo extraction: Academy practice markup present but no valid 3+ step sequence — omitting HowTo');
+    return { strategy: 'none', steps: [], extractedCount: 0, acceptedCount: 0 };
+  }
 
   const attempts = [
     ['A', () => extractFromJsonLdHowTo(primaryHtml)],

@@ -74,9 +74,12 @@ function extractSqspDates(html, preferredTitle = '') {
       for (const n of nodes) {
         const t = n && n['@type'];
         const types = Array.isArray(t) ? t : [t];
-        const isPost = types.some((x) => x === 'BlogPosting' || x === 'Article');
-        if (!isPost) continue;
-        if (n.datePublished || n.dateModified) posts.push(n);
+        const isArticle = types.includes('Article');
+        const isBlog = types.includes('BlogPosting');
+        if (!isArticle && !isBlog) continue;
+        if (n.datePublished || n.dateModified) {
+          posts.push({ ...n, isArticle });
+        }
       }
     } catch { /* ignore bad blocks */ }
   }
@@ -85,12 +88,14 @@ function extractSqspDates(html, preferredTitle = '') {
   const matched = want
     ? posts.find((p) => cleanText(p.headline || p.name || '').toLowerCase() === want)
     : null;
+  const article = posts.find((p) => p.isArticle);
   const byNewest = [...posts].sort((a, b) => {
     const da = Date.parse(a.dateModified || a.datePublished || 0) || 0;
     const db = Date.parse(b.dateModified || b.datePublished || 0) || 0;
     return db - da;
   })[0];
-  const chosen = matched || byNewest;
+  // Prefer Squarespace Article (real publish day) over injected BlogPosting dates.
+  const chosen = article || matched || byNewest;
   return {
     datePublished: chosen.datePublished || null,
     dateModified: chosen.dateModified || chosen.datePublished || null
@@ -123,6 +128,11 @@ function writeJson(file, obj) {
   fs.writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`, 'utf8');
 }
 
+function toUtcMidnightIso(dateStr) {
+  const m = String(dateStr || '').match(/(\d{4}-\d{2}-\d{2})/);
+  return m ? `${m[1]}T00:00:00.000Z` : null;
+}
+
 function ensurePeriod(s) {
   const t = cleanText(s);
   if (!t) return t;
@@ -153,10 +163,10 @@ function patchIndividuals(slug, live) {
     bp.url = url;
     bp['@id'] = `${url}#blogposting`;
     if (live.datePublished) {
-      bp.datePublished = new Date(live.datePublished).toISOString();
+      bp.datePublished = toUtcMidnightIso(live.datePublished);
       bp.dateCreated = bp.datePublished;
     }
-    if (live.dateModified) bp.dateModified = new Date(live.dateModified).toISOString();
+    if (live.dateModified) bp.dateModified = toUtcMidnightIso(live.dateModified);
     else if (live.datePublished) bp.dateModified = bp.datePublished;
     writeJson(bpPath, bp);
     changed.push(path.basename(bpPath));

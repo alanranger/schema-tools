@@ -179,6 +179,41 @@ export function extractFromSquarespaceFaqBlocks(html) {
   return pairs;
 }
 
+/**
+ * Visible Academy FAQ blocks: #arp-*-faq .arp-faq-item with h3 + p.
+ * Prefer the first matching section so CSS/style copies of the id do not pollute pairs.
+ */
+export function extractFromArpFaqItems(html) {
+  const pairs = [];
+  if (!html) return pairs;
+  const sectionRe = /<section[^>]*\bid=["'](arp-[^"']*-faq)["'][^>]*>([\s\S]*?)<\/section>/gi;
+  let sectionMatch;
+  let scope = '';
+  while ((sectionMatch = sectionRe.exec(html)) !== null) {
+    if (sectionMatch[2] && /arp-faq-item/i.test(sectionMatch[2])) {
+      scope = sectionMatch[2];
+      break;
+    }
+  }
+  if (!scope) {
+    const loose = html.match(/class=["'][^"']*arp-faq-item[^"']*["']/i);
+    if (!loose) return pairs;
+    scope = html;
+  }
+  const itemRe = /<div[^>]*class=["'][^"']*arp-faq-item[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+  let m;
+  while ((m = itemRe.exec(scope)) !== null) {
+    const block = m[1];
+    const qMatch = block.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+    if (!qMatch) continue;
+    const question = htmlBlockToPlainText(qMatch[1]).replace(/\s+/g, ' ').trim();
+    const afterH3 = block.slice(qMatch.index + qMatch[0].length);
+    const answer = htmlBlockToPlainText(afterH3).trim();
+    if (question && answer) pairs.push({ question, answer });
+  }
+  return pairs;
+}
+
 function findFaqSectionStart(html) {
   if (!html) return -1;
   const h2Faq = html.match(/<h2[^>]*>[\s\S]{0,220}?\bFAQs?\b/i);
@@ -335,7 +370,10 @@ export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
     return null;
   };
 
-  let r = run('A', extractFromJsonLdFaq(primaryHtml));
+  // Prefer visible Academy FAQ markup over stale injected JSON-LD / heading scans.
+  let r = run('arp-faq', extractFromArpFaqItems(primaryHtml));
+  if (r) return r;
+  r = run('A', extractFromJsonLdFaq(primaryHtml));
   if (r) return r;
   r = run('B', extractFromSquarespaceFaqBlocks(primaryHtml));
   if (r) return r;
