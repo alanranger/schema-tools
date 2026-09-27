@@ -6000,6 +6000,41 @@
     return `<script type="application/ld+json">\n${JSON.stringify(json, null, 2)}\n<\/script>`;
   }
   
+  function humanizePathSegment(seg) {
+    return decodeURIComponent(String(seg || '').replace(/-/g, ' '))
+      .replace(/\b\w/g, (m) => m.toUpperCase())
+      .trim();
+  }
+
+  // Prefer live SEO title from a parsed document (last crumb / current page).
+  function liveTitleFromDoc(doc) {
+    if (!doc) return '';
+    const og = doc.querySelector('meta[property="og:title"]');
+    if (og) {
+      const t = String(og.getAttribute('content') || '').trim();
+      if (t) return t.replace(/\s*[-|]\s*Alan Ranger Photography.*$/i, '').trim();
+    }
+    const titleEl = doc.querySelector('title');
+    if (titleEl && titleEl.textContent) {
+      return String(titleEl.textContent).trim().replace(/\s*[-|]\s*Alan Ranger Photography.*$/i, '').trim();
+    }
+    const h1 = doc.querySelector('h1');
+    return h1 && h1.textContent ? String(h1.textContent).trim() : '';
+  }
+
+  async function resolvePageTitleForUrl(pageUrl) {
+    if (!pageUrl) return '';
+    try {
+      const html = await fetchHtmlForDetection(pageUrl, { preferLive: true });
+      if (!html) return '';
+      if (typeof extractLandingHeadTags === 'function') {
+        const head = extractLandingHeadTags(html, pageUrl);
+        if (head && head.title) return head.title;
+      }
+    } catch (_e) { /* keep slug fallback */ }
+    return '';
+  }
+
   function buildBreadcrumbs(doc, url){
     // 1) Try semantic breadcrumbs in DOM
     let items = [];
@@ -6019,9 +6054,13 @@
       const segs = u.pathname.split('/').filter(Boolean);
       let path=u.origin, pos=1;
       items.push({ "@type":"ListItem", position: pos++, name: "Home", item: u.origin });
-      for(const s of segs){
+      const liveTitle = liveTitleFromDoc(doc);
+      for (let i = 0; i < segs.length; i++) {
+        const s = segs[i];
         path += '/' + s;
-        items.push({ "@type":"ListItem", position: pos++, name: decodeURIComponent(s.replace(/-/g,' ')).replace(/\b\w/g,m=>m.toUpperCase()), item: path });
+        const isLast = i === segs.length - 1;
+        const name = (isLast && liveTitle) ? liveTitle : humanizePathSegment(s);
+        items.push({ "@type":"ListItem", position: pos++, name, item: path });
       }
     }
     return {
@@ -12045,10 +12084,13 @@
       blogPosts_log(`\n DETECTION RESULT: shouldHowTo = ${shouldHowTo} (${typeof shouldHowTo})`);
       blogPosts_log(`   ↽ Summary will show: ${shouldHowTo ? '✅ GENERATE' : '❌ SKIP'}`);
 
+      const detectLiveTitle = (html && typeof extractLandingHeadTags === 'function')
+        ? (extractLandingHeadTags(html, url).title || '')
+        : '';
       const detectedVideos = extractEmbeddedVideoObjectsFromHtml(
         html || '',
         url,
-        slug.replace(/-/g, ' '),
+        detectLiveTitle || humanizePathSegment(slug),
         '',
         '',
         ''
@@ -19636,7 +19678,7 @@ ${minifiedJson}
           schema = generateServiceSchema(title, finalDescription, image, url);
           break;
         case 'ItemList':
-          schema = generateItemListSchema(title, finalDescription, image, url);
+          schema = await generateItemListSchema(title, finalDescription, image, url);
           break;
         case 'WebPage':
           schema = generateLandingWebPageSchema(title, finalDescription, image, url);
@@ -19660,7 +19702,7 @@ ${minifiedJson}
         
         if (itemListItems) {
           addLandingDebugLog(` ItemList selected in checkbox - generating additional ItemList schema`);
-          const itemListSchema = generateItemListSchema(title, finalDescription, image, url);
+          const itemListSchema = await generateItemListSchema(title, finalDescription, image, url);
           additionalSchemas.push(itemListSchema);
           addLandingDebugLog(`✅ Additional ItemList schema generated with ${itemListSchema.itemListElement.length} items`);
         } else {
@@ -20519,7 +20561,7 @@ ${minifiedJson}
     updateItemListSelectionCount();
   }
 
-  function generateItemListSchema(title, description, image, url) {
+  async function generateItemListSchema(title, description, image, url) {
     // Get selected items from checkboxes (include all selected items in schema)
     const checkboxes = document.querySelectorAll('#itemListCheckboxes input[id^="itemListCheckbox_"]:checked');
     // Get Rich Results items (first 5 priority items for rich results)
@@ -20530,15 +20572,15 @@ ${minifiedJson}
     
     if (checkboxes.length > 0) {
       // Use all selected items for schema
-      const allSelectedItems = Array.from(checkboxes).map(cb => cb.value.trim()).filter(url => url);
+      const allSelectedItems = Array.from(checkboxes).map(cb => cb.value.trim()).filter(u => u);
       // Get Rich Results items (up to 5)
-      richResultsItems = Array.from(richResultsCheckboxes).slice(0, 5).map(cb => cb.value.trim()).filter(url => url);
+      richResultsItems = Array.from(richResultsCheckboxes).slice(0, 5).map(cb => cb.value.trim()).filter(u => u);
       
       // Sort items: Rich Results first, then others
       const richResultsSet = new Set(richResultsItems);
       items = [
-        ...richResultsItems, // Rich Results items first
-        ...allSelectedItems.filter(url => !richResultsSet.has(url)) // Then other selected items
+        ...richResultsItems,
+        ...allSelectedItems.filter(u => !richResultsSet.has(u))
       ];
       
       addLandingDebugLog(` Using ${items.length} selected item(s) in schema`);
@@ -20549,20 +20591,25 @@ ${minifiedJson}
       // Fallback to textarea (for backwards compatibility)
       const itemsText = document.getElementById('itemListItems')?.value.trim() || '';
       const allItems = itemsText.split('\n').filter(line => line.trim());
-      items = allItems; // Include all items
-      richResultsItems = allItems.slice(0, 5); // First 5 for rich results
+      items = allItems;
+      richResultsItems = allItems.slice(0, 5);
       addLandingDebugLog(` Using all items from textarea (no checkboxes found)`);
     }
 
-    // If no items provided, warn but still create ItemList
     if (items.length === 0) {
-      addLandingDebugLog(`⚽ No ItemList items provided - creating empty ItemList`);
+      addLandingDebugLog(`⚠️ No ItemList items provided - creating empty ItemList`);
     } else {
       addLandingDebugLog(`✅ ${items.length} item(s) included in ItemList schema`);
-      if (richResultsItems.length > 0) {
-        addLandingDebugLog(`⭐ ${richResultsItems.length} item(s) prioritized for Rich Results (positions 1-${richResultsItems.length})`);
-      }
+      addLandingDebugLog(`   Resolving live SEO titles for ItemList entries...`);
     }
+
+    const titleByUrl = new Map();
+    await Promise.all(items.map(async (itemUrl) => {
+      const trimmedUrl = itemUrl.trim();
+      if (!trimmedUrl || titleByUrl.has(trimmedUrl)) return;
+      const live = await resolvePageTitleForUrl(trimmedUrl);
+      if (live) titleByUrl.set(trimmedUrl, live);
+    }));
 
     const itemListSchema = {
       '@context': 'https://schema.org',
@@ -20573,16 +20620,20 @@ ${minifiedJson}
       url: url,
       itemListElement: items.map((itemUrl, index) => {
         const trimmedUrl = itemUrl.trim();
-        // Extract name from URL (last segment, formatted)
         const urlParts = trimmedUrl.split('/').filter(p => p);
-        const nameFromUrl = urlParts.length > 0 
-          ? urlParts[urlParts.length - 1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        const slugName = urlParts.length > 0
+          ? humanizePathSegment(urlParts[urlParts.length - 1])
           : `Item ${index + 1}`;
+        const liveName = titleByUrl.get(trimmedUrl) || '';
+        const name = liveName || slugName;
+        if (liveName) {
+          addLandingDebugLog(`   ItemList #${index + 1}: ${liveName}`);
+        }
         
         return {
           '@type': 'ListItem',
           position: index + 1,
-          name: nameFromUrl,
+          name,
           item: {
             '@type': 'WebPage',
             '@id': trimmedUrl,
@@ -20598,8 +20649,6 @@ ${minifiedJson}
 
     return itemListSchema;
   }
-
-  // Landing-page / generic WebPage generator (different from blog-post WebPage)
   function generateLandingWebPageSchema(title, description, image, url) {
     // Normalise and validate URL – avoid undefined/empty @id values
     const canonicalUrl = (url || '').toString().trim();
