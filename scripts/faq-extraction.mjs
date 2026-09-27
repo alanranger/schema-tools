@@ -180,27 +180,32 @@ export function extractFromSquarespaceFaqBlocks(html) {
 }
 
 /**
- * Visible Academy FAQ blocks: #arp-*-faq .arp-faq-item with h3 + p.
+ * Visible Academy FAQ blocks:
+ * - #arp-*-faq / .arp-*-faq sections
+ * - .arp-faq-item (L30–L32) or .arp-lXX-answer (e.g. L33 observation)
  * Prefer the first matching section so CSS/style copies of the id do not pollute pairs.
  */
 export function extractFromArpFaqItems(html) {
   const pairs = [];
   if (!html) return pairs;
-  const sectionRe = /<section[^>]*\bid=["'](arp-[^"']*-faq)["'][^>]*>([\s\S]*?)<\/section>/gi;
+  const sectionRe =
+    /<section[^>]*(?:\bid=["']arp-[^"']*-faq["']|class=["'][^"']*arp-[^"']*faq[^"']*["'])[^>]*>([\s\S]*?)<\/section>/gi;
   let sectionMatch;
   let scope = '';
   while ((sectionMatch = sectionRe.exec(html)) !== null) {
-    if (sectionMatch[2] && /arp-faq-item/i.test(sectionMatch[2])) {
-      scope = sectionMatch[2];
+    const body = sectionMatch[1] || '';
+    if (/arp-faq-item|arp-[a-z0-9-]*answer/i.test(body)) {
+      scope = body;
       break;
     }
   }
   if (!scope) {
-    const loose = html.match(/class=["'][^"']*arp-faq-item[^"']*["']/i);
+    const loose = html.match(/class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["']/i);
     if (!loose) return pairs;
     scope = html;
   }
-  const itemRe = /<div[^>]*class=["'][^"']*arp-faq-item[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+  const itemRe =
+    /<div[^>]*class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
   let m;
   while ((m = itemRe.exec(scope)) !== null) {
     const block = m[1];

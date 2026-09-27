@@ -119,11 +119,12 @@ function shortStepName(text) {
   return sentence.length > 120 ? `${sentence.slice(0, 117).trimEnd()}...` : sentence;
 }
 
-/** Visible Academy exercise: .arp-exercise ol > li (e.g. #arp-l32-practice). */
+/** Visible Academy exercise: .arp-exercise / .arp-lXX-exercise ol > li. */
 export function extractFromArpExercise(html) {
   const steps = [];
   if (!html) return steps;
-  const blockRe = /<div[^>]*class=["'][^"']*arp-exercise[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+  const blockRe =
+    /<div[^>]*class=["'][^"']*arp-(?:l\d+-)?exercise[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
   let blockMatch;
   while ((blockMatch = blockRe.exec(html)) !== null) {
     const block = blockMatch[1];
@@ -140,14 +141,15 @@ export function extractFromArpExercise(html) {
   return steps;
 }
 
-/** Visible Academy practice cards: #arp-*-practice .arp-step with h3 + p. */
+/** Visible Academy practice cards: #arp-*-practice / .arp-*-practice .arp-step with h3 + p. */
 export function extractFromArpPracticeSteps(html) {
   const steps = [];
   if (!html) return steps;
-  const sectionRe = /<section[^>]*\bid=["'](arp-[^"']*-practice)["'][^>]*>([\s\S]*?)<\/section>/gi;
+  const sectionRe =
+    /<(?:section|div)[^>]*(?:\bid=["']arp-[^"']*-practice["']|class=["'][^"']*arp-[^"']*-practice[^"']*["'])[^>]*>([\s\S]*?)<\/(?:section|div)>/gi;
   let sectionMatch;
   while ((sectionMatch = sectionRe.exec(html)) !== null) {
-    const scope = sectionMatch[2] || '';
+    const scope = sectionMatch[1] || '';
     const cardRe = /<div[^>]*class=["'][^"']*arp-step[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
     let card;
     let pos = 0;
@@ -169,8 +171,8 @@ export function extractFromArpPracticeSteps(html) {
 
 export function pageHasArpInstructionalSequence(html) {
   if (!html) return false;
-  return /class=["'][^"']*arp-exercise[^"']*["']/i.test(html)
-    || /id=["']arp-[^"']*-practice["']/i.test(html);
+  return /class=["'][^"']*arp-(?:l\d+-)?exercise[^"']*["']/i.test(html)
+    || /(?:id=["']arp-[^"']*-practice["']|class=["'][^"']*arp-[^"']*-practice)/i.test(html);
 }
 
 export function extractFromOrderedListSection(html) {

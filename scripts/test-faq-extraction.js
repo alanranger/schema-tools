@@ -100,7 +100,10 @@ const STALE_FAQ_MARKERS = [
   'What is the definition of contrast in photography?',
   'What does contrast do on a camera?',
   'What does negative space in photography mean?',
-  'What is an example of negative space?'
+  'What is an example of negative space?',
+  'What does it mean when photography is an art of observation?',
+  'What is the art of observation?',
+  'What is photography as an art form?'
 ];
 
 const ARP_FAQ_REGRESSION = [
@@ -117,6 +120,11 @@ const ARP_FAQ_REGRESSION = [
   {
     slug: 'what-is-negative-space-in-photography',
     expectFirst: 'What is negative space in photography?',
+    expectCount: 8
+  },
+  {
+    slug: 'photography-is-an-art-of-observation',
+    expectFirst: 'Why is photography an art of observation?',
     expectCount: 8
   }
 ];
