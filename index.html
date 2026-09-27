@@ -7140,7 +7140,8 @@
       .replace(/\b(Facebook|LinkedIn|Pinterest|Tumblr|Twitter|Reddit)\s*0\b/gi, ' ')
       .replace(/\b(Facebook|LinkedIn|Pinterest|Tumblr|Twitter|Reddit)\b/gi, ' ')
       .replace(/\bAlan\s+Ranger\s*\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/gi, ' ')
-      .replace(/\b(?:field\s+)?checklist\b/gi, ' ')
+      // Do NOT strip the word "checklist" from real SEO meta (e.g. "PDF checklist").
+      // Product/noise checklist phrases are rejected via isLikelySocialShareJunk / isWeakSchemaDescription.
       .replace(/\b0\s*Likes?\b/gi, ' ')
       .replace(/\b(?:share|shares?)\b/gi, ' ')
       // Remove encoded URL fragments that often leak into snippets
@@ -11604,19 +11605,13 @@
         // CRITICAL: Only generate additional schemas if HTML was fetched (same as single URL mode)
         if (html && blogPosting) {
         
-        // Generate HowTo schema (MASTER RULE: only if markers detected)
+        // Generate HowTo schema — always regenerate from live HTML (never retain stale howto files)
         try {
           const debugLog = (msg) => blogPosts_log(`   [HowTo Detection] ${msg}`);
           const shouldGenerate = shouldGenerateHowTo(html, plainText, debugLog);
+          const howToFileName = `${slug}_howto.json`;
           
           if (shouldGenerate) {
-            // Check if file already exists (SAFETY RULE)
-            const howToFileName = `${slug}_howto.json`;
-            const howToExists = await fileExistsInGithub(howToFileName);
-
-            if (howToExists && !forceOverwrite) {
-              blogPosts_log(`   ⎽  HowTo SKIPPED: File already exists in GitHub: ${howToFileName}`);
-            } else {
               const howToSchema = await generateHowToSchema(row, blogPosting, plainText, html);
               if (howToSchema) {
                 const howToJson = JSON.stringify(howToSchema, null, 2);
@@ -11650,8 +11645,14 @@
                   blogPosts_log(`    Generated HowTo: ${howToFileName}`);
                   saved++;
                 }
+              } else if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+                try {
+                  await window.electronAPI.deleteSchemaFile(howToFileName);
+                  blogPosts_log(`   ⎽ Removed stale HowTo (no valid sequence): ${howToFileName}`);
+                } catch (delErr) {
+                  blogPosts_log(`   ⎽ HowTo omitted (delete skipped): ${delErr.message}`);
+                }
               }
-            }
           } else {
             blogPosts_log(`   ⎽  HowTo SKIPPED: Page HTML already includes HowTo JSON-LD (no duplicate file) — ${slug}`);
           }
@@ -11659,17 +11660,11 @@
           blogPosts_log(`   ⚽  Error generating HowTo for ${slug}: ${e.message}`);
         }
         
-        // Generate FAQ schema from on-page Q&A (no generic template fallback)
+        // Generate FAQ from live page Q&A — always regenerate (never retain stale faq files)
         try {
-            // Check if file already exists (SAFETY RULE)
             const faqFileName = `${slug}_faq.json`;
-            const faqExists = await fileExistsInGithub(faqFileName);
-
-            if (faqExists && !forceOverwrite) {
-              blogPosts_log(`   ⎽  FAQ SKIPPED: File already exists in GitHub: ${faqFileName}`);
-            } else {
-              const faqSchema = await generateFAQSchema(row, blogPosting, plainText, html);
-              if (faqSchema) {
+            const faqSchema = await generateFAQSchema(row, blogPosting, plainText, html);
+            if (faqSchema) {
                 const faqJson = JSON.stringify(faqSchema, null, 2);
                 
                 // Validate FAQ JSON and schema rules
@@ -11701,6 +11696,12 @@
                   blogPosts_log(`    Generated FAQ: ${faqFileName}`);
                   saved++;
                 }
+            } else if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+              try {
+                await window.electronAPI.deleteSchemaFile(faqFileName);
+                blogPosts_log(`   ⎽ Removed stale FAQ (no valid on-page Q&A): ${faqFileName}`);
+              } catch (delErr) {
+                blogPosts_log(`   ⎽ FAQ omitted (delete skipped): ${delErr.message}`);
               }
             }
         } catch (e) {

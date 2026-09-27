@@ -185,6 +185,20 @@ export function extractFromSquarespaceFaqBlocks(html) {
  * - .arp-faq-item (h3+p), .arp-lXX-answer (h3+p), or <details><summary>…</summary><div class="arp-faq-answer">
  * Prefer the first matching section so CSS/style copies of the id do not pollute pairs.
  */
+export function cleanFaqQuestionText(q) {
+  return String(q || '')
+    .replace(/^[\s\u00a0]*[\-\u2013\u2014\u2212+•·*]+\s*/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function pageHasVisibleArpFaq(html) {
+  if (!html) return false;
+  return /<(?:section|div)[^>]*(?:\bid=["']arp-[^"']*-faq["']|class=["'][^"']*arp-[^"']*faq[^"']*["'])/i.test(
+    html
+  );
+}
+
 export function extractFromArpFaqItems(html) {
   const pairs = [];
   if (!html) return pairs;
@@ -207,7 +221,8 @@ export function extractFromArpFaqItems(html) {
     scope = html;
   }
 
-  // Pattern A: <details><summary>Question?</summary>…answer…</details>
+  // Pattern A: <details><summary>…</summary>…answer…</details>
+  // Prefer <h3> inside summary when present (e.g. L28 storytelling).
   const detailsRe = /<details\b[^>]*>([\s\S]*?)<\/details>/gi;
   let dm;
   let detailsFound = 0;
@@ -215,7 +230,8 @@ export function extractFromArpFaqItems(html) {
     const block = dm[1];
     const sum = block.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i);
     if (!sum) continue;
-    const question = htmlBlockToPlainText(sum[1]).replace(/\s+/g, ' ').trim();
+    const h3 = sum[1].match(/<h3\b[^>]*>([\s\S]*?)<\/h3>/i);
+    const question = cleanFaqQuestionText(htmlBlockToPlainText(h3 ? h3[1] : sum[1]));
     const after = block.slice(block.indexOf(sum[0]) + sum[0].length);
     const answer = htmlBlockToPlainText(after).trim();
     if (question && answer) {
@@ -234,7 +250,7 @@ export function extractFromArpFaqItems(html) {
     const block = m[1];
     const qMatch = block.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
     if (!qMatch) continue;
-    const question = htmlBlockToPlainText(qMatch[1]).replace(/\s+/g, ' ').trim();
+    const question = cleanFaqQuestionText(htmlBlockToPlainText(qMatch[1]));
     const afterH3 = block.slice(qMatch.index + qMatch[0].length);
     const answer = htmlBlockToPlainText(afterH3).trim();
     if (question && answer) pairs.push({ question, answer });
@@ -341,7 +357,7 @@ export function validateAndDedupePairs(pairs, debugLog) {
   const seen = new Set();
   const out = [];
   for (const raw of pairs) {
-    let q = (raw.question || '').replace(/\s+/g, ' ').trim();
+    let q = cleanFaqQuestionText(raw.question || '');
     let a = normalizeAnswerWhitespace(raw.answer || '');
     if (!validateQuestion(q)) {
       if (debugLog) debugLog(`Pair dropped: question failed validation — ${q.slice(0, 70)}`);
@@ -401,8 +417,13 @@ export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
   // Prefer visible Academy FAQ markup over stale injected JSON-LD / heading scans.
   let r = run('arp-faq', extractFromArpFaqItems(primaryHtml));
   if (r) return r;
-  r = run('A', extractFromJsonLdFaq(primaryHtml));
-  if (r) return r;
+  // Never let stale FAQPage JSON-LD win when an Academy FAQ section exists on the page.
+  if (!pageHasVisibleArpFaq(primaryHtml)) {
+    r = run('A', extractFromJsonLdFaq(primaryHtml));
+    if (r) return r;
+  } else {
+    dbg('A skipped — visible arp-*-faq section present; refusing stale JSON-LD FAQPage');
+  }
   r = run('B', extractFromSquarespaceFaqBlocks(primaryHtml));
   if (r) return r;
   r = run('C', extractFromNumberedFaqParagraphs(primaryHtml, mainHtml));

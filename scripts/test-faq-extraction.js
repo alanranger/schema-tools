@@ -128,6 +128,11 @@ const ARP_FAQ_REGRESSION = [
     expectCount: 8
   },
   {
+    slug: 'the-art-of-storytelling-photography',
+    expectFirst: 'What is storytelling photography?',
+    expectCount: 8
+  },
+  {
     slug: 'what-is-framing-in-photography',
     expectFirst: 'What is framing in photography?',
     expectCount: 7
