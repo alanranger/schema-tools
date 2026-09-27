@@ -1,6 +1,14 @@
 /**
  * FAQ extraction for blog articles — shared by the browser tool (dynamic import)
  * and Node regression tests. No third-party dependencies.
+ *
+ * Visible formats understood (priority order in extractFAQFromArticle):
+ * - arp-faq: #arp-*-faq containers with details/summary, .arp-faq-item, .faq-item (scoped), .arp-lXX-answer
+ * - A: FAQPage JSON-LD (skipped when live arp FAQ markup is present)
+ * - B: Squarespace summary-title / summary-description blocks
+ * - accordion: Squarespace accordion items whose titles are questions (?)
+ * - C: FAQ section paragraphs (numbered/unnumbered <strong> Qs, or plain Q paragraphs)
+ * - C-headings: h2–h4 question headings (only inside a confirmed FAQ section)
  */
 
 const QUESTION_PREFIX_RE = /^(How|What|Why|When|Where|Which|Should|Can|Do|Does|Is|Are)\s+/i;
@@ -180,16 +188,46 @@ export function extractFromSquarespaceFaqBlocks(html) {
 }
 
 /**
+ * Squarespace accordion blocks — only items whose title is a real question (ends with ?).
+ * Product detail accordions (Dates / Description) are ignored.
+ */
+export function extractFromSquarespaceAccordion(html) {
+  const pairs = [];
+  if (!html) return pairs;
+  const liRe = /<li[^>]*class=["'][^"']*accordion-item[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi;
+  let m;
+  while ((m = liRe.exec(html)) !== null) {
+    const block = m[1];
+    const titleMatch = block.match(/accordion-item__title[^>]*>([\s\S]*?)<\/span>/i);
+    if (!titleMatch) continue;
+    const question = cleanFaqQuestionText(htmlBlockToPlainText(titleMatch[1]));
+    if (!question.endsWith('?')) continue;
+    const descMatch = block.match(/accordion-item__description[^>]*>([\s\S]*?)<\/div>/i);
+    const answer = descMatch ? htmlBlockToPlainText(descMatch[1]).trim() : '';
+    if (question && answer) pairs.push({ question, answer });
+  }
+  return pairs;
+}
+
+/**
  * Visible Academy FAQ blocks:
- * - #arp-*-faq / .arp-*-faq sections
- * - .arp-faq-item (h3+p), .arp-lXX-answer (h3+p), or <details><summary>…</summary><div class="arp-faq-answer">
- * Prefer the first matching section so CSS/style copies of the id do not pollute pairs.
+ * - #arp-*-faq / .arp-*-faq on <section> or <div>
+ * - .arp-faq-item, .faq-item (only inside arp-*-faq), .arp-lXX-answer, or <details><summary>
+ * Prefer the first matching container so CSS/style copies of the id do not pollute pairs.
  */
 export function cleanFaqQuestionText(q) {
   return String(q || '')
+    .replace(/^[\s\u00a0]*(?:Q(?:uestion)?\s*\d+\s*[:.\-)–—]\s*)/i, '')
     .replace(/^[\s\u00a0]*[\-\u2013\u2014\u2212+•·*]+\s*/u, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function cleanFaqAnswerText(a) {
+  let s = String(a || '')
+    .replace(/^[\s\u00a0]*(?:A(?:nswer)?\s*\d+\s*[:.\-)–—]\s*)/i, '')
+    .trim();
+  return cleanExtractedFaqAnswerText(s);
 }
 
 export function pageHasVisibleArpFaq(html) {
@@ -199,33 +237,59 @@ export function pageHasVisibleArpFaq(html) {
   );
 }
 
-export function extractFromArpFaqItems(html) {
-  const pairs = [];
-  if (!html) return pairs;
-  const sectionRe =
-    /<section[^>]*(?:\bid=["']arp-[^"']*-faq["']|class=["'][^"']*arp-[^"']*faq[^"']*["'])[^>]*>([\s\S]*?)<\/section>/gi;
-  let sectionMatch;
-  let scope = '';
-  while ((sectionMatch = sectionRe.exec(html)) !== null) {
-    const body = sectionMatch[1] || '';
-    if (/arp-faq-item|arp-[a-z0-9-]*answer|<details[\s>]/i.test(body)) {
-      scope = body;
-      break;
-    }
-  }
-  if (!scope) {
-    const loose = html.match(
-      /class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["']|<details[\s>][^>]*>\s*<summary/i
-    );
-    if (!loose) return pairs;
-    scope = html;
-  }
+/** True when body looks like FAQ cards (arp or generic .faq-item). */
+function bodyHasFaqCards(body) {
+  return /arp-faq-item|arp-l\d+-answer|<details[\s>]|class=["'][^"']*\bfaq-item\b/i.test(body);
+}
 
-  // Pattern A: <details><summary>…</summary>…answer…</details>
-  // Prefer <h3> inside summary when present (e.g. L28 storytelling).
+function sliceUntilMatchingClose(html, openEnd, tagName) {
+  const openTok = `<${tagName}`;
+  const closeTok = `</${tagName}>`;
+  const lower = html.toLowerCase();
+  let depth = 1;
+  let i = openEnd;
+  while (i < html.length && depth > 0) {
+    const nextOpen = lower.indexOf(openTok, i);
+    const nextClose = lower.indexOf(closeTok, i);
+    if (nextClose < 0) return '';
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      const ch = lower[nextOpen + openTok.length];
+      if (ch === ' ' || ch === '>' || ch === '\n' || ch === '\r' || ch === '\t') {
+        depth += 1;
+        i = nextOpen + openTok.length;
+        continue;
+      }
+      i = nextOpen + openTok.length;
+      continue;
+    }
+    depth -= 1;
+    if (depth === 0) return html.slice(openEnd, nextClose);
+    i = nextClose + closeTok.length;
+  }
+  return '';
+}
+
+function findArpFaqScope(html) {
+  const openRe =
+    /<(section|div)[^>]*(?:\bid=["']arp-[^"']*-faq["']|class=["'][^"']*arp-[^"']*faq[^"']*["'])[^>]*>/gi;
+  let match;
+  while ((match = openRe.exec(html)) !== null) {
+    const tag = match[1].toLowerCase();
+    const body = sliceUntilMatchingClose(html, openRe.lastIndex, tag);
+    if (bodyHasFaqCards(body)) return body;
+  }
+  // Loose fallback: arp-specific cards / details only — never bare .faq-item on the whole page.
+  const loose =
+    /class=["'][^"']*(?:arp-faq-item|arp-l\d+-answer)[^"']*["']|<details[\s>][^>]*>\s*<summary/i.test(
+      html
+    );
+  return loose ? html : '';
+}
+
+function extractArpDetailsPairs(scope, pairs) {
   const detailsRe = /<details\b[^>]*>([\s\S]*?)<\/details>/gi;
   let dm;
-  let detailsFound = 0;
+  let found = 0;
   while ((dm = detailsRe.exec(scope)) !== null) {
     const block = dm[1];
     const sum = block.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i);
@@ -233,35 +297,62 @@ export function extractFromArpFaqItems(html) {
     const h3 = sum[1].match(/<h3\b[^>]*>([\s\S]*?)<\/h3>/i);
     const question = cleanFaqQuestionText(htmlBlockToPlainText(h3 ? h3[1] : sum[1]));
     const after = block.slice(block.indexOf(sum[0]) + sum[0].length);
-    const answer = htmlBlockToPlainText(after).trim();
+    const answer = cleanFaqAnswerText(htmlBlockToPlainText(after));
     if (question && answer) {
       pairs.push({ question, answer });
-      detailsFound += 1;
+      found += 1;
     }
   }
-  if (detailsFound >= 3) return pairs;
-  if (detailsFound > 0) pairs.length = 0;
+  return found;
+}
 
-  // Pattern B: .arp-faq-item / .arp-*-answer with h3 + body
-  const itemRe =
-    /<div[^>]*class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
-  let m;
-  while ((m = itemRe.exec(scope)) !== null) {
-    const block = m[1];
+function extractArpItemPairs(scope, pairs) {
+  // Inside confirmed arp-*-faq scope: .arp-faq-item, .faq-item, or .arp-lXX-answer.
+  // \bfaq-item\b matches both "faq-item" and "arp-faq-item"; excludes "arp-faq-answer".
+  const openRe = /<div[^>]*class=["'][^"']*(?:\bfaq-item\b|arp-l\d+-answer)[^"']*["'][^>]*>/gi;
+  const opens = [];
+  let om;
+  while ((om = openRe.exec(scope)) !== null) {
+    opens.push({ index: om.index, end: openRe.lastIndex });
+  }
+  for (let i = 0; i < opens.length; i++) {
+    const blockEnd = i + 1 < opens.length ? opens[i + 1].index : scope.length;
+    const block = scope.slice(opens[i].end, blockEnd);
     const qMatch = block.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
     if (!qMatch) continue;
     const question = cleanFaqQuestionText(htmlBlockToPlainText(qMatch[1]));
     const afterH3 = block.slice(qMatch.index + qMatch[0].length);
-    const answer = htmlBlockToPlainText(afterH3).trim();
+    const answer = cleanFaqAnswerText(htmlBlockToPlainText(afterH3));
     if (question && answer) pairs.push({ question, answer });
   }
+}
+
+export function extractFromArpFaqItems(html) {
+  const pairs = [];
+  if (!html) return pairs;
+  const scope = findArpFaqScope(html);
+  if (!scope) return pairs;
+
+  const detailsFound = extractArpDetailsPairs(scope, pairs);
+  if (detailsFound >= 3) return pairs;
+  if (detailsFound > 0) pairs.length = 0;
+
+  extractArpItemPairs(scope, pairs);
   return pairs;
 }
 
 function findFaqSectionStart(html) {
   if (!html) return -1;
-  const h2Faq = html.match(/<h2[^>]*>[\s\S]{0,220}?\bFAQs?\b/i);
-  if (h2Faq && h2Faq.index != null) return h2Faq.index;
+  // FAQ must appear in the heading text itself — not in following body copy
+  // (e.g. "FAQ answer length" in a normal paragraph must not unlock C-headings).
+  const headingRe = /<h([23])[^>]*>([\s\S]*?)<\/h\1>/gi;
+  let hm;
+  while ((hm = headingRe.exec(html)) !== null) {
+    const text = stripTags(hm[2]).replace(/\s+/g, ' ').trim();
+    if (/\bFAQs?\b/i.test(text) || /frequently\s+asked\s+questions/i.test(text)) {
+      return hm.index;
+    }
+  }
   const strongFaq = html.match(/<strong>\s*FAQs?\b/i);
   if (strongFaq && strongFaq.index != null) return strongFaq.index;
   const low = html.toLowerCase();
@@ -270,25 +361,68 @@ function findFaqSectionStart(html) {
   return -1;
 }
 
-export function extractFromNumberedFaqParagraphs(fullHtml, mainHtml) {
+const STRONG_QUESTION_RE = /<strong>\s*(?:\d+\.\s*)?([^<]+?\?)\s*<\/strong>/i;
+
+function isFaqQuestionParagraph(inner) {
+  if (STRONG_QUESTION_RE.test(inner)) return true;
+  const plain = htmlBlockToPlainText(inner).replace(/\s+/g, ' ').trim();
+  if (!plain.endsWith('?') || plain.length < 10 || plain.length > 300) return false;
+  if ((plain.match(/\?/g) || []).length !== 1) return false;
+  return QUESTION_PREFIX_RE.test(plain);
+}
+
+function collectFollowingAnswers(paragraphs, startIdx) {
+  const chunks = [];
+  for (let j = startIdx; j < paragraphs.length; j++) {
+    if (isFaqQuestionParagraph(paragraphs[j])) break;
+    const t = htmlBlockToPlainText(paragraphs[j]).trim();
+    if (t) chunks.push(t);
+    if (chunks.join('\n\n').length > 1000) break;
+  }
+  return chunks.join('\n\n').trim();
+}
+
+/**
+ * FAQ section paragraph formats used across Squarespace blog posts:
+ * - <p><strong>1. Question?</strong> Answer…</p>
+ * - <p><strong>Question?</strong></p><p>Answer…</p>
+ * - <p>Question?</p><p>Answer…</p>
+ */
+export function extractFromFaqSectionParagraphs(fullHtml) {
   const pairs = [];
   const html = fullHtml || '';
   const start = findFaqSectionStart(html);
   if (start < 0) return pairs;
   const slice = html.slice(start, start + 25000);
+  const paragraphs = [];
   const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi;
   let m;
-  while ((m = pRe.exec(slice)) !== null) {
-    const inner = m[1];
-    const qm = inner.match(/<strong>\s*\d+\.\s*([^<]+?\?)\s*<\/strong>/i);
-    if (!qm) continue;
-    const question = stripTags(qm[1]).replace(/\s+/g, ' ').trim();
-    const afterQ = inner.slice(inner.indexOf(qm[0]) + qm[0].length);
-    const answerHtml = afterQ.replace(/^\s*(?:<br\s*\/?>)\s*/i, '');
-    const answer = htmlBlockToPlainText(answerHtml);
-    pairs.push({ question, answer });
+  while ((m = pRe.exec(slice)) !== null) paragraphs.push(m[1]);
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const inner = paragraphs[i];
+    const qm = inner.match(STRONG_QUESTION_RE);
+    if (qm) {
+      const question = stripTags(qm[1]).replace(/\s+/g, ' ').trim();
+      let answer = htmlBlockToPlainText(
+        inner.slice(inner.indexOf(qm[0]) + qm[0].length).replace(/^\s*(?:<br\s*\/?>)\s*/i, '')
+      ).trim();
+      if (!answer) answer = collectFollowingAnswers(paragraphs, i + 1);
+      if (question && answer) pairs.push({ question, answer });
+      continue;
+    }
+    const plain = htmlBlockToPlainText(inner).replace(/\s+/g, ' ').trim();
+    if (!isFaqQuestionParagraph(inner) || /<strong>/i.test(inner)) continue;
+    if (/^faqs?\b/i.test(plain)) continue;
+    const answer = collectFollowingAnswers(paragraphs, i + 1);
+    if (plain && answer) pairs.push({ question: plain, answer });
   }
   return pairs;
+}
+
+/** @deprecated Use extractFromFaqSectionParagraphs — kept for callers/tests. */
+export function extractFromNumberedFaqParagraphs(fullHtml, _mainHtml) {
+  return extractFromFaqSectionParagraphs(fullHtml);
 }
 
 function isQuestionHeadingText(text) {
@@ -301,27 +435,31 @@ function isQuestionHeadingText(text) {
 export function extractFromQuestionHeadings(html) {
   const pairs = [];
   if (!html) return pairs;
-  const headingRe = /<h([2-3])([^>]*)>([\s\S]*?)<\/h\1>/gi;
+  // Require a confirmed FAQ section so ordinary article h2/h3 questions are excluded.
+  const start = findFaqSectionStart(html);
+  if (start < 0) return pairs;
+  const scoped = html.slice(start);
+  const headingRe = /<h([2-4])([^>]*)>([\s\S]*?)<\/h\1>/gi;
   const matches = [];
   let m;
-  while ((m = headingRe.exec(html)) !== null) {
+  while ((m = headingRe.exec(scoped)) !== null) {
     matches.push({ level: +m[1], index: m.index, end: headingRe.lastIndex, inner: m[3] });
   }
   for (let i = 0; i < matches.length; i++) {
     const cur = matches[i];
-    const text = stripTags(cur.inner).replace(/\s+/g, ' ').trim();
+    const text = cleanFaqQuestionText(stripTags(cur.inner).replace(/\s+/g, ' ').trim());
     if (!isQuestionHeadingText(text)) continue;
     if (/^faqs?\b/i.test(text) && !/\?\s*$/.test(text)) continue;
-    let endPos = html.length;
+    let endPos = scoped.length;
     for (let j = i + 1; j < matches.length; j++) {
       if (matches[j].level <= cur.level) {
         endPos = matches[j].index;
         break;
       }
     }
-    const segment = html.slice(cur.end, endPos);
+    const segment = scoped.slice(cur.end, endPos);
     if (/BlogItem-pagination|newsletter-form|sqs-block-newsletter/i.test(segment)) continue;
-    const answer = htmlBlockToPlainText(segment);
+    const answer = cleanFaqAnswerText(htmlBlockToPlainText(segment));
     pairs.push({ question: text, answer });
   }
   return pairs;
@@ -358,7 +496,7 @@ export function validateAndDedupePairs(pairs, debugLog) {
   const out = [];
   for (const raw of pairs) {
     let q = cleanFaqQuestionText(raw.question || '');
-    let a = normalizeAnswerWhitespace(raw.answer || '');
+    let a = normalizeAnswerWhitespace(cleanFaqAnswerText(raw.answer || ''));
     if (!validateQuestion(q)) {
       if (debugLog) debugLog(`Pair dropped: question failed validation — ${q.slice(0, 70)}`);
       continue;
@@ -379,7 +517,7 @@ export function validateAndDedupePairs(pairs, debugLog) {
  * @param {string} html
  * @param {string} articleBody
  * @param {function|null} debugLog
- * @returns {{ strategy: string, pairs: {question:string, answer:string}[], extractedCount: number, acceptedCount: number }}
+ * @returns {{ strategy: string, pairs: {question:string, answer:string}[], extractedCount: number, acceptedCount: number, visibleFaqFailed?: boolean }}
  */
 export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
   const dbg = (msg) => {
@@ -396,6 +534,7 @@ export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
 
   const primaryHtml = sourceHtml.trim() ? sourceHtml : '';
   const mainHtml = extractMainContentHtml(primaryHtml);
+  const hasVisibleArp = pageHasVisibleArpFaq(primaryHtml);
 
   const run = (strategyLabel, rawList) => {
     if (rawPairsContainDenyListedQuestion(rawList, dbg)) {
@@ -417,18 +556,29 @@ export function extractFAQFromArticle(html, articleBody = '', debugLog = null) {
   // Prefer visible Academy FAQ markup over stale injected JSON-LD / heading scans.
   let r = run('arp-faq', extractFromArpFaqItems(primaryHtml));
   if (r) return r;
-  // Never let stale FAQPage JSON-LD win when an Academy FAQ section exists on the page.
-  if (!pageHasVisibleArpFaq(primaryHtml)) {
-    r = run('A', extractFromJsonLdFaq(primaryHtml));
-    if (r) return r;
-  } else {
+
+  // Visible arp-*-faq present but no valid pairs: fail hard — do not keep stale JSON-LD / heading fallbacks.
+  if (hasVisibleArp) {
     dbg('A skipped — visible arp-*-faq section present; refusing stale JSON-LD FAQPage');
+    dbg('FAQ extraction: visible arp FAQ markup found but no valid pairs — fail (will not retain stale FAQ)');
+    return {
+      strategy: 'arp-faq-failed',
+      pairs: [],
+      extractedCount: 0,
+      acceptedCount: 0,
+      visibleFaqFailed: true
+    };
   }
+
+  r = run('A', extractFromJsonLdFaq(primaryHtml));
+  if (r) return r;
   r = run('B', extractFromSquarespaceFaqBlocks(primaryHtml));
   if (r) return r;
-  r = run('C', extractFromNumberedFaqParagraphs(primaryHtml, mainHtml));
+  r = run('accordion', extractFromSquarespaceAccordion(primaryHtml));
   if (r) return r;
-  r = run('C-headings', extractFromQuestionHeadings(mainHtml || primaryHtml));
+  r = run('C', extractFromFaqSectionParagraphs(primaryHtml));
+  if (r) return r;
+  r = run('C-headings', extractFromQuestionHeadings(primaryHtml || mainHtml));
   if (r) return r;
 
   dbg('FAQ extraction: no strategy returned 3+ valid pairs');

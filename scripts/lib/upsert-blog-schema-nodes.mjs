@@ -117,6 +117,33 @@ export function pruneMissingOptionalNodes(graph, repoDir, slugs) {
   return { graph: next, pruned: graph.length - next.length };
 }
 
+/**
+ * Keep exactly one FAQPage per canonical page URL (by @id …#faq or url).
+ * Later nodes win so an upserted file replaces stale duplicates.
+ */
+export function dedupeFaqPagesByCanonicalUrl(graph) {
+  const others = [];
+  const faqByUrl = new Map();
+  for (const n of graph) {
+    if (!n || typeof n !== 'object') continue;
+    const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+    if (!types.some((t) => String(t || '').toLowerCase() === 'faqpage')) {
+      others.push(n);
+      continue;
+    }
+    const id = String(n['@id'] || '');
+    const fromId = id.replace(/#faq$/i, '');
+    const url = normalizeUrl(fromId || n.url || '');
+    if (!url) {
+      others.push(n);
+      continue;
+    }
+    const normalized = stripContext({ ...n, '@id': `${url}#faq` });
+    faqByUrl.set(url, normalized);
+  }
+  return [...others, ...faqByUrl.values()];
+}
+
 export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
   const blogPath = path.join(repoDir, 'blog-schema.json');
   const blog = loadJson(blogPath);
@@ -127,7 +154,13 @@ export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
   for (const slug of slugs) incoming.push(...collectIndividualNodes(repoDir, slug));
   const { graph, upserted } = upsertNodes(blog['@graph'], incoming);
   const pruned = pruneMissingOptionalNodes(graph, repoDir, slugs);
-  blog['@graph'] = pruned.graph;
+  const deduped = dedupeFaqPagesByCanonicalUrl(pruned.graph);
+  blog['@graph'] = deduped;
   fs.writeFileSync(blogPath, `${JSON.stringify(blog)}\n`, 'utf8');
-  return { upserted, pruned: pruned.pruned, total: pruned.graph.length, blogPath };
+  return {
+    upserted,
+    pruned: pruned.pruned,
+    total: deduped.length,
+    blogPath
+  };
 }

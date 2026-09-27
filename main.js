@@ -955,11 +955,29 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
       // Delete file
       fs.unlinkSync(filePath);
       console.log(`🗑️  Deleted schema file: ${filePath}`);
+
+      // When a per-slug FAQ/HowTo is removed, prune matching nodes from blog-schema.json.
+      const optionalMatch = String(fileName).match(/^([a-z0-9-]+)_(faq|howto)\.json$/i);
+      const gitExtraFiles = [];
+      if (optionalMatch) {
+        try {
+          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, [optionalMatch[1]]);
+          gitExtraFiles.push('blog-schema.json');
+          console.log(
+            `Pruned blog-schema.json after deleting ${fileName} (pruned ${upsert.pruned || 0} node(s))`
+          );
+        } catch (upsertErr) {
+          console.warn(`blog-schema.json prune skipped after delete: ${upsertErr.message}`);
+        }
+      }
       
       // Git operations - stage deletion, commit, and push
       const commitMessage = `Delete ${fileName}`;
       const gitCommands = [
         { cmd: 'git', args: ['rm', fileName], desc: 'Stage file deletion' },
+        ...(gitExtraFiles.length
+          ? [{ cmd: 'git', args: ['add', ...gitExtraFiles], desc: 'Stage blog-schema prune' }]
+          : []),
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit deletion' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
@@ -1087,6 +1105,25 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
         resolve({ success: true, message: 'No files to delete', deletedCount: 0 });
         return;
       }
+
+      // Prune FAQ/HowTo nodes from blog-schema.json when those optional files were removed.
+      const pruneSlugs = [
+        ...new Set(
+          filesToDelete
+            .map((n) => n.match(/^([a-z0-9-]+)_(faq|howto)\.json$/i)?.[1])
+            .filter(Boolean)
+        )
+      ];
+      if (pruneSlugs.length) {
+        try {
+          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, pruneSlugs);
+          console.log(
+            `Pruned blog-schema.json after batch delete (pruned ${upsert.pruned || 0} node(s) for ${pruneSlugs.length} slug(s))`
+          );
+        } catch (upsertErr) {
+          console.warn(`blog-schema.json prune skipped after batch delete: ${upsertErr.message}`);
+        }
+      }
       
       // Windows command line limit is ~8191 characters
       // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
@@ -1108,6 +1145,14 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
           cmd: 'git',
           args: ['rm', ...batches[i]],
           desc: `Stage file deletions (batch ${i + 1}/${batches.length})`
+        });
+      }
+
+      if (pruneSlugs.length) {
+        gitCommands.push({
+          cmd: 'git',
+          args: ['add', 'blog-schema.json'],
+          desc: 'Stage blog-schema prune'
         });
       }
       

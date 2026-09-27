@@ -11157,6 +11157,8 @@
   /**
    * Generate FAQ schema for a blog post from on-page Q&A content only.
    * Returns null when fewer than three valid pairs are extracted (no generic fallback).
+   * Returns { __faqVisibleFailed: true } when a visible arp-*-faq container exists but yields no valid pairs
+   * (caller must delete stale _faq.json and treat as an error — do not keep old FAQ data).
    */
   async function generateFAQSchema(csvRow, blogPosting, articleBody, html) {
     const url = csvRow.url;
@@ -11177,6 +11179,13 @@
     } catch (e) {
       blogPosts_log(`   ❌ FAQ extraction module failed to load: ${e.message}`);
       return null;
+    }
+
+    if (extracted && extracted.visibleFaqFailed) {
+      blogPosts_log(
+        `   ❌ Visible FAQ markup found but no valid Q&A pairs for ${slug} — refusing to retain stale FAQ`
+      );
+      return { __faqVisibleFailed: true };
     }
 
     if (!extracted || extracted.pairs.length < 3) {
@@ -11664,7 +11673,17 @@
         try {
             const faqFileName = `${slug}_faq.json`;
             const faqSchema = await generateFAQSchema(row, blogPosting, plainText, html);
-            if (faqSchema) {
+            if (faqSchema && faqSchema.__faqVisibleFailed) {
+              if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+                try {
+                  await window.electronAPI.deleteSchemaFile(faqFileName);
+                  blogPosts_log(`   ❌ Removed stale FAQ after visible-FAQ extraction failure: ${faqFileName}`);
+                } catch (delErr) {
+                  blogPosts_log(`   ❌ Visible FAQ failed; delete skipped: ${delErr.message}`);
+                }
+              }
+              errors++;
+            } else if (faqSchema) {
                 const faqJson = JSON.stringify(faqSchema, null, 2);
                 
                 // Validate FAQ JSON and schema rules
@@ -12464,7 +12483,16 @@
         try {
             const faqFileName = `${slug}_faq.json`;
             const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);
-            if (faqSchema) {
+            if (faqSchema && faqSchema.__faqVisibleFailed) {
+              if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
+                try {
+                  await window.electronAPI.deleteSchemaFile(faqFileName);
+                  blogPosts_log(`   ❌ Removed stale FAQ after visible-FAQ extraction failure: ${faqFileName}`);
+                } catch (delErr) {
+                  blogPosts_log(`   ❌ Visible FAQ failed; delete skipped: ${delErr.message}`);
+                }
+              }
+            } else if (faqSchema) {
               const faqJson = JSON.stringify(faqSchema, null, 2);
               
               // Validate FAQ JSON and schema rules

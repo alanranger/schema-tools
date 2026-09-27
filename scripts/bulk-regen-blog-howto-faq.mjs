@@ -175,7 +175,13 @@ function writeHowTo(repo, slug, url, extracted, headline) {
 
 function writeFaq(repo, slug, url, extracted) {
   const filePath = path.join(repo, `${slug}_faq.json`);
+  // Visible FAQ markup present but extraction failed: delete stale file and fail the URL.
+  if (extracted && extracted.visibleFaqFailed) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return 'fail-faq';
+  }
   if (!extracted || extracted.pairs.length < 3) {
+    // No visible FAQ (or not enough pairs): remove per-slug FAQ so blog-schema prune drops FAQPage.
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       return 'delete-faq';
@@ -233,6 +239,7 @@ async function main() {
   let faqOk = 0;
   let faqDelete = 0;
   let faqSkip = 0;
+  let faqFail = 0;
 
   const finishBatch = () => {
     if (!opts.noCommit) {
@@ -268,6 +275,11 @@ async function main() {
       if (fRes === 'ok-faq') faqOk += 1;
       else if (fRes === 'delete-faq') faqDelete += 1;
       else if (fRes === 'skip-faq') faqSkip += 1;
+      else if (fRes === 'fail-faq') {
+        faqFail += 1;
+        batchErrors += 1;
+        appendLog(`${slug} ERROR visible FAQ markup found but no valid pairs (stale FAQ removed)`);
+      }
       appendLog(`${slug} howto=${how.strategy}/${how.steps.length} faq=${faq.strategy}/${faq.pairs.length} files=${hRes},${fRes}`);
     } catch (e) {
       batchErrors += 1;
@@ -290,7 +302,7 @@ async function main() {
   }
 
   appendLog(
-    `Finished bulk HowTo/FAQ regen (${urls.length} URL(s)). FAQ files: ok-faq=${faqOk}, delete-faq=${faqDelete}, skip-faq=${faqSkip}.`
+    `Finished bulk HowTo/FAQ regen (${urls.length} URL(s)). FAQ files: ok-faq=${faqOk}, delete-faq=${faqDelete}, skip-faq=${faqSkip}, fail-faq=${faqFail}.`
   );
 
   const slugs = [...new Set(urls.map((u) => u.split('/').pop()).filter(Boolean))];
@@ -304,7 +316,7 @@ async function main() {
   }
 
   console.log(
-    `Done. ${urls.length} URL(s) processed. FAQ: ok-faq=${faqOk} delete-faq=${faqDelete} skip-faq=${faqSkip}. Log appended to BULK-REGEN-LOG.md`
+    `Done. ${urls.length} URL(s) processed. FAQ: ok-faq=${faqOk} delete-faq=${faqDelete} skip-faq=${faqSkip} fail-faq=${faqFail}. Log appended to BULK-REGEN-LOG.md`
   );
 }
 
