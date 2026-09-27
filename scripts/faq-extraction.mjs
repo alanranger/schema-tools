@@ -182,7 +182,7 @@ export function extractFromSquarespaceFaqBlocks(html) {
 /**
  * Visible Academy FAQ blocks:
  * - #arp-*-faq / .arp-*-faq sections
- * - .arp-faq-item (L30–L32) or .arp-lXX-answer (e.g. L33 observation)
+ * - .arp-faq-item (h3+p), .arp-lXX-answer (h3+p), or <details><summary>…</summary><div class="arp-faq-answer">
  * Prefer the first matching section so CSS/style copies of the id do not pollute pairs.
  */
 export function extractFromArpFaqItems(html) {
@@ -194,16 +194,39 @@ export function extractFromArpFaqItems(html) {
   let scope = '';
   while ((sectionMatch = sectionRe.exec(html)) !== null) {
     const body = sectionMatch[1] || '';
-    if (/arp-faq-item|arp-[a-z0-9-]*answer/i.test(body)) {
+    if (/arp-faq-item|arp-[a-z0-9-]*answer|<details[\s>]/i.test(body)) {
       scope = body;
       break;
     }
   }
   if (!scope) {
-    const loose = html.match(/class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["']/i);
+    const loose = html.match(
+      /class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["']|<details[\s>][^>]*>\s*<summary/i
+    );
     if (!loose) return pairs;
     scope = html;
   }
+
+  // Pattern A: <details><summary>Question?</summary>…answer…</details>
+  const detailsRe = /<details\b[^>]*>([\s\S]*?)<\/details>/gi;
+  let dm;
+  let detailsFound = 0;
+  while ((dm = detailsRe.exec(scope)) !== null) {
+    const block = dm[1];
+    const sum = block.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i);
+    if (!sum) continue;
+    const question = htmlBlockToPlainText(sum[1]).replace(/\s+/g, ' ').trim();
+    const after = block.slice(block.indexOf(sum[0]) + sum[0].length);
+    const answer = htmlBlockToPlainText(after).trim();
+    if (question && answer) {
+      pairs.push({ question, answer });
+      detailsFound += 1;
+    }
+  }
+  if (detailsFound >= 3) return pairs;
+  if (detailsFound > 0) pairs.length = 0;
+
+  // Pattern B: .arp-faq-item / .arp-*-answer with h3 + body
   const itemRe =
     /<div[^>]*class=["'][^"']*(?:arp-faq-item|arp-[^"']*-answer)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
   let m;

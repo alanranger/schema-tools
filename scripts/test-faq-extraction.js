@@ -126,6 +126,21 @@ const ARP_FAQ_REGRESSION = [
     slug: 'photography-is-an-art-of-observation',
     expectFirst: 'Why is photography an art of observation?',
     expectCount: 8
+  },
+  {
+    slug: 'what-is-framing-in-photography',
+    expectFirst: 'What is framing in photography?',
+    expectCount: 7
+  },
+  {
+    slug: 'mastering-photography-composition-rules',
+    expectFirst: 'What are the main composition rules in photography?',
+    expectCount: 10
+  },
+  {
+    slug: 'what-are-leading-lines-in-photography',
+    expectFirst: 'What are leading lines in photography?',
+    expectCount: 8
   }
 ];
 
