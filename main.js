@@ -3,6 +3,7 @@ import path from "path";
 import { spawn, spawnSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { upsertSlugsIntoBlogSchema } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
 import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -707,7 +708,26 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
         const filePath = path.join(schemaRepoPath, file.fileName);
         fs.writeFileSync(filePath, file.jsonContent, 'utf-8');
         fileNames.push(file.fileName);
-        console.log(`✅ Saved schema file: ${filePath}`);
+        console.log(`Saved schema file: ${filePath}`);
+      }
+
+      // Keep combined blog-schema.json in sync by @id when per-URL blog files are deployed.
+      const blogSlugs = [...new Set(
+        fileNames
+          .map((name) => {
+            const m = String(name).match(/^(.*)_(schema|blogposting|breadcrumb|faq|howto|image)\.json$/i);
+            return m ? m[1] : null;
+          })
+          .filter(Boolean)
+      )];
+      if (blogSlugs.length > 0) {
+        try {
+          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, blogSlugs);
+          if (!fileNames.includes('blog-schema.json')) fileNames.push('blog-schema.json');
+          console.log(`Upserted ${upsert.upserted} nodes into blog-schema.json for ${blogSlugs.length} slug(s)`);
+        } catch (upsertErr) {
+          console.warn(`blog-schema.json upsert skipped: ${upsertErr.message}`);
+        }
       }
 
       const deletedFileNames = options?.cleanupProductSchemas

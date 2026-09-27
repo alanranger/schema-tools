@@ -7985,11 +7985,29 @@
         blogPosts_log(`   [Supabase] Fallback failed - could not fetch HTML from public URL`);
       }
     } else if (html) {
-      blogPosts_log(`   [Supabase] Using provided HTML (${html.length} chars) - skipping Supabase fetch`);
+      blogPosts_log(`   [Supabase] Using provided HTML (${html.length} chars) - skipping HTML re-fetch`);
     }
 
-    const title = (entity && entity.title) || csvRow.title;
-    const rawEntityDescription = entity && (entity.meta_description || entity.description || entity.excerpt);
+    // When HTML is already in hand, still load the page entity for dates/images (title/desc prefer live head).
+    if (!entity && supabaseAvailable && supabaseClient && url) {
+      try {
+        entity = await fetchPageEntityForUrl(url);
+        blogPosts_log(`   [Supabase] Entity for dates/images: ${entity ? 'found' : 'not found'}`);
+      } catch (e) {
+        blogPosts_log(`   [Supabase] Entity fetch skipped: ${e.message}`);
+      }
+    }
+
+    // Live SEO title/description win over slug/CSV/stale entity titles (URL/slug identity is stable).
+    let liveHead = { title: '', description: '' };
+    if (html && typeof extractLandingHeadTags === 'function') {
+      liveHead = extractLandingHeadTags(html, url) || liveHead;
+      if (liveHead.title) blogPosts_log(`   [LiveHead] title: ${liveHead.title}`);
+      if (liveHead.description) blogPosts_log(`   [LiveHead] description: ${liveHead.description.substring(0, 80)}...`);
+    }
+
+    const title = liveHead.title || (entity && entity.title) || csvRow.title;
+    const rawEntityDescription = liveHead.description || (entity && (entity.meta_description || entity.description || entity.excerpt));
     // Debug logging for description source
     if (entity) {
       blogPosts_log(`   [Description] Entity found - meta_description: ${entity.meta_description ? entity.meta_description.substring(0, 50) + '...' : 'null'}, description: ${entity.description ? entity.description.substring(0, 50) + '...' : 'null'}, rawEntityDescription: ${rawEntityDescription ? rawEntityDescription.substring(0, 50) + '...' : 'null'}`);
@@ -12156,11 +12174,24 @@
           blogPosts_log('   [Image] No main image detected in HTML for this URL');
         }
         
+        // Apply live SEO title/description onto mockRow so WebPage/Breadcrumb use the same identity fields.
+        if (html && typeof extractLandingHeadTags === 'function') {
+          const head = extractLandingHeadTags(html, url);
+          if (head && head.title) {
+            mockRow.title = head.title;
+            blogPosts_log(`   [LiveHead] mockRow.title <= ${head.title}`);
+          }
+          if (head && head.description) {
+            mockRow.metaDescription = head.description;
+            blogPosts_log(`   [LiveHead] mockRow.metaDescription <= ${head.description.substring(0, 80)}...`);
+          }
+        }
+
         // Build enriched BlogPosting now that mockRow.imageUrl is populated (if available)
         // Pass fetched HTML/plainText so video and content detection use the same page source.
         blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
       } else {
-        blogPosts_log('   ⚽  Could not fetch HTML (may be CORS or network). Proceeding without HTML-based enrichment.');
+        blogPosts_log('   WARNING: Could not fetch HTML (may be CORS or network). Proceeding without HTML-based enrichment.');
         // Fallback: still build BlogPosting from mockRow (without HTML enrichment)
         blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
       }
@@ -12169,7 +12200,7 @@
       blogPosts_log(' Generating WebPage schema...');
       let webPageSchema;
       try {
-        webPageSchema = await generateWebPageSchema(mockRow);
+        webPageSchema = await generateWebPageSchema(mockRow, html);
         blogPosts_log('✅ WebPage schema generated successfully');
       } catch (schemaError) {
         blogPosts_log(`❌ Error generating WebPage schema: ${schemaError.message}`);
