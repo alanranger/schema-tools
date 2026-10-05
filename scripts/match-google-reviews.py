@@ -204,67 +204,7 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
     if not combined_lower:
         return None
     
-    # Strategy 0a: Date cluster matching (if review is in a cluster with matched reviews)
-    if review_date and pd.notna(review_date) and date_cluster_map:
-        # Check if this review date falls within any cluster
-        for cluster_date, cluster_product in date_cluster_map.items():
-            days_diff = abs((review_date - cluster_date).days)
-            if days_diff <= 7:  # Within 7 days of cluster
-                if cluster_product and cluster_product in product_by_slug:
-                    return cluster_product
-    
-    # Strategy 0b: Date-based matching with events (highest priority if date available)
-    if review_date and pd.notna(review_date) and events_df is not None and len(events_df) > 0:
-        # Find events within 14 days of review date
-        nearby_events = events_df[
-            (events_df['start_date_parsed'] >= review_date - timedelta(days=14)) &
-            (events_df['start_date_parsed'] <= review_date + timedelta(days=14))
-        ]
-        
-        if len(nearby_events) > 0:
-            best_match = None
-            best_score = 0
-            
-            for event_idx, event_row in nearby_events.iterrows():
-                event_title = str(event_row.get('Event_Title', '')).lower()
-                event_location = str(event_row.get('Location_Business_Name', '') or event_row.get('Location_Name', '') or '').lower()
-                event_url = str(event_row.get('Event_URL', '')).strip()
-                
-                # Score based on:
-                # 1. Text matching (0.4 weight)
-                # 2. Date proximity (0.4 weight) - increased importance
-                # 3. Location matching (0.2 weight)
-                score = 0
-                
-                # Text matching
-                if event_title:
-                    title_words = [w for w in event_title.split() if len(w) > 4]
-                    matches = sum(1 for word in title_words if word in combined_lower)
-                    if matches > 0:
-                        score += 0.4 * (matches / max(len(title_words), 1))
-                
-                # Date proximity (closer = higher score) - more weight
-                days_diff = abs((event_row['start_date_parsed'] - review_date).days)
-                date_score = 1.0 / (1 + days_diff / 5)  # Decay over 5 days (tighter)
-                score += 0.4 * date_score
-                
-                # Location matching
-                if event_location and event_location in combined_lower:
-                    score += 0.2
-                
-                if score > best_score:
-                    best_score = score
-                    best_match = event_row
-            
-            # Lower threshold for date-based matching (score > 0.2)
-            if best_match is not None and best_score > 0.2:
-                event_url = str(best_match.get('Event_URL', '')).strip()
-                if event_url:
-                    # Extract product slug from event URL
-                    event_slug = event_url.split('/')[-1].strip()
-                    if event_slug in product_by_slug:
-                        return event_slug
-    
+    # TEXT FIRST (Alan 2026-10-06): aliases/keywords beat date-window/cluster matching.
     # Strategy 1: Check aliases in review text (longest phrase first — e.g. "yorkshire dales" before "yorkshire")
     for alias_key, alias_slug in sorted(aliases.items(), key=lambda x: len(x[0]), reverse=True):
         if alias_key in combined_lower and alias_slug in product_by_slug:
@@ -323,122 +263,47 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
     if best_ratio >= 0.55:  # Lower threshold to 55% for Google reviews
         return best_match
     
+
+    # DATE FALLBACK only when text/alias produced nothing
+    if review_date and pd.notna(review_date) and date_cluster_map:
+        for cluster_date, cluster_product in date_cluster_map.items():
+            days_diff = abs((review_date - cluster_date).days)
+            if days_diff <= 7 and cluster_product and cluster_product in product_by_slug:
+                return cluster_product
+    if review_date and pd.notna(review_date) and events_df is not None and len(events_df) > 0:
+        nearby_events = events_df[
+            (events_df['start_date_parsed'] >= review_date - timedelta(days=14)) &
+            (events_df['start_date_parsed'] <= review_date + timedelta(days=14))
+        ]
+        best_match = None
+        best_score = 0.0
+        for _, event_row in nearby_events.iterrows():
+            event_title = str(event_row.get('Event_Title', '')).lower()
+            event_location = str(
+                event_row.get('Location_Business_Name', '')
+                or event_row.get('Location_Name', '')
+                or ''
+            ).lower()
+            score = 0.0
+            if event_title:
+                title_words = [w for w in event_title.split() if len(w) > 4]
+                matches = sum(1 for word in title_words if word in combined_lower)
+                if matches > 0:
+                    score += 0.5 * (matches / max(len(title_words), 1))
+            days_diff = abs((event_row['start_date_parsed'] - review_date).days)
+            score += 0.3 / (1 + days_diff / 5)
+            if event_location and event_location in combined_lower:
+                score += 0.2
+            # Require text/location signal — never date-only
+            if score > best_score and score >= 0.35:
+                best_score = score
+                best_match = event_row
+        if best_match is not None:
+            event_url = str(best_match.get('Event_URL', '')).strip()
+            if event_url:
+                event_slug = event_url.split('/')[-1].strip()
+                if event_slug in product_by_slug:
+                    return event_slug
+
     return None
-
-# Build date cluster map: Group reviews by date clusters and match clusters to products
-print("Building date clusters for improved matching...")
-google_sorted = google_df[google_df['date_parsed'].notna()].sort_values('date_parsed').copy()
-date_cluster_map = {}  # Maps cluster center date to product slug
-
-# First pass: Match reviews using text/alias matching
-print("First pass: Text-based matching...")
-first_pass_matches = {}
-for idx, row in google_sorted.iterrows():
-    review_text = str(row.get('review', '') or row.get('comment', '') or '').strip()
-    review_title = str(row.get('title', '') or '').strip()
-    review_date = row.get('date_parsed')
-    
-    matched_slug = match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, None)
-    if matched_slug:
-        first_pass_matches[idx] = matched_slug
-
-print(f"First pass matched: {len(first_pass_matches)} reviews")
-print()
-
-# Second pass: Use date clustering to match remaining reviews
-print("Second pass: Date cluster matching...")
-# Group reviews into date clusters (reviews within 3 days of each other)
-clusters = []
-current_cluster = []
-for idx, row in google_sorted.iterrows():
-    if not current_cluster:
-        current_cluster = [idx]
-    else:
-        last_date = google_sorted.loc[current_cluster[-1], 'date_parsed']
-        current_date = row['date_parsed']
-        if pd.notna(last_date) and pd.notna(current_date):
-            if (current_date - last_date).days <= 3:
-                current_cluster.append(idx)
-            else:
-                if len(current_cluster) >= 2:  # Clusters with 2+ reviews
-                    clusters.append(current_cluster)
-                current_cluster = [idx]
-        else:
-            current_cluster.append(idx)
-if len(current_cluster) >= 2:
-    clusters.append(current_cluster)
-
-print(f"Found {len(clusters)} date clusters")
-print()
-
-# For each cluster, if any review is matched, assign that product to all reviews in cluster
-cluster_assignments = {}
-for cluster in clusters:
-    cluster_product = None
-    cluster_center_date = None
-    
-    # Check if any review in cluster is already matched
-    for review_idx in cluster:
-        if review_idx in first_pass_matches:
-            cluster_product = first_pass_matches[review_idx]
-            cluster_center_date = google_sorted.loc[review_idx, 'date_parsed']
-            break
-    
-    # If cluster has a product, assign it to all reviews in cluster
-    if cluster_product:
-        for review_idx in cluster:
-            cluster_assignments[review_idx] = cluster_product
-            if cluster_center_date:
-                date_cluster_map[cluster_center_date] = cluster_product
-
-print(f"Date clusters assigned products: {len(cluster_assignments)} reviews")
-print()
-
-# Process Google reviews (combine first pass + cluster assignments)
-print("Matching Google reviews to products...")
-matched_reviews = []
-unmatched_count = 0
-date_cluster_matched = 0
-
-for idx, row in google_df.iterrows():
-    review_text = str(row.get('review', '') or row.get('comment', '') or '').strip()
-    review_title = str(row.get('title', '') or '').strip()
-    review_date = row.get('date_parsed')
-    
-    # Prefer text/alias first-pass matches; date clusters only fill gaps.
-    matched_slug = first_pass_matches.get(idx)
-    if not matched_slug:
-        matched_slug = cluster_assignments.get(idx)
-        if matched_slug:
-            date_cluster_matched += 1
-    if not matched_slug:
-        matched_slug = match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, date_cluster_map)
-    
-    review_dict = row.to_dict()
-    review_dict['source'] = 'Google'
-    review_dict['product_slug'] = matched_slug if matched_slug else ''
-    review_dict['product_name'] = name_by_slug.get(matched_slug, '') if matched_slug else ''
-    
-    if matched_slug:
-        matched_reviews.append(review_dict)
-    else:
-        unmatched_count += 1
-
-print(f"Matched: {len(matched_reviews)} reviews")
-print(f"  - Text/alias matching: {len(first_pass_matches)}")
-print(f"  - Date cluster matching: {date_cluster_matched}")
-print(f"Unmatched: {unmatched_count} reviews")
-print()
-
-# Save matched reviews
-if matched_reviews:
-    matched_df = pd.DataFrame(matched_reviews)
-    matched_df.to_csv(output_path, index=False, encoding='utf-8-sig')
-    print(f"Saved {len(matched_reviews)} matched Google reviews to {output_path.name}")
-else:
-    print("No reviews matched!")
-
-print("="*80)
-print("GOOGLE MATCHING COMPLETE")
-print("="*80)
 
