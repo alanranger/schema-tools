@@ -2598,9 +2598,8 @@ def main():
             print("⚠️  No valid reviews remain — check column headers in merged CSV.")
             raise SystemExit("❌ No valid reviews remain after cleaning. Check CSV format.")
         
-        # Filter to >= 4 stars
-        reviews_df = reviews_df[reviews_df["ratingvalue"] >= 4].copy()
-        print(f"✅ Filtered to {len(reviews_df)} reviews (≥4★)")
+        # Keep all genuine rated reviews (no ≥4 star floor — aggregateRating uses full set).
+        print(f"✅ Sanitized reviews dataset: {len(reviews_df)} valid rated reviews (all star ratings)")
         
     except Exception as e:
         print(f"❌ Error reading merged reviews file: {e}")
@@ -2904,7 +2903,7 @@ def main():
             # Track ALL reviews mapped (before cap) for accurate statistics
             for _, review_row_all in reviews_for_product.iterrows():
                 rating_val_all = review_row_all.get('ratingvalue')
-                if rating_val_all and rating_val_all >= 4:
+                if rating_val_all is not None and str(rating_val_all).strip() != '' and not (isinstance(rating_val_all, float) and pd.isna(rating_val_all)):
                     source_all = review_row_all.get('source', 'Google')
                     source_lower_all = str(source_all).lower() if source_all else ''
                     
@@ -2944,7 +2943,7 @@ def main():
             
             for _, review_row in group.iterrows():
                 rating_val = review_row.get('ratingvalue')
-                if rating_val and rating_val >= 4:
+                if rating_val is not None and str(rating_val).strip() != '' and not (isinstance(rating_val, float) and pd.isna(rating_val)):
                     # Get review body from various possible column names
                     # Check reviewbody first (Google), then review_content (Trustpilot), then other variations
                     review_body = ''
@@ -3859,12 +3858,10 @@ def write_manifest_policy(df_products, outputs_dir):
     print(f"Wrote manifest-policy.json excludes={len(payload['excludePathKeys'])} manual={len(manuals)}")
 
 def write_mentoring_manual_paste(outputs_dir):
-    """Keep mentoring header injection in sync (manual paste; not in products-manifest)."""
+    """Keep mentoring + hard-coded page paste register in sync (Monday brief flags)."""
     import hashlib
     import json as _json
     schema_path = Path(outputs_dir) / "photography-mentor-online-monthly-mentoring_schema.json"
-    if not schema_path.exists():
-        return
     shared = Path(outputs_dir).resolve()
     for _ in range(4):
         if shared.name == "alan-shared-resources" or (shared / "csv processed").exists():
@@ -3872,68 +3869,156 @@ def write_mentoring_manual_paste(outputs_dir):
         shared = shared.parent
     paste_dir = shared / "outputs" / "manual-paste"
     paste_dir.mkdir(parents=True, exist_ok=True)
-    data = _json.loads(schema_path.read_text(encoding="utf-8"))
-    graph = data.get("@graph", [data])
-    product = next(
-        (
-            n
-            for n in graph
-            if n.get("@type") == "Product"
-            or (isinstance(n.get("@type"), list) and "Product" in n.get("@type", []))
-        ),
-        None,
-    )
-    if not product:
-        return
-    service_url = "https://www.alanranger.com/photography-mentoring-online-assignments"
-    reviews = product.get("review") or []
-    node = {
-        "@type": ["Service", "Product"],
-        "@id": f"{service_url}#service",
-        "name": product.get("name") or "Photography Mentor Online — Monthly Mentoring",
-        "url": service_url,
-        "description": product.get("description") or "",
-        "brand": {"@id": "https://www.alanranger.com/#org"},
-        "aggregateRating": product.get("aggregateRating")
-        or {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": len(reviews)},
-        "review": reviews,
-    }
-    payload = _json.dumps(node, indent=2, ensure_ascii=False)
-    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-    hash_path = paste_dir / "mentoring-reviews.sha256"
-    prev_hash = ""
-    prev_count = None
-    if hash_path.exists():
+    cdn_dir = Path(__file__).resolve().parents[1] / "alanranger-schema"
+
+    def _hash_file(path: Path):
+        if not path.exists():
+            return None, None
+        raw = path.read_text(encoding="utf-8")
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
         try:
-            prev = _json.loads(hash_path.read_text(encoding="utf-8"))
-            prev_hash = prev.get("hash") or ""
-            prev_count = prev.get("reviewCount")
+            data = _json.loads(raw)
         except Exception:
-            prev_hash = hash_path.read_text(encoding="utf-8").strip()
-    changed = prev_hash != digest
-    (paste_dir / "mentoring-service-node.json").write_text(payload, encoding="utf-8")
-    hash_path.write_text(
-        _json.dumps(
-            {"hash": digest, "reviewCount": len(reviews), "updatedAt": datetime.now().isoformat()},
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-    reason = (
-        f"Mentoring page schema needs re-paste — reviews changed ({prev_count if prev_count is not None else '?'} → {len(reviews)})"
-        if changed
-        else "unchanged"
-    )
-    flag = {
-        "needsRepaste": changed,
-        "reason": reason,
-        "reviewCount": len(reviews),
-        "previousReviewCount": prev_count,
+            data = None
+        return digest, data
+
+    register = {
         "updatedAt": datetime.now().isoformat(),
-        "pasteFile": str(paste_dir / "mentoring-service-node.json"),
+        "note": "Flag needsRepaste only when review payload hash changes. Paste files are ready under this folder / CDN JSON.",
+        "pages": [],
     }
-    (paste_dir / "mentoring-paste-flag.json").write_text(_json.dumps(flag, indent=2), encoding="utf-8")
-    print(f"Mentoring manual-paste: {reason}")
+
+    # Mentoring (manual Service+Product header)
+    if schema_path.exists():
+        data = _json.loads(schema_path.read_text(encoding="utf-8"))
+        graph = data.get("@graph", [data])
+        product = next(
+            (
+                n
+                for n in graph
+                if n.get("@type") == "Product"
+                or (isinstance(n.get("@type"), list) and "Product" in n.get("@type", []))
+            ),
+            None,
+        )
+        if product:
+            service_url = "https://www.alanranger.com/photography-mentoring-online-assignments"
+            reviews = product.get("review") or []
+            node = {
+                "@type": ["Service", "Product"],
+                "@id": f"{service_url}#service",
+                "name": product.get("name") or "Photography Mentor Online — Monthly Mentoring",
+                "url": service_url,
+                "description": product.get("description") or "",
+                "brand": {"@id": "https://www.alanranger.com/#org"},
+                "aggregateRating": product.get("aggregateRating")
+                or {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": len(reviews)},
+                "review": reviews,
+            }
+            payload = _json.dumps(node, indent=2, ensure_ascii=False)
+            digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+            hash_path = paste_dir / "mentoring-reviews.sha256"
+            prev_hash = ""
+            prev_count = None
+            if hash_path.exists():
+                try:
+                    prev = _json.loads(hash_path.read_text(encoding="utf-8"))
+                    prev_hash = prev.get("hash") or ""
+                    prev_count = prev.get("reviewCount")
+                except Exception:
+                    prev_hash = hash_path.read_text(encoding="utf-8").strip()
+            changed = prev_hash != digest
+            (paste_dir / "mentoring-service-node.json").write_text(payload, encoding="utf-8")
+            hash_path.write_text(
+                _json.dumps(
+                    {"hash": digest, "reviewCount": len(reviews), "updatedAt": datetime.now().isoformat()},
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            reason = (
+                f"Mentoring page schema needs re-paste — reviews changed ({prev_count if prev_count is not None else '?'} → {len(reviews)})"
+                if changed
+                else "unchanged"
+            )
+            flag = {
+                "needsRepaste": changed,
+                "reason": reason,
+                "reviewCount": len(reviews),
+                "previousReviewCount": prev_count,
+                "updatedAt": datetime.now().isoformat(),
+                "pasteFile": str(paste_dir / "mentoring-service-node.json"),
+            }
+            (paste_dir / "mentoring-paste-flag.json").write_text(_json.dumps(flag, indent=2), encoding="utf-8")
+            print(f"Mentoring manual-paste: {reason}")
+            register["pages"].append(
+                {
+                    "id": "mentoring",
+                    "url": service_url,
+                    "needsRepaste": changed,
+                    "reviewCount": len(reviews),
+                    "pasteFile": "mentoring-service-node.json",
+                }
+            )
+
+    # Homepage + About org review blocks (already on CDN; flag hash drift)
+    for page_id, filename, url in [
+        ("homepage", "organization-homepage-reviews.json", "https://www.alanranger.com/"),
+        ("about", "organization-about-reviews.json", "https://www.alanranger.com/about-alan-ranger"),
+    ]:
+        src = Path(outputs_dir) / filename
+        if not src.exists():
+            src = cdn_dir / filename
+        digest, data = _hash_file(src)
+        if not digest:
+            continue
+        hash_path = paste_dir / f"{page_id}-reviews.sha256"
+        prev_hash = ""
+        if hash_path.exists():
+            try:
+                prev_hash = (_json.loads(hash_path.read_text(encoding="utf-8"))).get("hash") or ""
+            except Exception:
+                prev_hash = hash_path.read_text(encoding="utf-8").strip()
+        changed = bool(prev_hash) and prev_hash != digest
+        # first run: seed hash without forcing a paste alert
+        if not prev_hash:
+            changed = False
+        hash_path.write_text(
+            _json.dumps({"hash": digest, "updatedAt": datetime.now().isoformat(), "source": str(src)}, indent=2),
+            encoding="utf-8",
+        )
+        paste_copy = paste_dir / filename
+        if src.exists():
+            paste_copy.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        register["pages"].append(
+            {
+                "id": page_id,
+                "url": url,
+                "needsRepaste": changed,
+                "pasteFile": filename,
+                "reason": "org review JSON hash changed" if changed else "unchanged",
+            }
+        )
+
+    # Academy: track CDN/org file if present; otherwise placeholder for Monday brief
+    academy_candidates = [
+        Path(outputs_dir) / "alan-ranger-academy-photography-foundation-course-ebook_schema.json",
+        cdn_dir / "alan-ranger-academy-photography-foundation-course-ebook_schema.json",
+    ]
+    academy_src = next((p for p in academy_candidates if p.exists()), None)
+    register["pages"].append(
+        {
+            "id": "academy",
+            "url": "https://www.alanranger.com/alan-ranger-photography-academy",
+            "needsRepaste": False,
+            "pasteFile": academy_src.name if academy_src else None,
+            "reason": "tracked for Monday brief; confirm live Academy header paste source with Alan if hash workflow needed",
+            "note": "Academy header is hard-coded in Squarespace; generator seeds register entry only.",
+        }
+    )
+
+    (paste_dir / "manual-paste-register.json").write_text(_json.dumps(register, indent=2), encoding="utf-8")
+    print(f"Wrote manual-paste-register.json pages={len(register['pages'])}")
 
 if __name__ == '__main__':
     main()
