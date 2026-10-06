@@ -3770,7 +3770,87 @@ def main():
     print(f"[SchemaGenerator v6.1] Schema structure verified ✓ ({valid_products} products)")
     
     # Print match count for UI parsing (use actual products_with_reviews_count)
+        write_mentoring_manual_paste(outputs_dir)
     print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
+
+
+
+def write_mentoring_manual_paste(outputs_dir):
+    """Keep mentoring header injection in sync (manual paste; not in products-manifest)."""
+    import hashlib
+    import json as _json
+    schema_path = Path(outputs_dir) / "photography-mentor-online-monthly-mentoring_schema.json"
+    if not schema_path.exists():
+        return
+    shared = Path(outputs_dir).resolve()
+    for _ in range(4):
+        if shared.name == "alan-shared-resources" or (shared / "csv processed").exists():
+            break
+        shared = shared.parent
+    paste_dir = shared / "outputs" / "manual-paste"
+    paste_dir.mkdir(parents=True, exist_ok=True)
+    data = _json.loads(schema_path.read_text(encoding="utf-8"))
+    graph = data.get("@graph", [data])
+    product = next(
+        (
+            n
+            for n in graph
+            if n.get("@type") == "Product"
+            or (isinstance(n.get("@type"), list) and "Product" in n.get("@type", []))
+        ),
+        None,
+    )
+    if not product:
+        return
+    service_url = "https://www.alanranger.com/photography-mentoring-online-assignments"
+    reviews = product.get("review") or []
+    node = {
+        "@type": ["Service", "Product"],
+        "@id": f"{service_url}#service",
+        "name": product.get("name") or "Photography Mentor Online — Monthly Mentoring",
+        "url": service_url,
+        "description": product.get("description") or "",
+        "brand": {"@id": "https://www.alanranger.com/#org"},
+        "aggregateRating": product.get("aggregateRating")
+        or {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": len(reviews)},
+        "review": reviews,
+    }
+    payload = _json.dumps(node, indent=2, ensure_ascii=False)
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    hash_path = paste_dir / "mentoring-reviews.sha256"
+    prev_hash = ""
+    prev_count = None
+    if hash_path.exists():
+        try:
+            prev = _json.loads(hash_path.read_text(encoding="utf-8"))
+            prev_hash = prev.get("hash") or ""
+            prev_count = prev.get("reviewCount")
+        except Exception:
+            prev_hash = hash_path.read_text(encoding="utf-8").strip()
+    changed = prev_hash != digest
+    (paste_dir / "mentoring-service-node.json").write_text(payload, encoding="utf-8")
+    hash_path.write_text(
+        _json.dumps(
+            {"hash": digest, "reviewCount": len(reviews), "updatedAt": datetime.now().isoformat()},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    reason = (
+        f"Mentoring page schema needs re-paste — reviews changed ({prev_count if prev_count is not None else '?'} → {len(reviews)})"
+        if changed
+        else "unchanged"
+    )
+    flag = {
+        "needsRepaste": changed,
+        "reason": reason,
+        "reviewCount": len(reviews),
+        "previousReviewCount": prev_count,
+        "updatedAt": datetime.now().isoformat(),
+        "pasteFile": str(paste_dir / "mentoring-service-node.json"),
+    }
+    (paste_dir / "mentoring-paste-flag.json").write_text(_json.dumps(flag, indent=2), encoding="utf-8")
+    print(f"Mentoring manual-paste: {reason}")
 
 if __name__ == '__main__':
     main()

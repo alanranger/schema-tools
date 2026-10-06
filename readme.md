@@ -511,3 +511,13 @@ See `CHANGELOG.md` for detailed version history and improvements.
   - https://search.google.com/test/rich-results
 
 ---
+
+## Mentoring page schema (manual paste — Alan decision 2026-10-06)
+
+Monthly mentoring reviews on `/photography-mentoring-online-assignments` are **hard-coded** in that page's Squarespace **Page Header Code Injection** (Service+Product node `#service`). They are **not** loaded via `products-manifest.json`.
+
+- Source Product schema file is still generated: `photography-mentor-online-monthly-mentoring_schema.json`
+- After each product schema regen / deploy, check `alan-shared-resources/outputs/manual-paste/mentoring-paste-flag.json`
+- If `needsRepaste: true`, paste the Service node from `outputs/manual-paste/mentoring-service-node.json` into the page header injection and clear the flag by re-running deploy (hash updates)
+- Manifest excludes `/photography-mentoring-online-assignments` and the 404'd 2hr F2F product path (schema files kept)
+

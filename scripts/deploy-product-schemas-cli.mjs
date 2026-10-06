@@ -100,6 +100,10 @@ const urlIdx = headers.findIndex((h) => h === "url");
 if (jsonIdx < 0) throw new Error("json_file_name column not found");
 
 const keepNames = new Set();
+const MANIFEST_EXCLUDE_PATH_KEYS = new Set([
+  "/photography-services-near-me/2hr-private-photography-classes-2hr",
+  "/photography-mentoring-online-assignments",
+]);
 const manifestEntries = [];
 
 for (let i = 1; i < rows.length; i++) {
@@ -126,7 +130,7 @@ for (let i = 1; i < rows.length; i++) {
 
   const canonicalUrl = normalizeCanonicalUrl(url);
   const pathKey = derivePathKey(url);
-  if (canonicalUrl && pathKey) {
+  if (canonicalUrl && pathKey && !MANIFEST_EXCLUDE_PATH_KEYS.has(pathKey)) {
     manifestEntries.push({ url: canonicalUrl, pathKey, schemaFileName: jsonFile, faqFileName });
   }
 }
