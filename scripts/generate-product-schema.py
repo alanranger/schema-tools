@@ -1152,41 +1152,66 @@ def normalize_rating(rating):
     return None
 
 def calculate_aggregate_rating(reviews):
-    """Calculate aggregate rating from reviews"""
+    """Aggregate from schema review objects; skip rows with no rating."""
     if not reviews:
         return None
-    
-    total_rating = 0
+    total_rating = 0.0
     count = 0
-    
     for review in reviews:
         try:
             rating_value = review.get('reviewRating', {}).get('ratingValue')
-            if rating_value:
-                total_rating += float(rating_value)
-                count += 1
+            if rating_value is None or rating_value == '':
+                continue
+            total_rating += float(rating_value)
+            count += 1
         except (ValueError, TypeError):
             continue
-    
     if count == 0:
         return None
-    
-    avg_rating = round(total_rating / count, 2)
     return {
         "@type": "AggregateRating",
-        "ratingValue": str(avg_rating),
-        "reviewCount": count
+        "ratingValue": str(round(total_rating / count, 2)),
+        "reviewCount": count,
+        "bestRating": "5",
+        "worstRating": "1",
     }
 
-def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True, schema_type='product', events_df=None):
+
+def calculate_aggregate_rating_from_rows(reviews_df):
+    """Aggregate from all attributed 03 rows (rated only); used before the 25-review emit cap."""
+    if reviews_df is None or len(reviews_df) == 0:
+        return None
+    total_rating = 0.0
+    count = 0
+    for _, row in reviews_df.iterrows():
+        val = row.get('ratingvalue')
+        if val is None or (isinstance(val, float) and pd.isna(val)) or val == '':
+            continue
+        try:
+            total_rating += float(val)
+            count += 1
+        except (ValueError, TypeError):
+            continue
+    if count == 0:
+        return None
+    return {
+        "@type": "AggregateRating",
+        "ratingValue": str(round(total_rating / count, 2)),
+        "reviewCount": count,
+        "bestRating": "5",
+        "worstRating": "1",
+    }
+
+def generate_product_schema_graph(product_row, reviews_list, include_aggregate_rating=True, schema_type='product', events_df=None, aggregate_rating=None):
     """Generate complete @graph schema for a product
     
     Args:
         product_row: Product data row
-        reviews_list: List of review objects
+        reviews_list: List of review objects (capped emit list)
         include_aggregate_rating: If True, add aggregateRating (only for first variant per page)
         schema_type: 'product', 'course', or 'event' - determines @type and additional fields
         events_df: DataFrame of events with dates for matching Event schemas to dates
+        aggregate_rating: Optional precomputed AggregateRating from ALL rated reviews
     """
     
     product_name = str(product_row.get('name', '')).strip()
@@ -1811,15 +1836,13 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             
             product_schema["hasCourseInstance"] = course_instance
     
-    # Add reviews and aggregate rating (only if include_aggregate_rating is True)
+    # Emit capped reviews; aggregateRating may reflect the full rated set.
     if reviews_list:
         product_schema["review"] = reviews_list
-        
-        # Only add aggregateRating for the first variant per product page
         if include_aggregate_rating:
-            aggregate_rating = calculate_aggregate_rating(reviews_list)
-            if aggregate_rating:
-                product_schema["aggregateRating"] = aggregate_rating
+            agg = aggregate_rating or calculate_aggregate_rating(reviews_list)
+            if agg:
+                product_schema["aggregateRating"] = agg
     
     # Build @graph structure - Keep only LocalBusiness (it inherits Organization properties)
     try:
@@ -2050,12 +2073,17 @@ def validate_schema_structure(schema_data, product_name):
         if not isinstance(reviews, list):
             errors.append("Product 'review' must be an array")
         else:
-            # Validate aggregateRating matches review count
+            # reviewCount = all rated reviews; review[] may be capped at 25 newest
             aggregate = product_schema.get('aggregateRating', {})
             if aggregate:
-                review_count = aggregate.get('reviewCount', 0)
-                if review_count != len(reviews):
-                    errors.append(f"aggregateRating.reviewCount ({review_count}) does not match review array length ({len(reviews)})")
+                try:
+                    review_count = int(aggregate.get('reviewCount', 0))
+                except (ValueError, TypeError):
+                    review_count = 0
+                if review_count < len(reviews):
+                    errors.append(
+                        f"aggregateRating.reviewCount ({review_count}) is less than review array length ({len(reviews)})"
+                    )
     
     # Validate @graph order: Organization, LocalBusiness, BreadcrumbList, Product
     if len(graph) >= 4:
@@ -2800,6 +2828,7 @@ def main():
         
         # Get reviews for this product - trust Step 3b slugs with fuzzy fallback
         product_reviews = []
+        full_aggregate_rating = None
         
         # First try exact match via grouped_reviews (trust Step 3b slug)
         reviews_for_product = None
@@ -2904,7 +2933,8 @@ def main():
                             'review_date_str': ''
                         })
             
-            # Now apply cap for schema inclusion
+            # Now apply cap for schema inclusion (newest 25); aggregate uses full rated set
+            full_aggregate_rating = calculate_aggregate_rating_from_rows(reviews_for_product)
             group = reviews_for_product.head(25)
             excluded_count = max(0, total_reviews_for_product - 25)
             total_excluded_reviews += excluded_count
@@ -3153,7 +3183,15 @@ def main():
         
         # Generate schema graph (only first variant per URL gets aggregateRating)
         # Returns tuple: (schema_graph, event_schema)
-        schema_graph, event_schema = generate_product_schema_graph(row, product_reviews, include_aggregate_rating=is_first_variant, schema_type=product_schema_type, events_df=events_df)
+        # aggregate_rating uses ALL rated 03 rows; review[] stays capped at 25 newest
+        schema_graph, event_schema = generate_product_schema_graph(
+            row,
+            product_reviews,
+            include_aggregate_rating=is_first_variant,
+            schema_type=product_schema_type,
+            events_df=events_df,
+            aggregate_rating=full_aggregate_rating,
+        )
         
         # Track schema type counts
         schema_type_counts[product_schema_type] += 1
@@ -3442,12 +3480,16 @@ def main():
         # Collect schema graph for unified JSON output (use exact same as HTML/individual JSON)
         all_schema_graphs.append(schema_graph)
         
-        # Prepare for combined CSV
+        # Prepare for combined CSV — reviewCount = full rated aggregate when present
         review_count = len(product_reviews)
         avg_rating = None
-        if product_reviews:
+        if full_aggregate_rating:
+            review_count = int(full_aggregate_rating.get('reviewCount') or review_count)
+            avg_rating = full_aggregate_rating.get('ratingValue')
+        elif product_reviews:
             aggregate = calculate_aggregate_rating(product_reviews)
             if aggregate:
+                review_count = int(aggregate.get('reviewCount') or review_count)
                 avg_rating = aggregate.get('ratingValue')
         
         schemas_data.append({
@@ -3765,7 +3807,7 @@ def main():
     print("[SchemaGenerator v6.1] Offers structure validated: shippingDetails, hasMerchantReturnPolicy")
     print("[SchemaGenerator v6.1] @graph order validated: LocalBusiness → BreadcrumbList → Product/Course")
     print("[SchemaGenerator v6.1] Event fields excluded: startDate, endDate, eventStatus, eventAttendanceMode, location")
-    print("[SchemaGenerator v6.1] aggregateRating.reviewCount matches review array length")
+    print("[SchemaGenerator v6.1] aggregateRating.reviewCount = all rated reviews (review[] capped at 25)")
     print("[SchemaGenerator v6.1] All objects include @type and url (where required)")
     print(f"[SchemaGenerator v6.1] Schema structure verified ✓ ({valid_products} products)")
     
