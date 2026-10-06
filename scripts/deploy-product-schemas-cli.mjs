@@ -6,6 +6,9 @@
 import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const CSV_PATH =
   "G:/Dropbox/alan ranger photography/Website Code/alan-shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv";
@@ -170,6 +173,15 @@ for (const name of fs.readdirSync(REPO_PATH)) {
     removed++;
     console.log(`Removed stale: ${name}`);
   }
+}
+
+// Option B durable loader (never drop)
+const loaderSrc = path.join(__dirname, "assets", "product-page-loader.js");
+const loaderDir = path.join(REPO_PATH, "loaders");
+if (fs.existsSync(loaderSrc)) {
+  fs.mkdirSync(loaderDir, { recursive: true });
+  fs.copyFileSync(loaderSrc, path.join(loaderDir, "product-page-loader.js"));
+  console.log("synced loaders/product-page-loader.js");
 }
 
 git(["checkout", "main"], "checkout main");

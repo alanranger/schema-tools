@@ -5,6 +5,9 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const CSV_PATH =
   "G:/Dropbox/alan ranger photography/Website Code/alan-shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv";
@@ -253,4 +256,17 @@ for (const name of fs.readdirSync(REPO_PATH)) {
 }
 
 const mentoringFlag = writeMentoringManualPaste();
+
+// Option B durable loader — always re-copy; never delete loaders/
+const loaderAsset = path.join(__dirname, "assets", "product-page-loader.js");
+const loaderDestDir = path.join(REPO_PATH, "loaders");
+const loaderDest = path.join(loaderDestDir, "product-page-loader.js");
+if (fs.existsSync(loaderAsset)) {
+  fs.mkdirSync(loaderDestDir, { recursive: true });
+  fs.copyFileSync(loaderAsset, loaderDest);
+  console.log("synced loaders/product-page-loader.js");
+} else {
+  console.warn("product-page-loader asset missing:", loaderAsset);
+}
+
 console.log(`Copied ${copied}; manifest ${entries.length}; removed ${removed}; mentoringNeedsRepaste=${mentoringFlag.needsRepaste}`);

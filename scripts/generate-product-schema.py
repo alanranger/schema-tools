@@ -3813,6 +3813,7 @@ def main():
     # Print match count for UI parsing (use actual products_with_reviews_count)
     write_manifest_policy(df_products, outputs_dir)
     write_mentoring_manual_paste(outputs_dir)
+    ensure_product_page_loader()
     print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
 
 
@@ -4019,6 +4020,96 @@ def write_mentoring_manual_paste(outputs_dir):
 
     (paste_dir / "manual-paste-register.json").write_text(_json.dumps(register, indent=2), encoding="utf-8")
     print(f"Wrote manual-paste-register.json pages={len(register['pages'])}")
+
+
+def ensure_product_page_loader():
+    """Copy durable Option B loader into alanranger-schema/loaders (never drop on regen)."""
+    import hashlib
+    import json as _json
+    import shutil
+
+    script_dir = Path(__file__).resolve().parent
+    asset = script_dir / "assets" / "product-page-loader.js"
+    if not asset.exists():
+        print("⚠️ product-page-loader asset missing — skip loader sync")
+        return
+    repo = script_dir.parent / "alanranger-schema" / "loaders"
+    repo.mkdir(parents=True, exist_ok=True)
+    dest = repo / "product-page-loader.js"
+    shutil.copy2(asset, dest)
+    digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+
+    shared = script_dir.parent.parent / "alan-shared-resources"
+    if not (shared / "csv processed").exists():
+        shared = Path(
+            r"G:\Dropbox\alan ranger photography\Website Code\alan-shared-resources"
+        )
+    paste_dir = shared / "outputs" / "manual-paste"
+    paste_dir.mkdir(parents=True, exist_ok=True)
+    hash_path = paste_dir / "store-header-product-page-loader.sha256"
+    prev = ""
+    if hash_path.exists():
+        try:
+            prev = (_json.loads(hash_path.read_text(encoding="utf-8"))).get("hash") or ""
+        except Exception:
+            prev = hash_path.read_text(encoding="utf-8").strip()
+    changed = bool(prev) and prev != digest
+    hash_path.write_text(
+        _json.dumps(
+            {
+                "hash": digest,
+                "updatedAt": datetime.now().isoformat(),
+                "url": "https://schema.alanranger.com/loaders/product-page-loader.js",
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    reg_path = paste_dir / "manual-paste-register.json"
+    register = {"updatedAt": datetime.now().isoformat(), "pages": []}
+    if reg_path.exists():
+        try:
+            register = _json.loads(reg_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    pages = [p for p in register.get("pages", []) if p.get("id") not in (
+        "store-header-photo-workshops-uk",
+        "store-header-photography-services-near-me",
+    )]
+    snippet = '<script src="https://schema.alanranger.com/loaders/product-page-loader.js" defer></script>'
+    for page_id, title, url in [
+        (
+            "store-header-photo-workshops-uk",
+            "photo-workshops-uk store header",
+            "https://www.alanranger.com/photo-workshops-uk",
+        ),
+        (
+            "store-header-photography-services-near-me",
+            "photography-services-near-me store header",
+            "https://www.alanranger.com/photography-services-near-me",
+        ),
+    ]:
+        pages.append(
+            {
+                "id": page_id,
+                "url": url,
+                "location": f"Squarespace → Pages → {title.split()[0]} → ⚙ → Advanced → Page Header Code Injection",
+                "needsRepaste": changed,
+                "pasteSnippet": snippet,
+                "reason": (
+                    "hosted product-page-loader.js one-liner hash changed — re-paste one-liner only"
+                    if changed
+                    else "unchanged (hosted loader; Alan should not need to re-paste)"
+                ),
+                "note": "Option B: delete prior ar-pb header block; paste one-liner only.",
+            }
+        )
+    register["pages"] = pages
+    register["updatedAt"] = datetime.now().isoformat()
+    reg_path.write_text(_json.dumps(register, indent=2), encoding="utf-8")
+    print(f"Synced product-page-loader.js → {dest} (register needsRepaste={changed})")
+
 
 if __name__ == '__main__':
     main()
