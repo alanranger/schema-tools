@@ -3770,10 +3770,51 @@ def main():
     print(f"[SchemaGenerator v6.1] Schema structure verified ✓ ({valid_products} products)")
     
     # Print match count for UI parsing (use actual products_with_reviews_count)
-        write_mentoring_manual_paste(outputs_dir)
+    write_manifest_policy(df_products, outputs_dir)
+    write_mentoring_manual_paste(outputs_dir)
     print(f"\n📊 MATCH_COUNT: {products_with_reviews_count}")
 
 
+
+
+def write_manifest_policy(df_products, outputs_dir):
+    """Durable product flags from 02 → JSON consumed by deploy (no Alan action)."""
+    import json as _json
+    from urllib.parse import urlparse
+    excludes = []
+    manuals = []
+    if "url" not in df_products.columns:
+        return
+    has_ex = "exclude_from_manifest" in df_products.columns
+    has_man = "manual_paste_page" in df_products.columns
+    for _, row in df_products.iterrows():
+        url = str(row.get("url") or "").strip()
+        if not url:
+            continue
+        try:
+            path_key = (urlparse(url).path or "/").rstrip("/").lower() or "/"
+        except Exception:
+            continue
+        ex = False
+        man = False
+        if has_ex:
+            v = row.get("exclude_from_manifest")
+            ex = bool(v) and str(v).strip().lower() not in {"", "0", "false", "nan", "none"}
+        if has_man:
+            v = row.get("manual_paste_page")
+            man = bool(v) and str(v).strip().lower() not in {"", "0", "false", "nan", "none"}
+        if ex:
+            excludes.append(path_key)
+        if man:
+            manuals.append({"pathKey": path_key, "url": url})
+    payload = {
+        "excludePathKeys": sorted(set(excludes)),
+        "manualPastePages": manuals,
+        "note": "Generated from 02 exclude_from_manifest / manual_paste_page — do not hand-edit",
+    }
+    out = Path(outputs_dir) / "manifest-policy.json"
+    out.write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Wrote manifest-policy.json excludes={len(payload['excludePathKeys'])} manual={len(manuals)}")
 
 def write_mentoring_manual_paste(outputs_dir):
     """Keep mentoring header injection in sync (manual paste; not in products-manifest)."""

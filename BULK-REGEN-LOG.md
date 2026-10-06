@@ -1068,3 +1068,23 @@ Each line is ISO timestamp plus message. Processing uses batches (default 50 URL
 2026-05-12T21:43:15.265Z winter-photography-magic howto=none/0 faq=none/0 files=skip-howto,skip-faq
 2026-05-12T21:43:15.630Z Batch 7: no file changes; skipping commit.
 2026-05-12T21:43:15.631Z Finished bulk HowTo/FAQ regen (308 URL(s)). FAQ files: ok-faq=127, delete-faq=0, skip-faq=181.
+2026-09-27T10:50:55.205Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema, noCommit=true
+2026-09-27T10:50:55.404Z finding-your-compositional-balance howto=arp-exercise/5 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-09-27T10:50:55.745Z what-is-contrast-in-photography howto=C/8 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-09-27T10:50:56.083Z what-is-negative-space-in-photography howto=arp-practice-steps/4 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-09-27T10:50:56.383Z Finished bulk HowTo/FAQ regen (3 URL(s)). FAQ files: ok-faq=3, delete-faq=0, skip-faq=0.
+2026-09-27T10:50:56.446Z Upserted 18 nodes (pruned 0) into blog-schema.json
+2026-09-27T13:15:12.318Z Starting bulk HowTo/FAQ regen: 1 URL(s), batch=50, repo=G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema, noCommit=true
+2026-09-27T13:15:12.538Z photography-is-an-art-of-observation howto=arp-exercise/5 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-09-27T13:15:12.839Z Finished bulk HowTo/FAQ regen (1 URL(s)). FAQ files: ok-faq=1, delete-faq=0, skip-faq=0.
+2026-09-27T13:15:12.938Z Upserted 6 nodes (pruned 0) into blog-schema.json
+2026-09-27T13:27:08.799Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema, noCommit=true
+2026-09-27T13:27:09.048Z what-is-framing-in-photography howto=none/0 faq=arp-faq/7 files=delete-howto,ok-faq
+2026-09-27T13:27:09.389Z mastering-photography-composition-rules howto=none/0 faq=arp-faq/10 files=skip-howto,ok-faq
+2026-09-27T13:27:09.734Z what-are-leading-lines-in-photography howto=none/0 faq=arp-faq/8 files=skip-howto,ok-faq
+2026-09-27T13:27:10.035Z Finished bulk HowTo/FAQ regen (3 URL(s)). FAQ files: ok-faq=3, delete-faq=0, skip-faq=0.
+2026-09-27T13:27:10.146Z Upserted 15 nodes (pruned 0) into blog-schema.json
+2026-09-27T15:22:28.315Z Starting bulk HowTo/FAQ regen: 1 URL(s), batch=50, repo=G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema, noCommit=true
+2026-09-27T15:22:28.536Z the-art-of-storytelling-photography howto=none/0 faq=arp-faq/8 files=skip-howto,ok-faq
+2026-09-27T15:22:28.837Z Finished bulk HowTo/FAQ regen (1 URL(s)). FAQ files: ok-faq=1, delete-faq=0, skip-faq=0.
+2026-09-27T15:22:28.907Z Upserted 5 nodes (pruned 0) into blog-schema.json

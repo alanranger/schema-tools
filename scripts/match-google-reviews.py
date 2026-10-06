@@ -45,7 +45,13 @@ if not google_path or not google_path.exists():
     sys.exit(1)
 
 # Products file
-products_path = csv_processed_dir / '02 ÔÇô products_cleaned.xlsx'
+products_path = csv_processed_dir / '02 – products_cleaned.xlsx'
+if not products_path.exists():
+    # Fallback: glob for en-dash / hyphen variants Dropbox may normalize differently
+    hits = list(csv_processed_dir.glob('02*products_cleaned.xlsx'))
+    hits = [h for h in hits if 'backup' not in h.name.lower()]
+    if hits:
+        products_path = hits[0]
 
 # Find event CSV files using flexible filename matching
 events_workshops_path = None
@@ -436,8 +442,38 @@ print()
 
 # Save ALL reviews (matched + unmatched) — fixes prior leak that dropped ~44 text rows
 out_df = pd.DataFrame(all_reviews)
+
+# Highest-priority durable overrides (Alan-approved). Applied AFTER matcher.
+# File: csv processed/15-review-attribution-overrides.csv
+overrides_path = csv_processed_dir / "15-review-attribution-overrides.csv"
+if overrides_path.exists() and len(out_df):
+    odf = pd.read_csv(overrides_path, encoding="utf-8-sig")
+    applied = 0
+    for _, ov in odf.iterrows():
+        rn = str(ov.get("reviewer_name") or "").strip().lower()
+        rd = str(ov.get("review_date") or "")[:10]
+        scope = str(ov.get("scope") or "product").strip().lower()
+        slug = "" if pd.isna(ov.get("product_slug")) else str(ov.get("product_slug")).strip()
+        if not rn:
+            continue
+        mask = out_df["reviewer"].astype(str).str.strip().str.lower() == rn
+        if rd:
+            mask = mask & (out_df["date"].astype(str).str[:10] == rd)
+        if not mask.any():
+            continue
+        if scope == "business_level" or not slug:
+            out_df.loc[mask, "product_slug"] = ""
+            out_df.loc[mask, "product_name"] = ""
+            out_df.loc[mask, "attribution_source"] = "override_business_level"
+        else:
+            out_df.loc[mask, "product_slug"] = slug
+            out_df.loc[mask, "product_name"] = name_by_slug.get(slug, out_df.loc[mask, "product_name"])
+            out_df.loc[mask, "attribution_source"] = "override_15_attribution"
+        applied += int(mask.sum())
+    print(f"Applied {applied} durable override row-hits from 15-review-attribution-overrides.csv")
+
 out_df.to_csv(output_path, index=False, encoding='utf-8-sig')
-print(f"Saved {len(all_reviews)} Google reviews to {output_path.name} (includes unmatched)")
+print(f"Saved {len(out_df)} Google reviews to {output_path.name} (includes unmatched)")
 
 print("="*80)
 print("GOOGLE MATCHING COMPLETE")

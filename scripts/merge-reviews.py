@@ -117,6 +117,28 @@ except Exception as e:
 
 print()
 
+# Step 2c: Durable Alan-approved overrides (highest priority — after matcher/reconcile/curated)
+print("Step 2c: Applying durable review attribution overrides (15)...")
+print()
+try:
+    result = subprocess.run(
+        [sys.executable, str(script_dir / "apply-review-attribution-overrides.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+    if result.returncode != 0:
+        print(f"ERROR: Override step failed with code {result.returncode}")
+        sys.exit(1)
+except Exception as e:
+    print(f"ERROR running override script: {e}")
+    sys.exit(1)
+
+print()
+
 # Step 3: Merge matched reviews
 print("Step 3: Merging matched reviews...")
 print()
@@ -135,6 +157,28 @@ try:
         sys.exit(1)
 except Exception as e:
     print(f"ERROR running merge script: {e}")
+    sys.exit(1)
+
+print()
+
+# Step 3b: Manual-paste products — pin reviews to 15-override allowlist (after combined write)
+print("Step 3b: Applying manual-paste review allowlists...")
+print()
+try:
+    result = subprocess.run(
+        [sys.executable, str(script_dir / "apply-manual-paste-review-allowlist.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+    if result.returncode != 0:
+        print(f"ERROR: Manual-paste allowlist failed with code {result.returncode}")
+        sys.exit(1)
+except Exception as e:
+    print(f"ERROR running manual-paste allowlist: {e}")
     sys.exit(1)
 
 print()

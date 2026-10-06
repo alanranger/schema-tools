@@ -521,3 +521,29 @@ Monthly mentoring reviews on `/photography-mentoring-online-assignments` are **h
 - If `needsRepaste: true`, paste the Service node from `outputs/manual-paste/mentoring-service-node.json` into the page header injection and clear the flag by re-running deploy (hash updates)
 - Manifest excludes `/photography-mentoring-online-assignments` and the 404'd 2hr F2F product path (schema files kept)
 
+## Durable pipeline (Cursor/Claude — never hand-edit generated files)
+
+Alan must not maintain overrides. When Alan approves an attribution/manifest change in chat, Cursor/Claude updates the durable inputs below; the **normal** merge + generate path re-applies them automatically.
+
+### Run order (normal)
+
+1. `scripts/merge-reviews.py` (Trustpilot match → Google match → booking reconcile → curated → **15 overrides** → merge combined → **manual-paste allowlist**)
+2. `scripts/generate-product-schema.py` (writes product schemas + `manifest-policy.json` + mentoring manual-paste node)
+3. Deploy/copy (`deploy-product-schemas-cli.mjs` or `_copy-schemas-no-git-*.mjs`) — reads `manifest-policy.json` for excludes. **Do not push** unless Alan asks.
+
+### Durable inputs (edit these — not `outputs/schema/products/*.json`)
+
+| File | Role |
+|------|------|
+| `alan-shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv` | Raw Trustpilot |
+| `alan-shared-resources/csv/raw-03b-google-reviews.csv` | Raw Google |
+| `alan-shared-resources/csv processed/02 – products_cleaned.xlsx` | Products + flags `exclude_from_manifest`, `manual_paste_page` |
+| `alan-shared-resources/csv processed/15-review-attribution-overrides.csv` | Highest-priority review→product / `business_level` (after matcher) |
+| `alan-shared-resources/csv processed/14-google-curated-attributions.csv` | Curated name+date (lower than 15) |
+
+### Rules
+
+- **Never** hand-edit generated `*_schema.json`, `products-manifest.json`, or org review JSON to “fix” attributions — put the fix in `15-…overrides.csv` or `02` flags, then re-run merge + generate.
+- `manual_paste_page` products (mentoring) keep **only** reviewers listed in `15` for that slug (Trustpilot extras dropped so live paste cannot be wiped/diluted on regen).
+- `arp-critical-schema` in `index.html` is the **event-loader WebPage stub** for workshop pages — it does **not** generate the mentoring Service+Product header block. Mentoring comes from `write_mentoring_manual_paste()` → `outputs/manual-paste/`.
+

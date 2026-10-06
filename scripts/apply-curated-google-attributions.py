@@ -222,9 +222,16 @@ def main():
     name_by_slug = load_products()
 
     curated = pd.DataFrame()
-    if PROPOSALS.exists():
-        proposals = pd.read_csv(PROPOSALS, encoding="utf-8-sig")
-        curated = build_curated_rows(proposals)
+    if PROPOSALS.exists() and PROPOSALS.stat().st_size > 0:
+        try:
+            proposals = pd.read_csv(PROPOSALS, encoding="utf-8-sig")
+            if len(proposals.columns) > 0:
+                curated = build_curated_rows(proposals)
+        except pd.errors.EmptyDataError:
+            print(f"Proposals file empty — skipping: {PROPOSALS.name}")
+            curated = pd.DataFrame()
+    elif PROPOSALS.exists():
+        print(f"Proposals file empty — skipping: {PROPOSALS.name}")
 
     for reviewer, date, slug in ALAN_CONFIRMED:
         if len(curated) > 0:
