@@ -163,6 +163,18 @@ def clean_product_description(raw_text, max_len=600):
 
 def slug_matches(review_slug, product_slug, threshold=0.85):
     """Check if review slug matches product slug using multiple strategies"""
+    # Face-to-face twin slugs fuzzy-match at ~0.87 — require exact tail match only.
+    F2F_EXACT = {
+        "2hr-private-photography-classes-2hr",
+        "four-private-photography-classes",
+    }
+    a_raw = str(review_slug or "").strip().lower().rstrip("/")
+    b_raw = str(product_slug or "").strip().lower().rstrip("/")
+    a_tail = a_raw.split("/")[-1] if a_raw else ""
+    b_tail = b_raw.split("/")[-1] if b_raw else ""
+    if a_tail in F2F_EXACT or b_tail in F2F_EXACT:
+        return a_tail == b_tail
+
     a = normalize_slug(review_slug)
     b = normalize_slug(product_slug)
     
@@ -2535,16 +2547,15 @@ def main():
                 if pd.isna(val):
                     return None
                 val_str = str(val).strip()
-                # Handle ISO timestamp format (e.g., "2024-12-15T14:30:00")
-                if 'T' in val_str:
-                    # Extract just the date part
-                    date_part = val_str.split('T')[0]
-                    try:
-                        return pd.to_datetime(date_part, errors='coerce')
-                    except:
-                        return pd.to_datetime(val_str, errors='coerce', dayfirst=True)
-                else:
-                    return pd.to_datetime(val_str, errors='coerce', dayfirst=True)
+                if not val_str or val_str.lower() in {"nan", "none", "nat", ""}:
+                    return None
+                # ISO timestamps -> date part first (avoid dayfirst mangling YYYY-MM-DD)
+                if "T" in val_str:
+                    val_str = val_str.split("T")[0]
+                dt = pd.to_datetime(val_str, errors="coerce", format="mixed")
+                if pd.isna(dt):
+                    dt = pd.to_datetime(val_str, errors="coerce", dayfirst=True)
+                return None if pd.isna(dt) else dt
             
             reviews_df["date"] = reviews_df["date"].apply(parse_review_date)
         
@@ -2795,8 +2806,19 @@ def main():
         if product_slug in grouped_reviews.groups:
             reviews_for_product = grouped_reviews.get_group(product_slug)
         else:
-            # Fuzzy fallback: handle slight slug variations
+            # Fuzzy fallback: handle slight slug variations (exact-only for F2F twins)
+            F2F_EXACT = {
+                "2hr-private-photography-classes-2hr",
+                "four-private-photography-classes",
+            }
+            ps = str(product_slug or "").strip().lower().split("/")[-1]
             for s in grouped_reviews.groups:
+                ss = str(s or "").strip().lower().split("/")[-1]
+                if ps in F2F_EXACT or ss in F2F_EXACT:
+                    if ps == ss:
+                        reviews_for_product = grouped_reviews.get_group(s)
+                        break
+                    continue
                 if SequenceMatcher(None, product_slug, s).ratio() >= 0.85:
                     reviews_for_product = grouped_reviews.get_group(s)
                     break
@@ -2839,7 +2861,7 @@ def main():
             if 'date' in reviews_for_product.columns:
                 # Convert dates to datetime for proper sorting
                 reviews_for_product = reviews_for_product.copy()
-                reviews_for_product['_sort_date'] = pd.to_datetime(reviews_for_product['date'], errors='coerce', dayfirst=True)
+                reviews_for_product['_sort_date'] = pd.to_datetime(reviews_for_product['date'], errors='coerce', format='mixed')
                 # Also try date_parsed column if it exists (from Google reviews)
                 if 'date_parsed' in reviews_for_product.columns:
                     reviews_for_product['_sort_date'] = reviews_for_product['_sort_date'].fillna(reviews_for_product['date_parsed'])
