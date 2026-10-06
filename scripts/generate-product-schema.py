@@ -2516,8 +2516,11 @@ def main():
         if "reviewbody" in reviews_df.columns:
             reviews_df["reviewbody"] = reviews_df["reviewbody"].fillna('').astype(str)
         
-        # Convert ratingValue to numeric
-        reviews_df["ratingvalue"] = pd.to_numeric(reviews_df.get("ratingvalue"), errors="coerce")
+        # Convert ratingValue to numeric (handles FIVE/FOUR/… word ratings)
+        reviews_df["ratingvalue"] = reviews_df.get("ratingvalue").apply(normalize_rating)
+        if "rating" in reviews_df.columns:
+            fill = reviews_df["rating"].apply(normalize_rating)
+            reviews_df["ratingvalue"] = reviews_df["ratingvalue"].fillna(fill)
         
         # Debug: Check counts before filtering
         print(f"🔍 Debug: Before filtering - Total rows: {len(reviews_df)}")

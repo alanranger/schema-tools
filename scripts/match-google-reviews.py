@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Dedicated Google Review Matcher
 Optimized matching logic specifically for Google reviews using:
@@ -8,7 +8,7 @@ Optimized matching logic specifically for Google reviews using:
 
 Reads:
   - shared-resources/csv/raw-03b-google-reviews.csv
-  - shared-resources/csv processed/02 – products_cleaned.xlsx
+  - shared-resources/csv processed/02 ÔÇô products_cleaned.xlsx
   - shared-resources/csv/*photographic-workshops-near-me*.csv or *photo-workshops-uk-landscape*.csv
   - shared-resources/csv/*beginners-photography-lessons*.csv or *photography-services-courses-mentoring*.csv
 
@@ -45,7 +45,7 @@ if not google_path or not google_path.exists():
     sys.exit(1)
 
 # Products file
-products_path = csv_processed_dir / '02 – products_cleaned.xlsx'
+products_path = csv_processed_dir / '02 ÔÇô products_cleaned.xlsx'
 
 # Find event CSV files using flexible filename matching
 events_workshops_path = None
@@ -194,49 +194,45 @@ def fuzzy_match(text1, text2):
     return SequenceMatcher(None, str(text1).lower(), str(text2).lower()).ratio()
 
 def match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, aliases, events_df=None, date_cluster_map=None):
-    """Match Google review text to product using multiple strategies"""
+    """Match Google review: TEXT/alias first; date cluster/events only as fallback."""
     if not review_text and not review_title:
         return None
-    
+
     combined_text = f"{review_title or ''} {review_text or ''}".strip()
     combined_lower = combined_text.lower()
-    
     if not combined_lower:
         return None
-    
-    # TEXT FIRST (Alan 2026-10-06): aliases/keywords beat date-window/cluster matching.
-    # Strategy 1: Check aliases in review text (longest phrase first — e.g. "yorkshire dales" before "yorkshire")
+
+    # Strategy 1: aliases (longest first)
     for alias_key, alias_slug in sorted(aliases.items(), key=lambda x: len(x[0]), reverse=True):
         if alias_key in combined_lower and alias_slug in product_by_slug:
             return alias_slug
-    
-    # Strategy 2: Extract key words and match
+
+    # Strategy 2: keyword overlap with product names
     key_words = []
-    generic_words = {'photography', 'workshop', 'workshops', 'course', 'courses', 'class', 'classes', 
-                    'photo', 'photographic', 'great', 'excellent', 'good', 'amazing', 'wonderful',
-                    'recommend', 'recommended', 'highly', 'very', 'really', 'much', 'many', 'some',
-                    'alan', 'ranger', 'service', 'experience', 'would', 'definitely', 'again'}
-    
+    generic_words = {
+        'photography', 'workshop', 'workshops', 'course', 'courses', 'class', 'classes',
+        'photo', 'photographic', 'great', 'excellent', 'good', 'amazing', 'wonderful',
+        'recommend', 'recommended', 'highly', 'very', 'really', 'much', 'many', 'some',
+        'alan', 'ranger', 'service', 'experience', 'would', 'definitely', 'again'
+    }
+    location_words = [
+        'glencoe', 'anglesey', 'gower', 'yorkshire', 'dales', 'devon', 'peak', 'district',
+        'lake', 'batsford', 'arboretum', 'urban', 'architecture', 'coventry', 'kenilworth',
+        'ireland', 'kerry', 'dartmoor', 'norfolk', 'suffolk', 'northumberland', 'wales',
+        'woodland', 'woodlands', 'snowdonia', 'poppy', 'sunflower', 'brandon', 'marsh',
+        'beginners', 'lightroom', 'macro', 'christmas', 'fireworks', 'exmoor', 'sezincote',
+        'lavender', 'bluebell', 'fairy', 'glen', 'chesterton', 'windmill', 'north', 'south',
+        'east', 'west', 'coastal', 'landscape', 'portrait', 'long', 'exposure', 'garden',
+        'canvas', 'prints', 'mentoring', 'sensor', 'clean', 'rps', 'academy', 'masterclass'
+    ]
     for word in combined_lower.split():
         word_clean = word.strip('.,!?;:()[]{}')
         if len(word_clean) > 4 and word_clean not in generic_words:
             key_words.append(word_clean)
-    
-    # Add location/product type words (even if shorter)
-    location_words = ['glencoe', 'anglesey', 'gower', 'yorkshire', 'dales', 'devon', 'peak', 'district',
-                     'lake', 'batsford', 'arboretum', 'urban', 'architecture', 'coventry', 'kenilworth',
-                     'ireland', 'kerry', 'dartmoor', 'norfolk', 'suffolk', 'northumberland', 'wales',
-                     'woodland', 'woodlands', 'snowdonia', 'poppy', 'sunflower', 'brandon', 'marsh',
-                     'beginners', 'lightroom', 'macro', 'christmas', 'fireworks', 'exmoor', 'sezincote',
-                     'lavender', 'bluebell', 'fairy', 'glen', 'chesterton', 'windmill', 'north', 'south',
-                     'east', 'west', 'coastal', 'landscape', 'portrait', 'long', 'exposure', 'garden',
-                     'canvas', 'prints', 'mentoring', 'sensor', 'clean', 'rps', 'academy', 'masterclass']
-    
-    for word in combined_lower.split():
-        word_clean = word.strip('.,!?;:()[]{}')
         if word_clean in location_words:
             key_words.append(word_clean)
-    
+
     if key_words:
         best_match = None
         best_score = 0
@@ -245,13 +241,13 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
             matches = sum(1 for kw in key_words if kw in name_lower)
             if matches > 0:
                 score = matches / len(key_words)
-                if score > best_score and score >= 0.5:  # At least 50% of keywords match
+                if score > best_score and score >= 0.5:
                     best_score = score
                     best_match = slug
         if best_match:
             return best_match
-    
-    # Strategy 3: Fuzzy match against product names
+
+    # Strategy 3: fuzzy product name
     best_match = None
     best_ratio = 0.0
     for slug, name in name_by_slug.items():
@@ -259,23 +255,23 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
         if ratio > best_ratio:
             best_ratio = ratio
             best_match = slug
-    
-    if best_ratio >= 0.55:  # Lower threshold to 55% for Google reviews
+    if best_ratio >= 0.55:
         return best_match
-    
 
-    # DATE FALLBACK only when text/alias produced nothing
+    # Strategy 4: date-cluster fallback (±7 days) — never overrides text
     if review_date and pd.notna(review_date) and date_cluster_map:
         for cluster_date, cluster_product in date_cluster_map.items():
             days_diff = abs((review_date - cluster_date).days)
             if days_diff <= 7 and cluster_product and cluster_product in product_by_slug:
                 return cluster_product
+
+    # Strategy 5: nearby events (±30 days) requiring text/location signal
     if review_date and pd.notna(review_date) and events_df is not None and len(events_df) > 0:
         nearby_events = events_df[
-            (events_df['start_date_parsed'] >= review_date - timedelta(days=14)) &
-            (events_df['start_date_parsed'] <= review_date + timedelta(days=14))
+            (events_df['start_date_parsed'] >= review_date - timedelta(days=30)) &
+            (events_df['start_date_parsed'] <= review_date + timedelta(days=30))
         ]
-        best_match = None
+        best_event = None
         best_score = 0.0
         for _, event_row in nearby_events.iterrows():
             event_title = str(event_row.get('Event_Title', '')).lower()
@@ -291,19 +287,159 @@ def match_google_review_to_product(review_text, review_title, review_date, name_
                 if matches > 0:
                     score += 0.5 * (matches / max(len(title_words), 1))
             days_diff = abs((event_row['start_date_parsed'] - review_date).days)
-            score += 0.3 / (1 + days_diff / 5)
+            score += 0.3 / (1 + days_diff / 14)
             if event_location and event_location in combined_lower:
                 score += 0.2
-            # Require text/location signal — never date-only
             if score > best_score and score >= 0.35:
                 best_score = score
-                best_match = event_row
-        if best_match is not None:
-            event_url = str(best_match.get('Event_URL', '')).strip()
+                best_event = event_row
+        if best_event is not None:
+            event_url = str(best_event.get('Event_URL', '')).strip()
             if event_url:
                 event_slug = event_url.split('/')[-1].strip()
                 if event_slug in product_by_slug:
                     return event_slug
 
     return None
+
+# Build date cluster map: Group reviews by date clusters and match clusters to products
+print("Building date clusters for improved matching...")
+google_sorted = google_df[google_df['date_parsed'].notna()].sort_values('date_parsed').copy()
+date_cluster_map = {}  # Maps cluster center date to product slug
+
+# First pass: Match reviews using text/alias matching
+print("First pass: Text-based matching...")
+first_pass_matches = {}
+for idx, row in google_sorted.iterrows():
+    review_text = str(row.get('review', '') or row.get('comment', '') or '').strip()
+    review_title = str(row.get('title', '') or '').strip()
+    review_date = row.get('date_parsed')
+    
+    matched_slug = match_google_review_to_product(review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, None)
+    if matched_slug:
+        first_pass_matches[idx] = matched_slug
+
+print(f"First pass matched: {len(first_pass_matches)} reviews")
+print()
+
+# Second pass: Use date clustering to match remaining reviews
+print("Second pass: Date cluster matching...")
+# Group reviews into date clusters (reviews within 3 days of each other)
+clusters = []
+current_cluster = []
+for idx, row in google_sorted.iterrows():
+    if not current_cluster:
+        current_cluster = [idx]
+    else:
+        last_date = google_sorted.loc[current_cluster[-1], 'date_parsed']
+        current_date = row['date_parsed']
+        if pd.notna(last_date) and pd.notna(current_date):
+            if (current_date - last_date).days <= 3:
+                current_cluster.append(idx)
+            else:
+                if len(current_cluster) >= 2:  # Clusters with 2+ reviews
+                    clusters.append(current_cluster)
+                current_cluster = [idx]
+        else:
+            current_cluster.append(idx)
+if len(current_cluster) >= 2:
+    clusters.append(current_cluster)
+
+print(f"Found {len(clusters)} date clusters")
+print()
+
+# For each cluster, if any review is matched, assign that product to all reviews in cluster
+cluster_assignments = {}
+for cluster in clusters:
+    cluster_product = None
+    cluster_center_date = None
+    
+    # Check if any review in cluster is already matched
+    for review_idx in cluster:
+        if review_idx in first_pass_matches:
+            cluster_product = first_pass_matches[review_idx]
+            cluster_center_date = google_sorted.loc[review_idx, 'date_parsed']
+            break
+    
+    # If cluster has a product, assign it to all reviews in cluster
+    if cluster_product:
+        for review_idx in cluster:
+            cluster_assignments[review_idx] = cluster_product
+            if cluster_center_date:
+                date_cluster_map[cluster_center_date] = cluster_product
+
+print(f"Date clusters assigned products: {len(cluster_assignments)} reviews")
+print()
+
+# Process Google reviews (combine first pass + cluster assignments)
+# NAME-FIRST overrides from curated attributions (Alan-approved / booking-led)
+curated_path = csv_processed_dir / "14-google-curated-attributions.csv"
+name_date_overrides = {}
+if curated_path.exists():
+    cdf = pd.read_csv(curated_path, encoding="utf-8-sig")
+    for _, cr in cdf.iterrows():
+        rn = str(cr.get("reviewer_name") or "").strip().lower()
+        rd = str(cr.get("review_date") or "")[:10]
+        slug = str(cr.get("product_slug") or "").strip()
+        if rn and rd and slug:
+            name_date_overrides[f"{rn}|{rd}"] = slug
+    print(f"Loaded {len(name_date_overrides)} curated name+date overrides from 14-…")
+
+print("Matching Google reviews to products...")
+all_reviews = []
+matched_count = 0
+unmatched_count = 0
+date_cluster_matched = 0
+curated_matched = 0
+
+for idx, row in google_df.iterrows():
+    review_text = str(row.get('review', '') or row.get('comment', '') or '').strip()
+    review_title = str(row.get('title', '') or '').strip()
+    review_date = row.get('date_parsed')
+    reviewer = str(row.get('reviewer', '') or '').strip()
+
+    # NAME FIRST: curated / approved booking attributions
+    matched_slug = None
+    ov_key = f"{reviewer.lower()}|{str(row.get('date', ''))[:10]}"
+    if ov_key in name_date_overrides:
+        matched_slug = name_date_overrides[ov_key]
+        curated_matched += 1
+
+    # Prefer text/alias first-pass matches; date clusters only fill gaps.
+    if not matched_slug:
+        matched_slug = first_pass_matches.get(idx)
+    if not matched_slug:
+        matched_slug = cluster_assignments.get(idx)
+        if matched_slug:
+            date_cluster_matched += 1
+    if not matched_slug:
+        matched_slug = match_google_review_to_product(
+            review_text, review_title, review_date, name_by_slug, product_by_slug, ALIASES, events_df, date_cluster_map
+        )
+
+    review_dict = row.to_dict()
+    review_dict['source'] = 'Google'
+    review_dict['product_slug'] = matched_slug if matched_slug else ''
+    review_dict['product_name'] = name_by_slug.get(matched_slug, '') if matched_slug else ''
+    all_reviews.append(review_dict)
+    if matched_slug:
+        matched_count += 1
+    else:
+        unmatched_count += 1
+
+print(f"Matched: {matched_count} reviews")
+print(f"  - Curated name+date: {curated_matched}")
+print(f"  - Text/alias matching: {len(first_pass_matches)}")
+print(f"  - Date cluster matching: {date_cluster_matched}")
+print(f"Unmatched (still written): {unmatched_count} reviews")
+print()
+
+# Save ALL reviews (matched + unmatched) — fixes prior leak that dropped ~44 text rows
+out_df = pd.DataFrame(all_reviews)
+out_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+print(f"Saved {len(all_reviews)} Google reviews to {output_path.name} (includes unmatched)")
+
+print("="*80)
+print("GOOGLE MATCHING COMPLETE")
+print("="*80)
 
