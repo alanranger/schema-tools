@@ -189,6 +189,15 @@ if 'date' in final_df.columns:
     final_df = final_df.sort_values('date', ascending=False, na_position='last')
 print()
 
+# Durable excludes (15-overrides scope=exclude) — drop from combined entirely
+if 'attribution_source' in final_df.columns:
+    before = len(final_df)
+    final_df = final_df[final_df['attribution_source'].astype(str) != 'override_exclude'].copy()
+    dropped = before - len(final_df)
+    if dropped:
+        print(f"Dropped {dropped} override_exclude reviews from combined output")
+print()
+
 # Save
 print(f"Saving to {output_path.name}...")
 final_df.to_csv(output_path, index=False, encoding='utf-8-sig')

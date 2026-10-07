@@ -114,6 +114,18 @@
     return null;
   }
 
+
+  function arStars(n) {
+    n = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
+    var s = '';
+    for (var i = 1; i <= 5; i++) s += (i <= n ? '\u2605' : '\u2606');
+    return s;
+  }
+  /** Aggregate badge/heading: nearest whole star. */
+  function arStarsAgg(val) {
+    return arStars(Math.round(Number(val) || 0));
+  }
+
   installCoreSuppressorV21();
 
   var path = arNormPath(location.pathname);
@@ -523,7 +535,7 @@
             var agg = product.aggregateRating;
             var r = document.createElement('div');
             r.className = 'ar-rating';
-            r.innerHTML = '<span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(agg.ratingValue) + '</b> \u00b7 ' + plural(agg.reviewCount, 'review') + ' <span style="color:#bbb">\u00b7 Google &amp; Trustpilot</span>';
+            r.innerHTML = '<span class="ar-stars">' + arStarsAgg(agg.ratingValue) + '</span> <b>' + esc(agg.ratingValue) + '</b> \u00b7 ' + plural(agg.reviewCount, 'review') + ' <span style="color:#bbb">\u00b7 Google &amp; Trustpilot</span>';
             h1.after(r);
             r.style.order = getComputedStyle(h1).order;
           }
@@ -697,10 +709,11 @@
               function rcard(rv) {
                 var body = String(rv.reviewBody || '');
                 var srcName = (rv.publisher && rv.publisher.name) || 'Review';
-                return '<div class="ar-rev" tabindex="0"><div class="st">\u2605\u2605\u2605\u2605\u2605</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
+                var starN = (rv.reviewRating && rv.reviewRating.ratingValue != null) ? rv.reviewRating.ratingValue : 5;
+                return '<div class="ar-rev" tabindex="0"><div class="st">' + arStars(starN) + '</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
               }
               sec.innerHTML = '<h2>What attendees say</h2>'
-                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
+                + '<div class="ar-sub"><span class="ar-stars">' + arStarsAgg(ratingVal) + '</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
                 + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');
@@ -1430,7 +1443,7 @@
           if (h1 && product && product.aggregateRating && !document.querySelector('.ar-rating')) {
             var agg = product.aggregateRating;
             var r = document.createElement('div'); r.className = 'ar-rating';
-            r.innerHTML = '<span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(agg.ratingValue) + '</b> \u00b7 ' + plural(agg.reviewCount, 'review') + ' <span style="color:#bbb">\u00b7 Google &amp; Trustpilot</span>';
+            r.innerHTML = '<span class="ar-stars">' + arStarsAgg(agg.ratingValue) + '</span> <b>' + esc(agg.ratingValue) + '</b> \u00b7 ' + plural(agg.reviewCount, 'review') + ' <span style="color:#bbb">\u00b7 Google &amp; Trustpilot</span>';
             h1.after(r); r.style.order = getComputedStyle(h1).order;
           }
 
@@ -1571,10 +1584,11 @@
               function rcard(rv) {
                 var body = String(rv.reviewBody || '');
                 var srcName = (rv.publisher && rv.publisher.name) || 'Review';
-                return '<div class="ar-rev" tabindex="0"><div class="st">\u2605\u2605\u2605\u2605\u2605</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
+                var starN = (rv.reviewRating && rv.reviewRating.ratingValue != null) ? rv.reviewRating.ratingValue : 5;
+                return '<div class="ar-rev" tabindex="0"><div class="st">' + arStars(starN) + '</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
               }
               sec.innerHTML = '<h2>What attendees say</h2>'
-                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
+                + '<div class="ar-sub"><span class="ar-stars">' + arStarsAgg(ratingVal) + '</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
                 + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');

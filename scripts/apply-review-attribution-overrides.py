@@ -27,23 +27,29 @@ def _norm_name(val) -> str:
     return str(val or "").strip().lower()
 
 
-def _norm_date(val) -> str:
+def _date_candidates(val):
+    """Return possible YYYY-MM-DD parses (month-first and day-first)."""
+    out = set()
     if val is None or (isinstance(val, float) and pd.isna(val)):
-        return ""
-    # Prefer month-first (Trustpilot export + ISO), then day-first fallback.
-    dt = pd.to_datetime(val, errors="coerce", format="mixed")
-    if pd.isna(dt):
-        dt = pd.to_datetime(val, errors="coerce", dayfirst=True)
-    if pd.isna(dt):
-        s = str(val).strip()
-        return s[:10] if len(s) >= 10 and s[4] == "-" else ""
-    return dt.strftime("%Y-%m-%d")
+        return out
+    s = str(val).strip()
+    if len(s) >= 10 and s[4] == "-":
+        out.add(s[:10])
+    for dayfirst in (False, True):
+        dt = pd.to_datetime(val, errors="coerce", dayfirst=dayfirst)
+        if pd.notna(dt):
+            out.add(dt.strftime("%Y-%m-%d"))
+    return out
+
+
+def _norm_date(val) -> str:
+    cands = sorted(_date_candidates(val))
+    return cands[0] if cands else ""
 
 
 def apply_to_frame(df: pd.DataFrame, name_cols, date_cols, source_label: str) -> int:
     odf = pd.read_csv(overrides_path, encoding="utf-8-sig")
     applied = 0
-    # Precompute name/date columns for matching
     name_series = None
     for col in name_cols:
         if col in df.columns:
@@ -52,24 +58,44 @@ def apply_to_frame(df: pd.DataFrame, name_cols, date_cols, source_label: str) ->
     if name_series is None:
         print(f"WARNING: no name column for {source_label}")
         return 0
-    date_series = pd.Series([""] * len(df), index=df.index)
-    for col in date_cols:
-        if col in df.columns:
-            parsed = df[col].map(_norm_date)
-            date_series = date_series.where(date_series.astype(str).str.len() > 0, parsed)
+
+    # Per-row date candidate sets for ambiguous DD/MM vs MM/DD
+    date_cand_lists = []
+    for idx in df.index:
+        cands = set()
+        for col in date_cols:
+            if col in df.columns:
+                cands |= _date_candidates(df.at[idx, col])
+        date_cand_lists.append(cands)
+
     for _, ov in odf.iterrows():
         rn = _norm_name(ov.get("reviewer_name"))
-        rd = _norm_date(ov.get("review_date"))
+        rd_cands = _date_candidates(ov.get("review_date"))
         scope = str(ov.get("scope") or "product").strip().lower()
         slug = "" if pd.isna(ov.get("product_slug")) else str(ov.get("product_slug")).strip()
         if not rn:
             continue
-        mask = name_series == rn
-        if rd:
-            mask = mask & (date_series == rd)
+        mask_bits = []
+        for i, idx in enumerate(df.index):
+            if name_series.loc[idx] != rn:
+                mask_bits.append(False)
+                continue
+            if rd_cands and not (date_cand_lists[i] & rd_cands):
+                mask_bits.append(False)
+                continue
+            mask_bits.append(True)
+        mask = pd.Series(mask_bits, index=df.index)
         if not mask.any():
             continue
-        if scope == "business_level" or not slug:
+
+        if scope == "exclude":
+            if "product_slug" in df.columns:
+                df.loc[mask, "product_slug"] = ""
+            if "product_name" in df.columns:
+                df.loc[mask, "product_name"] = ""
+            if "attribution_source" in df.columns:
+                df.loc[mask, "attribution_source"] = "override_exclude"
+        elif scope == "business_level" or not slug:
             if "product_slug" in df.columns:
                 df.loc[mask, "product_slug"] = ""
             if "product_name" in df.columns:
@@ -87,7 +113,6 @@ def apply_to_frame(df: pd.DataFrame, name_cols, date_cols, source_label: str) ->
     return applied
 
 
-# Google
 out_df = pd.read_csv(google_path, encoding="utf-8-sig")
 if "attribution_source" not in out_df.columns:
     out_df["attribution_source"] = ""
@@ -95,7 +120,6 @@ g_hits = apply_to_frame(out_df, ["reviewer", "reviewer_name", "author"], ["date"
 out_df.to_csv(google_path, index=False, encoding="utf-8-sig")
 print(f"Applied {g_hits} durable override row-hits → {google_path.name}")
 
-# Trustpilot
 tp_df = pd.read_csv(trustpilot_path, encoding="utf-8-sig")
 if "attribution_source" not in tp_df.columns:
     tp_df["attribution_source"] = ""
