@@ -2587,11 +2587,12 @@ def main():
             
             reviews_df["date"] = reviews_df["date"].apply(parse_review_date)
         
-        # Keep only rows with rating and non-empty text
-        reviews_df = reviews_df[
-            reviews_df["ratingvalue"].notna() &
-            (reviews_df["reviewbody"].astype(str).str.strip() != "")
-        ]
+        # Keep rated rows even when Google left the body empty (star-only).
+        # Emit path already substitutes "Customer review available on Google/Trustpilot".
+        reviews_df["reviewbody"] = reviews_df["reviewbody"].astype(str).replace(
+            {r"(?i)^nan$": "", r"(?i)^none$": ""}, regex=True
+        )
+        reviews_df = reviews_df[reviews_df["ratingvalue"].notna()]
         
         print(f"✅ Sanitized reviews dataset: {len(reviews_df)} valid reviews after cleanup")
         if len(reviews_df) == 0:

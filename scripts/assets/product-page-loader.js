@@ -690,15 +690,19 @@
               var sec = document.createElement('div');
               sec.id = 'ar-reviews';
               var ratingVal = product.aggregateRating ? product.aggregateRating.ratingValue : '5.0';
+              var totalReviews = product.aggregateRating && product.aggregateRating.reviewCount != null
+                ? Number(product.aggregateRating.reviewCount) : revs.length;
+              if (!(totalReviews > 0)) totalReviews = revs.length;
+              var showingN = revs.length;
               function rcard(rv) {
                 var body = String(rv.reviewBody || '');
                 var srcName = (rv.publisher && rv.publisher.name) || 'Review';
                 return '<div class="ar-rev" tabindex="0"><div class="st">\u2605\u2605\u2605\u2605\u2605</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
               }
               sec.innerHTML = '<h2>What attendees say</h2>'
-                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(revs.length, 'review') + ' \u00b7 Google &amp; Trustpilot</div>'
+                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
-                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + plural(revs.length, 'review') + ' \u25be</button>' : '');
+                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews + ' \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');
               var anchor = (accBlocks.length ? accBlocks[accBlocks.length - 1] : null)
                 || document.querySelector('.ProductItem-additional') || item;
@@ -731,7 +735,7 @@
                 more.addEventListener('click', function () {
                   expanded = !expanded;
                   grid.innerHTML = (expanded ? revs : revs.slice(0, CFG.REVIEWS_VISIBLE)).map(rcard).join('');
-                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + plural(revs.length, 'review') + ' \u25be';
+                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews + ' \u25be';
                   wireReviewCards(grid);
                 });
               }
@@ -1560,15 +1564,19 @@
             if (revs.length) {
               var sec = document.createElement('div'); sec.id = 'ar-reviews';
               var ratingVal = product.aggregateRating ? product.aggregateRating.ratingValue : '5.0';
+              var totalReviews = product.aggregateRating && product.aggregateRating.reviewCount != null
+                ? Number(product.aggregateRating.reviewCount) : revs.length;
+              if (!(totalReviews > 0)) totalReviews = revs.length;
+              var showingN = revs.length;
               function rcard(rv) {
                 var body = String(rv.reviewBody || '');
                 var srcName = (rv.publisher && rv.publisher.name) || 'Review';
                 return '<div class="ar-rev" tabindex="0"><div class="st">\u2605\u2605\u2605\u2605\u2605</div><div class="w">' + esc(rv.author && rv.author.name) + ' <span class="s">' + esc(srcName) + '</span></div><p>\u201c' + esc(body) + '\u201d</p><span class="ar-rev-more" aria-hidden="true">Read more \u25be</span></div>';
               }
               sec.innerHTML = '<h2>What attendees say</h2>'
-                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(revs.length, 'review') + ' \u00b7 Google &amp; Trustpilot</div>'
+                + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
-                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + plural(revs.length, 'review') + ' \u25be</button>' : '');
+                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews + ' \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');
               var anchor = (accBlocks.length ? accBlocks[accBlocks.length - 1] : null) || document.querySelector('.ProductItem-additional') || item;
               anchor.after(sec);
@@ -1590,7 +1598,7 @@
                 more.addEventListener('click', function () {
                   expanded = !expanded;
                   grid.innerHTML = (expanded ? revs : revs.slice(0, CFG.REVIEWS_VISIBLE)).map(rcard).join('');
-                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + plural(revs.length, 'review') + ' \u25be';
+                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews + ' \u25be';
                   wireReviewCards(grid);
                 });
               }
