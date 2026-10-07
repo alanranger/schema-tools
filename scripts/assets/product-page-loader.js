@@ -1558,7 +1558,7 @@
 
           /* FIX 2: suppress reviews on the 7 listed products, OR whenever the page
              was left untouched by the skip-guard (accordion excerpt). */
-          var noReviews = AR_NO_REVIEWS.indexOf(slugNow()) !== -1 || !builtBox;
+          var noReviews = AR_NO_REVIEWS.indexOf(slugNow()) !== -1; /* reviews UI independent of variant box */
           if (!noReviews && product && product.review && !document.getElementById('ar-reviews')) {
             var revs = Array.isArray(product.review) ? product.review : [product.review];
             if (revs.length) {
