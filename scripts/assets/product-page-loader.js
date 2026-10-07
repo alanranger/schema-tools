@@ -702,7 +702,7 @@
               sec.innerHTML = '<h2>What attendees say</h2>'
                 + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
-                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews + ' \u25be</button>' : '');
+                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');
               var anchor = (accBlocks.length ? accBlocks[accBlocks.length - 1] : null)
                 || document.querySelector('.ProductItem-additional') || item;
@@ -735,7 +735,7 @@
                 more.addEventListener('click', function () {
                   expanded = !expanded;
                   grid.innerHTML = (expanded ? revs : revs.slice(0, CFG.REVIEWS_VISIBLE)).map(rcard).join('');
-                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews + ' \u25be';
+                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews \u25be';
                   wireReviewCards(grid);
                 });
               }
@@ -1576,7 +1576,7 @@
               sec.innerHTML = '<h2>What attendees say</h2>'
                 + '<div class="ar-sub"><span class="ar-stars">\u2605\u2605\u2605\u2605\u2605</span> <b>' + esc(ratingVal) + '</b> from ' + plural(totalReviews, 'review') + ' \u00b7 showing the ' + showingN + ' most recent</div>'
                 + '<div class="ar-revgrid">' + revs.slice(0, CFG.REVIEWS_VISIBLE).map(rcard).join('') + '</div>'
-                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews + ' \u25be</button>' : '');
+                + (revs.length > CFG.REVIEWS_VISIBLE ? '<button id="ar-more" type="button">Show all ' + showingN + ' recent reviews \u25be</button>' : '');
               var accBlocks = document.querySelectorAll('.sqs-block-accordion');
               var anchor = (accBlocks.length ? accBlocks[accBlocks.length - 1] : null) || document.querySelector('.ProductItem-additional') || item;
               anchor.after(sec);
@@ -1598,7 +1598,7 @@
                 more.addEventListener('click', function () {
                   expanded = !expanded;
                   grid.innerHTML = (expanded ? revs : revs.slice(0, CFG.REVIEWS_VISIBLE)).map(rcard).join('');
-                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews + ' \u25be';
+                  more.textContent = expanded ? 'Show fewer \u25b4' : 'Show all ' + showingN + ' recent reviews \u25be';
                   wireReviewCards(grid);
                 });
               }
