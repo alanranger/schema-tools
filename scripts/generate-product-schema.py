@@ -2587,8 +2587,8 @@ def main():
             
             reviews_df["date"] = reviews_df["date"].apply(parse_review_date)
         
-        # Keep rated rows even when Google left the body empty (star-only).
-        # Emit path already substitutes "Customer review available on Google/Trustpilot".
+        # Keep all rated rows for aggregateRating (including star-only / empty body).
+        # Emit path below only includes reviews with real text — never invent placeholders.
         reviews_df["reviewbody"] = reviews_df["reviewbody"].astype(str).replace(
             {r"(?i)^nan$": "", r"(?i)^none$": ""}, regex=True
         )
@@ -2935,8 +2935,17 @@ def main():
             
             # Now apply cap for schema inclusion (newest 25); aggregate uses full rated set
             full_aggregate_rating = calculate_aggregate_rating_from_rows(reviews_for_product)
-            group = reviews_for_product.head(25)
-            excluded_count = max(0, total_reviews_for_product - 25)
+            # Emit only reviews with real text (star-only stay in aggregateRating only).
+            def _has_text_body(row):
+                for col in ['reviewbody', 'review_content', 'review_body', 'review', 'review_text', 'comment', 'content']:
+                    if col in row.index:
+                        body = str(row.get(col, '')).strip()
+                        if body and body.lower() not in ['nan', 'none', '']:
+                            return True
+                return False
+            text_reviews = reviews_for_product[reviews_for_product.apply(_has_text_body, axis=1)]
+            group = text_reviews.head(25)
+            excluded_count = max(0, len(text_reviews) - len(group))
             total_excluded_reviews += excluded_count
             
             # Track newest review date included in schema
@@ -2954,13 +2963,9 @@ def main():
                             if review_body and review_body.lower() not in ['nan', 'none', '']:
                                 break
                     
-                    # Replace "nan" or empty review texts with source-specific fallback message
-                    if not review_body or review_body.lower() == 'nan' or review_body == '':
-                        review_source = str(review_row.get('source', '')).strip()
-                        if 'google' in review_source.lower():
-                            review_body = "Customer review available on Google"
-                        else:
-                            review_body = "Customer review available on Trustpilot"
+                    # Star-only / empty body: counted in aggregateRating already; skip emit.
+                    if not review_body or review_body.lower() in ['nan', 'none', '']:
+                        continue
                     
                     # Get author - replace "nan" with "Anonymous Reviewer"
                     author = 'Anonymous Reviewer'
