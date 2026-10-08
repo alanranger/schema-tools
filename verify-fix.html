@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verify Supabase Query Fix</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <h1>Testing Supabase Query</h1>
+  <div id="result"></div>
+  <script>
+    const SUPABASE_URL = 'https://igzvwbvgvmzvvzoclufx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const url = 'https://www.alanranger.com/blog-on-photography/storytelling-narrative-photography-assignment';
+    
+    async function test() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<p>Testing query...</p>';
+      
+      try {
+        const { data, error } = await supabase
+          .from('page_entities')
+          .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
+          .eq('page_url', url)
+          .eq('kind', 'article')
+          .maybeSingle();
+        
+        if (error) {
+          resultDiv.innerHTML = `<p style="color: red;">❌ ERROR: ${error.message}</p>`;
+          return;
+        }
+        
+        if (!data) {
+          resultDiv.innerHTML = '<p style="color: orange;">⚠️ No entity found</p>';
+          return;
+        }
+        
+        resultDiv.innerHTML = `
+          <p style="color: green;">✅ SUCCESS! Entity found!</p>
+          <p><strong>Title:</strong> ${data.title}</p>
+          <p><strong>Meta Description:</strong> ${data.meta_description || 'null'}</p>
+          <p><strong>Description:</strong> ${data.description || 'null'}</p>
+          <p><strong>Will use:</strong> ${data.meta_description || data.description || data.excerpt || 'null'}</p>
+        `;
+      } catch (e) {
+        resultDiv.innerHTML = `<p style="color: red;">❌ Exception: ${e.message}</p>`;
+      }
+    }
+    
+    test();
+  </script>
+</body>
+</html>
+
