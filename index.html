@@ -2080,10 +2080,10 @@
     <div class="instructions">
       <strong> Event Posts Schema Generator</strong><br><br>
       ✅ Generates per-event files for individual lessons/workshops pages.<br>
-      ✅ Fully independent from Event Index workflow.<br>
+      ✅ Prices events from the same mappings CSV as Event Index (no £0 files — unpriced events are blocked and listed).<br>
       ✅ Uses one global loader script for both Squarespace event groups.<br><br>
       <strong>Workflow:</strong><br>
-      1) Upload the two event CSV exports in this tab.<br>
+      1) Upload the two event CSV exports and the event-product mappings CSV in this tab.<br>
       2) Click <strong>Build Event Post Files</strong>.<br>
       3) Deploy files + manifest to `schema.alanranger.com`.<br>
       4) Add the global loader once in Squarespace header injection.
@@ -2102,6 +2102,13 @@
         <input type="file" id="eventPostsWorkshopsCsvFile" accept=".csv" aria-label="Event Posts workshops CSV upload">
         <div style="margin-top:0.35rem; color:#475569; font-size:0.85rem;">
           Upload: <code>03-photographic-workshops-near-me.csv</code>
+        </div>
+      </div>
+      <div style="margin-bottom: 1rem; padding: 0.85rem; background: #ffffff; border: 1px solid #dbeafe; border-radius: 8px;">
+        <label for="eventPostsMappingsCsvFile" style="display:block; font-weight:600; margin-bottom:0.35rem;">Event-Product Mappings CSV (required — prices)</label>
+        <input type="file" id="eventPostsMappingsCsvFile" accept=".csv" aria-label="Event Posts event-product mappings CSV upload">
+        <div style="margin-top:0.35rem; color:#475569; font-size:0.85rem;">
+          Upload: <code>csv processed/05-event-product-mappings-latest.csv</code> (same file as Event Index)
         </div>
       </div>
       <button onclick="generateEventPostBundle()" style="padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 0.5rem; margin-bottom: 0.5rem;">
@@ -13742,87 +13749,16 @@
       updateDebugLog();
     }
 
-    // Load mappings CSV from file input
+    // Load mappings CSV from file input (Event Posts supplies its own mappings while it builds)
     const mappingsFileInput = document.getElementById('mappingsCsvFile');
-    if (mappingsFileInput && mappingsFileInput.files && mappingsFileInput.files[0]) {
+    if (window.eventPostsMappingsActive) {
+      debugLog.push(' Using Event Posts mappings CSV (Event Index mappings input ignored for this build)');
+    } else if (mappingsFileInput && mappingsFileInput.files && mappingsFileInput.files[0]) {
       debugLog.push(` Loading mappings CSV: ${mappingsFileInput.files[0].name}`);
       try {
         const file = mappingsFileInput.files[0];
         const text = await file.text();
-        // Parse mappings CSV (robust against unescaped commas in titles)
-        const parseMappingsCsv = (csvText) => {
-          const normalized = String(csvText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-          const rawLines = normalized.split('\n').filter(l => l.trim().length > 0);
-          if (rawLines.length === 0) return { data: [], repaired: 0, bad: 0 };
-
-          const headers = rawLines[0].split(',');
-          const headerLen = headers.length;
-          const dtRe = /^\d{4}-\d{2}-\d{2}T/;
-
-          const data = [];
-          let repaired = 0;
-          let bad = 0;
-
-          for (let li = 1; li < rawLines.length; li++) {
-            const line = rawLines[li];
-            const tokens = line.split(',');
-
-            // Fast path: clean row
-            if (tokens.length === headerLen) {
-              const row = {};
-              for (let i = 0; i < headerLen; i++) row[headers[i]] = tokens[i] ?? '';
-              data.push(row);
-              continue;
-            }
-
-            // Heuristic repair (commas inside product_title/event_title)
-            const dateStartIdx = tokens.findIndex((t, i) => i > 2 && dtRe.test(t));
-            if (dateStartIdx < 0 || dateStartIdx < 5) { bad++; continue; }
-
-            const priceIdx = dateStartIdx - 2;
-            const availabilityIdx = dateStartIdx - 1;
-            const dateEndIdx = dateStartIdx + 1;
-            if (dateEndIdx >= tokens.length) { bad++; continue; }
-
-            const afterDates = tokens.slice(dateEndIdx + 1);
-            // Need at least: start_time,end_time,event_location,map_method,confidence,participants,fitness_level + 3 tail fields
-            if (afterDates.length < 2 + 5 + 3) { bad++; continue; }
-
-            const row = {};
-            row.event_url = tokens[0] ?? '';
-            row.subtype = tokens[1] ?? '';
-            row.product_url = tokens[2] ?? '';
-            row.product_title = tokens.slice(3, priceIdx).join(',');
-            row.price_gbp = tokens[priceIdx] ?? '';
-            row.availability = tokens[availabilityIdx] ?? '';
-            row.date_start = tokens[dateStartIdx] ?? '';
-            row.date_end = tokens[dateEndIdx] ?? '';
-
-            row.start_time = afterDates[0] ?? '';
-            row.end_time = afterDates[1] ?? '';
-
-            const rest = afterDates.slice(2);
-            row.event_location = rest[0] ?? '';
-            row.map_method = rest[1] ?? '';
-            row.confidence = rest[2] ?? '';
-            row.participants = rest[3] ?? '';
-            row.fitness_level = rest[4] ?? '';
-
-            const tail3 = rest.slice(-3);
-            row.json_price = tail3[0] ?? '';
-            row.json_availability = tail3[1] ?? '';
-            row.price_currency = tail3[2] ?? '';
-
-            row.event_title = rest.slice(5, -3).join(',');
-
-            data.push(row);
-            repaired++;
-          }
-
-          return { data, repaired, bad };
-        };
-
-        const parsed = parseMappingsCsv(text);
+        const parsed = parseEventMappingsCsv(text);
         mappingsData = parsed.data;
 
         debugLog.push('✅ Loaded ' + mappingsData.length + ' mappings from CSV');
@@ -13847,6 +13783,72 @@
     }
   }
   
+  // Parse 05-event-product-mappings CSV (robust against unescaped commas in titles).
+  // Shared by Event Index (loadReviewData) and Event Posts so both price events identically.
+  function parseEventMappingsCsv(csvText) {
+    const normalized = String(csvText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const rawLines = normalized.split('\n').filter(l => l.trim().length > 0);
+    if (rawLines.length === 0) return { data: [], repaired: 0, bad: 0 };
+
+    const headers = rawLines[0].split(',');
+    const data = [];
+    let repaired = 0;
+    let bad = 0;
+
+    for (let li = 1; li < rawLines.length; li++) {
+      const tokens = rawLines[li].split(',');
+      if (tokens.length === headers.length) {
+        const row = {};
+        for (let i = 0; i < headers.length; i++) row[headers[i]] = tokens[i] ?? '';
+        data.push(row);
+        continue;
+      }
+      const row = repairMappingsRow(tokens);
+      if (row) { data.push(row); repaired++; } else { bad++; }
+    }
+
+    return { data, repaired, bad };
+  }
+
+  // Heuristic repair for rows with commas inside product_title/event_title.
+  function repairMappingsRow(tokens) {
+    const dtRe = /^\d{4}-\d{2}-\d{2}T/;
+    const dateStartIdx = tokens.findIndex((t, i) => i > 2 && dtRe.test(t));
+    if (dateStartIdx < 5) return null;
+
+    const priceIdx = dateStartIdx - 2;
+    const dateEndIdx = dateStartIdx + 1;
+    if (dateEndIdx >= tokens.length) return null;
+
+    const afterDates = tokens.slice(dateEndIdx + 1);
+    // Need at least: start_time,end_time,event_location,map_method,confidence,participants,fitness_level + 3 tail fields
+    if (afterDates.length < 2 + 5 + 3) return null;
+
+    const rest = afterDates.slice(2);
+    const tail3 = rest.slice(-3);
+    return {
+      event_url: tokens[0] ?? '',
+      subtype: tokens[1] ?? '',
+      product_url: tokens[2] ?? '',
+      product_title: tokens.slice(3, priceIdx).join(','),
+      price_gbp: tokens[priceIdx] ?? '',
+      availability: tokens[dateStartIdx - 1] ?? '',
+      date_start: tokens[dateStartIdx] ?? '',
+      date_end: tokens[dateEndIdx] ?? '',
+      start_time: afterDates[0] ?? '',
+      end_time: afterDates[1] ?? '',
+      event_location: rest[0] ?? '',
+      map_method: rest[1] ?? '',
+      confidence: rest[2] ?? '',
+      participants: rest[3] ?? '',
+      fitness_level: rest[4] ?? '',
+      json_price: tail3[0] ?? '',
+      json_availability: tail3[1] ?? '',
+      price_currency: tail3[2] ?? '',
+      event_title: rest.slice(5, -3).join(',')
+    };
+  }
+
   // Add debug log entry
   function addDebugLog(message) {
     if (!window.debugLog || !Array.isArray(window.debugLog)) {
@@ -14234,12 +14236,18 @@
 
     const files = [];
     const manifestEntries = [];
+    const blocked = [];
 
     (eventList || []).forEach((eventSchema) => {
       const eventUrl = normalizeUrl(eventSchema?.url || '');
       if (!eventUrl) return;
       const slug = deriveEventSlugFromUrl(eventUrl);
       if (!slug) return;
+      // Never publish a £0 per-page file: block and report instead.
+      if (!(Number.parseFloat(eventSchema?.offers?.price) > 0)) {
+        blocked.push({ url: eventUrl, name: eventSchema?.name || '' });
+        return;
+      }
 
       const group = deriveEventGroupFromUrl(eventUrl);
       const schemaFileName = `${slug}_event_schema.json`;
@@ -14274,6 +14282,7 @@
 
     return {
       files,
+      blocked,
       manifest: {
         generatedAt: new Date().toISOString(),
         totalEvents: entries.length,
@@ -14470,13 +14479,17 @@
     const output = document.getElementById('eventPostsOutput');
     const lessonsFile = document.getElementById('eventPostsLessonsCsvFile')?.files?.[0] || null;
     const workshopsFile = document.getElementById('eventPostsWorkshopsCsvFile')?.files?.[0] || null;
+    const mappingsFile = document.getElementById('eventPostsMappingsCsvFile')?.files?.[0] || null;
 
-    if (!lessonsFile || !workshopsFile) {
-      const message = 'Upload both Event Posts CSV files first: 02-beginners-photography-lessons.csv and 03-photographic-workshops-near-me.csv.';
+    if (!lessonsFile || !workshopsFile || !mappingsFile) {
+      const message = 'Upload all three Event Posts CSV files first: 02-beginners-photography-lessons.csv, 03-photographic-workshops-near-me.csv and 05-event-product-mappings-latest.csv.';
       if (output) output.textContent = message;
       alert(message);
       return false;
     }
+
+    const mappingsCount = await loadEventPostsMappings(mappingsFile, output);
+    if (!mappingsCount) return false;
 
     let lessonsRows = [];
     let workshopsRows = [];
@@ -14513,7 +14526,12 @@
     if (optionsContainer) optionsContainer.style.display = 'block';
 
     events = combinedRows;
-    await generateEventSchema();
+    window.eventPostsMappingsActive = true;
+    try {
+      await generateEventSchema();
+    } finally {
+      window.eventPostsMappingsActive = false;
+    }
 
     if (!window.currentEventList || !window.currentEventList.length || !window.currentEventBreadcrumbs) {
       const message = 'Event Posts generation did not produce event list output. Check CSV data and debug log.';
@@ -14528,10 +14546,12 @@
     const lines = [
       'Event post bundle generated successfully.',
       `Source rows: lessons=${lessonsRows.length}, workshops=${workshopsRows.length}, combined=${combinedRows.length}`,
+      `Mappings rows: ${mappingsCount}`,
       `Event rows used after filters: ${window.currentEventList.length}`,
       `Manifest entries: ${artifacts.manifest.totalEvents}`,
       `Per-event schema files: ${Math.round(artifacts.files.length / 2)}`,
       `Per-event FAQ files: ${Math.round(artifacts.files.length / 2)}`,
+      ...formatBlockedEventLines(artifacts.blocked),
       '',
       'Files:',
       ' - events-manifest.json',
@@ -14540,6 +14560,30 @@
     ];
     if (output) output.textContent = lines.join('\n');
     return true;
+  }
+
+  async function loadEventPostsMappings(file, output) {
+    try {
+      const parsed = parseEventMappingsCsv(await file.text());
+      mappingsData = parsed.data;
+      addDebugLog(`✅ Event Posts: loaded ${parsed.data.length} mappings from ${file.name} (repaired ${parsed.repaired}, skipped ${parsed.bad})`);
+      if (!parsed.data.length) throw new Error('mappings CSV has no rows');
+      return parsed.data.length;
+    } catch (error) {
+      const message = `Could not read the mappings CSV: ${error.message}`;
+      if (output) output.textContent = message;
+      alert(message);
+      return 0;
+    }
+  }
+
+  function formatBlockedEventLines(blocked) {
+    const list = blocked || [];
+    if (!list.length) return ['Events blocked (no price found): 0'];
+    return [
+      `⚠ Events blocked (no price found): ${list.length} — no schema/FAQ file written, not in manifest:`,
+      ...list.map((b) => ` - ${b.name || '(untitled)'} — ${b.url}`)
+    ];
   }
 
   function copyEventPostsLoaderScript() {
