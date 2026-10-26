@@ -19397,9 +19397,42 @@ ${minifiedJson}
     return `TLDR: ${safeTitle || 'This page'} explains the offer, who it is for, and how to book or enquire so you can choose the best next step quickly.`;
   }
 
-  // R2: Mirror the visible FAQ accordion exactly. Parses the page's .ar-faq block
-  // (summary = question, joined <p> = answer). Returns a FAQPage node, or null when
-  // the page has no .ar-faq block (in which case no FAQPage is emitted). Landing-only.
+  // Both accordion markups: classic `.ar-faq` blocks and the newer
+  // `.ar-faq-wrap` / `details.ar-faq-item` sections (Academy page).
+  function landingFaqDetailsElements(doc) {
+    const found = new Set();
+    doc.querySelectorAll('.ar-faq, .ar-faq-wrap').forEach((root) => {
+      root.querySelectorAll('details').forEach((det) => found.add(det));
+    });
+    doc.querySelectorAll('details.ar-faq-item').forEach((det) => found.add(det));
+    return Array.from(found);
+  }
+
+  // Answer = joined <p> text, else the `.ar-faq-a` box, else the details text minus its summary.
+  function landingFaqAnswerText(det) {
+    const paragraphs = Array.from(det.querySelectorAll('p'))
+      .map((p) => landingCleanText(p.textContent || ''))
+      .filter(Boolean);
+    if (paragraphs.length) return paragraphs.join(' ');
+    const answerBox = det.querySelector('.ar-faq-a');
+    if (answerBox) return landingCleanText(answerBox.textContent || '');
+    const clone = det.cloneNode(true);
+    const summary = clone.querySelector('summary');
+    if (summary) summary.remove();
+    return landingCleanText(clone.textContent || '');
+  }
+
+  // Summary text without the toggle icon (e.g. `.ar-faq-q-icon` "+").
+  function landingFaqQuestionText(det) {
+    const summary = det.querySelector('summary');
+    if (!summary) return '';
+    const clone = summary.cloneNode(true);
+    clone.querySelectorAll('[class*="icon"]').forEach((el) => el.remove());
+    return landingCleanText(clone.textContent || '');
+  }
+
+  // R2: Mirror the visible FAQ accordion exactly (summary = question). Returns a FAQPage
+  // node, or null when the page has no FAQ accordion (no FAQPage is emitted). Landing-only.
   function scrapeLandingFaqFromHtml(html, pageUrl) {
     if (!html) return null;
     let doc;
@@ -19408,25 +19441,17 @@ ${minifiedJson}
     } catch (e) {
       return null;
     }
-    const faqRoots = doc.querySelectorAll('.ar-faq');
-    if (!faqRoots.length) return null;
     const questions = [];
-    faqRoots.forEach((root) => {
-      root.querySelectorAll('details').forEach((det) => {
-        const summary = det.querySelector('summary');
-        const question = summary ? landingCleanText(summary.textContent || '') : '';
-        const answer = Array.from(det.querySelectorAll('p'))
-          .map((p) => landingCleanText(p.textContent || ''))
-          .filter(Boolean)
-          .join(' ');
-        if (question && answer) {
-          questions.push({
-            '@type': 'Question',
-            name: question,
-            acceptedAnswer: { '@type': 'Answer', text: answer }
-          });
-        }
-      });
+    landingFaqDetailsElements(doc).forEach((det) => {
+      const question = landingFaqQuestionText(det);
+      const answer = landingFaqAnswerText(det);
+      if (question && answer) {
+        questions.push({
+          '@type': 'Question',
+          name: question,
+          acceptedAnswer: { '@type': 'Answer', text: answer }
+        });
+      }
     });
     if (!questions.length) return null;
     const base = String(pageUrl || '').trim().replace(/\/+$/, '') || 'https://www.alanranger.com';
@@ -19436,6 +19461,118 @@ ${minifiedJson}
       '@id': `${base}#faq`,
       mainEntity: questions
     };
+  }
+
+  // Landing pages that are a Course, not a Service (Alan 2026-10-26: Academy page).
+  // The Course replaces the Service node and carries its rating + reviews.
+  const LANDING_COURSE_PAGES = {
+    '/free-online-photography-course': {
+      educationalLevel: 'Beginner to Advanced',
+      courseWorkload: 'PT15H',
+      offers: [
+        { name: '14-day free trial', category: 'Free', price: '0' },
+        { name: 'Annual membership', category: 'Subscription', price: '79.00', billingDuration: 'P1Y' }
+      ]
+    }
+  };
+
+  function landingCoursePageConfig(pageUrl) {
+    try {
+      const path = new URL(pageUrl).pathname.replace(/\/+$/, '').toLowerCase();
+      return LANDING_COURSE_PAGES[path] || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function landingNodeIsForPage(node, base) {
+    const strip = (v) => String(v || '').trim().replace(/#.*$/, '').replace(/\/+$/, '').replace('://alanranger.com', '://www.alanranger.com');
+    const page = strip(base);
+    return strip(node?.['@id']) === page || strip(node?.url) === page;
+  }
+
+  // First Course/Service node for this page (searching nested @graph) with an aggregateRating.
+  // Page-scoped so the site-wide header's Service rating is never picked up.
+  function landingFindRatedOffering(nodes, base) {
+    for (const node of nodes || []) {
+      if (!node || typeof node !== 'object') continue;
+      if (Array.isArray(node['@graph'])) {
+        const inner = landingFindRatedOffering(node['@graph'], base);
+        if (inner) return inner;
+      }
+      const isOffering = landingHasType(node, 'Course') || landingHasType(node, 'Service');
+      if (isOffering && node.aggregateRating && landingNodeIsForPage(node, base)) return node;
+    }
+    return null;
+  }
+
+  function landingBuildCourseOffer(offer, pageUrl) {
+    const out = {
+      '@type': 'Offer',
+      category: offer.category,
+      name: offer.name,
+      price: offer.price,
+      priceCurrency: 'GBP',
+      availability: 'https://schema.org/InStock',
+      url: pageUrl
+    };
+    if (offer.billingDuration) {
+      out.priceSpecification = {
+        '@type': 'UnitPriceSpecification',
+        price: offer.price,
+        priceCurrency: 'GBP',
+        billingDuration: offer.billingDuration
+      };
+    }
+    return out;
+  }
+
+  function landingBuildCourseNode(cfg, pageUrl, graph, ratedSource, fallback = {}) {
+    const webPage = graph.find((n) => landingHasType(n, 'WebPage')) || {};
+    const service = graph.find((n) => landingHasType(n, 'Service')) || {};
+    const hasPrimaryImage = graph.some((n) => String(n?.['@id'] || '') === `${pageUrl}#primaryimage`);
+    const course = {
+      '@type': 'Course',
+      '@id': `${pageUrl}#course`,
+      name: webPage.name || service.name || fallback.title || '',
+      description: webPage.description || service.description || fallback.description || '',
+      url: pageUrl,
+      inLanguage: 'en-GB',
+      image: hasPrimaryImage ? { '@id': `${pageUrl}#primaryimage` } : service.image,
+      provider: { '@id': 'https://www.alanranger.com/#org' },
+      creator: { '@id': 'https://www.alanranger.com/#person' },
+      educationalLevel: cfg.educationalLevel,
+      hasCourseInstance: [{
+        '@type': 'CourseInstance',
+        courseMode: 'Online',
+        courseWorkload: cfg.courseWorkload,
+        instructor: { '@id': 'https://www.alanranger.com/#person' }
+      }],
+      offers: cfg.offers.map((o) => landingBuildCourseOffer(o, pageUrl))
+    };
+    if (!course.image) delete course.image;
+    if (ratedSource?.aggregateRating) course.aggregateRating = ratedSource.aggregateRating;
+    if (Array.isArray(ratedSource?.review) && ratedSource.review.length) course.review = ratedSource.review;
+    return course;
+  }
+
+  // Swap the Service node for a Course on configured URLs. Rating/reviews come from the
+  // generated graph first, then the page's live schema (so a re-run after the Course is
+  // published still keeps them even though 'Course' is not a selectable landing type).
+  function applyLandingCourseOverride(finalSchema, pageUrl, existingSchemas, fallback = {}) {
+    const cfg = landingCoursePageConfig(pageUrl);
+    if (!cfg || !Array.isArray(finalSchema?.['@graph'])) return finalSchema;
+    const base = String(pageUrl).trim().replace(/\/+$/, '');
+    const graph = finalSchema['@graph'];
+    const ratedSource = landingFindRatedOffering(graph, base) || landingFindRatedOffering(existingSchemas, base);
+    const course = landingBuildCourseNode(cfg, base, graph, ratedSource, fallback);
+    const kept = graph.filter((n) => !landingHasType(n, 'Service') && !landingHasType(n, 'Course'));
+    kept.forEach((n) => {
+      if (landingHasType(n, 'WebPage')) n.mainEntity = { '@id': course['@id'] };
+    });
+    const imageIdx = kept.findIndex((n) => landingHasType(n, 'ImageObject'));
+    kept.splice(imageIdx >= 0 ? imageIdx + 1 : kept.length, 0, course);
+    return { ...finalSchema, '@graph': kept };
   }
 
   function stripLandingFaqPages(schema) {
@@ -20060,6 +20197,13 @@ ${minifiedJson}
     
     try {
       finalSchema = normalizeLandingSchemaOutput(finalSchema, selectedTypes, url, landingLiveMeta);
+      if (landingCoursePageConfig(url)) {
+        finalSchema = applyLandingCourseOverride(finalSchema, url, existingSchemas, { title, description: finalDescription });
+        const courseNode = landingFindGraphNode(finalSchema, 'Course');
+        addLandingDebugLog(courseNode?.aggregateRating
+          ? '✅ Course page: Service replaced by Course (CourseInstance, offers, rating + reviews carried)'
+          : '⚠️ Course page: Service replaced by Course, but NO rating/reviews found — check the page fetch before publishing');
+      }
       const schemaJson = JSON.stringify(finalSchema, null, 2);
       
       if (!outputText) {
