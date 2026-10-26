@@ -60,6 +60,11 @@ function stripTags(html) {
   return String(html).replace(/<[^>]+>/g, ' ');
 }
 
+const NAMED_TEXT_ENTITIES = {
+  mdash: '\u2014', ndash: '\u2013', hellip: '\u2026', rsquo: '\u2019', lsquo: '\u2018',
+  rdquo: '\u201d', ldquo: '\u201c', pound: '\u00a3', euro: '\u20ac', times: '\u00d7'
+};
+
 function decodeBasicEntities(str) {
   if (!str) return '';
   return String(str)
@@ -69,6 +74,7 @@ function decodeBasicEntities(str) {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&(mdash|ndash|hellip|rsquo|lsquo|rdquo|ldquo|pound|euro|times);/gi, (_, n) => NAMED_TEXT_ENTITIES[n.toLowerCase()])
     .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }
@@ -216,9 +222,11 @@ export function extractFromSquarespaceAccordion(html) {
  * Prefer the first matching container so CSS/style copies of the id do not pollute pairs.
  */
 export function cleanFaqQuestionText(q) {
-  return String(q || '')
+  return decodeBasicEntities(String(q || ''))
     .replace(/^[\s\u00a0]*(?:Q(?:uestion)?\s*\d+\s*[:.\-)–—]\s*)/i, '')
+    .replace(/^[\s\u00a0]*\d{1,2}[.)]\s+/, '')
     .replace(/^[\s\u00a0]*[\-\u2013\u2014\u2212+•·*]+\s*/u, '')
+    .replace(/\?[\s\u00a0]*[+\u2212\u2013\u2014\-\u00d7\u2715]+[\s\u00a0]*$/u, '?')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -341,6 +349,10 @@ export function extractFromArpFaqItems(html) {
   return pairs;
 }
 
+/** FAQ section headings: "FAQ(s)", "Frequently Asked Questions", "Common Questions About…", "…questions, answered". */
+const FAQ_SECTION_HEADING_RE =
+  /\bFAQs?\b|frequently\s+asked\s+questions|^common\s+questions\b|\bquestions,?\s+answered\b/i;
+
 function findFaqSectionStart(html) {
   if (!html) return -1;
   // FAQ must appear in the heading text itself — not in following body copy
@@ -349,9 +361,7 @@ function findFaqSectionStart(html) {
   let hm;
   while ((hm = headingRe.exec(html)) !== null) {
     const text = stripTags(hm[2]).replace(/\s+/g, ' ').trim();
-    if (/\bFAQs?\b/i.test(text) || /frequently\s+asked\s+questions/i.test(text)) {
-      return hm.index;
-    }
+    if (FAQ_SECTION_HEADING_RE.test(text)) return hm.index;
   }
   const strongFaq = html.match(/<strong>\s*FAQs?\b/i);
   if (strongFaq && strongFaq.index != null) return strongFaq.index;
@@ -457,13 +467,19 @@ export function extractFromQuestionHeadings(html) {
         break;
       }
     }
-    const segment = scoped.slice(cur.end, endPos);
-    if (/BlogItem-pagination|newsletter-form|sqs-block-newsletter/i.test(segment)) continue;
+    let segment = scoped.slice(cur.end, endPos);
+    const tailIdx = segment.search(
+      /BlogItem-pagination|BlogItem-meta|BlogItem-share|sqs-share-buttons|newsletter-form|sqs-block-newsletter/i
+    );
+    if (tailIdx >= 0) segment = segment.slice(0, segment.lastIndexOf('<', tailIdx));
     const answer = cleanFaqAnswerText(htmlBlockToPlainText(segment));
     pairs.push({ question: text, answer });
   }
   return pairs;
 }
+
+/** Long-form blog FAQ answers (e.g. best-cameras-for-beginners) run to ~1,700 chars. */
+const MAX_FAQ_ANSWER_CHARS = 2000;
 
 function validateQuestion(q) {
   const t = (q || '').replace(/\s+/g, ' ').trim();
@@ -480,7 +496,7 @@ function validateAnswer(a, q) {
   if (!a) return false;
   if (/<script|<style/i.test(a)) return false;
   const t = a.trim();
-  if (t.length < 30 || t.length > 1000) return false;
+  if (t.length < 30 || t.length > MAX_FAQ_ANSWER_CHARS) return false;
   if (CRUFT_PREFIX_RE.test(t)) return false;
   if (t.toLowerCase() === (q || '').toLowerCase()) return false;
   return true;

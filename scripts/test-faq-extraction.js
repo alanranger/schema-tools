@@ -346,6 +346,39 @@ function testDedupeFaqPagesByCanonicalUrl() {
   assert.equal(faqs[0].mainEntity[0].name, L34_EXPECTED_QUESTIONS[0]);
 }
 
+function testNumberedAndToggleQuestionCleaning() {
+  assert.equal(cleanFaqQuestionText('1. What are the Midlands Photography Workshops?'), 'What are the Midlands Photography Workshops?');
+  assert.equal(cleanFaqQuestionText('10) Who can attend the workshops?'), 'Who can attend the workshops?');
+  assert.equal(cleanFaqQuestionText("I'm a complete beginner &mdash; is that OK? +"), "I'm a complete beginner \u2014 is that OK?");
+  assert.equal(cleanFaqQuestionText('How do the lessons work? \u2212'), 'How do the lessons work?');
+}
+
+function testCommonQuestionsHeadingWithLongAnswersAndFooter() {
+  const longA = `${LONG_A} `.repeat(12).trim();
+  const html = `
+<article>
+  <h2>Do You Need to Buy a New Camera?</h2>
+  <p>${LONG_A} Ordinary article section before the FAQ heading.</p>
+  <h2>Common Questions About Beginner Cameras</h2>
+  <h3>Should beginners start with mirrorless or DSLR?</h3><p>${longA}</p>
+  <h3>Do I need a full-frame camera as a beginner?</h3><p>${longA}</p>
+  <h3>How much should I spend on my first camera?</h3><p>${longA}</p>
+  <div class="Blog-meta BlogItem-meta">photography-tips Alan Ranger 9 January 2025</div>
+  <div class="BlogItem-share"><span>Facebook 0</span></div>
+</article>`;
+  const r = extractFAQFromArticle(html, '', null);
+  assert.equal(r.strategy, 'C-headings');
+  assert.deepEqual(r.pairs.map((p) => p.question), [
+    'Should beginners start with mirrorless or DSLR?',
+    'Do I need a full-frame camera as a beginner?',
+    'How much should I spend on my first camera?'
+  ]);
+  assert.ok(r.pairs[0].answer.length > 1000);
+  assert.ok(!/Facebook|January 2025/.test(r.pairs[2].answer));
+}
+
+testNumberedAndToggleQuestionCleaning();
+testCommonQuestionsHeadingWithLongAnswersAndFooter();
 testUnnumberedStrongFaqSection();
 testPlainParagraphFaqSection();
 testArpFaqInDivContainerWithNestedAnswer();
