@@ -9,6 +9,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/scripts/(.*\\.mjs)",
+      "dest": "/scripts/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
