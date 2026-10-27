@@ -24,7 +24,7 @@
     if (window.__AR_CORE_SUPPRESSOR_V21__) return;
     window.__AR_CORE_SUPPRESSOR_V21__ = true;
     var CORE_TYPES = new Set(['Product','Organization','LocalBusiness','WebSite','WebPage','BreadcrumbList','SearchAction','Place','Service']);
-    var CANONICAL_ID_SUFFIXES = ['#org','#website','#webpage','#breadcrumbs','#service','#person','#primaryimage','#product','#faq'];
+    var CANONICAL_ID_SUFFIXES = ['#org','#website','#webpage','#breadcrumbs','#service','#photography-services','#person','#primaryimage','#product','#faq'];
     function getTypes(node) {
       if (!node) return [];
       return Array.isArray(node['@type']) ? node['@type'] : [node['@type']].filter(Boolean);
@@ -143,6 +143,30 @@
     s.type = 'application/ld+json';
     s.id = 'ar-github-product-schema';
     s.textContent = JSON.stringify(schema);
+    document.head.appendChild(s);
+  }
+  function arVisibleFaqName(q, text) {
+    var name = String((q && q.name) || '').replace(/['’]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+    return name.length > 8 && text.indexOf(name) !== -1;
+  }
+  function arInjectProductFaq(faq) {
+    if (!faq || String(faq['@type'] || '').toLowerCase() !== 'faqpage') return;
+    var body = document.body;
+    if (!body) return;
+    var clone = body.cloneNode(true);
+    clone.querySelectorAll('script,style,noscript').forEach(function (el) { el.remove(); });
+    var text = String(clone.textContent || '').replace(/['’]/g, "'").toLowerCase();
+    var me = faq.mainEntity;
+    var qs = Array.isArray(me) ? me : (me ? [me] : []);
+    var vis = qs.filter(function (q) { return arVisibleFaqName(q, text); });
+    if (!vis.length) return;
+    faq.mainEntity = vis;
+    var old = document.getElementById('ar-github-product-faq');
+    if (old) old.remove();
+    var s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.id = 'ar-github-product-faq';
+    s.textContent = JSON.stringify(faq);
     document.head.appendChild(s);
   }
   function arRemoveLegacyDuplicateProducts() {
@@ -533,6 +557,9 @@
               product = arFindProductNode(nodes);
               arInjectGithubSchema(schema);
               arRemoveLegacyDuplicateProducts();
+              if (entry.faqFileName) {
+                fetch(CFG.SCHEMA_HOST + entry.faqFileName).then(function (r) { return r.ok ? r.json() : null; }).then(arInjectProductFaq).catch(function () {});
+              }
             }
           } catch (e) {}
 
@@ -1446,6 +1473,9 @@
               product = arFindProductNode(nodes);
               arInjectGithubSchema(schema);
               arRemoveLegacyDuplicateProducts();
+              if (entry.faqFileName) {
+                fetch(CFG.SCHEMA_HOST + entry.faqFileName).then(function (r) { return r.ok ? r.json() : null; }).then(arInjectProductFaq).catch(function () {});
+              }
             }
           } catch (e) {}
 

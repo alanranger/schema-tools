@@ -79,6 +79,19 @@ function isLikelyProductSchemaJson(filePath) {
   }
 }
 
+function removeStaleEventSchemaFiles(schemaRepoPath, keepNames) {
+  const keepSet = new Set(keepNames);
+  const deletedFileNames = [];
+  for (const fileName of fs.readdirSync(schemaRepoPath)) {
+    if (!fileName.endsWith("_event_schema.json") && !fileName.endsWith("_event_faq.json")) continue;
+    if (keepSet.has(fileName)) continue;
+    fs.unlinkSync(path.join(schemaRepoPath, fileName));
+    deletedFileNames.push(fileName);
+    console.log(`🧹 Removed stale event schema file: ${fileName}`);
+  }
+  return deletedFileNames;
+}
+
 function removeStaleProductSchemaFiles(schemaRepoPath, keepNames) {
   const keepSet = new Set(keepNames);
   const deletedFileNames = [];
@@ -715,7 +728,8 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
       const blogSlugs = [...new Set(
         fileNames
           .map((name) => {
-            const m = String(name).match(/^(.*)_(schema|blogposting|breadcrumb|faq|howto|image)\.json$/i);
+            if (/_event_schema\.json$/i.test(name)) return null;
+            const m = String(name).match(/^(.*)_(blogposting|breadcrumb|faq|howto|image)\.json$/i);
             return m ? m[1] : null;
           })
           .filter(Boolean)
@@ -730,9 +744,14 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
         }
       }
 
-      const deletedFileNames = options?.cleanupProductSchemas
-        ? removeStaleProductSchemaFiles(schemaRepoPath, fileNames)
-        : [];
+      const deletedFileNames = [
+        ...(options?.cleanupProductSchemas
+          ? removeStaleProductSchemaFiles(schemaRepoPath, fileNames)
+          : []),
+        ...(options?.cleanupEventSchemas
+          ? removeStaleEventSchemaFiles(schemaRepoPath, fileNames)
+          : [])
+      ];
 
       // Git operations - stage files in batches (Windows command line limit), then commit once, push once
       // Windows command line limit is ~8191 characters

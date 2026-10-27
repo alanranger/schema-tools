@@ -8833,7 +8833,7 @@
       ]
     };
 
-    // CRITICAL: Ensure BlogPosting objects are included in @graph
+    // Index file only: Blog + ItemList + WebPage + Breadcrumb. Per-post files carry BlogPosting.
     const blogSchema = {
       '@context': 'https://schema.org',
       '@graph': [
@@ -8842,19 +8842,12 @@
         blog,
         itemList,
         webPage,
-        ...postWebPages,
-        ...postBreadcrumbs,
-        ...deduplicatedPostings // Add all DEDUPLICATED BlogPosting objects to @graph (CRITICAL: must be full objects, not just @id references)
+        breadcrumb
       ]
     };
 
-    // VERIFY BlogPosting objects are in graph
-    const blogPostingsInGraph = blogSchema['@graph'].filter(obj => obj && obj['@type'] === 'BlogPosting');
-    blogLog(`✅ Verified ${blogPostingsInGraph.length} BlogPosting objects in @graph (expected: ${deduplicatedPostings.length})`);
-    
-    if (blogPostingsInGraph.length !== deduplicatedPostings.length) {
-      blogLog(`❌ ERROR: BlogPosting count mismatch! Expected ${deduplicatedPostings.length} but found ${blogPostingsInGraph.length} in @graph`);
-    }
+    const blogPostingsInGraph = [];
+    blogLog(`✅ Blog index graph trimmed to ${blogSchema['@graph'].length} index nodes (${deduplicatedPostings.length} posts stay in per-post files)`);
     
     // Verify first BlogPosting has required fields
     if (blogPostingsInGraph.length > 0) {
@@ -14303,7 +14296,7 @@
   }
 
   function getEventPostsLoaderScript() {
-    return `<!-- ARP Event Loader v1.1 (Option D) — hosted, no WebPage stub -->
+    return `<!-- ARP Event Loader v1.1 — hosted, no WebPage stub -->
 <script src="https://schema.alanranger.com/loaders/event-page-loader.js"><\/script>
 `;
   }
@@ -14476,7 +14469,7 @@
           jsonContent: JSON.stringify(window.currentEventManifest, null, 2)
         }
       ];
-      const result = await window.electronAPI.batchDeploySchemas(deployFiles);
+      const result = await window.electronAPI.batchDeploySchemas(deployFiles, { cleanupEventSchemas: true });
       const msg = [
         'Event post bundle deployed.',
         `Files deployed: ${deployFiles.length}`,
@@ -15528,7 +15521,7 @@
         "eventStatus": "https://schema.org/EventScheduled",
         "isAccessibleForFree": false,
         "inLanguage": "en-GB",
-        "organizer": organizerBlock,
+        "organizer": { "@id": "https://www.alanranger.com/#org" },
         "location": location,
         "about": about,
         "keywords": allKeywords.join(', '),
@@ -15581,11 +15574,7 @@
         "url": eventUrl,
         "validFrom": validFrom,
         "priceValidUntil": priceValidUntil,
-        "seller": {
-          "@type": "Organization",
-          "name": "Alan Ranger Photography",
-          "url": "https://www.alanranger.com"
-        }
+        "seller": { "@id": "https://www.alanranger.com/#org" }
       };
       
       // Add shippingDetails (required for Product+Event hybrid)
@@ -15986,7 +15975,7 @@
                 "repeatFrequency": repeatFreq,
                 "scheduleTimezone": "Europe/London"
               },
-              "organizer": organizerBlock,
+              "organizer": { "@id": "https://www.alanranger.com/#org" },
               "location": firstEvent.schema.location,
               "offers": firstEvent.schema.offers
             };
@@ -19991,6 +19980,13 @@ ${minifiedJson}
       addLandingDebugLog(`✅ FAQPage built from visible .ar-faq accordion (${scrapedLandingFaq.mainEntity.length} questions)`);
     } else {
       addLandingDebugLog('ℹ No .ar-faq block found on page — FAQPage omitted (no fabricated FAQ)');
+      if (hasExistingLandingFaqContent) {
+        await postSchemaToolsRunReport('landing-faq-drop', {
+          processed: 1,
+          notPublished: [url],
+          summary: { url, before: 1, after: 0, reason: 'visible-faq-scrape-empty' }
+        });
+      }
     }
 
     // STEP 6: Format and display
@@ -20246,7 +20242,7 @@ ${minifiedJson}
         '<script>\n' +
         '(function(){\n' +
         '  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service"]);\n' +
-        '  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage","#product","#faq"];\n' +
+        '  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#photography-services","#person","#primaryimage","#product","#faq"];\n' +
         '  const getTypes = (node) => {\n' +
         '    if (!node) return [];\n' +
         '    return Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]].filter(Boolean);\n' +

@@ -5,7 +5,7 @@ Product Schema Generation Script - v6.2.0 Baseline (Restore Point)
 Stage 4: Generate Squarespace-ready HTML schema files with @graph structure
 
 Schema Type: "Product" only (strict Schema.org Product type)
-@graph Order: Organization → LocalBusiness → BreadcrumbList → Product
+@graph Order: Organization+LocalBusiness #org → BreadcrumbList → Product
 
 Reads:
   - shared-resources/csv processed/02 – products_cleaned.xlsx
@@ -23,9 +23,8 @@ Outputs:
 v6.2.0 Changes (Baseline Restore Point):
   - Product @type: "Product" only (not array, not Course, not Event)
   - Product @id format: <canonical URL>#product
-  - Separate Organization block with @type: "Organization" only
-  - LocalBusiness @type: "LocalBusiness" only (removed Organization from array)
-  - @graph order: Organization → LocalBusiness → BreadcrumbList → Product
+  - One #org node: @type Organization+LocalBusiness (same @id as the footer graph)
+  - @graph order: #org → BreadcrumbList → Product
   - Removed prohibited properties: event, provider, mainEntityOfPage from Product
   - Event schema is separate JSON-LD block (not nested in Product)
   - Event schema only in _squarespace_ready.html (inline), not in _script_tag.html
@@ -84,9 +83,9 @@ PERFORMER = {
     "name": "Alan Ranger"
 }
 
-# Separate Organization block (standalone, not nested in LocalBusiness)
+# One business node — same @id as the site-wide footer graph so Google merges.
 ORGANIZATION = {
-    "@type": "Organization",
+    "@type": ["Organization", "LocalBusiness"],
     "@id": "https://www.alanranger.com/#org",
     "name": "Alan Ranger Photography",
     "url": "https://www.alanranger.com/",
@@ -94,19 +93,7 @@ ORGANIZATION = {
     "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
     "telephone": ORGANIZER["telephone"],
     "email": ORGANIZER["email"],
-    "address": ORGANIZER["address"]
-}
-
-LOCAL_BUSINESS = {
-    "@type": "LocalBusiness",
-    "@id": "https://www.alanranger.com/#localbusiness",
-    "name": "Alan Ranger Photography",
-    "url": "https://www.alanranger.com",
-    "logo": ORGANIZER["logo"],
-    "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
     "priceRange": "£50–£500",
-    "email": ORGANIZER["email"],
-    "telephone": ORGANIZER["telephone"],
     "address": ORGANIZER["address"]
 }
 
@@ -236,6 +223,55 @@ def contains_faq_signal(source_html):
     return False
 
 
+def scrape_visible_faq_pairs(source_html):
+    """Mirror visible <details>/<summary> FAQ accordion only. Never invent Q&As."""
+    html = html_lib.unescape(str(source_html or ""))
+    pairs = []
+    seen = set()
+    for block in re.findall(r"<details[^>]*>([\s\S]*?)</details>", html, flags=re.IGNORECASE):
+        summary = re.search(r"<summary[^>]*>([\s\S]*?)</summary>", block, flags=re.IGNORECASE)
+        if not summary:
+            continue
+        question = html_to_plain_text(summary.group(1))
+        answer_html = re.sub(r"<summary[^>]*>[\s\S]*?</summary>", "", block, flags=re.IGNORECASE)
+        answer = html_to_plain_text(answer_html)
+        key = question.lower()
+        if len(question) < 8 or len(answer) < 12 or key in seen:
+            continue
+        seen.add(key)
+        pairs.append((question, answer))
+    return pairs
+
+
+def post_faq_drop_report(url, before_count, after_count, reason):
+    """Record a FAQ drop for the Monday brief. Never blocks generate."""
+    if after_count >= before_count:
+        return
+    payload = {
+        "tool": "schema-tools",
+        "flow": "product-faq-drop",
+        "items_processed": 1,
+        "not_published": [url],
+        "errors": 0,
+        "summary": {
+            "url": url,
+            "before": before_count,
+            "after": after_count,
+            "reason": reason
+        }
+    }
+    try:
+        req = Request(
+            "https://ai-geo-audit.vercel.app/api/aigeo/tool-run-report",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        urlopen(req, timeout=8).read()
+    except Exception:
+        pass
+
+
 def extract_snippet_targets(source_html, page_url):
     """Extract absolute snippet-loader targets from page HTML."""
     html = str(source_html or "")
@@ -256,6 +292,41 @@ def fetch_html(url, timeout_sec=12):
     req = Request(url, headers={"User-Agent": "Mozilla/5.0 (SchemaTools FAQ Builder)"})
     with urlopen(req, timeout=timeout_sec) as resp:
         return resp.read().decode("utf-8", errors="ignore")
+
+
+GIFT_VOUCHER_URL = "https://www.alanranger.com/photography-services-near-me/photography-gift-vouchers"
+
+
+def ensure_gift_voucher_product(df_products, csv_dir):
+    """Keep the live gift-voucher product even when 02 dropped it (no CSV price)."""
+    urls = df_products["url"].astype(str).str.lower() if "url" in df_products.columns else pd.Series(dtype=str)
+    if urls.str.contains("photography-gift-vouchers", na=False).any():
+        return df_products
+    row = {
+        "name": "Photography Gift Vouchers | Digital eCard | Email Delivery",
+        "description": "Photography Gift Vouchers | Digital e Card | Email Delivery",
+        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1556527290185-GZJ3ZPC3M7AU34BFFVOE/photography-gift-vouchers.png",
+        "url": GIFT_VOUCHER_URL,
+        "category": "online;1-2-1-private-lessons;gift-voucher;photography-services;photography-tuition",
+        "offers": json.dumps([{
+            "@type": "Offer",
+            "sku": "SUP-PHOTOGRAPHY-GIFT-VOUCHERS",
+            "price": "5.00",
+            "priceCurrency": "GBP",
+            "availability": "https://schema.org/InStock",
+            "validFrom": date.today().isoformat(),
+            "priceValidUntil": (date.today() + timedelta(days=365)).isoformat(),
+            "name": "Photography Gift Vouchers"
+        }]),
+        "total_variants": 1,
+        "lowest_price": 5.0,
+        "highest_price": 5.0,
+        "skus": "SUP-PHOTOGRAPHY-GIFT-VOUCHERS",
+        "main_sku": "SUP-PHOTOGRAPHY-GIFT-VOUCHERS",
+        "schema_type": "product",
+    }
+    print(f"ℹ️ Added missing gift-voucher product from live URL: {GIFT_VOUCHER_URL}")
+    return pd.concat([df_products, pd.DataFrame([row])], ignore_index=True)
 
 
 def write_text_with_retry(file_path, content, attempts=4, wait_seconds=0.7):
@@ -316,6 +387,7 @@ def fetch_page_snapshot(url, cache):
         "has_existing_faq": False,
         "title": "",
         "plain_text": "",
+        "html": "",
         "fetched_ok": False,
         "fetch_error": ""
     }
@@ -358,6 +430,7 @@ def fetch_page_snapshot(url, cache):
         "has_existing_faq": has_existing_faq,
         "title": title,
         "plain_text": plain_text[:8000],
+        "html": html,
         "fetched_ok": True,
         "fetch_error": ""
     }
@@ -1110,14 +1183,10 @@ def get_breadcrumbs(product_name, product_url):
         ]
     }
     
-    # Add @id to breadcrumb (matching lessons schema format)
     if product_url:
-        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
-        url_slug = url_path.split('/')[-1] if url_path else slugify(breadcrumb_name)
-        breadcrumb["@id"] = f"https://www.alanranger.com/{url_slug}#breadcrumbs"
+        breadcrumb["@id"] = f"{str(product_url).rstrip('/')}#breadcrumbs"
     else:
-        product_slug = slugify(breadcrumb_name)
-        breadcrumb["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
+        breadcrumb["@id"] = f"https://www.alanranger.com/{slugify(breadcrumb_name)}#breadcrumbs"
     
     return breadcrumb
 
@@ -1871,22 +1940,17 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             ]
         }
     
-    # Add @id to breadcrumb (matching lessons schema format)
     if product_url:
-        url_path = product_url.replace('https://www.alanranger.com', '').replace('http://www.alanranger.com', '').strip('/')
-        url_slug = url_path.split('/')[-1] if url_path else slugify(product_name)
-        breadcrumb_data["@id"] = f"https://www.alanranger.com/{url_slug}#breadcrumbs"
+        breadcrumb_data["@id"] = f"{str(product_url).rstrip('/')}#breadcrumbs"
     else:
-        product_slug = slugify(product_name)
-        breadcrumb_data["@id"] = f"https://www.alanranger.com/{product_slug}#breadcrumbs"
+        breadcrumb_data["@id"] = f"https://www.alanranger.com/{slugify(product_name)}#breadcrumbs"
     
     # Event must be a completely separate JSON-LD block, NOT in Product
     # Do NOT add event to product_schema - it will be generated separately
     
-    # @graph order: Organization → LocalBusiness → BreadcrumbList → Product
+    # @graph order: #org → BreadcrumbList → Product
     graph = [
         ORGANIZATION,
-        LOCAL_BUSINESS,
         breadcrumb_data,
         product_schema
     ]
@@ -1947,15 +2011,16 @@ def validate_schema_structure(schema_data, product_name):
         return False, errors
     
     graph = schema_data['@graph']
-    if not isinstance(graph, list) or len(graph) < 4:
-        errors.append(f"@graph must contain at least 4 objects (Organization, LocalBusiness, BreadcrumbList, Product)")
+    if not isinstance(graph, list) or len(graph) < 3:
+        errors.append("@graph must contain at least 3 objects (#org, BreadcrumbList, Product)")
         return False, errors
     
-    # Validate first object is Organization
     first_obj = graph[0] if len(graph) > 0 else {}
-    first_type = first_obj.get('@type', '')
-    if first_type != 'Organization':
-        errors.append(f"First @graph object must be Organization, got: {first_type}")
+    first_types = first_obj.get('@type', [])
+    if not isinstance(first_types, list):
+        first_types = [first_types]
+    if 'Organization' not in first_types or first_obj.get('@id') != 'https://www.alanranger.com/#org':
+        errors.append(f"First @graph object must be Organization #org, got: {first_obj.get('@type')} {first_obj.get('@id')}")
     
     # Find Product object (should be last in graph)
     product_schema = None
@@ -2085,17 +2150,13 @@ def validate_schema_structure(schema_data, product_name):
                         f"aggregateRating.reviewCount ({review_count}) is less than review array length ({len(reviews)})"
                     )
     
-    # Validate @graph order: Organization, LocalBusiness, BreadcrumbList, Product
-    if len(graph) >= 4:
-        first_type = graph[0].get('@type', '')
+    if len(graph) >= 3:
         second_type = graph[1].get('@type', '')
         third_type = graph[2].get('@type', '')
-        if first_type != 'Organization':
-            errors.append(f"First @graph object must be Organization, got: {first_type}")
-        if second_type != 'LocalBusiness':
-            errors.append(f"Second @graph object must be LocalBusiness, got: {second_type}")
-        if third_type != 'BreadcrumbList':
-            errors.append(f"Third @graph object must be BreadcrumbList, got: {third_type}")
+        if second_type != 'BreadcrumbList':
+            errors.append(f"Second @graph object must be BreadcrumbList, got: {second_type}")
+        if third_type != 'Product':
+            errors.append(f"Third @graph object must be Product, got: {third_type}")
     
     # Ensure Event fields are NOT at Product level (Event must be separate JSON-LD block)
     forbidden_keys = ['startDate', 'endDate', 'eventStatus', 'eventAttendanceMode', 'location', 'organizer', 'performer']
@@ -2491,6 +2552,8 @@ def main():
     except Exception as e:
         print(f"❌ Error reading products file: {e}")
         sys.exit(1)
+    
+    df_products = ensure_gift_voucher_product(df_products, csv_dir)
     
     # ============================================================
     # Load and Sanitize Reviews
@@ -3403,60 +3466,33 @@ def main():
         except Exception as e:
             print(f"⚠️ Error writing {json_filename}: {e} (continuing...)")
 
-        # Generate FAQ JSON only when page has no existing FAQ signal and quality checks pass.
+        # FAQPage only from visible accordion Q&As. Never invent. Never skip because JSON-LD exists.
         product_url = str(row.get('url', '')).strip()
         generated_faq_payload = None
         if json_written and product_url:
             snapshot = fetch_page_snapshot(product_url, page_snapshot_cache)
-            if snapshot.get("has_existing_faq"):
-                faq_skipped_existing_count += 1
-                print(f"ℹ️ FAQ skipped [{product_name_slug}] existing FAQ signal detected on page/snippet.")
+            visible_pairs = scrape_visible_faq_pairs(snapshot.get("html", ""))
+            if visible_pairs:
+                faq_payload = build_faq_jsonld(product_url, visible_pairs)
+                generated_faq_payload = faq_payload
+                try:
+                    write_json_with_retry(faq_path, faq_payload)
+                    faq_generated_count += 1
+                    print(f"✅ FAQ from visible accordion [{product_name_slug}] {len(visible_pairs)} Q&As")
+                except Exception as e:
+                    print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
+            else:
+                faq_skipped_quality_count += 1
                 if faq_path.exists():
                     try:
                         faq_path.unlink()
                     except Exception:
                         pass
-            else:
-                description_text = str(row.get('description', '')).strip()
-                terms = build_page_specific_terms(product_name, product_url, snapshot.get("title", ""))
-                event_facts = build_event_facts(product_name, product_url, events_df)
-                candidates = generate_candidate_faq_pairs(
-                    product_name=product_name,
-                    product_url=product_url,
-                    description_text=description_text,
-                    page_title=snapshot.get("title", ""),
-                    page_text=snapshot.get("plain_text", ""),
-                    product_price=row.get("price", ""),
-                    event_facts=event_facts
-                )
-                valid_pairs = validate_and_normalize_faq_pairs(candidates, terms)
-                if not valid_pairs and snapshot.get("fetch_error"):
-                    # Resilient fallback when live-page fetch fails: use known CSV facts.
-                    fallback_candidates = generate_candidate_faq_pairs(
-                        product_name=product_name,
-                        product_url=product_url,
-                        description_text=description_text,
-                        page_title=product_name,
-                        page_text=description_text,
-                        product_price=row.get("price", ""),
-                        event_facts=event_facts
-                    )
-                    valid_pairs = validate_and_normalize_faq_pairs(fallback_candidates, terms)
-                if valid_pairs:
-                    faq_payload = build_faq_jsonld(product_url, valid_pairs)
-                    generated_faq_payload = faq_payload
-                    try:
-                        write_json_with_retry(faq_path, faq_payload)
-                        faq_generated_count += 1
-                    except Exception as e:
-                        print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
+                if snapshot.get("has_existing_faq"):
+                    post_faq_drop_report(product_url, 1, 0, "jsonld-faq-without-visible-accordion")
+                    print(f"ℹ️ FAQ omitted [{product_name_slug}] JSON-LD FAQ present but no visible accordion")
                 else:
-                    faq_skipped_quality_count += 1
-                    fetch_error = str(snapshot.get("fetch_error", "")).strip()
-                    if fetch_error:
-                        print(f"ℹ️ FAQ skipped [{product_name_slug}] quality rules not met after fetch fallback. Fetch issue: {fetch_error}")
-                    else:
-                        print(f"ℹ️ FAQ skipped [{product_name_slug}] quality rules not met.")
+                    print(f"ℹ️ FAQ omitted [{product_name_slug}] no visible accordion")
                     if faq_path.exists():
                         try:
                             faq_path.unlink()
@@ -3810,7 +3846,7 @@ def main():
     print("[SchemaGenerator v6.1] Product/Course @type locked: ['Product', 'Course']")
     print("[SchemaGenerator v6.1] Required keys validated: name, sku, brand, provider, description, image, url, offers, @id")
     print("[SchemaGenerator v6.1] Offers structure validated: shippingDetails, hasMerchantReturnPolicy")
-    print("[SchemaGenerator v6.1] @graph order validated: LocalBusiness → BreadcrumbList → Product/Course")
+    print("[SchemaGenerator v6.1] @graph order validated: #org → BreadcrumbList → Product")
     print("[SchemaGenerator v6.1] Event fields excluded: startDate, endDate, eventStatus, eventAttendanceMode, location")
     print("[SchemaGenerator v6.1] aggregateRating.reviewCount = all rated reviews (review[] capped at 25)")
     print("[SchemaGenerator v6.1] All objects include @type and url (where required)")

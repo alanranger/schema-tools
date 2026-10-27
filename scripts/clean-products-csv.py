@@ -351,8 +351,13 @@ def append_missing_service_rows(cleaned_df, csv_dir, lessons_df, workshops_df):
 
         price_val = fetch_product_price_from_page(full_url)
         if price_val is None:
-            print(f"⚠️  Skipping supplement (no detectable price): {full_url}")
-            continue
+            is_voucher = "gift-voucher" in full_url.lower() or "gift voucher" in title.lower()
+            if is_voucher:
+                price_val = 5.0
+                print(f"ℹ️  Gift voucher supplement using fallback £5: {full_url}")
+            else:
+                print(f"⚠️  Skipping supplement (no detectable price): {full_url}")
+                continue
 
         added_rows.append(build_supplement_row(
             row, title, full_url, price_val, lessons_df, workshops_df

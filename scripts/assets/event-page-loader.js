@@ -1,7 +1,6 @@
 /**
  * event-page-loader.js — https://schema.alanranger.com/loaders/event-page-loader.js
- * Option D (2026-10-27): ARP Event Loader v1.1. No WebPage stub.
- * Paste the one-line script tag into the workshops (and lessons) collection header.
+ * ARP Event Loader v1.1. No WebPage stub. Collection-header one-liner only.
  */
 (function () {
   'use strict';
@@ -41,7 +40,7 @@
     if (window.__AR_CORE_SUPPRESSOR_V21__) return;
     window.__AR_CORE_SUPPRESSOR_V21__ = true;
     var CORE = { Event: 1, Product: 1, Organization: 1, LocalBusiness: 1, WebSite: 1, WebPage: 1, BreadcrumbList: 1, Place: 1, Service: 1 };
-    var SUFFIX = ['#org', '#website', '#webpage', '#breadcrumbs', '#event', '#product', '#faq', '#person', '#service'];
+    var SUFFIX = ['#org', '#website', '#webpage', '#breadcrumbs', '#event', '#product', '#faq', '#person', '#service', '#photography-services'];
     function canonical(node) {
       var id = String((node && node['@id']) || '');
       return SUFFIX.some(function (s) { return id.indexOf(s) !== -1; });
@@ -115,7 +114,14 @@
           return fetch(base + entry.faqFileName, { cache: 'no-store' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (faq) {
-              if (faq && String(faq['@type'] || '').toLowerCase() === 'faqpage') inject('ar-github-event-faq', faq);
+              if (!faq || String(faq['@type'] || '').toLowerCase() !== 'faqpage') return;
+              var text = visText();
+              var me = faq.mainEntity;
+              var qs = Array.isArray(me) ? me : (me ? [me] : []);
+              var vis = qs.filter(function (q) { return qVisible(q, text); });
+              if (!vis.length) return;
+              faq.mainEntity = vis;
+              inject('ar-github-event-faq', faq);
             });
         });
     })
