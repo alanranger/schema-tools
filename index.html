@@ -6956,9 +6956,12 @@
         .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
         .eq('page_url', normalizedUrl)
         .eq('kind', 'article')
-        .maybeSingle();
+        .order('last_seen', { ascending: false, nullsFirst: false })
+        .limit(1);
 
-      const { data, error } = await query;
+      // Some URLs have duplicate rows; take the most recently seen one.
+      const { data: entityRows, error } = await query;
+      const data = Array.isArray(entityRows) ? entityRows[0] || null : null;
       if (error) {
         console.warn('page_entities fetch error', normalizedUrl, error);
         reportSupabaseError('page_entities', normalizedUrl, error.message);
@@ -6971,8 +6974,10 @@
           .from('page_entities')
           .select('title, page_url, description, meta_description, excerpt, categories, tags, publish_date, image_url, json_ld_data')
           .eq('page_url', normalizedUrl)
-          .maybeSingle();
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+          .order('last_seen', { ascending: false, nullsFirst: false })
+          .limit(1);
+        const { data: fallbackRows, error: fallbackError } = await fallbackQuery;
+        const fallbackData = Array.isArray(fallbackRows) ? fallbackRows[0] || null : null;
         if (fallbackError) reportSupabaseError('page_entities', normalizedUrl, fallbackError.message);
         if (fallbackData) {
           blogPosts_log(`   [Supabase] Found entity without kind filter (kind=${fallbackData.kind || 'unknown'})`);
@@ -6994,11 +6999,13 @@
       return null;
     }
     try {
-      const { data, error } = await supabaseClient
+      const { data: htmlRows, error } = await supabaseClient
         .from('page_html')
         .select('html_content')
         .eq('url', url)
-        .maybeSingle();
+        .order('updated_at', { ascending: false, nullsFirst: false })
+        .limit(1);
+      const data = Array.isArray(htmlRows) ? htmlRows[0] || null : null;
       if (error) {
         console.warn('page_html fetch error', url, error);
         reportSupabaseError('page_html', url, error.message);
@@ -7981,28 +7988,15 @@
     // Log Supabase connection status
     blogPosts_log(`   [Supabase] Connection check - supabaseAvailable: ${supabaseAvailable}, supabaseClient: ${!!supabaseClient}, url: ${!!url}, providedHtml: ${!!providedHtml}`);
     
-    // Only fetch from Supabase if HTML wasn't already provided
-    if (!html && supabaseAvailable && supabaseClient && url) {
-      blogPosts_log(`   [Supabase] Fetching entity for: ${url}`);
-      const [entityResult, htmlResult, chunksResult] = await Promise.all([
-        fetchPageEntityForUrl(url),
-        fetchPageHtmlForUrl(url),
-        fetchPageChunksForUrl(url, 5)
-      ]);
-      entity = entityResult;
-      html = htmlResult;
-      chunks = chunksResult || [];
-      blogPosts_log(`   [Supabase] Entity fetch result: ${entity ? 'found' : 'not found'}`);
-    }
+    // Live page is the source of truth; the Supabase stored crawl (refreshed by ingest) is only a fallback.
     if (!html && url) {
-      // Live page is the source of truth whenever Supabase has no HTML (or errored).
-      blogPosts_log(`   [Page] No HTML from Supabase - fetching the live page`);
-      html = await fetchHtmlForDetection(url);
+      html = await fetchHtmlForDetection(url, { preferLive: true });
       if (html) {
-        blogPosts_log(`   [Page] Fetched live page HTML (${html.length} chars)`);
+        blogPosts_log(`   [Page] Page HTML (${html.length} chars; live, else stored copy)`);
       } else {
-        blogPosts_log(`   ❌ [Page] Could not fetch the live page HTML for ${url}`);
+        blogPosts_log(`   ❌ [Page] Could not fetch the page HTML for ${url}`);
       }
+      if (supabaseAvailable && supabaseClient) chunks = (await fetchPageChunksForUrl(url, 5)) || [];
     } else if (providedHtml) {
       blogPosts_log(`   [Supabase] Using provided HTML (${html.length} chars) - skipping HTML re-fetch`);
     }
@@ -11472,7 +11466,7 @@
         
         if (row.url) {
           blogPosts_log(`    Fetching HTML for image detection: ${row.url}`);
-          html = await fetchHtmlForDetection(row.url);
+          html = await fetchHtmlForDetection(row.url, { preferLive: true });
           if (html) {
             plainText = htmlToPlainText(html);
             blogPosts_log(`   ✅ HTML fetched: ${html.length} chars`);
