@@ -23,8 +23,8 @@
   function installCoreSuppressorV21() {
     if (window.__AR_CORE_SUPPRESSOR_V21__) return;
     window.__AR_CORE_SUPPRESSOR_V21__ = true;
-    var CORE_TYPES = new Set(['Product','Organization','LocalBusiness','WebSite','WebPage','BreadcrumbList','SearchAction','Place','Service','FAQPage']);
-    var CANONICAL_ID_SUFFIXES = ['#org','#website','#webpage','#breadcrumbs','#service','#person','#primaryimage','#product'];
+    var CORE_TYPES = new Set(['Product','Organization','LocalBusiness','WebSite','WebPage','BreadcrumbList','SearchAction','Place','Service']);
+    var CANONICAL_ID_SUFFIXES = ['#org','#website','#webpage','#breadcrumbs','#service','#person','#primaryimage','#product','#faq'];
     function getTypes(node) {
       if (!node) return [];
       return Array.isArray(node['@type']) ? node['@type'] : [node['@type']].filter(Boolean);

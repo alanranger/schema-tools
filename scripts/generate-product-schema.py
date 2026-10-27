@@ -239,7 +239,7 @@ def contains_faq_signal(source_html):
 def extract_snippet_targets(source_html, page_url):
     """Extract absolute snippet-loader targets from page HTML."""
     html = str(source_html or "")
-    tags = re.findall(r"<[^>]*data-m-plugin=[\"']load[\"'][^>]*>", html, flags=re.IGNORECASE)
+    tags = re.findall(r"<[^>]*data-wm-plugin=[\"']load[\"'][^>]*>", html, flags=re.IGNORECASE)
     targets = []
     for tag in tags:
         target_match = re.search(r'data-target=["\']([^"\']+)["\']', tag, flags=re.IGNORECASE)

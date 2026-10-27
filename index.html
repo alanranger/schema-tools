@@ -11019,10 +11019,11 @@
   function extractSnippetLoadTargets(html, pageUrl = '') {
     if (!html) return [];
     const targets = [];
-    const re = /data-m-plugin=["']load["'][^>]*data-target=["']([^"']+)["']/gi;
+    const re = /<[^>]*data-wm-plugin=["']load["'][^>]*>/gi;
     let match;
     while ((match = re.exec(html)) !== null) {
-      const raw = String(match[1] || '').trim();
+      const targetMatch = String(match[0] || '').match(/data-target=["']([^"']+)["']/i);
+      const raw = String((targetMatch && targetMatch[1]) || '').trim();
       if (!raw) continue;
       let absolute = raw;
       try {
@@ -14236,59 +14237,8 @@
     return parts.length ? parts[parts.length - 1] : '';
   }
 
-  function buildEventFaqPayload(eventSchema) {
-    const name = String(eventSchema?.name || 'Photography event').trim();
-    const url = String(eventSchema?.url || '').trim();
-    const locationName = String(eventSchema?.location?.name || 'the listed venue').trim();
-    const startDate = String(eventSchema?.startDate || '').split('T')[0];
-    const endDate = String(eventSchema?.endDate || '').split('T')[0];
-    const price = String(eventSchema?.offers?.price || '').trim();
-    const currency = String(eventSchema?.offers?.priceCurrency || 'GBP').trim();
-
-    const dateText = startDate && endDate
-      ? `${startDate} to ${endDate}`
-      : (startDate || 'the published event date');
-    const priceText = price ? `${price} ${currency}` : 'the current listed price';
-
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      '@id': `${url || ''}#faq`,
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: `Where does "${name}" take place?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `${name} takes place at ${locationName}. Check the event page for final joining and location details.`
-          }
-        },
-        {
-          '@type': 'Question',
-          name: `When is "${name}" running?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `${name} is scheduled for ${dateText}. Always confirm times on the event page before booking.`
-          }
-        },
-        {
-          '@type': 'Question',
-          name: `How much does "${name}" cost?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `The listed price for ${name} is ${priceText}. Availability and pricing can change, so check the booking page for the latest details.`
-          }
-        },
-        {
-          '@type': 'Question',
-          name: `How do I book "${name}"?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Use the booking link on the event page for ${name}. You can review event details, availability, and next steps there before completing your booking.`
-          }
-        }
-      ]
-    };
+  function buildEventFaqPayload() {
+    return null;
   }
 
   function buildPerEventArtifacts(eventList, breadcrumbs) {
@@ -14316,7 +14266,6 @@
 
       const group = deriveEventGroupFromUrl(eventUrl);
       const schemaFileName = `${slug}_event_schema.json`;
-      const faqFileName = `${slug}_event_faq.json`;
       const pathKey = derivePathKeyFromUrl(eventUrl);
       const breadcrumb = breadcrumbByUrl.get(eventUrl);
 
@@ -14324,17 +14273,14 @@
         '@context': 'https://schema.org',
         '@graph': breadcrumb ? [eventSchema, breadcrumb] : [eventSchema]
       };
-      const faqSchema = buildEventFaqPayload(eventSchema);
-
       files.push({ fileName: schemaFileName, jsonContent: JSON.stringify(pageSchema, null, 2) });
-      files.push({ fileName: faqFileName, jsonContent: JSON.stringify(faqSchema, null, 2) });
       manifestEntries.push({
         url: eventUrl,
         pathKey,
         group,
         slug,
         schemaFileName,
-        faqFileName
+        faqFileName: ''
       });
     });
 
@@ -14509,7 +14455,7 @@
           }) || schemaJson;
           injectTldrBlock(primaryNode.description || primaryNode.name || "");
 
-          if (!faqUrl || shouldSkipExternalFaq()) return;
+          if (!faqUrl || hasExistingFaqSchema() || !hasVisibleFaqBlock()) return;
           fetch(faqUrl)
             .then((r) => r.ok ? r.json() : null)
             .then((faqJson) => {
@@ -14614,14 +14560,13 @@
       `Mappings rows: ${mappingsCount}`,
       `Event rows used after filters: ${window.currentEventList.length}`,
       `Manifest entries: ${artifacts.manifest.totalEvents}`,
-      `Per-event schema files: ${Math.round(artifacts.files.length / 2)}`,
-      `Per-event FAQ files: ${Math.round(artifacts.files.length / 2)}`,
+      `Per-event schema files: ${artifacts.files.length}`,
+      'Per-event FAQ files: 0 (templates disabled — FAQPage only when visible FAQs exist)',
       ...formatBlockedEventLines(artifacts.blocked),
       '',
       'Files:',
       ' - events-manifest.json',
-      ' - <slug>_event_schema.json',
-      ' - <slug>_event_faq.json'
+      ' - <slug>_event_schema.json'
     ];
     if (output) output.textContent = lines.join('\n');
     return true;
@@ -17546,106 +17491,100 @@ ${minifiedJson}
       statusDiv.style.background = '#f8d7da';
       statusDiv.style.borderColor = '#f5c6cb';
       statusDiv.style.color = '#721c24';
+      await postSchemaToolsRunReport('product', {
+        processed: 0,
+        notPublished: [productUrl],
+        errors: 1,
+        summary: { url: productUrl, error: error.message }
+      });
     } finally {
       generateBtn.disabled = false;
     }
   }
 
-  async function fetchProductPage(url) {
-    const log = typeof addLandingDebugLog === 'function' ? addLandingDebugLog : (msg) => console.log(msg);
-    
-    // List of CORS proxies to try in order
+  function htmlLooksLikeErrorPage(html) {
+    const text = String(html || '');
+    if (text.length < 80) return true;
+    const title = String((text.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '');
+    const h1 = String((text.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || '');
+    const blob = `${title} ${h1} ${text.slice(0, 4000)}`.replace(/<[^>]+>/g, ' ').toLowerCase();
+    if (blob.includes('too many requests')) return true;
+    if (/\b429\b/.test(blob) && blob.includes('request')) return true;
+    if (blob.includes('access denied') || blob.includes('error 502') || blob.includes('error 503')) return true;
+    return false;
+  }
+
+  function assertRealPageHtml(html, source) {
+    if (htmlLooksLikeErrorPage(html)) {
+      throw new Error(`Refusing error/429 HTML from ${source}`);
+    }
+    return html;
+  }
+
+  async function fetchHtmlWithTimeout(requestUrl, ms, extra = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(requestUrl, { ...extra, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async function readProxyBody(proxyName, response) {
+    if (proxyName === 'allorigins.win') {
+      const data = await response.json();
+      if (!data.contents) throw new Error('Proxy returned empty contents');
+      return data.contents;
+    }
+    const html = await response.text();
+    if (!html || html.length < 100) throw new Error('Proxy returned empty or invalid content');
+    return html;
+  }
+
+  async function fetchProductPageOnce(url, log) {
     const corsProxies = [
       { name: 'allorigins.win', url: `https://api.allorigins.win/get?url=${encodeURIComponent(url)}` },
       { name: 'corsproxy.io', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
       { name: 'codetabs.com', url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` }
     ];
-    
-    // Try each CORS proxy
     for (const proxy of corsProxies) {
       try {
         log(`   Trying CORS proxy (${proxy.name})...`);
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per proxy
-        
-        try {
-          const response = await fetch(proxy.url, { 
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json'
-            }
-          });
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
-          }
-          
-          let data;
-          if (proxy.name === 'allorigins.win') {
-            data = await response.json();
-            if (data.contents) {
-              log(`   ✅ Successfully fetched via ${proxy.name} (${data.contents.length} characters)`);
-              return data.contents;
-            } else {
-              throw new Error('Proxy returned empty contents');
-            }
-          } else if (proxy.name === 'corsproxy.io') {
-            const html = await response.text();
-            if (html && html.length > 100) {
-              log(`   ✅ Successfully fetched via ${proxy.name} (${html.length} characters)`);
-              return html;
-            } else {
-              throw new Error('Proxy returned empty or invalid content');
-            }
-          } else if (proxy.name === 'codetabs.com') {
-            const html = await response.text();
-            if (html && html.length > 100) {
-              log(`   ✅ Successfully fetched via ${proxy.name} (${html.length} characters)`);
-              return html;
-            } else {
-              throw new Error('Proxy returned empty or invalid content');
-            }
-          }
-        } catch (proxyError) {
-          clearTimeout(timeoutId);
-          if (proxyError.name === 'AbortError') {
-            log(`   ⚽ ${proxy.name} timed out after 20 seconds`);
-            continue; // Try next proxy
-          }
-          log(`   ⚽ ${proxy.name} failed: ${proxyError.message}`);
-          continue; // Try next proxy
-        }
-      } catch (error) {
-        log(`   ⚽ ${proxy.name} error: ${error.message}`);
-        continue; // Try next proxy
+        const response = await fetchHtmlWithTimeout(proxy.url, 20000, { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(`Proxy returned ${response.status}: ${response.statusText}`);
+        const html = assertRealPageHtml(await readProxyBody(proxy.name, response), proxy.name);
+        log(`   ✅ Successfully fetched via ${proxy.name} (${html.length} characters)`);
+        return html;
+      } catch (proxyError) {
+        const timedOut = proxyError && proxyError.name === 'AbortError';
+        log(`   ⚽ ${proxy.name} ${timedOut ? 'timed out after 20 seconds' : 'failed: ' + proxyError.message}`);
       }
     }
-    
-    // All proxies failed, try direct fetch as last resort
-    log(`   ⚽ All CORS proxies failed, trying direct fetch...`);
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch(url, { 
-        mode: 'cors',
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`Direct fetch returned ${response.status}: ${response.statusText}`);
+    log('   ⚽ All CORS proxies failed, trying direct fetch...');
+    const response = await fetchHtmlWithTimeout(url, 10000, { mode: 'cors' });
+    if (!response.ok) throw new Error(`Direct fetch returned ${response.status}: ${response.statusText}`);
+    const html = assertRealPageHtml(await response.text(), 'direct fetch');
+    log(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
+    return html;
+  }
+
+  async function fetchProductPage(url) {
+    const log = typeof addLandingDebugLog === 'function' ? addLandingDebugLog : (msg) => console.log(msg);
+    const waits = [0, 1500, 4000];
+    let lastErr = null;
+    for (const wait of waits) {
+      if (wait) {
+        log(`   Retrying fetch in ${wait}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, wait));
       }
-      
-      const html = await response.text();
-      log(`   ✅ Successfully fetched via direct fetch (${html.length} characters)`);
-      return html;
-    } catch (directError) {
-      log(`   ❌ Direct fetch also failed: ${directError.message}`);
-      throw new Error(`Failed to fetch page. All CORS proxies timed out and direct fetch failed. Error: ${directError.message}`);
+      try {
+        return await fetchProductPageOnce(url, log);
+      } catch (err) {
+        lastErr = err;
+      }
     }
+    throw new Error(`Failed to fetch page after retries: ${lastErr && lastErr.message ? lastErr.message : 'unknown error'}`);
   }
 
   function extractProductDataFromHtml(html, url) {
@@ -18500,6 +18439,12 @@ ${minifiedJson}
       statusDiv.style.borderColor = '#f5c6cb';
       statusDiv.style.color = '#721c24';
       progressBar.style.width = '0%';
+      await postSchemaToolsRunReport('landing-scan', {
+        processed: 0,
+        notPublished: [url],
+        errors: 1,
+        summary: { url, error: error.message }
+      });
     } finally {
       scanBtn.disabled = false;
       scanBtn.textContent = ' Auto-Scan Metadata';
@@ -18810,7 +18755,7 @@ ${minifiedJson}
     Service: { hint: 'recommended', icon: '✅', description: 'For general offerings (workshops, tuition, mentoring) - Keep' },
     Person: { hint: 'recommended', icon: '✅', description: 'For author/teacher (Alan Ranger) - Keep' },
     BreadcrumbList: { hint: 'optional', icon: '', description: 'Navigation breadcrumbs - Keep if present' },
-    FAQPage: { hint: 'conditional', icon: '✅', description: 'Keep existing FAQ schema, or auto-add fallback FAQPage when page has no FAQ content/signals' },
+    FAQPage: { hint: 'conditional', icon: '✅', description: 'Only when visible FAQs exist on the page — never invent Q&As' },
     Review: { hint: 'existing only', icon: '⭐', description: 'Keep existing review snippets (nested in Product/Service)' },
     Rating: { hint: 'existing only', icon: '⭐', description: 'Keep existing rating data (nested in Review)' },
     AggregateRating: { hint: 'existing only', icon: '⭐', description: 'Keep existing aggregate rating (nested in Product/Service)' },
@@ -19380,75 +19325,12 @@ ${minifiedJson}
     return nodes.some((node) => landingHasType(node, 'FAQPage'));
   }
 
-  function buildLandingFaqQuestions(title, description, schemaType) {
-    const safeTitle = String(title || 'this page').trim() || 'this page';
-    const safeDescription = landingCleanText(String(description || '').trim());
-    const introText = safeDescription
-      ? `${safeDescription}`
-      : `This page explains ${safeTitle.toLowerCase()} and what to expect.`;
-    const mode = String(schemaType || '').toLowerCase();
-
-    if (mode === 'itemlist') {
-      return [
-        {
-          '@type': 'Question',
-          name: `What is included in ${safeTitle}?`,
-          acceptedAnswer: { '@type': 'Answer', text: introText }
-        },
-        {
-          '@type': 'Question',
-          name: `How do I choose the right option from ${safeTitle}?`,
-          acceptedAnswer: { '@type': 'Answer', text: 'Review each listed option, compare suitability, and choose the one that best matches your experience level, goals, and preferred format.' }
-        },
-        {
-          '@type': 'Question',
-          name: 'How do I book or get started?',
-          acceptedAnswer: { '@type': 'Answer', text: 'Use the links and call-to-action options on this page to choose a suitable option and complete the booking or enquiry process.' }
-        },
-        {
-          '@type': 'Question',
-          name: 'Who is this page for?',
-          acceptedAnswer: { '@type': 'Answer', text: 'This page is suitable for photographers who want a clear overview of available options before selecting the best fit for their needs.' }
-        }
-      ];
-    }
-
-    return [
-      {
-        '@type': 'Question',
-        name: `What is ${safeTitle} about?`,
-        acceptedAnswer: { '@type': 'Answer', text: introText }
-      },
-      {
-        '@type': 'Question',
-        name: 'Who is this suitable for?',
-        acceptedAnswer: { '@type': 'Answer', text: 'This is suitable for photographers at beginner, intermediate, and advanced levels, depending on the option and goals described on this page.' }
-      },
-      {
-        '@type': 'Question',
-        name: 'How do I get started?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Use the call-to-action on this page to book, enquire, or request guidance on the best next step for your photography goals.' }
-      },
-      {
-        '@type': 'Question',
-        name: 'Can I get help choosing the right option?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Yes. You can contact Alan Ranger Photography for advice on the most suitable option based on your experience level, interests, and preferred learning format.' }
-      }
-    ];
+  function buildLandingFaqQuestions() {
+    return [];
   }
 
-  function generateLandingFaqSchema(url, title, description, schemaType) {
-    const pageUrl = String(url || '').trim();
-    if (!pageUrl) return null;
-    const questions = buildLandingFaqQuestions(title, description, schemaType)
-      .filter((q) => q && q.name && q.acceptedAnswer && q.acceptedAnswer.text);
-    if (!questions.length) return null;
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      '@id': `${pageUrl}#faq`,
-      mainEntity: questions
-    };
+  function generateLandingFaqSchema() {
+    return null;
   }
 
   function buildLandingTldrSummary(title, description, schemaType) {
@@ -19464,12 +19346,25 @@ ${minifiedJson}
 
   // Both accordion markups: classic `.ar-faq` blocks and the newer
   // `.ar-faq-wrap` / `details.ar-faq-item` sections (Academy page).
-  function landingFaqDetailsElements(doc) {
-    const found = new Set();
+  function landingFaqClassDetails(doc, found) {
     doc.querySelectorAll('.ar-faq, .ar-faq-wrap').forEach((root) => {
       root.querySelectorAll('details').forEach((det) => found.add(det));
     });
     doc.querySelectorAll('details.ar-faq-item').forEach((det) => found.add(det));
+  }
+
+  function landingFaqHeadingDetails(doc, found) {
+    Array.from(doc.querySelectorAll('h2, h3')).forEach((heading) => {
+      if (!/faq|frequently asked/i.test(String(heading.textContent || ''))) return;
+      const scope = heading.closest('section, article, .sqs-block, .sqs-col') || heading.parentElement || doc;
+      scope.querySelectorAll('details').forEach((det) => found.add(det));
+    });
+  }
+
+  function landingFaqDetailsElements(doc) {
+    const found = new Set();
+    landingFaqClassDetails(doc, found);
+    landingFaqHeadingDetails(doc, found);
     return Array.from(found);
   }
 
@@ -19904,16 +19799,20 @@ ${minifiedJson}
         }
       }
 
-      addLandingDebugLog(`   FAQ content detected on page: ${hasExistingLandingFaqContent ? 'Yes (FAQPage injection will be skipped)' : 'No (FAQPage can be generated if missing)'}`);
+      addLandingDebugLog(`   FAQ content detected on page: ${hasExistingLandingFaqContent ? 'Yes (visible FAQs will be scraped)' : 'No (FAQPage omitted — no fabricated Q&As)'}`);
     } catch (error) {
-      addLandingDebugLog(`⚽ Could not fetch page for analysis: ${error.message}`);
-      addLandingDebugLog(`   Continuing with new schema generation...`);
-      // Initialize selector with all unchecked (only if panel not already shown)
-      if (!document.getElementById('schemaTypeSelectorPanel') || 
-          document.getElementById('schemaTypeSelectorPanel').style.display === 'none') {
-        detectedSchemaTypes = detectSchemaTypesFromBlocks([]);
-        updateSchemaTypeSelector(detectedSchemaTypes);
-      }
+      addLandingDebugLog(`❌ FAILED: could not fetch a real page: ${error.message}`);
+      addLandingDebugLog('   No schema was generated. Retry when the live page returns.');
+      await postSchemaToolsRunReport('landing', {
+        processed: 0,
+        notPublished: [url],
+        errors: 1,
+        summary: { url, error: error.message }
+      });
+      generateBtn.disabled = false;
+      progressDiv.style.display = 'none';
+      alert(`FAILED: could not fetch a real page.\n${error.message}`);
+      return;
     }
 
     progressBar.style.width = '40%';
@@ -20239,7 +20138,8 @@ ${minifiedJson}
     // The visible accordion is the single source of truth, so we strip any pre-existing
     // or auto-generated FAQPage nodes and rebuild from the scraped page. If the page has
     // no .ar-faq block, FAQPage is omitted entirely — we never fabricate Q&As.
-    const scrapedLandingFaq = scrapeLandingFaqFromHtml(landingPageHtml, url);
+    const htmlForFaqScrape = await enrichHtmlWithSnippetLoaderContent(url, landingPageHtml, addLandingDebugLog);
+    const scrapedLandingFaq = scrapeLandingFaqFromHtml(htmlForFaqScrape || landingPageHtml, url);
     finalSchema = stripLandingFaqPages(finalSchema);
     if (scrapedLandingFaq) {
       const baseNodes = Array.isArray(finalSchema?.['@graph'])
@@ -20507,8 +20407,8 @@ ${minifiedJson}
       const suppressorCode = '<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) -->\n\n' +
         '<script>\n' +
         '(function(){\n' +
-        '  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service","FAQPage"]);\n' +
-        '  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage","#product"];\n' +
+        '  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service"]);\n' +
+        '  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage","#product","#faq"];\n' +
         '  const getTypes = (node) => {\n' +
         '    if (!node) return [];\n' +
         '    return Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]].filter(Boolean);\n' +
