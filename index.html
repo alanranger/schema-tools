@@ -6941,6 +6941,25 @@
     blogPosts_log(`   ❌ [Supabase] ${table} query failed for ${url}: ${message} — using the live page instead`);
   }
 
+  // Every run posts a summary to the AI GEO silent fault monitor (check D2). Never blocks a run.
+  const TOOL_RUN_REPORT_URL = 'https://ai-geo-audit.vercel.app/api/aigeo/tool-run-report';
+  async function postSchemaToolsRunReport(flow, { processed = 0, notPublished = [], errors = 0, summary = {} } = {}) {
+    try {
+      const version = document.getElementById('stGitVersion')?.textContent?.trim() || null;
+      const resp = await fetch(TOOL_RUN_REPORT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tool: 'schema-tools', flow, version, items_processed: processed,
+          not_published: notPublished, supabase_errors: schemaRunSupabaseErrors, errors, summary
+        })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    } catch (e) {
+      blogPosts_log(`   ⚠️ Run report not sent to the fault monitor: ${e.message}`);
+    }
+  }
+
   // Supabase-backed helpers for blog enrichment
   async function fetchPageEntityForUrl(url) {
     if (!supabaseAvailable || !supabaseClient || !url) {
@@ -8549,6 +8568,7 @@
       blogLog(`❌ STOPPED — ${unusablePostings.length} post(s) had no usable article text; no blog index schema produced:`);
       unusablePostings.forEach((u) => blogLog(`   ❌ ${u}`));
       if (schemaRunSupabaseErrors) blogLog(`❌ Supabase query errors: ${schemaRunSupabaseErrors}`);
+      await postSchemaToolsRunReport('blog-index', { processed, notPublished: unusablePostings, summary: { stopped: true } });
       if (generateBtn) {
         generateBtn.disabled = false;
         generateBtn.textContent = 'Generate Blog Index Schema';
@@ -8557,6 +8577,7 @@
     }
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
+    await postSchemaToolsRunReport('blog-index', { processed, summary: { postings: blogPostings.length } });
     
     // CRITICAL: Final deduplication and validation - ensure ONE BlogPosting per URL
     const urlToPosting = new Map();
@@ -11892,6 +11913,10 @@
       }
     }
 
+    await postSchemaToolsRunReport('blog-bulk', {
+      processed, notPublished: blogPostsNotPublished, errors, summary: { saved, files: fileTypeCounts }
+    });
+
     // Show summary
     const outputDiv = document.getElementById('blogPostsSchemaOutput');
     const summaryText = document.getElementById('blogPostsSchemaSummaryText');
@@ -12605,6 +12630,7 @@
       }
       
       blogPosts_log('\n✅ Single URL generation complete!');
+      await postSchemaToolsRunReport('blog-single', { processed: 1, summary: { url } });
       
       // Display results with schema preview
       if (resultDiv) {
@@ -12691,6 +12717,7 @@
       
     } catch (error) {
       blogPosts_log(`❌ Generation failed: ${error.message}`);
+      await postSchemaToolsRunReport('blog-single', { processed: 1, notPublished: [url], errors: 1, summary: { url, error: error.message } });
       blogPosts_log(`   Error type: ${error.constructor.name}`);
       blogPosts_log(`   Stack trace: ${error.stack || 'No stack trace available'}`);
       if (resultDiv) {
