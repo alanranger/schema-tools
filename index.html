@@ -4453,7 +4453,8 @@
 
   // Supabase Configuration
   const SUPABASE_URL = 'https://igzvwbvgvmzvvzoclufx.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnenZ3YnZndm16dnZ6b2NsdWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Nzc5MjgsImV4cCI6MjA3MzI1MzkyOH0.A9TCmnXKJhDRYBkrO0mAMPiUQeV9enweeyRWKWQ1SZY';
+  // Publishable (client-safe) key; legacy JWT anon keys are disabled on this project.
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4IOBUd3do5JiamFp8SItdg_1pDpO1vV';
   
   // Initialize Supabase client (wait for library to load)
   // Keep the client handle separate from the CDN global `window.supabase`.
@@ -4490,7 +4491,7 @@
     // Must be an object with createClient function
     if (window.supabase && typeof window.supabase === 'object' && typeof window.supabase.createClient === 'function') {
       try {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
         window.supabaseClient = supabaseClient; // Store in window for global access
         supabaseAvailable = true;
         console.log('✅ Supabase client initialized successfully');
@@ -6933,6 +6934,13 @@
     return 'BlogPosting';
   }
 
+  // Supabase query errors are never silent: logged as errors and counted in the run summary.
+  let schemaRunSupabaseErrors = 0;
+  function reportSupabaseError(table, url, message) {
+    schemaRunSupabaseErrors += 1;
+    blogPosts_log(`   ❌ [Supabase] ${table} query failed for ${url}: ${message} — using the live page instead`);
+  }
+
   // Supabase-backed helpers for blog enrichment
   async function fetchPageEntityForUrl(url) {
     if (!supabaseAvailable || !supabaseClient || !url) {
@@ -6953,7 +6961,7 @@
       const { data, error } = await query;
       if (error) {
         console.warn('page_entities fetch error', normalizedUrl, error);
-        blogPosts_log(`   [Supabase] Query error for ${normalizedUrl}: ${error.message}`);
+        reportSupabaseError('page_entities', normalizedUrl, error.message);
         return null;
       }
       if (!data) {
@@ -6965,6 +6973,7 @@
           .eq('page_url', normalizedUrl)
           .maybeSingle();
         const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        if (fallbackError) reportSupabaseError('page_entities', normalizedUrl, fallbackError.message);
         if (fallbackData) {
           blogPosts_log(`   [Supabase] Found entity without kind filter (kind=${fallbackData.kind || 'unknown'})`);
           return fallbackData;
@@ -6975,7 +6984,7 @@
       return data;
     } catch (error) {
       console.warn('page_entities fetch exception', url, error);
-      blogPosts_log(`   [Supabase] Exception: ${error.message}`);
+      reportSupabaseError('page_entities', url, error.message);
       return null;
     }
   }
@@ -6992,11 +7001,13 @@
         .maybeSingle();
       if (error) {
         console.warn('page_html fetch error', url, error);
+        reportSupabaseError('page_html', url, error.message);
         return null;
       }
       return data && data.html_content ? data.html_content : null;
     } catch (error) {
       console.warn('page_html fetch exception', url, error);
+      reportSupabaseError('page_html', url, error.message);
       return null;
     }
   }
@@ -7015,11 +7026,13 @@
       const { data, error } = await query;
       if (error) {
         console.warn('page_chunks fetch error', url, error);
+        reportSupabaseError('page_chunks', url, error.message);
         return [];
       }
       return data || [];
     } catch (error) {
       console.warn('page_chunks fetch exception', url, error);
+      reportSupabaseError('page_chunks', url, error.message);
       return [];
     }
   }
@@ -7258,52 +7271,10 @@
     text = text.replace(/\[\/[^\]]+\]/g, '');
     text = text.replace(/\[.*?\]/g, '');
     
-    // Find where actual content starts by looking for title (case-insensitive, anywhere in first 2000 chars)
-    let contentStart = 0;
-    if (title) {
-      // Try exact title match (uppercase version often appears)
-      const titleUpper = title.toUpperCase();
-      const titleIndex = text.indexOf(titleUpper);
-      if (titleIndex > 0 && titleIndex < 2000) {
-        contentStart = titleIndex;
-      } else {
-        // Try case-insensitive match
-        const titlePattern = new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-        const match = text.match(titlePattern);
-        if (match && match.index !== undefined && match.index < 2000) {
-          contentStart = match.index;
-        } else {
-          // Try key words from title
-          const titleWords = title.split(/\s+/).filter(w => w.length > 4).slice(0, 2);
-          if (titleWords.length >= 2) {
-            const wordsPattern = new RegExp(titleWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^a-z]*'), 'i');
-            const wordsMatch = text.match(wordsPattern);
-            if (wordsMatch && wordsMatch.index !== undefined && wordsMatch.index < 2000) {
-              contentStart = wordsMatch.index;
-            }
-          }
-        }
-      }
-    }
-    
-    // If we found content start, use it
-    if (contentStart > 0) {
-      text = text.substring(contentStart);
-    } else {
-      // Look for content markers (LEARNING OBJECTIVES, THE ASSIGNMENT, etc.)
-      const contentMarkers = [
-        /(LEARNING OBJECTIVES|THE ASSIGNMENT|BEFORE YOU|TECHNICAL FOCUS|CREATIVE FOCUS|ASSIGNMENT TASKS|DO\s*\/\s*DON'T|REFLECTION QUESTIONS)/i,
-        /This (assignment|article|post|guide|tutorial)/i,
-      ];
-      
-      for (const marker of contentMarkers) {
-        const match = text.match(marker);
-        if (match && match.index !== undefined && match.index < 2000) {
-          text = text.substring(match.index);
-          break;
-        }
-      }
-    }
+    // Content start: after the title (a match at index 0 counts), else an uppercase assignment heading.
+    // Shared with the Node tests via scripts/article-body-extraction.mjs; without it, never truncate.
+    const findStart = window.__articleBodyModule && window.__articleBodyModule.findArticleContentStart;
+    if (findStart) text = text.substring(findStart(text, title));
     
     // Remove navigation patterns (aggressive - anywhere in text, not just start)
     const navPatterns = [
@@ -8022,16 +7993,17 @@
       html = htmlResult;
       chunks = chunksResult || [];
       blogPosts_log(`   [Supabase] Entity fetch result: ${entity ? 'found' : 'not found'}`);
-    } else if (!html && url) {
-      // Fallback: Try to fetch HTML from public URL if Supabase not available
-      blogPosts_log(`   [Supabase] Not available - trying public URL fetch as fallback`);
+    }
+    if (!html && url) {
+      // Live page is the source of truth whenever Supabase has no HTML (or errored).
+      blogPosts_log(`   [Page] No HTML from Supabase - fetching the live page`);
       html = await fetchHtmlForDetection(url);
       if (html) {
-        blogPosts_log(`   [Supabase] Fallback successful - fetched HTML from public URL (${html.length} chars)`);
+        blogPosts_log(`   [Page] Fetched live page HTML (${html.length} chars)`);
       } else {
-        blogPosts_log(`   [Supabase] Fallback failed - could not fetch HTML from public URL`);
+        blogPosts_log(`   ❌ [Page] Could not fetch the live page HTML for ${url}`);
       }
-    } else if (html) {
+    } else if (providedHtml) {
       blogPosts_log(`   [Supabase] Using provided HTML (${html.length} chars) - skipping HTML re-fetch`);
     }
 
@@ -8076,34 +8048,38 @@
       .filter(Boolean)
       .join(' ');
 
-    // Extract FULL articleBody (HTML stripped, then navigation cleaned)
-    // Use provided plainText if available (already extracted from HTML), otherwise extract from HTML or chunks
-    let articleBodyRaw = '';
-    if (providedPlainText) {
-      articleBodyRaw = providedPlainText;
-      blogPosts_log(`   [ArticleBody] Using provided plainText (${articleBodyRaw.length} chars)`);
+    // articleBody: the post's own content container first; whole-page text only as a fallback.
+    const articleBodyMod = await loadArticleBodyModule();
+    const container = articleBodyMod.extractBlogArticleText(html);
+    let bodySource = 'container';
+    let articleBody = container.text;
+    let articleBodyRaw = container.text;
+    if (container.words < 5) {
+      bodySource = 'text';
+      if (providedPlainText) {
+        articleBodyRaw = providedPlainText;
+        blogPosts_log(`   [ArticleBody] No post container text - using provided plainText (${articleBodyRaw.length} chars)`);
+      } else {
+        articleBodyRaw = stripHtmlToText(html || chunksText || '');
+      }
+      articleBody = cleanFullArticleBody(articleBodyRaw, title);
+      if (!articleBody || articleBody.length < 100) {
+        articleBody = articleBodyRaw
+          .replace(/\[\/[^\]]+\]/g, '')
+          .replace(/\/Cart\s+\d+/gi, '')
+          .replace(/Sign In My Account/gi, '');
+      }
     } else {
-      const articleBodySource = html || chunksText || '';
-      articleBodyRaw = stripHtmlToText(articleBodySource);
-    }
-    
-    // CRITICAL: Clean articleBody to remove ALL navigation/menu pollution
-    let articleBody = cleanFullArticleBody(articleBodyRaw, title);
-    
-    // If cleaning removed too much, fallback to raw (but still try to clean)
-    if (!articleBody || articleBody.length < 100) {
-      articleBody = articleBodyRaw;
-      // Apply basic cleaning only
-      articleBody = articleBody.replace(/\[\/[^\]]+\]/g, '');
-      articleBody = articleBody.replace(/\/Cart\s+\d+/gi, '');
-      articleBody = articleBody.replace(/Sign In My Account/gi, '');
+      blogPosts_log(`   [ArticleBody] From post container: ${container.words} words`);
     }
 
-    // Reject binary / corrupt bodies (e.g. JPEG bytes scraped into text)
+    // Reject binary / corrupt / empty bodies. The title stand-in is flagged so callers never publish it.
     if (isCorruptArticleBody(articleBody)) {
-      blogPosts_log(`   [ArticleBody] Corrupt/binary body detected — falling back to title summary`);
+      blogPosts_log(`   ❌ [ArticleBody] No usable article text — title stand-in only (will not be published)`);
       articleBody = descriptionFromTitle(title);
+      bodySource = 'title-fallback';
     }
+    const pageWords = container.found ? container.words : countWords(articleBodyRaw);
     
     const wordCount = countWords(articleBody);
     const timeRequired = estimateReadingTime(wordCount);
@@ -8444,7 +8420,34 @@
       }
     }
 
+    // Run metadata for the publish guard (non-enumerable: never serialised into schema JSON).
+    Object.defineProperty(blogPosting, '__publishGuard', {
+      value: { htmlFetched: !!html, bodySource, articleWords: wordCount, pageWords },
+      enumerable: false
+    });
     return blogPosting;
+  }
+
+  let articleBodyModulePromise = null;
+  async function loadArticleBodyModule() {
+    if (!articleBodyModulePromise) {
+      articleBodyModulePromise = import('./scripts/article-body-extraction.mjs').then((mod) => {
+        window.__articleBodyModule = mod;
+        return mod;
+      });
+    }
+    return articleBodyModulePromise;
+  }
+
+  /** Publish guard for one post: logs the reason and returns false when files must not be written. */
+  async function blogPostingMayPublish(posting, slug) {
+    const mod = await loadArticleBodyModule();
+    const guard = posting && posting.__publishGuard ? posting.__publishGuard : { htmlFetched: false };
+    const decision = mod.blogPostingSaveDecision(guard);
+    if (!decision.save) {
+      blogPosts_log(`   ❌ NOT PUBLISHED ${slug}: ${decision.reason} — existing files kept`);
+    }
+    return decision.save;
   }
 
   async function generateBlogIndexSchema() {
@@ -8508,6 +8511,8 @@
 
     const seenUrls = new Set();
     const blogPostings = [];
+    const unusablePostings = [];
+    schemaRunSupabaseErrors = 0;
 
     const progressContainer = document.getElementById('blogProgress');
     const progressText = document.getElementById('blogProgressText');
@@ -8535,12 +8540,26 @@
       }
       seenUrls.add(row.url);
       const posting = await buildEnrichedBlogPosting(row);
+      const guard = (await loadArticleBodyModule()).blogPostingSaveDecision(posting.__publishGuard || { htmlFetched: false });
+      if (!guard.save) unusablePostings.push(`${row.url} (${guard.reason})`);
       blogPostings.push(posting);
       processed += 1;
       updateProgress();
       if (processed === 1 || processed % 5 === 0 || processed === total) {
         blogLog(`   Fetched and enriched ${processed}/${total} posts (${Math.round((processed / total) * 100)}%)`);
       }
+    }
+
+    // This builds the whole index file, so one fallback body would replace good data: stop instead.
+    if (unusablePostings.length) {
+      blogLog(`❌ STOPPED — ${unusablePostings.length} post(s) had no usable article text; no blog index schema produced:`);
+      unusablePostings.forEach((u) => blogLog(`   ❌ ${u}`));
+      if (schemaRunSupabaseErrors) blogLog(`❌ Supabase query errors: ${schemaRunSupabaseErrors}`);
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Blog Index Schema';
+      }
+      return;
     }
 
     blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
@@ -11401,6 +11420,8 @@
     let postsWithEmbeddedVideo = 0;
     let totalEmbeddedVideoObjects = 0;
     const generatedFiles = []; // Store files for browser ZIP download
+    const blogPostsNotPublished = [];
+    schemaRunSupabaseErrors = 0;
     const fileTypeCounts = {
       schema: 0,
       blogposting: 0,
@@ -11465,8 +11486,18 @@
               blogPosts_log(`   [Image] No main image detected in HTML`);
             }
           } else {
-            blogPosts_log(`   ⚽  Could not fetch HTML (tried Supabase and public URL)`);
+            blogPosts_log(`   ❌ Could not fetch HTML for ${slug} — post skipped, existing files kept`);
           }
+        }
+
+        // Never publish a fallback body: no page HTML, title stand-in, or thin body vs a long page.
+        const guardPosting = html ? await buildEnrichedBlogPosting(row, html, plainText) : null;
+        if (!(await blogPostingMayPublish(guardPosting, slug))) {
+          errors++;
+          blogPostsNotPublished.push(slug);
+          processed++;
+          updateProgress();
+          continue;
         }
         
         // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
@@ -11874,6 +11905,12 @@
     if (outputDiv && summaryText) {
       let summary = `✅ Schema generation complete!<br>`;
       summary += `• Processed: ${processed} posts<br>`;
+      if (blogPostsNotPublished.length) {
+        summary += `<span style="color:#b91c1c;font-weight:600;">❌ NOT published (no page HTML / title-only / thin body), existing files kept: ${blogPostsNotPublished.length} — ${blogPostsNotPublished.join(', ')}</span><br>`;
+      }
+      if (schemaRunSupabaseErrors) {
+        summary += `<span style="color:#b91c1c;font-weight:600;">❌ Supabase query errors: ${schemaRunSupabaseErrors} (see log; live pages were used instead)</span><br>`;
+      }
       summary += `• VideoObject: ${postsWithEmbeddedVideo}/${processed} posts included video schema (${totalEmbeddedVideoObjects} VideoObject total)<br>`;
       summary += `• Per post (when eligible): WebPage <code>_schema.json</code> + BlogPosting <code>_blogposting.json</code> + BreadcrumbList <code>_breadcrumb.json</code> + ImageObject <code>_image.json</code> + HowTo <code>_howto.json</code> + FAQ <code>_faq.json</code><br>`;
       summary += `• Files generated by type:<br>`;
@@ -12210,6 +12247,7 @@
     
     blogPosts_log(`\n Generating schema for single URL: ${url}`);
     blogPosts_log('='.repeat(60));
+    schemaRunSupabaseErrors = 0;
     
     try {
       // Create a mock CSV row from the URL
@@ -12307,10 +12345,13 @@
         // Build enriched BlogPosting now that mockRow.imageUrl is populated (if available)
         // Pass fetched HTML/plainText so video and content detection use the same page source.
         blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
-      } else {
-        blogPosts_log('   WARNING: Could not fetch HTML (may be CORS or network). Proceeding without HTML-based enrichment.');
-        // Fallback: still build BlogPosting from mockRow (without HTML enrichment)
-        blogPosting = await buildEnrichedBlogPosting(mockRow, html, plainText);
+      }
+      if (!(await blogPostingMayPublish(blogPosting, slug))) {
+        throw new Error(
+          html
+            ? 'Article text could not be extracted (title-only or thin body) — nothing generated, existing files kept'
+            : 'Could not fetch the page HTML (CORS / network / rate limit) — nothing generated, existing files kept'
+        );
       }
       
       // SPEC: Generate WebPage schema ONLY (for <slug>_schema.json)
@@ -12576,6 +12617,9 @@
         resultDiv.style.display = 'block';
         let resultHtml = '<h4 style="margin-top: 0; color: #10b981;">✅ Schemas Generated Successfully</h4>';
         resultHtml += `<p><strong>URL:</strong> ${url}</p>`;
+        if (schemaRunSupabaseErrors) {
+          resultHtml += `<p style="color:#b91c1c;font-weight:600;">❌ Supabase query errors: ${schemaRunSupabaseErrors} (see log; the live page was used instead)</p>`;
+        }
         resultHtml += `<p><strong>Slug:</strong> ${slug}</p>`;
         resultHtml += `<p><strong>WebPage Schema:</strong> <code>${webPageFileName}</code></p>`;
         resultHtml += `<p><strong>BlogPosting Schema:</strong> <code>${blogPostingFileName}</code></p>`;
@@ -25353,7 +25397,7 @@ ${minifiedJson}
         
         // Initialize Supabase
         try {
-          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
           window.supabaseClient = supabaseClient;
           supabaseAvailable = true;
           console.log('✅ Supabase initialized successfully');
