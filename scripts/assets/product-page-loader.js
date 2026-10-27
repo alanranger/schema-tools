@@ -137,8 +137,9 @@
   }
   function arInjectGithubSchema(schema) {
     if (!schema) return;
-    var existing = document.getElementById('ar-github-product-schema');
-    if (existing) existing.remove();
+    if (window.__arGithubProductSchemaOnce) return;
+    window.__arGithubProductSchemaOnce = true;
+    document.querySelectorAll('#ar-github-product-schema').forEach(function (el) { el.remove(); });
     var s = document.createElement('script');
     s.type = 'application/ld+json';
     s.id = 'ar-github-product-schema';

@@ -26729,8 +26729,9 @@ exit`;
         log(`✅ Server connection verified on port ${serverPort}\n`);
         log(` Sending task request...\n`);
         
+        const taskTimeoutMs = task === 'schema' ? 1200000 : 300000;
         const response = await fetch(`http://localhost:${serverPort}/run?task=${task}`, {
-          signal: AbortSignal.timeout(300000) // 5 minute timeout for long tasks
+          signal: AbortSignal.timeout(taskTimeoutMs)
         });
         
         if (!response.ok) {

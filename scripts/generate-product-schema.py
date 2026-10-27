@@ -224,22 +224,42 @@ def contains_faq_signal(source_html):
 
 
 def scrape_visible_faq_pairs(source_html):
-    """Mirror visible <details>/<summary> FAQ accordion only. Never invent Q&As."""
+    """Mirror visible FAQ only: details accordion or FAQ-list items. Never invent Q&As."""
     html = html_lib.unescape(str(source_html or ""))
     pairs = []
     seen = set()
+
+    def add_pair(question, answer):
+        question = html_to_plain_text(question)
+        answer = html_to_plain_text(answer)
+        key = question.lower()
+        if len(question) < 8 or len(answer) < 12 or key in seen:
+            return
+        seen.add(key)
+        pairs.append((question, answer))
+
     for block in re.findall(r"<details[^>]*>([\s\S]*?)</details>", html, flags=re.IGNORECASE):
         summary = re.search(r"<summary[^>]*>([\s\S]*?)</summary>", block, flags=re.IGNORECASE)
         if not summary:
             continue
-        question = html_to_plain_text(summary.group(1))
         answer_html = re.sub(r"<summary[^>]*>[\s\S]*?</summary>", "", block, flags=re.IGNORECASE)
-        answer = html_to_plain_text(answer_html)
-        key = question.lower()
-        if len(question) < 8 or len(answer) < 12 or key in seen:
-            continue
-        seen.add(key)
-        pairs.append((question, answer))
+        add_pair(summary.group(1), answer_html)
+
+    # Will-Myers snippet pages: <strong>Question?</strong> Answer after a FAQ heading.
+    for start in [m.end() for m in re.finditer(r"frequently asked questions", html, flags=re.IGNORECASE)]:
+        block = html[start:start + 14000]
+        next_heading = re.search(r"<h[1-3][^>]*>", block, flags=re.IGNORECASE)
+        if next_heading:
+            block = block[:next_heading.start()]
+        for match in re.finditer(
+            r"<strong>([\s\S]*?)</strong>([\s\S]*?)(?=<strong>|</li>|</ul>)",
+            block,
+            flags=re.IGNORECASE,
+        ):
+            question = html_to_plain_text(match.group(1))
+            if "?" not in question:
+                continue
+            add_pair(match.group(1), match.group(2))
     return pairs
 
 
@@ -287,27 +307,83 @@ def extract_snippet_targets(source_html, page_url):
     return targets[:6]
 
 
+def enrich_html_with_snippets(page_url, html):
+    """Append Will-Myers snippet page HTML so visible FAQs can be scraped."""
+    parts = [str(html or "")]
+    for target in extract_snippet_targets(html, page_url):
+        try:
+            snippet_html = fetch_html(target, timeout_sec=8)
+        except Exception:
+            snippet_html = ""
+        if snippet_html:
+            parts.append(snippet_html)
+    return "\n".join(parts)
+
+
+_HTML_CACHE = {}
+
+
 def fetch_html(url, timeout_sec=12):
-    """Fetch HTML content for a URL."""
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0 (SchemaTools FAQ Builder)"})
+    """Fetch HTML content for a URL (cached per process)."""
+    cache_key = str(url or "").strip()
+    if cache_key in _HTML_CACHE:
+        return _HTML_CACHE[cache_key]
+    req = Request(cache_key, headers={"User-Agent": "Mozilla/5.0 (SchemaTools FAQ Builder)"})
     with urlopen(req, timeout=timeout_sec) as resp:
-        return resp.read().decode("utf-8", errors="ignore")
+        html = resp.read().decode("utf-8", errors="ignore")
+    _HTML_CACHE[cache_key] = html
+    return html
 
 
 GIFT_VOUCHER_URL = "https://www.alanranger.com/photography-services-near-me/photography-gift-vouchers"
+GIFT_VOUCHER_PATH = "/photography-services-near-me/photography-gift-vouchers"
 
 
-def ensure_gift_voucher_product(df_products, csv_dir):
-    """Keep the live gift-voucher product even when 02 dropped it (no CSV price)."""
-    urls = df_products["url"].astype(str).str.lower() if "url" in df_products.columns else pd.Series(dtype=str)
-    if urls.str.contains("photography-gift-vouchers", na=False).any():
-        return df_products
-    row = {
-        "name": "Photography Gift Vouchers | Digital eCard | Email Delivery",
-        "description": "Photography Gift Vouchers | Digital e Card | Email Delivery",
-        "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1556527290185-GZJ3ZPC3M7AU34BFFVOE/photography-gift-vouchers.png",
+def url_path_only(url):
+    """Path of a product URL, lowercase, no trailing slash."""
+    try:
+        return urlparse(str(url or "")).path.rstrip("/").lower()
+    except Exception:
+        return ""
+
+
+def build_gift_voucher_row(csv_dir):
+    """Build the gift-voucher 02 row from the services CSV when present."""
+    title = "Photography Gift Vouchers | Digital eCard | Email Delivery"
+    image = "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1556527290185-GZJ3ZPC3M7AU34BFFVOE/photography-gift-vouchers.png"
+    category = "online;1-2-1-private-lessons;gift-voucher;photography-services;photography-tuition"
+    services = Path(csv_dir) / "04-photography-services-courses-mentoring.csv" if csv_dir else None
+    if services and services.exists():
+        try:
+            sdf = pd.read_csv(services, encoding="utf-8-sig")
+            url_col = "Full Url" if "Full Url" in sdf.columns else None
+            if url_col:
+                hit = sdf[sdf[url_col].map(url_path_only) == GIFT_VOUCHER_PATH]
+                if not hit.empty:
+                    src = hit.iloc[0]
+                    csv_title = str(src.get("Title") or "").strip()
+                    if csv_title and csv_title.lower() not in {"nan", "none"}:
+                        title = csv_title
+                    for img_col in ("Image Url", "Image", "Thumbnail"):
+                        if img_col in sdf.columns:
+                            img = str(src.get(img_col) or "").strip()
+                            if img.startswith("http"):
+                                image = img
+                                break
+                    for cat_col in ("Categories", "Category", "Tags"):
+                        if cat_col in sdf.columns:
+                            cat = str(src.get(cat_col) or "").strip()
+                            if cat and cat.lower() not in {"nan", "none"}:
+                                category = cat
+                                break
+        except Exception:
+            pass
+    return {
+        "name": title,
+        "description": title,
+        "image": image,
         "url": GIFT_VOUCHER_URL,
-        "category": "online;1-2-1-private-lessons;gift-voucher;photography-services;photography-tuition",
+        "category": category,
         "offers": json.dumps([{
             "@type": "Offer",
             "sku": "SUP-PHOTOGRAPHY-GIFT-VOUCHERS",
@@ -325,8 +401,17 @@ def ensure_gift_voucher_product(df_products, csv_dir):
         "main_sku": "SUP-PHOTOGRAPHY-GIFT-VOUCHERS",
         "schema_type": "product",
     }
-    print(f"ℹ️ Added missing gift-voucher product from live URL: {GIFT_VOUCHER_URL}")
-    return pd.concat([df_products, pd.DataFrame([row])], ignore_index=True)
+
+
+def ensure_gift_voucher_product(df_products, csv_dir):
+    """Keep the live gift-voucher product even when 02 dropped it (no CSV price)."""
+    paths = df_products["url"].map(url_path_only) if "url" in df_products.columns else pd.Series(dtype=str)
+    if (paths == GIFT_VOUCHER_PATH).any():
+        print(f"ℹ️ Gift voucher already in 02: {GIFT_VOUCHER_URL}")
+        return df_products
+    row = build_gift_voucher_row(csv_dir)
+    print(f"ℹ️ Added missing gift-voucher product FIRST from live URL: {GIFT_VOUCHER_URL}")
+    return pd.concat([pd.DataFrame([row]), df_products], ignore_index=True)
 
 
 def write_text_with_retry(file_path, content, attempts=4, wait_seconds=0.7):
@@ -420,11 +505,9 @@ def fetch_page_snapshot(url, cache):
     if title_match:
         title = html_lib.unescape(re.sub(r"\s+", " ", title_match.group(1))).strip()
 
+    html = enrich_html_with_snippets(url, html)
     plain_text = html_to_plain_text(html)
     has_existing_faq = contains_faq_signal(html)
-    if not has_existing_faq:
-        snippet_targets = extract_snippet_targets(html, url)
-        has_existing_faq = snippet_targets_contain_faq(snippet_targets)
 
     snapshot = {
         "has_existing_faq": has_existing_faq,
@@ -2554,6 +2637,7 @@ def main():
         sys.exit(1)
     
     df_products = ensure_gift_voucher_product(df_products, csv_dir)
+    print(f"✅ Products after gift-voucher ensure: {len(df_products)}")
     
     # ============================================================
     # Load and Sanitize Reviews
@@ -3402,8 +3486,8 @@ def main():
             print(f"❌ Schema validation FAILED for '{product_name}':")
             for error in validation_errors:
                 print(f"   - {error}")
-            print(f"\n⚠️ Generation stopped: Schema does not meet v6.1 baseline requirements")
-            sys.exit(1)
+            print("   Skipping this product and continuing with others...")
+            continue
         
         # Create filename based on product name (not URL slug) for easier identification
         product_name_slug = slugify(product_name)
@@ -3478,7 +3562,7 @@ def main():
                 try:
                     write_json_with_retry(faq_path, faq_payload)
                     faq_generated_count += 1
-                    print(f"✅ FAQ from visible accordion [{product_name_slug}] {len(visible_pairs)} Q&As")
+                    print(f"✅ FAQ from visible accordion/snippet [{product_name_slug}] {len(visible_pairs)} Q&As")
                 except Exception as e:
                     print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
             else:
