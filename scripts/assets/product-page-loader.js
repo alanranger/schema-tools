@@ -19,7 +19,7 @@
   if (inEditor()) return;
 
 
-  /* ---------- Core Schema Suppressor v2.1 (#product whitelisted) ---------- */
+  /* ---------- Core Schema Suppressor v2.2 (one visible FAQPage) ---------- */
   function installCoreSuppressorV21() {
     if (window.__AR_CORE_SUPPRESSOR_V21__) return;
     window.__AR_CORE_SUPPRESSOR_V21__ = true;
@@ -41,6 +41,62 @@
       if (isCanonical(node)) return false;
       return true;
     }
+    function isFaq(n) {
+      return getTypes(n).indexOf('FAQPage') !== -1;
+    }
+    function visText() {
+      var body = document.body;
+      if (!body) return '';
+      var clone = body.cloneNode(true);
+      clone.querySelectorAll('script,style,noscript').forEach(function (el) { el.remove(); });
+      return String(clone.textContent || '').replace(/['’]/g, "'").toLowerCase();
+    }
+    function qVisible(q, text) {
+      var name = String((q && q.name) || '').replace(/['’]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+      return name.length > 8 && text.indexOf(name) !== -1;
+    }
+    function keepFaqNode(n, text, drop) {
+      if (!isFaq(n)) return n;
+      if (drop) return null;
+      var me = n.mainEntity;
+      var qs = Array.isArray(me) ? me : (me ? [me] : []);
+      var vis = qs.filter(function (q) { return qVisible(q, text); });
+      if (!vis.length) return null;
+      n.mainEntity = vis;
+      return n;
+    }
+    function rewriteJsonLd(el, json, kept) {
+      if (!kept.length) { el.remove(); return; }
+      var next = Array.isArray(json['@graph']) ? Object.assign({}, json, { '@graph': kept }) : kept[0];
+      var out = JSON.stringify(next);
+      if (out === (el.textContent || '').trim()) return;
+      el.textContent = out;
+    }
+    function enforceVisibleFaq() {
+      var text = visText();
+      var crit = document.getElementById('arp-critical-schema') || document.getElementById('ar-github-product-schema');
+      var critHasFaq = false;
+      if (crit) {
+        try {
+          var cjson = JSON.parse((crit.textContent || '').trim());
+          var cnodes = Array.isArray(cjson['@graph']) ? cjson['@graph'] : [cjson];
+          var ckept = cnodes.map(function (n) { return keepFaqNode(n, text, false); }).filter(Boolean);
+          rewriteJsonLd(crit, cjson, ckept);
+          critHasFaq = ckept.some(isFaq);
+        } catch (e) {}
+      }
+      document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
+        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema') return;
+        var txt = (el.textContent || '').trim();
+        if (!txt) return;
+        try {
+          var json = JSON.parse(txt);
+          var nodes = Array.isArray(json['@graph']) ? json['@graph'] : [json];
+          if (!nodes.some(isFaq)) return;
+          rewriteJsonLd(el, json, nodes.map(function (n) { return keepFaqNode(n, text, critHasFaq); }).filter(Boolean));
+        } catch (e) {}
+      });
+    }
     function suppressSquarespaceCore() {
       document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
         if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema') return;
@@ -56,6 +112,7 @@
           el.textContent = JSON.stringify(nextJson);
         } catch (e) {}
       });
+      enforceVisibleFaq();
     }
     suppressSquarespaceCore();
     document.addEventListener('DOMContentLoaded', suppressSquarespaceCore);

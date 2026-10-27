@@ -20404,7 +20404,7 @@ ${minifiedJson}
       
       // Build schema output with suppressor code at the top
       const tldrSummary = buildLandingTldrSummary(title, finalDescription, actualSchemaType);
-      const suppressorCode = '<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) -->\n\n' +
+      const suppressorCode = '<!-- Squarespace Core Schema Suppressor v2.2 (one visible FAQPage) -->\n\n' +
         '<script>\n' +
         '(function(){\n' +
         '  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service"]);\n' +
@@ -20424,6 +20424,60 @@ ${minifiedJson}
         '    if (!nodeTypes.some((t) => CORE_TYPES.has(t))) return false;\n' +
         '    if (isCanonical(node)) return false;\n' +
         '    return true;\n' +
+        '  };\n' +
+        '  const isFaq = (n) => getTypes(n).includes("FAQPage");\n' +
+        '  const visText = () => {\n' +
+        '    const body = document.body;\n' +
+        '    if (!body) return "";\n' +
+        '    const clone = body.cloneNode(true);\n' +
+        '    clone.querySelectorAll("script,style,noscript").forEach((el) => el.remove());\n' +
+        '    return String(clone.textContent || "").replace(/[\'\\u2019]/g, "\'").toLowerCase();\n' +
+        '  };\n' +
+        '  const qVisible = (q, text) => {\n' +
+        '    const name = String((q && q.name) || "").replace(/[\'\\u2019]/g, "\'").replace(/\\s+/g, " ").trim().toLowerCase();\n' +
+        '    return name.length > 8 && text.indexOf(name) !== -1;\n' +
+        '  };\n' +
+        '  const keepFaqNode = (n, text, drop) => {\n' +
+        '    if (!isFaq(n)) return n;\n' +
+        '    if (drop) return null;\n' +
+        '    const me = n.mainEntity;\n' +
+        '    const qs = Array.isArray(me) ? me : (me ? [me] : []);\n' +
+        '    const vis = qs.filter((q) => qVisible(q, text));\n' +
+        '    if (!vis.length) return null;\n' +
+        '    n.mainEntity = vis;\n' +
+        '    return n;\n' +
+        '  };\n' +
+        '  const rewriteJsonLd = (el, json, kept) => {\n' +
+        '    if (!kept.length) { el.remove(); return; }\n' +
+        '    const next = Array.isArray(json["@graph"]) ? Object.assign({}, json, {"@graph": kept}) : kept[0];\n' +
+        '    const out = JSON.stringify(next);\n' +
+        '    if (out === (el.textContent || "").trim()) return;\n' +
+        '    el.textContent = out;\n' +
+        '  };\n' +
+        '  const enforceVisibleFaq = () => {\n' +
+        '    const text = visText();\n' +
+        '    const crit = document.getElementById("arp-critical-schema");\n' +
+        '    let critHasFaq = false;\n' +
+        '    if (crit) {\n' +
+        '      try {\n' +
+        '        const cjson = JSON.parse((crit.textContent || "").trim());\n' +
+        '        const cnodes = Array.isArray(cjson["@graph"]) ? cjson["@graph"] : [cjson];\n' +
+        '        const ckept = cnodes.map((n) => keepFaqNode(n, text, false)).filter(Boolean);\n' +
+        '        rewriteJsonLd(crit, cjson, ckept);\n' +
+        '        critHasFaq = ckept.some(isFaq);\n' +
+        '      } catch (e) {}\n' +
+        '    }\n' +
+        '    document.querySelectorAll(\'script[type="application/ld+json"], script[data-type="application/ld+json"]\').forEach((el) => {\n' +
+        '      if (el.id === "arp-critical-schema") return;\n' +
+        '      const txt = (el.textContent || "").trim();\n' +
+        '      if (!txt) return;\n' +
+        '      try {\n' +
+        '        const json = JSON.parse(txt);\n' +
+        '        const nodes = Array.isArray(json["@graph"]) ? json["@graph"] : [json];\n' +
+        '        if (!nodes.some(isFaq)) return;\n' +
+        '        rewriteJsonLd(el, json, nodes.map((n) => keepFaqNode(n, text, critHasFaq)).filter(Boolean));\n' +
+        '      } catch (e) {}\n' +
+        '    });\n' +
         '  };\n' +
         '  const suppressSquarespaceCore = () => {\n' +
         '    document.querySelectorAll(\'script[type="application/ld+json"], script[data-type="application/ld+json"]\').forEach((el) => {\n' +
@@ -20445,6 +20499,7 @@ ${minifiedJson}
         '        el.textContent = JSON.stringify(nextJson);\n' +
         '      } catch (e) {}\n' +
         '    });\n' +
+        '    enforceVisibleFaq();\n' +
         '  };\n' +
         '  // Run several times to catch async Squarespace hydration\n' +
         '  suppressSquarespaceCore();\n' +
@@ -20501,7 +20556,7 @@ ${minifiedJson}
       outputText.textContent = suppressorCode + tldrSignalScript;
       
       addLandingDebugLog(`✅ Schema formatted and displayed (${(suppressorCode + tldrSignalScript).length} characters)`);
-      addLandingDebugLog(`   Includes Core Schema Suppressor v2.1 to prevent duplicate Squarespace core schemas`);
+      addLandingDebugLog(`   Includes Core Schema Suppressor v2.2 (one visible FAQPage)`);
       addLandingDebugLog(`   Includes hidden TLDR signal injector for extractability detection`);
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
