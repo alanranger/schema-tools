@@ -1,0 +1,26 @@
+<!-- ============================================================
+Option D — site-wide FOOTER schema edits (2026-10-27)
+
+WHERE: Squarespace → Settings → Code Injection → FOOTER
+ACTION: Delete two blocks. Do not replace the unified graph.
+
+KEEP (do not touch):
+  - GLOBAL FOOTER INJECTION v1.9.2 wrapper comment
+  - Section Loader, GTM noscript, Microdata suppression v1.7
+  - <!-- STRUCTURED DATA: UNIFIED GLOBAL SCHEMA --> through
+    <!-- END STRUCTURED DATA -->  (WebSite #website, Organization+LocalBusiness
+    #org, Person #person, Service #photography-services) — leave this graph
+    exactly as it is live today
+  - All non-schema widgets (lazy summaries, academy router, accordion icons, …)
+
+DELETE block 1 — search for this comment and remove it AND the <script> that follows:
+  <!-- ARP Blog Schema Loader v5.1 — loads JSON for blog posts, skips FAQ injection -->
+
+DELETE block 2 — search for this comment and remove it AND the <script> that follows
+  (the MutationObserver that deletes Product JSON-LD):
+  <!-- Block Squarespace-injected Product schemas only -->
+
+After those two deletes, the footer still has one schema blob: the unified
+business graph. Page-specific Article / Event / Product / FAQ come from
+collection-header hosted loaders only.
+============================================================ -->

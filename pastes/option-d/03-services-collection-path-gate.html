@@ -1,0 +1,15 @@
+<!-- Option D path-gate (2026-10-27)
+     WHERE: /photography-services-near-me → Settings → Advanced → PAGE HEADER
+     ACTION: Paste IMMEDIATELY AFTER the existing
+             <script type="application/ld+json" id="arp-critical-schema">…</script>
+             Do not delete the graph or the suppressor / product-page-loader.
+     Effect: child product URLs drop the cascaded landing @graph; the collection
+             URL itself keeps it. -->
+<script>
+(function () {
+  var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+  if (path === '/photography-services-near-me') return;
+  var el = document.getElementById('arp-critical-schema');
+  if (el) el.remove();
+})();
+</script>
