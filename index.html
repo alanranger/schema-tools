@@ -2619,15 +2619,14 @@
             • For ItemList: Select which URLs to include and prioritize for rich results</span>
           </li>
           <li><strong>Generate Schema:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Generate Schema" button<br>
-            • Review the generated JSON-LD in the output panel<br>
-            • Check debug log for any warnings or errors</span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Generate Schema" (one page) or "Regenerate all landing pages"<br>
+            • Writes hosted <code>*_landing_schema.json</code> + <code>landings-manifest.json</code><br>
+            • FAQPage only from visible accordion text — never template Q&amp;As</span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Copy the generated schema<br>
-            • Paste into Squarespace page header code injection<br>
-            • Or insert as a Code Block on the page<br>
-            • Validate using Schema Validator tab</span>
+          <li><strong>Deploy hosted JSON:</strong><br>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Deploy landing JSON &amp; loader"<br>
+            • Pages load schema via one-line <code>landing-page-loader.js</code> (inert until that line is in the header)<br>
+            • Do not paste JSON-LD into the page header</span>
           </li>
         </ol>
       </div>
@@ -2951,6 +2950,14 @@
                 onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
           ⚽ Generate Schema
         </button>
+        <button onclick="regenerateAllLandingPages()" id="regenerateAllLandingBtn"
+                style="background: #0f766e; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+          Regenerate all landing pages
+        </button>
+        <button onclick="deployLandingHostedSchemas()" id="deployLandingBtn"
+                style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+          Deploy landing JSON &amp; loader
+        </button>
         <button onclick="clearLandingForm()" class="secondary"
                 style="background: #e2e8f0; color: #4a5568; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
           Clear
@@ -2972,7 +2979,6 @@
         <button onclick="testLandingSchemaOrg()" class="secondary"> Test on Schema.org</button>
         <button onclick="testLandingGoogleRichResults()" class="secondary"> Test on Google Rich Results</button>
         <button onclick="downloadLandingSchema()" class="secondary"> Download JSON</button>
-        <button onclick="downloadLandingSchemaHtml()" class="secondary"> Download HTML File</button>
       </div>
       
       <!-- Results Panel: Before/After Schema Types Comparison -->
@@ -3668,16 +3674,13 @@
           </li>
           <li><strong>Generate Schema:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Click "Generate Schema" button<br>
-            • Review the generated JSON-LD in the output panel<br>
-            • Check debug log for any warnings or errors</span>
+            • Click "Generate Schema" (one page) or "Regenerate all landing pages"<br>
+            • Writes hosted <code>*_landing_schema.json</code> + <code>landings-manifest.json</code></span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
+          <li><strong>Deploy hosted JSON:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Copy the generated schema<br>
-            • Paste into Squarespace page header code injection<br>
-            • Or insert as a Code Block on the page<br>
-            • Validate using Schema Validator tab</span>
+            • Deploy landing JSON &amp; loader to GitHub Pages<br>
+            • One-line <code>landing-page-loader.js</code> in the page header (do not paste JSON-LD)</span>
           </li>
         </ol>
       </div>
@@ -3797,7 +3800,7 @@
       <p><strong>Schema Types:</strong> Service, ItemList, WebPage, Product (auto-detect available)</p>
       <p><strong>Features:</strong> Smart type detection, manual type selection, schema type selector panel, ItemList URL selection with rich results prioritization</p>
       <p><strong>Output:</strong> JSON-LD schema tailored to page type (Service, ItemList, WebPage, or Product)</p>
-      <p><strong>Deploy:</strong> Copy schema ↽ Paste into Squarespace page header code injection or Code Block</p>
+      <p><strong>Deploy:</strong> Hosted JSON via landing-page-loader.js (do not paste JSON-LD into the page header)</p>
       <p><strong>See Complete Workflow tab for detailed step-by-step instructions.</strong></p>
 
       <h3> Schema Validator</h3>
@@ -19207,7 +19210,10 @@ ${minifiedJson}
           ? '✅ Course page: Service replaced by Course (CourseInstance, offers, rating + reviews carried)'
           : '⚠️ Course page: Service replaced by Course, but NO rating/reviews found — check the page fetch before publishing');
       }
+      window.currentLandingSchema = finalSchema;
+      window.currentLandingUrl = url;
       const schemaJson = JSON.stringify(finalSchema, null, 2);
+      await saveLandingHostedJson(url, finalSchema);
       
       if (!outputText) {
         addLandingDebugLog(`❌ Error: Output text element not found`);
@@ -19591,11 +19597,8 @@ ${minifiedJson}
         '})();\n' +
         '<' + '/script>';
 
-      outputText.textContent = suppressorCode + tldrSignalScript;
-      
-      addLandingDebugLog(`✅ Schema formatted and displayed (${(suppressorCode + tldrSignalScript).length} characters)`);
-      addLandingDebugLog(`   Includes Core Schema Suppressor v2.2 (one visible FAQPage)`);
-      addLandingDebugLog(`   Includes hidden TLDR signal injector for extractability detection`);
+      addLandingDebugLog(`✅ Hosted JSON ready (${schemaJson.length} characters)`);
+      addLandingDebugLog('   Loader injects this file; do not paste JSON-LD into the page header');
       addLandingDebugLog('');
       addLandingDebugLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       addLandingDebugLog('✅ SCHEMA GENERATION COMPLETE!');
@@ -20154,6 +20157,134 @@ ${minifiedJson}
     }
   }
 
+  const LANDING_HOSTED_PATHS = [
+    '/about-alan-ranger', '/academy/login', '/awards-and-qualifications',
+    '/batsford-arboretum-photography', '/beginners-photography-classes',
+    '/beginners-portrait-photography-course', '/bluebell-woods-near-me',
+    '/contact-us-alan-ranger-photography', '/copyright-policy-alan-ranger',
+    '/corporate-photography-training', '/course-finder-photography-classes-near-me',
+    '/data-privacy-policy', '/fine-art-prints', '/free-online-photography-course',
+    '/free-photography-tips', '/gallery-image-portfolios', '/help-portrait-uk-coventry',
+    '/help-site-map', '/hire-a-professional-photographer-in-coventry', '/home',
+    '/jaguar-land-rover-els', '/landscape-photography-workshops', '/my-ethical-policy',
+    '/newsletter-signup-form', '/outdoor-photography-exposure-calculator',
+    '/photo-editing-course-coventry', '/photography-courses-coventry',
+    '/photography-equipment-recommendations', '/photography-gift-vouchers',
+    '/photography-lessons-online-121', '/photography-mentoring-online-assignments',
+    '/photography-payment-plan', '/photography-services-near-me',
+    '/photography-special-offers', '/photography-tuition-services',
+    '/photography-workshops', '/photography-workshops-near-me',
+    '/private-photography-lessons', '/professional-commercial-photographer-coventry',
+    '/professional-photographer-near-me', '/property-photographer-coventry',
+    '/rps-courses-mentoring-distinctions', '/schedule-an-appointment',
+    '/terms-and-conditions', '/testimonials-customer-reviews',
+    '/website-cookie-policy', '/website-terms-and-conditions',
+    '/which-photography-style-is-right-for-you'
+  ];
+
+  function landingPathFromUrl(pageUrl) {
+    try {
+      let p = new URL(pageUrl).pathname.replace(/\/+$/, '') || '/';
+      if (p === '/') p = '/home';
+      return p;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function landingHostedFileName(pageUrl) {
+    const p = landingPathFromUrl(pageUrl);
+    const slug = (p.replace(/^\//, '') || 'home').replace(/\//g, '-');
+    return `${slug}_landing_schema.json`;
+  }
+
+  async function writeLandingsManifest() {
+    const pages = {};
+    LANDING_HOSTED_PATHS.forEach((p) => {
+      const file = landingHostedFileName('https://www.alanranger.com' + (p === '/home' ? '/home' : p));
+      pages[p] = { file };
+      if (p === '/home') pages['/'] = { file };
+    });
+    const manifest = JSON.stringify({ generatedAt: new Date().toISOString(), pages }, null, 2);
+    const repoPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema\\landings-manifest.json';
+    if (window.electronAPI && window.electronAPI.writeFile) {
+      await window.electronAPI.writeFile(repoPath, manifest);
+    }
+  }
+
+  async function saveLandingHostedJson(pageUrl, schema) {
+    if (!schema) return;
+    const fileName = landingHostedFileName(pageUrl);
+    const json = JSON.stringify(schema, null, 2);
+    const outPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\landings\\' + fileName;
+    const repoPath = 'G:\\Dropbox\\alan ranger photography\\Website Code\\Schema Tools\\alanranger-schema\\' + fileName;
+    if (window.electronAPI && window.electronAPI.writeFile) {
+      await window.electronAPI.writeFile(outPath, json);
+      await window.electronAPI.writeFile(repoPath, json);
+      await writeLandingsManifest();
+    }
+    addLandingDebugLog(`   Saved ${fileName}`);
+  }
+
+  async function regenerateAllLandingPages() {
+    const btn = document.getElementById('regenerateAllLandingBtn');
+    const gen = document.getElementById('generateLandingBtn');
+    const deploy = document.getElementById('deployLandingBtn');
+    if (btn) btn.disabled = true;
+    if (gen) gen.disabled = true;
+    if (deploy) deploy.disabled = true;
+    addLandingDebugLog('Regenerate all: ' + LANDING_HOSTED_PATHS.length + ' pages');
+    try {
+      for (let i = 0; i < LANDING_HOSTED_PATHS.length; i++) {
+        const p = LANDING_HOSTED_PATHS[i];
+        const url = p === '/home' ? 'https://www.alanranger.com/home' : 'https://www.alanranger.com' + p;
+        const urlInput = document.getElementById('landingPageUrlFinal');
+        if (urlInput) urlInput.value = url;
+        addLandingDebugLog(`\n[${i + 1}/${LANDING_HOSTED_PATHS.length}] ${p}`);
+        await scanLandingPageMetadata();
+        await generateLandingSchema();
+      }
+      addLandingDebugLog('✅ Regenerated all landing pages (not deployed)');
+    } catch (err) {
+      addLandingDebugLog('❌ Regenerate all failed: ' + (err && err.message ? err.message : err));
+      alert('Regenerate all failed: ' + (err && err.message ? err.message : err));
+    } finally {
+      if (btn) btn.disabled = false;
+      if (gen) gen.disabled = false;
+      if (deploy) deploy.disabled = false;
+    }
+  }
+
+  async function deployLandingHostedSchemas() {
+    if (!window.electronAPI || !window.electronAPI.batchDeploySchemas) {
+      alert('Deploy is only available in the Electron app.');
+      return;
+    }
+    const deploy = document.getElementById('deployLandingBtn');
+    if (deploy) deploy.disabled = true;
+    try {
+      const files = [];
+      for (const p of LANDING_HOSTED_PATHS) {
+        const fileName = landingHostedFileName('https://www.alanranger.com' + (p === '/home' ? '/home' : p));
+        const text = await window.electronAPI.readSchemaFile(fileName);
+        if (text) files.push({ fileName, jsonContent: text });
+      }
+      const manifest = await window.electronAPI.readSchemaFile('landings-manifest.json');
+      if (manifest) files.push({ fileName: 'landings-manifest.json', jsonContent: manifest });
+      const loader = await window.electronAPI.readSchemaFile('loaders/landing-page-loader.js');
+      if (loader) files.push({ fileName: 'loaders/landing-page-loader.js', jsonContent: loader });
+      addLandingDebugLog('Deploying ' + files.length + ' landing files...');
+      const result = await window.electronAPI.batchDeploySchemas(files);
+      addLandingDebugLog('✅ ' + (result && result.message ? result.message : 'Deployed'));
+      alert('Landing JSON and loader deployed. Pages stay unchanged until the one-line loader is in the header.');
+    } catch (err) {
+      addLandingDebugLog('❌ Deploy failed: ' + (err && err.message ? err.message : err));
+      alert('Landing deploy failed: ' + (err && err.message ? err.message : err));
+    } finally {
+      if (deploy) deploy.disabled = false;
+    }
+  }
+
   function downloadLandingSchema() {
     const outputText = document.getElementById('landingSchemaOutputText');
     const url = document.getElementById('landingPageUrlFinal').value.trim();
@@ -20163,12 +20294,13 @@ ${minifiedJson}
       return;
     }
 
-    // Get the schema code (which includes suppressor)
-    const schemaCode = outputText.textContent;
+    const schemaCode = window.currentLandingSchema
+      ? JSON.stringify(window.currentLandingSchema, null, 2)
+      : outputText.textContent;
     const slug = url ? url.split('/').pop().replace(/[^a-z0-9-]/gi, '-').substring(0, 50) : 'landing-page';
-    const filename = `${slug}_schema.txt`; // Changed to .txt since it contains HTML/JS
+    const filename = `${slug}_landing_schema.json`;
     
-    const blob = new Blob([schemaCode], { type: 'text/plain' });
+    const blob = new Blob([schemaCode], { type: 'application/json' });
     const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
