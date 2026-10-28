@@ -3,7 +3,7 @@ import path from "path";
 import { spawn, spawnSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import { upsertSlugsIntoBlogSchema } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
+import { assertBlogSchemaIndexOnly } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
 import { deployCommitMessage } from "./scripts/lib/deploy-commit-message.mjs";
 import http from "http";
 
@@ -502,6 +502,17 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       ensureGitOnBranch(schemaRepoPath, "main");
       removeStaleGitIndexLock(schemaRepoPath);
       
+      if (String(fileName) === 'blog-schema.json') {
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonContent);
+        } catch (parseErr) {
+          reject(new Error(`blog-schema.json is not valid JSON: ${parseErr.message}`));
+          return;
+        }
+        assertBlogSchemaIndexOnly(parsed, fileName);
+      }
+
       // Write JSON file
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
       console.log(`✅ Saved schema file: ${filePath}`);
@@ -716,33 +727,16 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
       ensureGitOnBranch(schemaRepoPath, "main");
       removeStaleGitIndexLock(schemaRepoPath);
 
-      // Write all files first
+      // Write all files first. blog-schema.json is index-only — never upsert per-slug nodes into it.
       const fileNames = [];
       for (const file of files) {
+        if (String(file.fileName) === 'blog-schema.json') {
+          assertBlogSchemaIndexOnly(JSON.parse(file.jsonContent), file.fileName);
+        }
         const filePath = path.join(schemaRepoPath, file.fileName);
         fs.writeFileSync(filePath, file.jsonContent, 'utf-8');
         fileNames.push(file.fileName);
         console.log(`Saved schema file: ${filePath}`);
-      }
-
-      // Keep combined blog-schema.json in sync by @id when per-URL blog files are deployed.
-      const blogSlugs = [...new Set(
-        fileNames
-          .map((name) => {
-            if (/_event_schema\.json$/i.test(name)) return null;
-            const m = String(name).match(/^(.*)_(blogposting|breadcrumb|faq|howto|image)\.json$/i);
-            return m ? m[1] : null;
-          })
-          .filter(Boolean)
-      )];
-      if (blogSlugs.length > 0) {
-        try {
-          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, blogSlugs);
-          if (!fileNames.includes('blog-schema.json')) fileNames.push('blog-schema.json');
-          console.log(`Upserted ${upsert.upserted} nodes into blog-schema.json for ${blogSlugs.length} slug(s)`);
-        } catch (upsertErr) {
-          console.warn(`blog-schema.json upsert skipped: ${upsertErr.message}`);
-        }
       }
 
       const deletedFileNames = [
@@ -973,29 +967,11 @@ ipcMain.handle('delete-schema-file', async (event, fileName) => {
       // Delete file
       fs.unlinkSync(filePath);
       console.log(`🗑️  Deleted schema file: ${filePath}`);
-
-      // When a per-slug FAQ/HowTo is removed, prune matching nodes from blog-schema.json.
-      const optionalMatch = String(fileName).match(/^([a-z0-9-]+)_(faq|howto)\.json$/i);
-      const gitExtraFiles = [];
-      if (optionalMatch) {
-        try {
-          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, [optionalMatch[1]]);
-          gitExtraFiles.push('blog-schema.json');
-          console.log(
-            `Pruned blog-schema.json after deleting ${fileName} (pruned ${upsert.pruned || 0} node(s))`
-          );
-        } catch (upsertErr) {
-          console.warn(`blog-schema.json prune skipped after delete: ${upsertErr.message}`);
-        }
-      }
       
       // Git operations - stage deletion, commit, and push
       const commitMessage = `Delete ${fileName}`;
       const gitCommands = [
         { cmd: 'git', args: ['rm', fileName], desc: 'Stage file deletion' },
-        ...(gitExtraFiles.length
-          ? [{ cmd: 'git', args: ['add', ...gitExtraFiles], desc: 'Stage blog-schema prune' }]
-          : []),
         { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit deletion' },
         { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
       ];
@@ -1123,25 +1099,6 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
         resolve({ success: true, message: 'No files to delete', deletedCount: 0 });
         return;
       }
-
-      // Prune FAQ/HowTo nodes from blog-schema.json when those optional files were removed.
-      const pruneSlugs = [
-        ...new Set(
-          filesToDelete
-            .map((n) => n.match(/^([a-z0-9-]+)_(faq|howto)\.json$/i)?.[1])
-            .filter(Boolean)
-        )
-      ];
-      if (pruneSlugs.length) {
-        try {
-          const upsert = upsertSlugsIntoBlogSchema(schemaRepoPath, pruneSlugs);
-          console.log(
-            `Pruned blog-schema.json after batch delete (pruned ${upsert.pruned || 0} node(s) for ${pruneSlugs.length} slug(s))`
-          );
-        } catch (upsertErr) {
-          console.warn(`blog-schema.json prune skipped after batch delete: ${upsertErr.message}`);
-        }
-      }
       
       // Windows command line limit is ~8191 characters
       // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
@@ -1163,14 +1120,6 @@ ipcMain.handle('batch-delete-schema-files', async (event, fileNames) => {
           cmd: 'git',
           args: ['rm', ...batches[i]],
           desc: `Stage file deletions (batch ${i + 1}/${batches.length})`
-        });
-      }
-
-      if (pruneSlugs.length) {
-        gitCommands.push({
-          cmd: 'git',
-          args: ['add', 'blog-schema.json'],
-          desc: 'Stage blog-schema prune'
         });
       }
       

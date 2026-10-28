@@ -2,7 +2,7 @@
 /**
  * Repair blog schema when Squarespace title/meta changes but URL/slug stays the same.
  * - Prefer live og:title + meta description over slug-derived titles
- * - Upsert into blog-schema.json by @id (never by title)
+ * - Does not write blog-schema.json (index-only; generateBlogIndexSchema owns that file)
  *
  * Usage:
  *   node scripts/repair-blog-title-sync.mjs
@@ -12,7 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { upsertSlugsIntoBlogSchema, normalizeUrl } from './lib/upsert-blog-schema-nodes.mjs';
+import { normalizeUrl } from './lib/upsert-blog-schema-nodes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -236,9 +236,9 @@ async function main() {
   }
 
   if (opts.upsertOnly) {
-    const r = upsertSlugsIntoBlogSchema(REPO, slugs);
-    console.log(`Upserted ${r.upserted} nodes into blog-schema.json (graph size ${r.total})`);
-    return;
+    throw new Error(
+      'REFUSING --upsert-only: blog-schema.json is written only by generateBlogIndexSchema().'
+    );
   }
 
   const repaired = [];
@@ -255,8 +255,7 @@ async function main() {
     }
   }
 
-  const r = upsertSlugsIntoBlogSchema(REPO, repaired.map((x) => x.slug));
-  console.log(`\nUpserted ${r.upserted} nodes into blog-schema.json (graph size ${r.total})`);
+  console.log(`\nRepaired ${repaired.length} slug(s). blog-schema.json not updated (index-only).`);
 }
 
 main().catch((e) => {

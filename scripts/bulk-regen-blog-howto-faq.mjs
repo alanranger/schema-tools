@@ -20,7 +20,6 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { extractHowToFromArticle, htmlBlockToPlainText } from './howto-extraction.mjs';
 import { extractFAQFromArticle } from './faq-extraction.mjs';
-import { upsertSlugsIntoBlogSchema } from './lib/upsert-blog-schema-nodes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -305,15 +304,8 @@ async function main() {
     `Finished bulk HowTo/FAQ regen (${urls.length} URL(s)). FAQ files: ok-faq=${faqOk}, delete-faq=${faqDelete}, skip-faq=${faqSkip}, fail-faq=${faqFail}.`
   );
 
-  const slugs = [...new Set(urls.map((u) => u.split('/').pop()).filter(Boolean))];
-  try {
-    const upsert = upsertSlugsIntoBlogSchema(opts.repo, slugs);
-    appendLog(`Upserted ${upsert.upserted} nodes (pruned ${upsert.pruned || 0}) into blog-schema.json`);
-    console.log(`Upserted ${upsert.upserted} nodes into blog-schema.json (pruned ${upsert.pruned || 0}).`);
-  } catch (e) {
-    appendLog(`blog-schema upsert failed: ${e.message}`);
-    console.warn(`blog-schema upsert skipped: ${e.message}`);
-  }
+  appendLog('Skipped blog-schema.json (index-only; written by generateBlogIndexSchema).');
+  console.log('Skipped blog-schema.json (index-only; written by generateBlogIndexSchema).');
 
   console.log(
     `Done. ${urls.length} URL(s) processed. FAQ: ok-faq=${faqOk} delete-faq=${faqDelete} skip-faq=${faqSkip} fail-faq=${faqFail}. Log appended to BULK-REGEN-LOG.md`

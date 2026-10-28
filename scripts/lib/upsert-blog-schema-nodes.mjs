@@ -144,23 +144,35 @@ export function dedupeFaqPagesByCanonicalUrl(graph) {
   return [...others, ...faqByUrl.values()];
 }
 
-export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
-  const blogPath = path.join(repoDir, 'blog-schema.json');
-  const blog = loadJson(blogPath);
-  if (!blog['@graph'] || !Array.isArray(blog['@graph'])) {
-    throw new Error('blog-schema.json missing @graph');
+const FORBIDDEN_BLOG_INDEX_TYPES = ['Product', 'Event', 'BlogPosting', 'FAQPage', 'HowTo'];
+
+function nodeTypes(node) {
+  const t = node && node['@type'];
+  return Array.isArray(t) ? t : [t].filter(Boolean);
+}
+
+/** blog-schema.json may only hold index nodes (Blog, ItemList, WebPage, BreadcrumbList). */
+export function assertBlogSchemaIndexOnly(schema, source = 'blog-schema.json') {
+  const graph = Array.isArray(schema && schema['@graph'])
+    ? schema['@graph']
+    : schema
+      ? [schema]
+      : [];
+  const found = [];
+  for (const n of graph) {
+    for (const t of nodeTypes(n)) {
+      if (FORBIDDEN_BLOG_INDEX_TYPES.includes(String(t))) found.push(String(t));
+    }
   }
-  const incoming = [];
-  for (const slug of slugs) incoming.push(...collectIndividualNodes(repoDir, slug));
-  const { graph, upserted } = upsertNodes(blog['@graph'], incoming);
-  const pruned = pruneMissingOptionalNodes(graph, repoDir, slugs);
-  const deduped = dedupeFaqPagesByCanonicalUrl(pruned.graph);
-  blog['@graph'] = deduped;
-  fs.writeFileSync(blogPath, `${JSON.stringify(blog)}\n`, 'utf8');
-  return {
-    upserted,
-    pruned: pruned.pruned,
-    total: deduped.length,
-    blogPath
-  };
+  if (found.length) {
+    const types = [...new Set(found)].join(', ');
+    throw new Error(`REFUSING to write ${source}: index-only file cannot contain ${types}`);
+  }
+}
+
+export function upsertSlugsIntoBlogSchema(repoDir, slugs) {
+  const list = Array.isArray(slugs) ? slugs.join(', ') : String(slugs || '');
+  throw new Error(
+    `REFUSING to upsert into blog-schema.json (${list || repoDir}). Written only by generateBlogIndexSchema().`
+  );
 }
