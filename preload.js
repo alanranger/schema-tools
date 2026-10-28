@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
   saveSchemaToOutputs: (fileName, jsonContent) => ipcRenderer.invoke('save-schema-to-outputs', { fileName, jsonContent }),
   runNodeScript: (scriptName, args = []) => ipcRenderer.invoke('run-node-script', { scriptName, args }),
+  httpGetManual: (url) => ipcRenderer.invoke('http-get-manual', url),
   onServerLog: (callback) => {
     ipcRenderer.on('server-log', (event, data) => callback(data));
   },

@@ -478,6 +478,20 @@ ipcMain.handle('get-app-build-metadata', async () => {
   }
 });
 
+// Renderer fetch(redirect:'manual') returns opaque status 0 for cross-origin 3xx.
+// Probe live URLs from the main process so Location and status are readable.
+ipcMain.handle('http-get-manual', async (_event, url) => {
+  const target = String(url || '').trim();
+  if (!/^https?:\/\//i.test(target)) {
+    return { status: 0, location: '', error: 'invalid-url' };
+  }
+  const res = await fetch(target, { method: 'GET', redirect: 'manual' });
+  return {
+    status: res.status,
+    location: res.headers.get('location') || ''
+  };
+});
+
 // IPC handler for saving schema to alanranger-schema folder and deploying
 ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }) => {
   return new Promise((resolve, reject) => {

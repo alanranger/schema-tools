@@ -6663,6 +6663,24 @@
     return parts[parts.length - 1] || '';
   }
 
+  function setButtonsDisabled(rootSelector, disabled) {
+    const root = document.querySelector(rootSelector);
+    if (!root) return;
+    root.querySelectorAll('button').forEach((btn) => { btn.disabled = !!disabled; });
+  }
+
+  function blogIndexManualFetch(url) {
+    if (window.electronAPI && typeof window.electronAPI.httpGetManual === 'function') {
+      return window.electronAPI.httpGetManual(url).then((r) => ({
+        status: Number(r && r.status) || 0,
+        headers: {
+          get: (name) => (String(name).toLowerCase() === 'location' ? String((r && r.location) || '') : null)
+        }
+      }));
+    }
+    return fetch(url, { method: 'GET', redirect: 'manual', cache: 'no-store' });
+  }
+
   function blogLog(message, level = 'info') {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
@@ -8450,10 +8468,13 @@
     }
 
     const generateBtn = document.getElementById('generateBlogBtn');
+    setButtonsDisabled('#blogSchemaOutput', true);
     if (generateBtn) {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
     }
+
+    try {
 
     blogLog(' Starting blog schema generation (Supabase-enriched where available)...');
     blogLog(`   Processing ${blogPosts.length} blog posts`);
@@ -8533,7 +8554,7 @@
         continue;
       }
       seenUrls.add(row.url);
-      const probe = await liveMod.probeBlogPostLive(row.url);
+      const probe = await liveMod.probeBlogPostLive(row.url, { fetch: blogIndexManualFetch });
       processed += 1;
       updateProgress();
       if (!probe.live) {
@@ -8810,6 +8831,8 @@
     }
 
 
+    window.currentBlogSchema = blogSchema;
+
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
     const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
@@ -8843,12 +8866,17 @@
       }, 1500);
     }
 
-    if (generateBtn) {
-      generateBtn.disabled = false;
-      generateBtn.textContent = 'Generate Blog Index Schema';
-    }
-
     console.log(`✅ Generated Blog schema with ${blogPostings.length} posts`);
+    } catch (err) {
+      blogLog(`❌ Generate failed: ${err && err.message ? err.message : err}`);
+      alert(`Blog index generate failed: ${err && err.message ? err.message : err}`);
+    } finally {
+      setButtonsDisabled('#blogSchemaOutput', false);
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Blog Index Schema';
+      }
+    }
   }
 
   // Export and Deploy blog schema to GitHub (Electron only)
@@ -8866,6 +8894,7 @@
     const fileName = 'blog-schema.json';
 
     const exportBtn = document.getElementById('exportAndDeployBlogBtn');
+    setButtonsDisabled('#blogSchemaOutput', true);
     if (exportBtn) {
       exportBtn.disabled = true;
       exportBtn.textContent = ' Exporting & Deploying...';
@@ -8904,6 +8933,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      setButtonsDisabled('#blogSchemaOutput', false);
       if (exportBtn) {
         exportBtn.disabled = false;
         exportBtn.textContent = '✅ Deployed!';
@@ -8916,6 +8946,7 @@
 
     } catch (error) {
       blogLog(`   ❌ Deployment error: ${error.message}`);
+      setButtonsDisabled('#blogSchemaOutput', false);
       if (exportBtn) {
         exportBtn.disabled = false;
         exportBtn.textContent = ' Export JSON & Deploy to GitHub';
@@ -10499,6 +10530,8 @@
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
     }
+    const deployBusyBtn = document.getElementById('blogPostsDeployBtn');
+    if (deployBusyBtn) deployBusyBtn.disabled = true;
     
     if (stopBtn) {
       stopBtn.style.display = 'inline-block';
@@ -11100,6 +11133,8 @@
       generateBtn.disabled = false;
       generateBtn.textContent = 'Generate Blog Post Schemas';
     }
+    const deployReadyBtn = document.getElementById('blogPostsDeployBtn');
+    if (deployReadyBtn) deployReadyBtn.disabled = false;
     
     // Reuse stopBtn variable already declared at function start
     const stopBtnFinal = document.getElementById('blogPostsStopBtn');
@@ -14279,6 +14314,8 @@
       }
       
       stats.totalRows = events.length;
+      const eventExportBtn = document.getElementById('exportAndDeployBtn');
+      if (eventExportBtn) eventExportBtn.disabled = true;
       addDebugLog(` CSV & Events Section:`);
       addDebugLog(`   ✅ Total rows parsed: ${stats.totalRows}`);
       
@@ -15553,6 +15590,7 @@
         exportContainer.style.display = 'block';
         prepareSchemaExport(fullSchema, stats.csvType, stats);
       }
+      if (eventExportBtn) eventExportBtn.disabled = false;
       
       // Calculate merchant feed items
       if (includeMerchantFields) {
@@ -15585,6 +15623,7 @@
         outputElement.textContent = output;
       }
       updateSummaryPanel(buildSummaryHTML(stats));
+      if (eventExportBtn) eventExportBtn.disabled = false;
     }
   } catch (error) {
     console.error('❌ Error generating event schema:', error);
@@ -15593,6 +15632,8 @@
     if (outputElement) {
       outputElement.textContent = 'Error: ' + error.message;
     }
+    const eventExportBtnFail = document.getElementById('exportAndDeployBtn');
+    if (eventExportBtnFail) eventExportBtnFail.disabled = false;
   }
 }
 
@@ -20349,19 +20390,21 @@ ${minifiedJson}
 
     // Make progress state obvious in the Step 4 card before script output starts.
     setStep4VisibleProgress(5, 'Starting Step 4...');
+    const productExportBtn = document.getElementById('exportAndDeployProductBtn');
+    if (productExportBtn) productExportBtn.disabled = true;
 
-    // Use local task runner for schema generation
-    await runLocalTask('schema', 4, '⚽ Generating Product Schema...', () => {
-      output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
-      if (successMsg) {
-        successMsg.style.display = 'block';
-        successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-      setStep4VisibleProgress(100, 'Step 4 complete. Files generated successfully.');
-      
-      // Optionally stop the server after completion (commented out by default)
-      // fetch("http://localhost:8000/exit").then(() => console.log(" Local executor stopped."));
-    });
+    try {
+      await runLocalTask('schema', 4, '⚽ Generating Product Schema...', () => {
+        output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
+        if (successMsg) {
+          successMsg.style.display = 'block';
+          successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        setStep4VisibleProgress(100, 'Step 4 complete. Files generated successfully.');
+      });
+    } finally {
+      if (productExportBtn) productExportBtn.disabled = false;
+    }
   }
 
   // File upload handler for validator tab
