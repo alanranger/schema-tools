@@ -14019,12 +14019,81 @@
     }
   }
   
+  function fvHasType(node, label) {
+    const t = node && node['@type'];
+    if (Array.isArray(t)) return t.indexOf(label) !== -1;
+    return t === label;
+  }
+
+  function fvPath(obj, path) {
+    let cur = obj;
+    for (const key of String(path || '').split('.')) {
+      if (cur == null) return undefined;
+      cur = cur[key];
+    }
+    return cur;
+  }
+
+  function fvFilled(val) {
+    if (val == null) return false;
+    if (typeof val === 'string') return val.trim().length > 0;
+    if (Array.isArray(val)) return val.length > 0;
+    if (typeof val === 'object') return Object.keys(val).length > 0;
+    return true;
+  }
+
+  function countEventJsonFields(eventList) {
+    const events = (eventList || []).filter((n) => fvHasType(n, 'Event'));
+    const total = events.length;
+    const countPath = (path) => events.filter((e) => fvFilled(fvPath(e, path))).length;
+    const row = (path) => {
+      const n = countPath(path);
+      return { status: total > 0 && n === total ? '✅' : '⚽', count: n, total };
+    };
+    return {
+      total,
+      context: row('@context'),
+      type: { status: total ? '✅' : '⚽', count: total, total },
+      name: row('name'),
+      startDate: row('startDate'),
+      endDate: row('endDate'),
+      duration: row('duration'),
+      identifier: row('identifier'),
+      locationType: row('location.@type'),
+      locationName: row('location.name'),
+      streetAddress: row('location.address.streetAddress'),
+      locality: row('location.address.addressLocality'),
+      region: row('location.address.addressRegion'),
+      postalCode: row('location.address.postalCode'),
+      addressCountry: row('location.address.addressCountry'),
+      offersType: row('offers.@type'),
+      offersPrice: row('offers.price'),
+      offersCurrency: row('offers.priceCurrency'),
+      sellerName: row('offers.seller.name'),
+      sellerId: row('offers.seller.@id'),
+      organizerType: row('organizer.@type'),
+      organizerName: row('organizer.name'),
+      organizerLogo: row('organizer.logo'),
+      organizerSameAs: row('organizer.sameAs'),
+      organizerId: row('organizer.@id'),
+      provider: row('provider'),
+      performer: row('performer'),
+      eventId: row('@id')
+    };
+  }
+
+  function fvRow(label, row) {
+    const r = row || { status: '⚽', count: 0, total: 0 };
+    return `<tr><td>${label}</td><td style="text-align: center;">${r.status}</td><td style="text-align: right;">${r.count} / ${r.total}</td></tr>`;
+  }
+
   // Update field verification modal content
   function updateFieldVerificationModal() {
     const content = document.getElementById('fieldVerificationModalContent');
     if (!content || !window.fieldVerificationStats) return;
     
     const stats = window.fieldVerificationStats;
+    const f = stats.jsonFields || countEventJsonFields([]);
     let html = '<div style="max-height: 70vh; overflow-y: auto;">';
     
     // Event Core Fields
@@ -14032,13 +14101,13 @@
     html += '<h3 style="margin-top: 0; color: #667eea;"> Event Core Fields</h3>';
     html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
     html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
-    html += `<tr><td>@context</td><td style="text-align: center;">${stats.coreFields?.context || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>@type</td><td style="text-align: center;">${stats.coreFields?.type || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>name</td><td style="text-align: center;">${stats.coreFields?.name || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>startDate</td><td style="text-align: center;">${stats.coreFields?.startDate || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>endDate</td><td style="text-align: center;">${stats.coreFields?.endDate || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>duration</td><td style="text-align: center;">${stats.coreFields?.duration || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>identifier</td><td style="text-align: center;">${stats.coreFields?.identifier || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += fvRow('@context', f.context);
+    html += fvRow('@type', f.type);
+    html += fvRow('name', f.name);
+    html += fvRow('startDate', f.startDate);
+    html += fvRow('endDate', f.endDate);
+    html += fvRow('duration', f.duration);
+    html += fvRow('identifier', f.identifier);
     html += '</table></div>';
     
     // Location/Address Fields
@@ -14046,13 +14115,13 @@
     html += '<h3 style="margin-top: 0; color: #38b2ac;"> Location / Address Fields</h3>';
     html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
     html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
-    html += `<tr><td>location.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>location.name</td><td style="text-align: center;">${stats.locationFields?.name || '✅'}</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>address.streetAddress</td><td style="text-align: center;">${stats.locationFields?.streetAddress || '⚽'}</td><td style="text-align: right;">${stats.locationFields?.streetAddressCount || 0} / ${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>address.addressLocality</td><td style="text-align: center;">${stats.locationFields?.locality || '⚽'}</td><td style="text-align: right;">${stats.locationFields?.localityCount || 0} / ${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>address.addressRegion</td><td style="text-align: center;">${stats.locationFields?.region || '⚽'}</td><td style="text-align: right;">${stats.locationFields?.regionCount || 0} / ${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>address.postalCode</td><td style="text-align: center;">${stats.locationFields?.postalCode || '✅'}</td><td style="text-align: right;">${stats.locationFields?.postalCodeCount || stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>address.addressCountry</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += fvRow('location.@type', f.locationType);
+    html += fvRow('location.name', f.locationName);
+    html += fvRow('address.streetAddress', f.streetAddress);
+    html += fvRow('address.addressLocality', f.locality);
+    html += fvRow('address.addressRegion', f.region);
+    html += fvRow('address.postalCode', f.postalCode);
+    html += fvRow('address.addressCountry', f.addressCountry);
     html += '</table></div>';
     
     // Offers & Merchant Fields
@@ -14060,10 +14129,11 @@
     html += '<h3 style="margin-top: 0; color: #ed8936;"> Offers & Merchant Fields</h3>';
     html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
     html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
-    html += `<tr><td>offers.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
-    html += `<tr><td>offers.price</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
-    html += `<tr><td>offers.priceCurrency</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
-    html += `<tr><td>offers.seller.name</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.offersBlocks || 0}</td></tr>`;
+    html += fvRow('offers.@type', f.offersType);
+    html += fvRow('offers.price', f.offersPrice);
+    html += fvRow('offers.priceCurrency', f.offersCurrency);
+    html += fvRow('offers.seller.name', f.sellerName);
+    html += fvRow('offers.seller.@id', f.sellerId);
     html += `<tr><td>offers.hasMerchantReturnPolicy</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.merchantFields ? stats.offersBlocks : 0}</td></tr>`;
     html += `<tr><td>sku</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.merchantFields ? stats.eventsWithMappings : 0}</td></tr>`;
     html += `<tr><td>brand</td><td style="text-align: center;">${stats.merchantFields ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.merchantFields ? stats.eventsWithMappings : 0}</td></tr>`;
@@ -14085,12 +14155,13 @@
     html += '<h3 style="margin-top: 0; color: #9f7aea;"> Organizer / Provider / Performer</h3>';
     html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
     html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
-    html += `<tr><td>organizer.@type</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>organizer.name</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>organizer.logo</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>organizer.sameAs</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
-    html += `<tr><td>performer</td><td style="text-align: center;">${stats.performerToggled ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.performerToggled ? stats.eventsGenerated : 0}</td></tr>`;
-    html += `<tr><td>provider</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.eventsGenerated || 0}</td></tr>`;
+    html += fvRow('organizer.@type', f.organizerType);
+    html += fvRow('organizer.name', f.organizerName);
+    html += fvRow('organizer.logo', f.organizerLogo);
+    html += fvRow('organizer.sameAs', f.organizerSameAs);
+    html += fvRow('organizer.@id', f.organizerId);
+    html += fvRow('performer', f.performer);
+    html += fvRow('provider', f.provider);
     html += '</table></div>';
     
     // Event ↽ Series Linkage (v4.3)
@@ -14098,7 +14169,7 @@
     html += '<h3 style="margin-top: 0; color: #f56565;"> Event ↽ Series Linkage</h3>';
     html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">';
     html += '<tr><th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Field</th><th style="text-align: center; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Status</th><th style="text-align: right; padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Count</th></tr>';
-    html += `<tr><td>Event.@id</td><td style="text-align: center;">✅</td><td style="text-align: right;">${stats.linkageStats?.eventId || stats.eventsGenerated || 0}</td></tr>`;
+    html += fvRow('Event.@id', f.eventId);
     html += `<tr><td>Event.superEvent.@id</td><td style="text-align: center;">${stats.linkageStats?.superEventId > 0 ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.linkageStats?.superEventId || 0}</td></tr>`;
     html += `<tr><td>EventSeries.@id</td><td style="text-align: center;">${stats.linkageStats?.seriesId > 0 ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.linkageStats?.seriesId || 0}</td></tr>`;
     html += `<tr><td>EventSeries.subEvent (sum)</td><td style="text-align: center;">${stats.linkageStats?.seriesSubEventTotal > 0 ? '✅' : '⚽'}</td><td style="text-align: right;">${stats.linkageStats?.seriesSubEventTotal || 0}</td></tr>`;
@@ -16213,10 +16284,10 @@
     };
     
     for (const node of outputJsonLd) {
-      if (node["@type"] === "Event") {
+      if (fvHasType(node, "Event")) {
         if (node["@id"]) verify.eventId++;
         if (node.superEvent?.["@id"]) verify.superEventId++;
-      } else if (node["@type"] === "EventSeries") {
+      } else if (fvHasType(node, "EventSeries")) {
         if (node["@id"]) verify.seriesId++;
         if (Array.isArray(node.subEvent)) verify.seriesSubEventTotal += node.subEvent.length;
         if (node.eventSchedule?.repeatFrequency) verify.seriesWithScheduleRF++;
@@ -16363,26 +16434,7 @@
       // Store field verification stats for modal
       window.fieldVerificationStats = {
         ...stats,
-        coreFields: {
-          context: '✅',
-          type: '✅',
-          name: '✅',
-          startDate: '✅',
-          endDate: '✅',
-          duration: '✅',
-          identifier: '✅'
-        },
-        locationFields: {
-          name: '✅',
-          streetAddress: stats.addressFieldsWithStreetAddress > 0 ? '✅' : '⚽',
-          streetAddressCount: stats.addressFieldsWithStreetAddress || 0,
-          locality: stats.addressFieldsWithLocality > 0 ? '✅' : '⚽',
-          localityCount: stats.addressFieldsWithLocality || 0,
-          region: stats.addressFieldsWithRegion > 0 ? '✅' : '⚽',
-          regionCount: stats.addressFieldsWithRegion || 0,
-          postalCode: stats.addressFieldsWithPostalCode > 0 ? '✅' : '⚽',
-          postalCodeCount: stats.addressFieldsWithPostalCode || stats.eventsGenerated || 0
-        }
+        jsonFields: countEventJsonFields(eventList)
       };
       
       // Update summary panel

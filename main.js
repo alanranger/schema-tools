@@ -4,6 +4,7 @@ import { spawn, spawnSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { upsertSlugsIntoBlogSchema } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
+import { deployCommitMessage } from "./scripts/lib/deploy-commit-message.mjs";
 import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -765,9 +766,7 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
       
       console.log(`📦 Splitting ${stageTargets.length} files into ${batches.length} batch(es) for git add`);
       
-      const commitMessage = deletedFileNames.length > 0
-        ? `Sync ${fileNames.length} product schema files (remove ${deletedFileNames.length} stale)`
-        : `Update ${fileNames.length} schema files`;
+      const commitMessage = deployCommitMessage(fileNames, deletedFileNames, options);
       const gitCommands = [];
       
       // Stage files in batches

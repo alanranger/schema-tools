@@ -131,20 +131,21 @@
         } catch (e) {}
       }
       document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema') return;
+        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq') return;
         var txt = (el.textContent || '').trim();
         if (!txt) return;
         try {
           var json = JSON.parse(txt);
           var nodes = Array.isArray(json['@graph']) ? json['@graph'] : [json];
           if (!nodes.some(isFaq)) return;
-          rewriteJsonLd(el, json, nodes.map(function (n) { return keepFaqNode(n, text, critHasFaq); }).filter(Boolean));
+          var hostedFaq = document.getElementById('ar-github-product-faq');
+          rewriteJsonLd(el, json, nodes.map(function (n) { return keepFaqNode(n, text, critHasFaq || !!hostedFaq); }).filter(Boolean));
         } catch (e) {}
       });
     }
     function suppressSquarespaceCore() {
       document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema') return;
+        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq') return;
         var txt = (el.textContent || '').trim();
         if (!txt) return;
         try {
@@ -195,7 +196,42 @@
     var name = String((q && q.name) || '').replace(/['’]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
     return name.length > 8 && text.indexOf(name) !== -1;
   }
+  function arNodeIsFaq(n) {
+    if (!n) return false;
+    var t = n['@type'];
+    if (Array.isArray(t)) return t.indexOf('FAQPage') !== -1;
+    return String(t || '').toLowerCase() === 'faqpage';
+  }
+  function arStripOtherFaqPages() {
+    document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
+      if (el.id === 'ar-github-product-faq' || el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema') return;
+      var txt = (el.textContent || '').trim();
+      if (!txt || txt.indexOf('FAQPage') === -1) return;
+      try {
+        var json = JSON.parse(txt);
+        if (Array.isArray(json['@graph'])) {
+          var kept = json['@graph'].filter(function (n) { return !arNodeIsFaq(n); });
+          if (kept.length === json['@graph'].length) return;
+          if (!kept.length) { el.remove(); return; }
+          json['@graph'] = kept;
+          el.textContent = JSON.stringify(json);
+          return;
+        }
+        if (arNodeIsFaq(json)) el.remove();
+      } catch (e) {}
+    });
+  }
   function arInjectProductFaq(faq) {
+    if (faq && String(faq['@type'] || '').toLowerCase() === 'faqpage') {
+      window.__arPendingProductFaq = faq;
+      if (!window.__arFaqRetryTimers) {
+        window.__arFaqRetryTimers = true;
+        [1200, 3500].forEach(function (ms) {
+          setTimeout(function () { arInjectProductFaq(window.__arPendingProductFaq); }, ms);
+        });
+      }
+    }
+    faq = faq || window.__arPendingProductFaq;
     if (!faq || String(faq['@type'] || '').toLowerCase() !== 'faqpage') return;
     var body = document.body;
     if (!body) return;
@@ -206,18 +242,19 @@
     var qs = Array.isArray(me) ? me : (me ? [me] : []);
     var vis = qs.filter(function (q) { return arVisibleFaqName(q, text); });
     if (!vis.length) return;
-    faq.mainEntity = vis;
+    var payload = Object.assign({}, faq, { mainEntity: vis });
     var old = document.getElementById('ar-github-product-faq');
     if (old) old.remove();
     var s = document.createElement('script');
     s.type = 'application/ld+json';
     s.id = 'ar-github-product-faq';
-    s.textContent = JSON.stringify(faq);
+    s.textContent = JSON.stringify(payload);
     document.head.appendChild(s);
+    arStripOtherFaqPages();
   }
   function arRemoveLegacyDuplicateProducts() {
     document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-      if (el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema') return;
+      if (el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema' || el.id === 'ar-github-product-faq') return;
       var txt = (el.textContent || '').trim();
       if (!txt || txt.indexOf('Product') === -1) return;
       try {

@@ -223,8 +223,34 @@ def contains_faq_signal(source_html):
     return False
 
 
+def scrape_heading_faq_pairs(html, add_pair):
+    """Question headings (h2–h4 with ?) plus the following answer text."""
+    for match in re.finditer(
+        r"<h([2-4])[^>]*>([\s\S]*?)</h\1>([\s\S]*?)(?=<h[1-4]\b|$)",
+        html or "",
+        flags=re.IGNORECASE,
+    ):
+        question = html_to_plain_text(match.group(2))
+        if "?" not in question:
+            continue
+        add_pair(match.group(2), match.group(3))
+
+
+def scrape_strong_faq_pairs(html, add_pair):
+    """Will-Myers <strong>Question?</strong> Answer items."""
+    for match in re.finditer(
+        r"<strong>([\s\S]*?)</strong>([\s\S]*?)(?=<strong>|</li>|</ul>|<h[1-4]\b)",
+        html or "",
+        flags=re.IGNORECASE,
+    ):
+        question = html_to_plain_text(match.group(1))
+        if "?" not in question:
+            continue
+        add_pair(match.group(1), match.group(2))
+
+
 def scrape_visible_faq_pairs(source_html):
-    """Mirror visible FAQ only: details accordion or FAQ-list items. Never invent Q&As."""
+    """Mirror visible FAQ only: details, heading Q&A, or strong-list items. Never invent Q&As."""
     html = html_lib.unescape(str(source_html or ""))
     pairs = []
     seen = set()
@@ -245,21 +271,15 @@ def scrape_visible_faq_pairs(source_html):
         answer_html = re.sub(r"<summary[^>]*>[\s\S]*?</summary>", "", block, flags=re.IGNORECASE)
         add_pair(summary.group(1), answer_html)
 
-    # Will-Myers snippet pages: <strong>Question?</strong> Answer after a FAQ heading.
-    for start in [m.end() for m in re.finditer(r"frequently asked questions", html, flags=re.IGNORECASE)]:
-        block = html[start:start + 14000]
-        next_heading = re.search(r"<h[1-3][^>]*>", block, flags=re.IGNORECASE)
-        if next_heading:
-            block = block[:next_heading.start()]
-        for match in re.finditer(
-            r"<strong>([\s\S]*?)</strong>([\s\S]*?)(?=<strong>|</li>|</ul>)",
-            block,
-            flags=re.IGNORECASE,
-        ):
-            question = html_to_plain_text(match.group(1))
-            if "?" not in question:
-                continue
-            add_pair(match.group(1), match.group(2))
+    faq_starts = [m.end() for m in re.finditer(r"frequently asked questions", html, flags=re.IGNORECASE)]
+    if faq_starts:
+        for start in faq_starts:
+            block = html[start:start + 20000]
+            scrape_heading_faq_pairs(block, add_pair)
+            scrape_strong_faq_pairs(block, add_pair)
+    else:
+        scrape_heading_faq_pairs(html, add_pair)
+        scrape_strong_faq_pairs(html, add_pair)
     return pairs
 
 
