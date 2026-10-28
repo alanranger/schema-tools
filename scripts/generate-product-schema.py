@@ -15,7 +15,8 @@ Reads:
   - shared-resources/csv/*beginners-photography-lessons*.csv or *photography-services-courses-mentoring*.csv (for event date matching - handles original Squarespace export filenames)
 
 Outputs:
-  - One HTML file per product: [Product_Slug]_schema_squarespace_ready.html in shared-resources/outputs/schema/
+  - One JSON file per product: [Product_Slug]_schema.json in shared-resources/outputs/schema/products/
+  - Optional FAQ JSON: [Product_Slug]_faq.json
   - Combined CSV: shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv
   - QA Summary CSV: shared-resources/outputs/schema/review_summary.csv
 
@@ -26,7 +27,6 @@ v6.2.0 Changes (Baseline Restore Point):
   - @graph order: #org → BreadcrumbList → Product
   - Removed prohibited properties: event, provider, mainEntityOfPage from Product
   - Event schema is separate JSON-LD block (not nested in Product)
-  - Event schema only in _squarespace_ready.html (inline)
   - Comprehensive validation ensures strict Schema.org compliance
   - All 52 product schema files regenerated with new structure
 """
@@ -2278,60 +2278,6 @@ def validate_schema_structure(schema_data, product_name):
     
     return len(errors) == 0, errors
 
-# Load suppressor block once at module level (not per product)
-_suppressor_block_cache = None
-
-def load_suppressor_block():
-    """Load suppressor block once and cache it"""
-    global _suppressor_block_cache
-    if _suppressor_block_cache is not None:
-        return _suppressor_block_cache
-    
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent
-    suppressor_path = project_root / 'partials' / 'schema-suppressor-v1.3.html'
-    
-    suppressor_block = ''
-    if suppressor_path.exists():
-        try:
-            suppressor_block = suppressor_path.read_text(encoding='utf-8').strip()
-            # Ensure it ends with a newline
-            if suppressor_block and not suppressor_block.endswith('\n'):
-                suppressor_block += '\n'
-            print(f"✅ Schema suppressor v1.3 loaded - will remove duplicate Squarespace Product schemas")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not load schema suppressor block: {e}")
-            print(f"   Continuing without suppressor block")
-    else:
-        print(f"⚠️  Warning: Schema suppressor file not found at {suppressor_path}")
-        print(f"   Continuing without suppressor block")
-    
-    _suppressor_block_cache = suppressor_block
-    return suppressor_block
-
-def schema_to_html(schema_data, event_schema=None):
-    """Convert schema JSON to Squarespace-ready HTML with suppressor block
-    If event_schema is provided, generates two separate script tags"""
-    # Load suppressor block (cached, only loads once)
-    suppressor_block = load_suppressor_block()
-    
-    # Generate Product schema script tag
-    json_str = json.dumps(schema_data, indent=2, ensure_ascii=False)
-    schema_script = f'<script type="application/ld+json">\n{json_str}\n</script>'
-    
-    # Generate Event schema script tag if event exists (separate JSON-LD block)
-    event_script = ""
-    if event_schema:
-        event_json_str = json.dumps(event_schema, indent=2, ensure_ascii=False)
-        event_script = f'\n<script type="application/ld+json">\n{event_json_str}\n</script>'
-    
-    # Combine suppressor block + Product schema script + Event schema script
-    result = schema_script + event_script
-    if suppressor_block:
-        return suppressor_block + '\n' + result
-    else:
-        return result
-
 def main():
     # Suppress warnings to prevent false "exit code 1" errors in Electron
     warnings.filterwarnings("ignore")
@@ -3326,58 +3272,14 @@ def main():
         
         # Create filename based on product name (not URL slug) for easier identification
         product_name_slug = slugify(product_name)
-        html_filename = f"{product_name_slug}_schema_squarespace_ready.html"
-        html_path = outputs_dir / html_filename
-        
-        # Check if file exists and is locked (open in another program)
-        if html_path.exists():
-            try:
-                # Try to open in append mode to check if file is locked
-                with open(html_path, 'a', encoding='utf-8'):
-                    pass
-            except PermissionError:
-                print(f"⚠️  File is locked (may be open in another program): {html_filename}")
-                print(f"   Please close the file and try again, or delete it manually.")
-                print(f"   File path: {html_path.absolute()}")
-                # Try to delete the locked file
-                try:
-                    html_path.unlink()
-                    print(f"   ✅ Successfully removed locked file, will recreate it.")
-                except PermissionError:
-                    print(f"   ❌ Cannot remove locked file. Please close it manually and re-run Step 4.")
-                    print(f"   Skipping this product and continuing with others...")
-                    continue
-                except Exception as e:
-                    print(f"   ⚠️  Error removing file: {e}")
-                    print(f"   Skipping this product and continuing with others...")
-                    continue
-        
-        # Write HTML file (inline JSON version - for manual copy/paste if needed)
-        html_content = None
-        try:
-            html_content = schema_to_html(schema_graph, event_schema)
-            write_text_with_retry(html_path, html_content)
-        except PermissionError as e:
-            print(f"❌ Permission denied when writing {html_filename}")
-            print(f"   File may be open in another program (e.g., text editor, file explorer)")
-            print(f"   File path: {html_path.absolute()}")
-            print(f"   Please close the file and re-run Step 4.")
-            print(f"   Skipping this product and continuing with others...")
-            continue
-        except Exception as e:
-            print(f"❌ Error writing {html_filename}: {e}")
-            print(f"   Skipping this product and continuing with others...")
-            continue
         
         # Write individual JSON file for this product
-        # JSON should match exactly what's in the HTML script tag (no cleanup needed)
         json_filename = f"{product_name_slug}_schema.json"
         json_path = outputs_dir / json_filename
         faq_filename = json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX)
         faq_path = outputs_dir / faq_filename
         json_written = False
         try:
-            # Use the exact same schema_graph that goes into HTML - no cleanup
             write_json_with_retry(json_path, schema_graph)
             json_written = True
         except PermissionError as e:
@@ -3418,11 +3320,11 @@ def main():
                         except Exception:
                             pass
         
-        # Only add to lists if file was successfully written
-        if html_content is None:
+        # Only add to lists if JSON was successfully written
+        if not json_written:
             continue
         
-        html_files.append(html_filename)
+        html_files.append(json_filename)
         
         # Collect schema graph for unified JSON output (use exact same as HTML/individual JSON)
         all_schema_graphs.append(schema_graph)
@@ -3442,11 +3344,11 @@ def main():
         schemas_data.append({
             'product_name': product_name,
             'url': row.get('url', ''),
-            'schema_html': html_content,
+            'schema_html': '',
             'review_count': review_count,
             'average_rating': avg_rating or '',
             'has_reviews': 'Yes' if review_count > 0 else 'No',
-            'file_name': html_filename,
+            'file_name': json_filename,
             'json_file_name': json_filename if json_written else ''
         })
         
@@ -3491,7 +3393,6 @@ def main():
     if removed_count > 0:
         print(f"✅ Cleaned up {removed_count} invalid schema files")
     
-    print(f"✅ Generated {len(html_files)} HTML files")
     print(f"✅ Generated {len(html_files)} JSON files (one per product)")
     
     # Post-generation summary
@@ -3740,12 +3641,11 @@ def main():
     if newest_review_date_included:
         print(f"  Newest review date included: {newest_review_date_included}")
     print("")
-    print(f"HTML files saved to: {outputs_dir.absolute()}")
     print(f"JSON files saved to: {outputs_dir.absolute()}")
     print(f"Combined CSV saved to: {output_csv.absolute()}")
     print("="*60)
     print("\n✅ Schema generation complete!")
-    print("\n💡 Each HTML file is ready to copy-paste into Squarespace Code Blocks")
+    print("\n💡 Hosted JSON only — deploy product files; collection-header loader injects schema")
     
     # Validation summary - v6.1 baseline
     print("\n[SchemaGenerator v6.1] Valid JSON-LD structure OK")

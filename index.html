@@ -2341,10 +2341,6 @@
                       style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
                  Copy to Clipboard
               </button>
-              <button onclick="downloadSingleUrlSchema()" 
-                      style="background: #27AE60; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
-                 Download HTML File
-              </button>
               <button onclick="testSchemaOrg('singleProductUrl')" 
                       style="background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
                  Test on Schema.org
@@ -2516,10 +2512,9 @@
           </p>
           <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568; line-height: 1.6;">
             <li>Requires <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/03 – combined_product_reviews.csv</code></li>
-            <li>Generates one HTML file per product with embedded reviews</li>
+            <li>Generates one <code>_schema.json</code> and optional <code>_faq.json</code> per product</li>
             <li>Includes aggregate ratings and individual review data</li>
-            <li>✅ <strong>Automatically includes Schema Suppressor v1.3</strong> - removes duplicate Squarespace Product schemas</li>
-            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/products/</code> folder (HTML files) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
+            <li>Output: <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/outputs/schema/products/</code> (JSON) and <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">shared-resources/csv processed/04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv</code></li>
           </ul>
           <div id="step4WebModeNotice" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; font-size: 0.875rem; color: #1565c0;">
             <strong>ℹ Requires Local Execution:</strong> Python scripts need file system access.<br>
@@ -2547,7 +2542,7 @@
           </div>
           <div id="productSchemaSuccess" style="display:none; margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
             ✅ Schema generation complete.<br>
-            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON/HTML files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).<br><br>
+            Files saved in shared-resources repository: <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/outputs/schema/products/</code> (individual JSON files) and <code style="background:#e0f2fe; padding:4px 8px; border-radius:4px; font-size:1rem; font-weight:700;">shared-resources/csv processed/</code> (combined CSV).<br><br>
             <button id="exportAndDeployProductBtn" onclick="exportAndDeployProductSchema()" style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; margin-right: 0.5rem; margin-top: 0.5rem;">
                Sync Product JSONs & Deploy to GitHub
             </button>
@@ -3536,13 +3531,12 @@
             • Reads: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/02 – products_cleaned.xlsx</code> and <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/03 – combined_product_reviews.csv</code><br>
             • Generates JSON-LD Product schema with reviews<br>
             • Filters products with weak reviews<br>
-            • Includes Schema Suppressor v1.3 to prevent duplicates<br>
-            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> (one file per product)</span>
+            • Output: <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema.json</code> (hosted JSON; no paste HTML)</span>
           </li>
-          <li><strong>Deploy to Squarespace:</strong><br>
+          <li><strong>Deploy hosted JSON:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Copy schema from generated HTML files in <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/</code><br>
-            • Paste into Squarespace product pages (Header Code Injection or Code Block)<br>
+            • Sync product JSON from <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/</code><br>
+            • Collection-header loader injects schema; footer holds the business graph<br>
             • Validate using Schema Validator tab</span>
           </li>
         </ol>
@@ -3781,7 +3775,7 @@
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/raw-03a-trustpilot-reviews-historical.csv</code> - Required for Step 3b</li>
       </ul>
       <p><strong>Workflow:</strong> Step 0 (setup) ↽ Step 1 (upload CSV) ↽ Step 2 (clean) ↽ Step 3a (Google reviews) ↽ Step 3b (merge reviews) ↽ Step 4 (generate schema)</p>
-      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema_squarespace_ready.html</code> files with Product schema including reviews</p>
+      <p><strong>Output:</strong> <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/products/*_schema.json</code> hosted JSON (collection loader fetches it; do not paste)</p>
       <p><strong>Features:</strong> ✅ Schema Suppressor v1.3 (removes duplicate Squarespace schemas), filters weak reviews, includes aggregateRating</p>
       <p><strong>Deploy:</strong> Use Step 5 sync button to publish product JSON files to <code>alanranger-schema</code> (GitHub Pages). Squarespace product pages auto-fetch from <code>https://schema.alanranger.com/</code>.</p>
 
@@ -3818,7 +3812,7 @@
       <ul>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv/</code> - All raw input CSV files (retain original Squarespace export filenames)</li>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/csv processed/</code> - Processed files and credentials</li>
-        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> - Generated schema HTML files (products/, events/, blog/, etc.)</li>
+        <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">shared-resources/outputs/schema/</code> - Generated schema JSON files (products/, events/, blog/, etc.)</li>
         <li><code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">alanranger-schema/</code> - Saved JSON schema files (blog, workshops, lessons)</li>
       </ul>
 
@@ -8667,13 +8661,7 @@
       }
     });
     
-    blogLog(`✅ Validated ${deduplicatedPostings.length} unique BlogPosting objects ready for schema`);
-    
-    // Sample check: log first BlogPosting structure
-    if (deduplicatedPostings.length > 0) {
-      const sample = deduplicatedPostings[0];
-      blogLog(`   Sample BlogPosting fields: @type=${sample['@type']}, @id=${sample['@id']}, headline=${sample.headline ? 'YES' : 'NO'}, articleBody=${sample.articleBody ? `${sample.articleBody.length} chars` : 'MISSING'}`);
-    }
+    blogLog(`✅ ${deduplicatedPostings.length} live posts listed in the index (per-post files unchanged)`);
 
     const blog = {
       '@type': 'Blog',
@@ -8810,387 +8798,24 @@
       ]
     };
 
-    const blogPostingsInGraph = [];
-    blogLog(`✅ Blog index graph trimmed to ${blogSchema['@graph'].length} index nodes (${deduplicatedPostings.length} posts stay in per-post files)`);
-    
-    // Verify first BlogPosting has required fields
-    if (blogPostingsInGraph.length > 0) {
-      const firstPost = blogPostingsInGraph[0];
-      const hasHeadline = !!firstPost.headline;
-      const hasArticleBody = !!firstPost.articleBody;
-      const hasDatePublished = !!firstPost.datePublished;
-      blogLog(`   First BlogPosting check: headline=${hasHeadline ? 'YES' : 'NO'}, articleBody=${hasArticleBody ? 'YES' : 'NO'}, datePublished=${hasDatePublished ? 'YES' : 'NO'}`);
-      
-      if (!hasHeadline || !hasArticleBody || !hasDatePublished) {
-        blogLog(`❌ ERROR: First BlogPosting is missing critical fields! This indicates BlogPosting objects are incomplete.`);
-      }
-    }
-
-    // SELF-TESTING: Validate schema before output
-    function validateBlogSchema(schema) {
-      const errors = [];
-      const warnings = [];
-      let graph = [];
-      let blogPostings = [];
-      let webPages = [];
-      let breadcrumbs = [];
-      
-      try {
-        // Structural Validation
-        if (!schema['@context'] || schema['@context'] !== 'https://schema.org') {
-          errors.push('Missing or invalid @context');
-        }
-        
-        if (!schema['@graph'] || !Array.isArray(schema['@graph'])) {
-          errors.push('Missing or invalid @graph');
-          return { valid: false, errors, warnings, stats: { totalObjects: 0, blogPostings: 0, webPages: 0, breadcrumbs: 0 } };
-        }
-        
-        graph = schema['@graph'];
-        const ids = new Set();
-        const postUrls = new Set();
-        
-        // Check for required top-level objects
-        const hasBlog = graph.some(obj => obj['@type'] === 'Blog');
-        const hasItemList = graph.some(obj => obj['@type'] === 'ItemList');
-        if (!hasBlog) errors.push('Missing Blog object');
-        if (!hasItemList) errors.push('Missing ItemList object');
-        graph.forEach(obj => {
-          const id = String(obj['@id'] || '');
-          if (id.includes('#organization') || /alanranger\.com#website(\b|$)/.test(id)) {
-            errors.push(`Non-canonical @id (use /#org and /#website): ${id}`);
-          }
-        });
-        const blogNode = graph.find(obj => obj['@type'] === 'Blog');
-        const blogPublisherId = blogNode && blogNode.publisher && blogNode.publisher['@id'];
-        if (blogPublisherId !== 'https://www.alanranger.com/#org') {
-          errors.push('Blog.publisher must reference https://www.alanranger.com/#org');
-        }
-        
-        // Check for duplicate @id values
-        graph.forEach(obj => {
-          if (obj['@id']) {
-            if (ids.has(obj['@id'])) {
-              errors.push(`Duplicate @id: ${obj['@id']}`);
-            }
-            ids.add(obj['@id']);
-          }
-        });
-        
-        // Validate each BlogPosting
-        blogPostings = graph.filter(obj => obj['@type'] === 'BlogPosting');
-        webPages = graph.filter(obj => obj['@type'] === 'WebPage');
-        breadcrumbs = graph.filter(obj => obj['@type'] === 'BreadcrumbList');
-        
-        // Validate ALL posts to ensure completeness
-        const postsToValidate = blogPostings;
-        
-        postsToValidate.forEach((post, idx) => {
-          postUrls.add(post.url);
-          
-          // CORE REQUIRED FIELDS
-          if (!post['@id']) errors.push(`BlogPosting ${idx + 1}: Missing @id`);
-          if (!post.headline) errors.push(`BlogPosting ${idx + 1}: Missing headline`);
-          if (!post.url) errors.push(`BlogPosting ${idx + 1}: Missing url`);
-          if (!post.datePublished) errors.push(`BlogPosting ${idx + 1}: Missing datePublished`);
-          if (!post.dateModified) warnings.push(`BlogPosting ${idx + 1}: Missing dateModified`);
-          if (!post.inLanguage) warnings.push(`BlogPosting ${idx + 1}: Missing inLanguage`);
-          
-          // CONTENT FIELDS
-          if (!post.articleBody || post.articleBody.trim().length === 0) {
-            errors.push(`BlogPosting ${idx + 1}: Missing or empty articleBody`);
-          } else {
-            // Check for navigation pollution in articleBody
-            const navPatterns = ['/Cart', 'Sign In My Account', '[/cart]', 'Back photography'];
-            const hasNavPollution = navPatterns.some(pattern => post.articleBody.includes(pattern));
-            if (hasNavPollution) {
-              errors.push(`BlogPosting ${idx + 1}: articleBody contains navigation pollution`);
-            }
-          }
-          
-          if (!post.description || post.description.length === 0) {
-            errors.push(`BlogPosting ${idx + 1}: Missing description`);
-          } else if (post.description.length > 160) {
-            warnings.push(`BlogPosting ${idx + 1}: Description too long (${post.description.length} chars)`);
-          }
-          
-          if (!post.wordCount || post.wordCount === 0) {
-            errors.push(`BlogPosting ${idx + 1}: Missing or zero wordCount`);
-          }
-          
-          if (!post.timeRequired) {
-            errors.push(`BlogPosting ${idx + 1}: Missing timeRequired`);
-          }
-          
-          // STRUCTURAL FIELDS
-          if (!post.mainEntityOfPage || !post.mainEntityOfPage['@id']) {
-            errors.push(`BlogPosting ${idx + 1}: Missing or invalid mainEntityOfPage`);
-          }
-          
-          if (!post.isPartOf || !post.isPartOf['@id']) {
-            errors.push(`BlogPosting ${idx + 1}: Missing or invalid isPartOf`);
-          }
-          
-          // CLASSIFICATION FIELDS
-          if (!post.genre) errors.push(`BlogPosting ${idx + 1}: Missing genre`);
-          if (!post.articleSection) errors.push(`BlogPosting ${idx + 1}: Missing articleSection`);
-          if (!post.learningResourceType) warnings.push(`BlogPosting ${idx + 1}: Missing learningResourceType`);
-          if (!post.educationalLevel) warnings.push(`BlogPosting ${idx + 1}: Missing educationalLevel`);
-          
-          // EDUCATIONAL FIELDS
-          if (!post.proficiencyLevel) warnings.push(`BlogPosting ${idx + 1}: Missing proficiencyLevel`);
-          if (!post.typicalAgeRange) warnings.push(`BlogPosting ${idx + 1}: Missing typicalAgeRange`);
-          if (!post.estimatedCost) warnings.push(`BlogPosting ${idx + 1}: Missing estimatedCost`);
-          if (!post.audience) errors.push(`BlogPosting ${idx + 1}: Missing audience`);
-          if (!post.educationalAlignment) warnings.push(`BlogPosting ${idx + 1}: Missing educationalAlignment`);
-          
-          // AUTHORSHIP FIELDS
-          if (!post.author) errors.push(`BlogPosting ${idx + 1}: Missing author`);
-          if (!post.publisher || !post.publisher['@id']) {
-            errors.push(`BlogPosting ${idx + 1}: Missing or invalid publisher`);
-          }
-          if (!post.copyrightHolder) warnings.push(`BlogPosting ${idx + 1}: Missing copyrightHolder`);
-          if (!post.copyrightYear) warnings.push(`BlogPosting ${idx + 1}: Missing copyrightYear`);
-          
-          // ENTITY FIELDS
-          if (!post.about || !Array.isArray(post.about) || post.about.length === 0) {
-            warnings.push(`BlogPosting ${idx + 1}: Missing or empty about entities`);
-          }
-          
-          // INTERACTION FIELDS
-          if (!post.interactionStatistic) {
-            errors.push(`BlogPosting ${idx + 1}: Missing interactionStatistic`);
-          }
-          if (post.commentCount === undefined) {
-            warnings.push(`BlogPosting ${idx + 1}: Missing commentCount`);
-          }
-          
-          // LINKING FIELDS
-          if (!post.discussionUrl) warnings.push(`BlogPosting ${idx + 1}: Missing discussionUrl`);
-          
-          // ASSIGNMENT-SPECIFIC FIELDS
-          if (post.learningResourceType === 'Assignment' && (!post.hasPart || post.hasPart.length === 0)) {
-            warnings.push(`BlogPosting ${idx + 1}: Assignment missing hasPart`);
-          }
-          
-          // Check for corresponding WebPage
-          const webpageId = `${post.url}#webpage`;
-          const hasWebPage = webPages.some(wp => wp['@id'] === webpageId);
-          if (!hasWebPage) {
-            errors.push(`BlogPosting ${idx + 1}: Missing corresponding WebPage (${webpageId})`);
-          }
-          
-          // Check for corresponding BreadcrumbList
-          const breadcrumbId = `${post.url}#breadcrumb`;
-          const hasBreadcrumb = breadcrumbs.some(bc => bc['@id'] === breadcrumbId);
-          if (!hasBreadcrumb) {
-            errors.push(`BlogPosting ${idx + 1}: Missing corresponding BreadcrumbList (${breadcrumbId})`);
-          }
-        });
-        
-        // Validate WebPages (sample first 10)
-        webPages.slice(0, 10).forEach((wp, idx) => {
-          if (!wp['@id']) errors.push(`WebPage ${idx + 1}: Missing @id`);
-          if (!wp.url) errors.push(`WebPage ${idx + 1}: Missing url`);
-          if (!wp.isPartOf || !wp.isPartOf['@id']) {
-            errors.push(`WebPage ${idx + 1}: Missing or invalid isPartOf`);
-          }
-        });
-        
-        // Validate BreadcrumbLists (sample first 10)
-        breadcrumbs.slice(0, 10).forEach((bc, idx) => {
-          if (!bc['@id']) errors.push(`BreadcrumbList ${idx + 1}: Missing @id`);
-          if (!bc.itemListElement || !Array.isArray(bc.itemListElement)) {
-            errors.push(`BreadcrumbList ${idx + 1}: Missing or invalid itemListElement`);
-          }
-        });
-        
-        // Validate ItemList contains all posts (quick check)
-        const itemList = graph.find(obj => obj['@type'] === 'ItemList');
-        if (itemList && itemList.itemListElement) {
-          const itemListUrls = new Set(itemList.itemListElement.map(item => item.url).filter(Boolean));
-          const sampleUrls = Array.from(postUrls).slice(0, 10);
-          sampleUrls.forEach(url => {
-            if (!itemListUrls.has(url)) {
-              warnings.push(`Post URL not in ItemList: ${url}`);
-            }
-          });
-        }
-        
-        // COMPREHENSIVE CHECK: Validate ALL posts for critical fields (quick check)
-        let postsWithAllCriticalFields = 0;
-        blogPostings.forEach((post, idx) => {
-          // Critical fields that must exist in ALL posts
-          const criticalFields = ['@id', 'headline', 'url', 'datePublished', 'articleBody', 'description', 'wordCount', 'timeRequired', 'mainEntityOfPage', 'publisher', 'author'];
-          let hasAllFields = true;
-          
-          criticalFields.forEach(field => {
-            if (field === 'mainEntityOfPage' || field === 'publisher') {
-              if (!post[field] || !post[field]['@id']) {
-                hasAllFields = false;
-                if (idx < 10) { // Only log first 10 to avoid spam
-                  errors.push(`BlogPosting ${idx + 1}: Missing critical field ${field}`);
-                }
-              }
-            } else if (field === 'articleBody') {
-              if (!post[field] || post[field].trim().length === 0) {
-                hasAllFields = false;
-                if (idx < 10) {
-                  errors.push(`BlogPosting ${idx + 1}: Missing or empty ${field}`);
-                }
-              }
-            } else {
-              if (!post[field]) {
-                hasAllFields = false;
-                if (idx < 10) {
-                  errors.push(`BlogPosting ${idx + 1}: Missing critical field ${field}`);
-                }
-              }
-            }
-          });
-          
-          if (hasAllFields) {
-            postsWithAllCriticalFields++;
-          }
-        });
-        
-        if (postsWithAllCriticalFields !== blogPostings.length) {
-          warnings.push(`${blogPostings.length - postsWithAllCriticalFields} BlogPosting objects missing one or more critical fields`);
-        }
-        
-        // JSON validation (quick check - just try to stringify)
-        try {
-          JSON.stringify(schema);
-        } catch (e) {
-          errors.push(`Invalid JSON: ${e.message}`);
-        }
-        
-      } catch (e) {
-        errors.push(`Validation error: ${e.message}`);
-      }
-      
-      return {
-        valid: errors.length === 0,
-        errors,
-        warnings,
-        stats: {
-          totalObjects: graph.length,
-          blogPostings: blogPostings.length,
-          webPages: webPages.length,
-          breadcrumbs: breadcrumbs.length,
-          postsWithAllCriticalFields: postsWithAllCriticalFields || 0
-        }
-      };
-    }
-    
-    // Run validation (with timeout protection)
-    let validation = { valid: true, errors: [], warnings: [], stats: { totalObjects: 0, blogPostings: 0, webPages: 0, breadcrumbs: 0 } };
-    try {
-      validation = validateBlogSchema(blogSchema);
-    } catch (e) {
-      blogLog(`⚽  Validation error: ${e.message}`);
-      blogLog('   Continuing with schema output...');
-    }
-    
-    // CRITICAL: Check for duplicate URLs in BlogPosting objects
-    const urlSet = new Set();
-    const duplicateUrls = [];
-    blogPostingsInGraph.forEach(post => {
-      if (post.url) {
-        if (urlSet.has(post.url)) {
-          duplicateUrls.push(post.url);
-        } else {
-          urlSet.add(post.url);
-        }
-      }
-    });
-    
-    if (duplicateUrls.length > 0) {
-      blogLog(`❌ CRITICAL ERROR: Found ${duplicateUrls.length} duplicate URLs in BlogPosting objects:`);
-      duplicateUrls.slice(0, 10).forEach(url => blogLog(`   ${url}`));
-      if (duplicateUrls.length > 10) {
-        blogLog(`   ... and ${duplicateUrls.length - 10} more duplicates`);
-      }
-    } else {
-      blogLog(`✅ No duplicate URLs found - each URL appears exactly once`);
-    }
-    
-    // Validate JSON structure before output
-    try {
-      const jsonString = JSON.stringify(blogSchema);
-      JSON.parse(jsonString); // Test that it's valid JSON
-      blogLog(`✅ JSON structure is valid (${(jsonString.length / 1024).toFixed(2)} KB)`);
-    } catch (e) {
-      blogLog(`❌ CRITICAL ERROR: Generated schema is not valid JSON: ${e.message}`);
-    }
-    
-    if (!validation.valid) {
-      blogLog('❌ Schema validation FAILED:');
-      validation.errors.slice(0, 20).forEach(err => blogLog(`   ERROR: ${err}`)); // Limit to first 20 errors
-      if (validation.errors.length > 20) {
-        blogLog(`   ... and ${validation.errors.length - 20} more errors`);
-      }
-      validation.warnings.slice(0, 10).forEach(warn => blogLog(`   WARNING: ${warn}`)); // Limit to first 10 warnings
-      if (validation.warnings.length > 10) {
-        blogLog(`   ... and ${validation.warnings.length - 10} more warnings`);
-      }
-      blogLog('⚽  Schema generated but contains errors. Review and fix before use.');
-    } else {
+    const validation = liveMod.validateBlogIndexSchema(blogSchema, deduplicatedPostings.length);
+    blogLog(`✅ Blog index graph: ${validation.nodes} nodes (Blog, ItemList, WebPage, BreadcrumbList)`);
+    blogLog(`   ItemList ${validation.itemList} live posts; skipped ${skipped.length}`);
+    blogLog('   publisher → https://www.alanranger.com/#org ; isPartOf → https://www.alanranger.com/#website');
+    if (validation.valid) {
       blogLog('✅ Schema validation PASSED');
-      if (validation.warnings.length > 0) {
-        blogLog('   Warnings (non-critical):');
-        validation.warnings.slice(0, 10).forEach(warn => blogLog(`   - ${warn}`));
-        if (validation.warnings.length > 10) {
-          blogLog(`   ... and ${validation.warnings.length - 10} more warnings`);
-        }
-      }
-      blogLog(`   Stats: ${validation.stats.totalObjects} objects, ${validation.stats.blogPostings} posts, ${validation.stats.webPages} web pages, ${validation.stats.breadcrumbs} breadcrumbs`);
-      if (validation.stats.postsWithAllCriticalFields !== undefined) {
-        const completeness = Math.round((validation.stats.postsWithAllCriticalFields / validation.stats.blogPostings) * 100);
-        blogLog(`   Completeness: ${validation.stats.postsWithAllCriticalFields}/${validation.stats.blogPostings} posts (${completeness}%) have all critical fields`);
-        if (completeness < 100) {
-          blogLog(`   ⚽  ${validation.stats.blogPostings - validation.stats.postsWithAllCriticalFields} posts are missing critical fields`);
-        }
-      }
-    }
-
-    window.currentBlogSchema = blogSchema;
-
-    // CRITICAL VERIFICATION: Extract and verify a sample BlogPosting from final schema
-    const sampleBlogPosting = blogSchema['@graph'].find(obj => obj && obj['@type'] === 'BlogPosting');
-    if (sampleBlogPosting) {
-      blogLog(' VERIFICATION: Sample BlogPosting object from final @graph:');
-      blogLog(`   @type: ${sampleBlogPosting['@type']}`);
-      blogLog(`   @id: ${sampleBlogPosting['@id']}`);
-      blogLog(`   headline: ${sampleBlogPosting.headline ? `"${sampleBlogPosting.headline.substring(0, 60)}..."` : 'MISSING'}`);
-      blogLog(`   articleBody: ${sampleBlogPosting.articleBody ? `${sampleBlogPosting.articleBody.length} characters` : 'MISSING'}`);
-      blogLog(`   datePublished: ${sampleBlogPosting.datePublished || 'MISSING'}`);
-      blogLog(`   wordCount: ${sampleBlogPosting.wordCount || 'MISSING'}`);
-      blogLog(`   Total fields in sample: ${Object.keys(sampleBlogPosting).length}`);
-      
-      // Verify it's NOT just an @id reference
-      if (Object.keys(sampleBlogPosting).length <= 2) {
-        blogLog('❌ CRITICAL ERROR: BlogPosting object appears to be only an @id reference!');
-        blogLog(`   Object keys: ${Object.keys(sampleBlogPosting).join(', ')}`);
-      } else {
-        blogLog('✅ CONFIRMED: BlogPosting is a complete object with all fields');
-      }
     } else {
-      blogLog('❌ CRITICAL ERROR: No BlogPosting objects found in final @graph!');
+      blogLog('❌ Schema validation FAILED:');
+      validation.errors.forEach((err) => blogLog(`   ERROR: ${err}`));
     }
+
 
     const schemaCode = JSON.stringify(blogSchema, null, 2);
     const fileSizeKB = (new Blob([schemaCode]).size / 1024).toFixed(2);
-
-    // VERIFY BlogPosting objects are in the JSON string
-    const blogPostingCountInJson = (schemaCode.match(/"@type"\s*:\s*"BlogPosting"/g) || []).length;
-    blogLog(` VERIFICATION: Found ${blogPostingCountInJson} BlogPosting @type declarations in JSON string`);
-
     const scriptWrapped = `<script type="application/ld+json">\n${schemaCode}\n<\/script>`;
 
     blogLog('✅ Schema generation complete!');
-    blogLog(`   - Total BlogPosting objects in @graph: ${blogPostingsInGraph.length}`);
-    blogLog(`   - BlogPosting @type declarations in JSON: ${blogPostingCountInJson}`);
+    blogLog(`   - Index nodes: ${validation.nodes}; ItemList: ${validation.itemList}; skipped: ${skipped.length}`);
     blogLog(`   - Schema size: ${fileSizeKB} KB`);
 
     const codeElement = document.getElementById('blogSchemaCode');
@@ -17536,23 +17161,6 @@ ${minifiedJson}
     singleUrlProductData = null;
   }
 
-  function downloadSingleUrlSchema() {
-    const output = document.getElementById('singleUrlSchemaOutput');
-    const productName = singleUrlProductData ? singleUrlProductData.name : 'product';
-    const slug = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
-    const filename = `${slug}_schema_squarespace_ready.html`;
-    
-    const blob = new Blob([output.value], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   // Landing / Service Pages Schema Generator
   let landingPageMetadata = null;
   let landingDebugLog = '';
@@ -20744,7 +20352,7 @@ ${minifiedJson}
 
     // Use local task runner for schema generation
     await runLocalTask('schema', 4, '⚽ Generating Product Schema...', () => {
-      output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON/HTML files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
+      output.value = "Schema generation complete. Check your project folder:\n- /outputs/ folder for individual JSON files\n- /inputs-files/workflow/ folder for combined CSV\n\n(All files remain in your Dropbox project folder)";
       if (successMsg) {
         successMsg.style.display = 'block';
         successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -26477,8 +26085,8 @@ exit`;
         
         if (stepId === 4 && consoleOutput) {
           const outputText = consoleOutput.textContent || '';
-          // Look for patterns like "✅ Generated 206 HTML files" or "Total products: 206" or "✅ Loaded 206 products"
-          const generatedMatch = outputText.match(/✅\s*Generated\s+(\d+)\s+HTML\s+files?/i);
+          // Look for patterns like "✅ Generated 206 JSON files" or "Total products: 206" or "✅ Loaded 206 products"
+          const generatedMatch = outputText.match(/✅\s*Generated\s+(\d+)\s+JSON\s+files?/i);
           const totalMatch = outputText.match(/Total\s+products?:\s*(\d+)/i);
           const loadedMatch = outputText.match(/✅\s*Loaded\s+(\d+)\s+products?/i);
           if (generatedMatch) {

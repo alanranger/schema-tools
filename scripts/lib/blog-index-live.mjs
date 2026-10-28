@@ -127,3 +127,34 @@ export function buildBlogIndexGraph(livePosts) {
     ]
   };
 }
+
+export function validateBlogIndexSchema(schema, liveCount) {
+  const errors = [];
+  const graph = Array.isArray(schema && schema['@graph']) ? schema['@graph'] : [];
+  const types = graph.map((n) => n && n['@type']);
+  if (!schema || schema['@context'] !== 'https://schema.org') errors.push('Missing or invalid @context');
+  if (graph.length !== 4) errors.push(`Expected 4 index nodes, got ${graph.length}`);
+  ['Blog', 'ItemList', 'WebPage', 'BreadcrumbList'].forEach((t) => {
+    if (!types.includes(t)) errors.push(`Missing ${t}`);
+  });
+  const forbidden = ['BlogPosting', 'Product', 'Event', 'FAQPage', 'HowTo'];
+  if (types.some((t) => forbidden.includes(t))) {
+    errors.push('Index must not contain BlogPosting/Product/Event/FAQPage/HowTo nodes');
+  }
+  const blob = JSON.stringify(schema);
+  if (blob.includes('#organization') || /alanranger\.com#website(\b|$)/.test(blob)) {
+    errors.push('Non-canonical @id (use /#org and /#website)');
+  }
+  const blogNode = graph.find((n) => n && n['@type'] === 'Blog');
+  if ((blogNode && blogNode.publisher && blogNode.publisher['@id']) !== BLOG_INDEX_ORG_ID) {
+    errors.push('Blog.publisher must reference /#org');
+  }
+  const webPage = graph.find((n) => n && n['@type'] === 'WebPage');
+  if ((webPage && webPage.isPartOf && webPage.isPartOf['@id']) !== BLOG_INDEX_WEBSITE_ID) {
+    errors.push('WebPage.isPartOf must reference /#website');
+  }
+  const itemList = graph.find((n) => n && n['@type'] === 'ItemList');
+  const listed = itemList && Array.isArray(itemList.itemListElement) ? itemList.itemListElement.length : 0;
+  if (listed !== liveCount) errors.push(`ItemList count ${listed} !== live posts ${liveCount}`);
+  return { valid: errors.length === 0, errors, livePosts: liveCount, itemList: listed, nodes: graph.length };
+}

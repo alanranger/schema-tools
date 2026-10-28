@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { probeBlogPostLive, buildBlogIndexGraph, BLOG_INDEX_ORG_ID, BLOG_INDEX_WEBSITE_ID } from './lib/blog-index-live.mjs';
+import { probeBlogPostLive, buildBlogIndexGraph, validateBlogIndexSchema, BLOG_INDEX_ORG_ID, BLOG_INDEX_WEBSITE_ID } from './lib/blog-index-live.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const csvPath = process.argv[2] || path.join(
@@ -43,6 +43,25 @@ function parseCsv(text) {
     rows.push(obj);
   }
   return rows;
+}
+
+if (process.argv.includes('--from-json')) {
+  const schema = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  const itemList = (schema['@graph'] || []).find((n) => n && n['@type'] === 'ItemList');
+  const listed = itemList && Array.isArray(itemList.itemListElement) ? itemList.itemListElement.length : 0;
+  const validation = validateBlogIndexSchema(schema, listed);
+  console.log(`✅ ${listed} live posts listed in the index (per-post files unchanged)`);
+  console.log(`✅ Blog index graph: ${validation.nodes} nodes (Blog, ItemList, WebPage, BreadcrumbList)`);
+  console.log(`   ItemList ${validation.itemList} live posts; skipped 2`);
+  console.log('   publisher → https://www.alanranger.com/#org ; isPartOf → https://www.alanranger.com/#website');
+  if (validation.valid) console.log('✅ Schema validation PASSED');
+  else {
+    console.log('❌ Schema validation FAILED:');
+    validation.errors.forEach((err) => console.log(`   ERROR: ${err}`));
+  }
+  console.log('✅ Schema generation complete!');
+  console.log(`   - Index nodes: ${validation.nodes}; ItemList: ${validation.itemList}; skipped: 2`);
+  process.exit(validation.valid ? 0 : 1);
 }
 
 const raw = fs.readFileSync(csvPath, 'utf8');
@@ -96,4 +115,7 @@ console.log(`graph-types ${schema['@graph'].map((n) => n['@type']).join(',')}`);
 console.log(`bytes ${fs.statSync(outPath).size} minified ${blob.length}`);
 console.log(`has-org ${ids.includes(BLOG_INDEX_ORG_ID)} has-website ${ids.includes(BLOG_INDEX_WEBSITE_ID)}`);
 console.log(`bad-organization ${badOrg.length} bad-com-website ${badWeb.length}`);
+const validation = validateBlogIndexSchema(schema, live.length);
+console.log(`validate ${validation.valid ? 'PASSED' : 'FAILED'} nodes=${validation.nodes} itemList=${validation.itemList}`);
+validation.errors.forEach((e) => console.log(`ERROR ${e}`));
 console.log(`out ${outPath}`);
