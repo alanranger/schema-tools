@@ -18,6 +18,40 @@
   }
   if (inEditor()) return;
 
+  /* ---------- Product-list H1 tidy (shop cards + related products) ---------- */
+  function demoteProductListTitleH1s() {
+    var nodes = document.querySelectorAll('h1.ProductList-title');
+    var i, h1, h2, j, attr, cs;
+    for (i = 0; i < nodes.length; i++) {
+      h1 = nodes[i];
+      if (h1.getAttribute('data-ar-demoted') === '1') continue;
+      h2 = document.createElement('h2');
+      for (j = 0; j < h1.attributes.length; j++) {
+        attr = h1.attributes[j];
+        h2.setAttribute(attr.name, attr.value);
+      }
+      h2.innerHTML = h1.innerHTML;
+      try {
+        cs = window.getComputedStyle(h1);
+        h2.style.setProperty('font-size', cs.fontSize, 'important');
+        h2.style.setProperty('font-weight', cs.fontWeight, 'important');
+        h2.style.setProperty('color', cs.color, 'important');
+      } catch (e) {}
+      h2.setAttribute('data-ar-demoted', '1');
+      if (h1.parentNode) h1.parentNode.replaceChild(h2, h1);
+    }
+  }
+  if (!window.__arProductListH1TidyBound) {
+    window.__arProductListH1TidyBound = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', demoteProductListTitleH1s);
+    } else {
+      demoteProductListTitleH1s();
+    }
+    window.addEventListener('load', demoteProductListTitleH1s);
+    setTimeout(demoteProductListTitleH1s, 1200);
+    setTimeout(demoteProductListTitleH1s, 3000);
+  }
 
   /* ---------- Core Schema Suppressor v2.2 (one visible FAQPage) ---------- */
   function installCoreSuppressorV21() {
