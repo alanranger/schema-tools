@@ -8510,7 +8510,7 @@
 
     const seenUrls = new Set();
     const blogPostings = [];
-    const unusablePostings = [];
+    const skipped = [];
     schemaRunSupabaseErrors = 0;
 
     const progressContainer = document.getElementById('blogProgress');
@@ -8523,7 +8523,7 @@
     function updateProgress() {
       if (!progressText || !progressBar || !total) return;
       const pct = Math.round((processed / total) * 100);
-      progressText.textContent = `Fetching blog data ${processed}/${total} (${pct}%)...`;
+      progressText.textContent = `Checking live URLs ${processed}/${total} (${pct}%)...`;
       progressBar.style.width = `${pct}%`;
     }
 
@@ -8533,37 +8533,41 @@
       updateProgress();
     }
 
+    const liveMod = await import('./scripts/lib/blog-index-live.mjs');
     for (const row of blogPosts) {
       if (!row || !row.url || seenUrls.has(row.url)) {
         continue;
       }
       seenUrls.add(row.url);
-      const posting = await buildEnrichedBlogPosting(row);
-      const guard = (await loadArticleBodyModule()).blogPostingSaveDecision(posting.__publishGuard || { htmlFetched: false });
-      if (!guard.save) unusablePostings.push(`${row.url} (${guard.reason})`);
-      blogPostings.push(posting);
+      const probe = await liveMod.probeBlogPostLive(row.url);
       processed += 1;
       updateProgress();
-      if (processed === 1 || processed % 5 === 0 || processed === total) {
-        blogLog(`   Fetched and enriched ${processed}/${total} posts (${Math.round((processed / total) * 100)}%)`);
+      if (!probe.live) {
+        const line = `${row.url} (${probe.reason})`;
+        skipped.push(line);
+        blogLog(`   skip ${line}`);
+        continue;
+      }
+      const url = (probe.url || row.url).replace(/\/$/, '');
+      blogPostings.push({
+        '@type': 'BlogPosting',
+        '@id': `${url}#blogposting`,
+        url,
+        headline: row.title || url,
+        datePublished: row.publishDate || ''
+      });
+      if (processed === 1 || processed % 25 === 0 || processed === total) {
+        blogLog(`   Checked ${processed}/${total} (${blogPostings.length} live, ${skipped.length} skipped)`);
       }
     }
 
-    // This builds the whole index file, so one fallback body would replace good data: stop instead.
-    if (unusablePostings.length) {
-      blogLog(`❌ STOPPED — ${unusablePostings.length} post(s) had no usable article text; no blog index schema produced:`);
-      unusablePostings.forEach((u) => blogLog(`   ❌ ${u}`));
-      if (schemaRunSupabaseErrors) blogLog(`❌ Supabase query errors: ${schemaRunSupabaseErrors}`);
-      await postSchemaToolsRunReport('blog-index', { processed, notPublished: unusablePostings, summary: { stopped: true } });
-      if (generateBtn) {
-        generateBtn.disabled = false;
-        generateBtn.textContent = 'Generate Blog Index Schema';
-      }
-      return;
-    }
-
-    blogLog(`✅ Generated ${blogPostings.length} enriched blog postings`);
-    await postSchemaToolsRunReport('blog-index', { processed, summary: { postings: blogPostings.length } });
+    blogLog(`✅ Live posts listed: ${blogPostings.length}; skipped: ${skipped.length}`);
+    skipped.forEach((s) => blogLog(`   skip ${s}`));
+    await postSchemaToolsRunReport('blog-index', {
+      processed,
+      notPublished: skipped,
+      summary: { postings: blogPostings.length, skipped: skipped.length, stopped: false }
+    });
     
     // CRITICAL: Final deduplication and validation - ensure ONE BlogPosting per URL
     const urlToPosting = new Map();
@@ -8706,6 +8710,7 @@
 
     const breadcrumb = {
       '@type': 'BreadcrumbList',
+      '@id': `${BLOG_URL}#breadcrumb`,
       itemListElement: [
         {
           '@type': 'ListItem',
