@@ -9833,7 +9833,7 @@
       // Generate script tags for each product
       let scriptTagsHtml = '<h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;"> Squarespace Script Tags (one per product):</h4>';
       scriptTagsHtml += '<div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #4a5568;">';
-      scriptTagsHtml += '<strong>Instructions:</strong> Each product has its own script tag pointing to its individual JSON file. <strong>Easiest method:</strong> Individual HTML files have been generated in the products folder (e.g., <code>[product-name]_script_tag.html</code>). Open each file in a text editor and copy the entire contents into a Code Block on that product page in Squarespace. Alternatively, use the "Copy Full Code Block" button below, or download the JSON file. The suppressor block removes duplicate Squarespace schemas automatically.';
+      scriptTagsHtml += '<strong>Do not paste these into a product page.</strong> Per-product Additional Info pastes were retired 28 Oct 2026. Product JSON-LD comes from the collection header loader (<code>product-page-loader.js</code>) plus the footer business graph. This list is a file inventory only.';
       scriptTagsHtml += '</div>';
       scriptTagsHtml += '<div style="background: #eff6ff; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #1e40af; border-left: 3px solid #3b82f6;">';
       scriptTagsHtml += '<strong> Testing & Validation:</strong><br>';
@@ -16428,7 +16428,7 @@
       
       // Calculate merchant feed items
       if (includeMerchantFields) {
-        stats.merchantFeedItems = eventList.filter(e => e['@type'] === 'Event' && e.offers && parseFloat(e.offers.price) > 0).length;
+        stats.merchantFeedItems = eventList.filter(e => fvHasType(e, 'Event') && e.offers && parseFloat(e.offers.price) > 0).length;
       }
       
       // Store field verification stats for modal
@@ -16662,7 +16662,7 @@
     
     const feed = [];
     window.currentEventList.forEach(event => {
-      if (event['@type'] === 'Event' && event.offers && parseFloat(event.offers.price) > 0) {
+      if (fvHasType(event, 'Event') && event.offers && parseFloat(event.offers.price) > 0) {
         const eventUrl = event.url || '';
         const mappingData = window.currentMappingsDict[normalizeUrl(eventUrl)];
         

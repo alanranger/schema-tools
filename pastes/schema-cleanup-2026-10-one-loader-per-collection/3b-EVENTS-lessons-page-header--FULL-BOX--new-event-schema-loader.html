@@ -1,0 +1,59 @@
+<!-- Lessons hub schema -->
+<script type="application/ld+json"
+        src="https://schema.alanranger.com/lessons-schema.json"></script>
+<!-- EVENT SCHEMA LOADER (schema clean-up 27 Oct 2026)
+     Replaces the old "ARP Event Posts Loader (Lessons child pages only)" and its "arp-critical-schema-lessons" WebPage stub.
+     Loads each class date's Event schema (with price) from schema.alanranger.com, removes Squarespace's own
+     duplicate Event (no price), and keeps FAQ schema only for questions visible on the page.
+     The old visible "TLDR" box on Lightroom class pages is intentionally no longer added (Alan, 27 Oct 2026).
+     Code lives in GitHub: alanranger-schema/loaders/event-page-loader.js - do not edit here.
+     Backup of the old version: Schema Tools\pastes\schema-cleanup-2026-10-one-loader-per-collection\BACKUPS-before-changes -->
+<script src="https://schema.alanranger.com/loaders/event-page-loader.js"></script>
+
+<!-- ============================================================================
+ /beginners-photography-lessons (EVENTS COLLECTION) — COURSE POINTER INJECTION (v1)
+ Ruling 2 (Alan, 19 Jul): the class-date event pages in this collection compete
+ with their parent course pages ('lightroom editing course' ranks on a week-1
+ event at #12 while /photo-editing-course-coventry sits unranked). Event pages
+ are live booking pages — they stay; this injection adds a course-pointer
+ banner to EVERY event page in the collection automatically, routed by title:a
+   • event title contains "lightroom" → /photo-editing-course-coventry
+   • otherwise (camera courses etc.)  → /beginners-photography-classes
+ PASTE (one time, covers all current and future class dates):
+ Squarespace → Pages → the "Beginners Photography Lessons" events collection
+ → ⚙️ settings → Advanced → PAGE HEADER CODE INJECTION → paste this whole
+ file → Save.
+ It only renders on individual event pages (not the calendar listing), and
+ does not touch booking blocks.
+============================================================================ -->
+<style>
+ body .ar-evtcta-wrap{--o:#f15a22;--o-darker:#8c2c0a;--cream:#fef7ed;--card-border:#f3d9c8;--navy:#0f172a;--slate:#334155;
+ max-width:720px;margin:1.2rem auto;background:var(--cream);border:1px solid var(--card-border);border-left:4px solid var(--o);border-radius:12px;padding:1.1rem 1.3rem;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;box-sizing:border-box;}
+ body .ar-evtcta-title{margin:0 0 .3rem;font-size:1rem;font-weight:800;color:var(--navy) !important;line-height:1.4;}
+ body .ar-evtcta-title a{color:var(--o-darker) !important;text-decoration:underline !important;text-decoration-color:rgba(241,90,34,.4) !important;text-underline-offset:3px;}
+ body .ar-evtcta-title a:hover{text-decoration-color:var(--o) !important;}
+ body .ar-evtcta-desc{margin:0;font-size:.86rem;color:var(--slate) !important;line-height:1.6;}
+</style>
+<script>
+(function(){
+ function addBanner(){
+ try{
+ var parts=location.pathname.split('/').filter(Boolean);
+ if(parts.length<2 || parts[0]!=='beginners-photography-lessons'){return;}
+ if(document.querySelector('.ar-evtcta-wrap')){return;}
+ var isLightroom=/lightroom|photo[- ]?editing/i.test(document.title+' '+location.pathname);
+ var href=isLightroom?'/photo-editing-course-coventry':'/beginners-photography-classes';
+ var anchor=isLightroom?'Lightroom photo editing course in Coventry':'beginners photography classes in Coventry';
+ var desc=isLightroom
+ ?'This page is one class date. The full 3-week evening course &mdash; syllabus, prices and all upcoming dates &mdash; lives on the course page.'
+ :'This page is one class date. The full 3-week evening course &mdash; syllabus, prices and all upcoming dates &mdash; lives on the course page.';
+ var el=document.createElement('div');
+ el.className='ar-evtcta-wrap';
+ el.innerHTML='<p class="ar-evtcta-title">Looking for the full course? See the <a href="'+href+'">'+anchor+'</a></p><p class="ar-evtcta-desc">'+desc+'</p>';
+ var host=document.querySelector('.eventitem-column-content, .eventitem, article, main');
+ if(host){host.insertBefore(el, host.firstChild);}
+ }catch(e){}
+ }
+ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded', addBanner);}else{addBanner();}
+})();
+</script>

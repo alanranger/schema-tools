@@ -1,0 +1,384 @@
+<link rel="stylesheet" href="//assets.squarewebsites.org/custom-filter/custom-filter.min.css"/>
+<script>
+window.customFilterSettings = {
+    'targets': [{
+        container: '.BlogList,.blog-list,.article-list, body.collection-type-blog.view-list #page-body .main-content',// css selector for filter container
+        items: 'article',// css selector for items to filter
+        settings: {
+            position: 'left',//set the position for filter to appear. May be: top, left, right
+            align: 'left',// align filter options, may be: left, center, right, space-between
+            showItemsCount: false, // show (true) or hide (false) Items count
+            collectionUrl: '',// you need to set source collection url slug (like /blog) if your items have external links (not linked to themselves)
+            wrapFilterContainer: false,// needed to prevent 7.1 Grid CSS styles for filter options
+            itemsCount: {
+                enabled: false, // same as showItemsCount
+                text: '', // set the items text before counter, it is Items: by default and you may set your own text
+                positionOrder: 1 // items counter position, higher means last
+            },
+            keepDropdownsOpenOnInit: false, // if set to true, dropdowns will be opened initially
+            customClasses: 'lite-dropdowns',
+            /* Add any custom classes to filter container if you want to have your own to use in CSS styling,
+            available: cf-sort-right (move sorting element right), cf-sort-left (move sort left), lite-dropdowns(gives lighter dropdowns stylings), cf-ctrls-inline (makes dropdowns fit one line space)*/
+            view: 'dropdowns', // available: dropdowns, breadcrumbs, modern, buttons, buttons-round, buttons-pill, buttons-inline
+            sticky: {// if enabled: true - trying enable sticky position of Filter to be seen on scroll
+                enabled: false,
+                top: '6%'
+            },
+            simpleFilter: {
+                show: {
+                    effect: 'fade',
+                    transitionDuration: 300,
+                    stagger: 60
+                },
+                hide: {
+                    effect: 'fade',
+                    transitionDuration: 100,
+                    stagger: 18
+                }
+            },
+            pagination: {
+              enabled: true, // enable pagination
+              pageSize: 30, // set the page size to 30
+            },
+            /*----Mobile Panel Section----*/
+            mobilePanel: {// control if you want to have separate offscreen panel with filters on small screens
+                enabled: true,// if set to false, no filter buttons on mobiles will be showed
+                triggerButtonName: 'Filter', // trigger button text
+                keepDropdownsOpen: null, // if false it overrides desktop settings, if true - dropdowns opened
+                closeOnSelect: false, // mobile panel closed just after user selected something
+                closeOnSearch: false, // mobile panel closed if user searced something in searc field
+                closeOnOutsideClick: false // if true, mobile panel will be closed if user clicks outside it
+            },
+            /*----Filters Section----*/
+            filter: { // here you define all filters you need and name them
+                category: false, // disabling default Category dropdown
+                tag: false, // disabling default Tag dropdown
+                items: [{
+                    name: 'Category', // give the dropdown (fiter entity) name you want
+                    multiple: true, // if true, allow to select multiple options
+                    logic: 'and', // how to combine dropdown options with other dropdowns logic. Other value is or
+                    multipleLogic: 'or',// combine each selected option with OR or AND logic within one dropdown
+                    closedSubOptions: false, // works for Products 7.1 subcategories onl
+                    sort: 'asc', // may be asc, desc, asAllowed (need define options list in allowedOptions), or your own custom function
+                    getAttr: 'categories'// here you say Filter to look for options in items categories
+                }, {
+					name: "Tags",
+					multiple: true,
+					getAttr: "tags"
+				}]
+            },
+            sort: {// define the sorters
+                enabled: true,// if false - no sorters visible/working
+                //defined: 'date_desc',// select which of defined sorters will work initially
+                items: [{
+                    name: 'Alphabetical',
+                    order: 'asc|desc',
+                    orderTexts: 'A-Z|Z-A',
+                    hideName: true,
+                    sort: 'title'
+                },{
+                    name: 'Date',// name your sorter
+                    order: 'asc|desc',// apply the orders you want to use
+                    orderTexts: 'Older|Newer',// name the orders in format you need
+                    hideName: true,// if true, you will not see Date name
+                    sort: '[data-publish-on] parseInt'//if properly configured, each Squarespace item will have publish date as data attribute. parseInt saysFilter operate it as integer number
+                }]
+            },
+            search: {
+                enabled: true,// if false, no Search input will be showed
+                text: 'Search', //set the placeholder to your search field, otherwise Search will be used
+            }
+        }
+    }]
+};
+</script>
+<script src="//assets.squarewebsites.org/custom-filter/custom-filter.min.js"></script>
+
+
+<script>
+const path = window.location.pathname;
+
+// BLOG INDEX ONLY
+if (path === "/blog-on-photography/") {
+  (async () => {
+    try {
+      const response = await fetch("https://schema.alanranger.com/blog-schema.json");
+      if (!response.ok) return;
+      const data = await response.text();
+      const el = document.createElement("script");
+      el.type = "application/ld+json";
+      el.text = data;
+      document.head.appendChild(el);
+    } catch (e) {
+      console.warn("Failed to load blog schema", e);
+    }
+  })();
+}
+</script>
+
+<!-- Auto-load Blog Schema Files (GitHub) -->
+<script type="application/ld+json" id="arp-critical-schema">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "<PAGE_URL>#webpage",
+  "isPartOf": { "@id": "https://www.alanranger.com/#website" },
+  "about": { "@id": "<PAGE_URL>#article" }
+}
+</script>
+<script>
+(function () {
+  try {
+    const pageUrl = window.location.href.split("#")[0];
+    const path = window.location.pathname || "/";
+    // Fill critical inline schema ASAP
+    const critical = document.getElementById("arp-critical-schema");
+    if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
+    // Only run on blog post URLs
+    if (!path.startsWith("/blog-on-photography/")) return;
+    // Extract slug
+    const slug = path.split("/blog-on-photography/")[1]?.replace(/\/$/, "");
+    if (!slug) return;
+    const base = "https://schema.alanranger.com/";
+    const schemaUrl = base + slug + "_schema.json";
+    const faqUrl = base + slug + "_faq.json";
+    const howToUrl = base + slug + "_howto.json";
+    const imageUrl = base + slug + "_image.json";
+    function appendJsonLd(payload) {
+      if (!payload || typeof payload !== "object") return;
+      const s = document.createElement("script");
+      s.type = "application/ld+json";
+      s.text = JSON.stringify(payload);
+      document.head.appendChild(s);
+    }
+    function hasExistingFaqSchema() {
+      return Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some((block) => {
+        try {
+          const json = JSON.parse(block.textContent || "{}");
+          if (json && json["@type"] === "FAQPage") return true;
+          if (Array.isArray(json && json["@graph"])) {
+            return json["@graph"].some((node) => {
+              if (!node) return false;
+              const t = node["@type"];
+              if (Array.isArray(t)) return t.includes("FAQPage");
+              return t === "FAQPage";
+            });
+          }
+          return false;
+        } catch (_err) {
+          return /"@type"\s*:\s*"FAQPage"/i.test(block.textContent || "");
+        }
+      });
+    }
+    function hasVisibleFaqBlock() {
+      const faqSelectors = [
+        ".faq-block",
+        ".sqs-faq-block",
+        '[data-section-type*="faq"]',
+        '[id*="faq"]',
+        '[class*="faq"]'
+      ].join(",");
+      const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+      const faqHeading = headings.find((h) =>
+        /\bfaq\b|frequently asked questions?/i.test(String(h.textContent || ""))
+      );
+      if (!faqHeading) return false;
+      const headingScope =
+        faqHeading.closest("section, article, [data-section-id], [id], [class]") ||
+        faqHeading.parentElement ||
+        document.body;
+      if (!headingScope) return false;
+      if (headingScope.querySelector(faqSelectors)) return true;
+      const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
+      return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
+    }
+    function shouldSkipExternalFaq() {
+      if (hasExistingFaqSchema()) {
+        console.info("[Blog Schema Loader] FAQ skip: existing FAQPage schema found");
+        return true;
+      }
+      if (hasVisibleFaqBlock()) {
+        console.info("[Blog Schema Loader] FAQ skip: visible FAQ block found");
+        return true;
+      }
+      return false;
+    }
+    // Keep TLDR signal for audit/AI extractability WITHOUT visible UI
+    function hasExistingTldrSignal() {
+      if (document.getElementById("ar-tldr-block")) return true;
+      const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+      return headings.some((h) =>
+        /(^|\s)(tl;?dr|tldr|summary|quick answer)(\s|$)/i.test(String(h.textContent || ""))
+      );
+    }
+    function injectHiddenTldrSignal(summaryText) {
+      if (hasExistingTldrSignal()) return;
+      const summary = String(summaryText || "").replace(/\s+/g, " ").trim();
+      if (summary.length < 40) return;
+      const container =
+        document.querySelector("main, article, .Main-content, #content, .sqs-block-content") ||
+        document.body;
+      if (!container) return;
+      const block = document.createElement("section");
+      block.id = "ar-tldr-block";
+      block.setAttribute("aria-hidden", "true");
+      block.style.position = "absolute";
+      block.style.left = "-99999px";
+      block.style.top = "auto";
+      block.style.width = "1px";
+      block.style.height = "1px";
+      block.style.overflow = "hidden";
+      block.style.whiteSpace = "nowrap";
+      const title = document.createElement("h2");
+      title.textContent = "TLDR";
+      const body = document.createElement("p");
+      body.textContent = summary;
+      block.appendChild(title);
+      block.appendChild(body);
+      container.appendChild(block);
+      console.info("[Blog Schema Loader] Hidden TLDR signal injected");
+    }
+    function loadOptionalJsonLd(url, label) {
+      return fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (!json || typeof json !== "object") return;
+          appendJsonLd(json);
+          console.info("[Blog Schema Loader] " + label + " injected");
+        })
+        .catch((err) => {
+          console.warn("[Blog Schema Loader] " + label + " load failed", err);
+        });
+    }
+    fetch(schemaUrl)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((schemaJson) => {
+        if (!schemaJson || typeof schemaJson !== "object") {
+          console.warn("[Blog Schema Loader] schema payload missing/invalid");
+          return;
+        }
+        appendJsonLd(schemaJson);
+        console.info("[Blog Schema Loader] schema injected");
+        // Restores TLDR signal for audit, but keeps it invisible to visitors
+        injectHiddenTldrSignal(schemaJson.description || schemaJson.name || "");
+        if (!shouldSkipExternalFaq()) {
+          fetch(faqUrl)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((faqJson) => {
+              if (!faqJson || typeof faqJson !== "object") {
+                console.warn("[Blog Schema Loader] FAQ fetch returned invalid payload");
+                return;
+              }
+              const faqType = String(faqJson["@type"] || "").toLowerCase();
+              if (faqType !== "faqpage") {
+                console.warn("[Blog Schema Loader] FAQ payload rejected: @type is not FAQPage");
+                return;
+              }
+              appendJsonLd(faqJson);
+              console.info("[Blog Schema Loader] FAQ injected");
+            })
+            .catch((err) => {
+              console.warn("[Blog Schema Loader] FAQ load failed", err);
+            });
+        }
+        loadOptionalJsonLd(howToUrl, "HowTo");
+        loadOptionalJsonLd(imageUrl, "ImageObject");
+      })
+      .catch((err) => {
+        console.warn("[Blog Schema Loader] schema load failed", err);
+      });
+  } catch (e) {
+    console.warn("Schema loader exception:", e);
+  }
+})();
+</script>
+
+<style>
+/* BLOG CARD RESTYLE + "Read More" hover overlay
+   Paste this whole block (including the <style> tags) into the
+   /blog-on-photography PAGE HEADER CODE INJECTION, after the
+   existing filter plugin + schema scripts. Pure CSS — no logic touched.
+   Overlay is anchored to .BlogList-item-image (real height), NOT
+   .BlogList-item-image-link (0px tall in this template). */
+
+/* The plugin lays cards out with float:left, so cards in a row take their
+   own content height — a wrapped (2-line) title makes that card taller and
+   the row goes ragged. Converting the list to CSS grid makes every card in a
+   row stretch to equal height. Also fixes the overflow-clip on lower rows. */
+.BlogList{
+  display:grid !important;
+  grid-template-columns:repeat(5,1fr);
+  gap:33px 22px;
+  overflow:visible !important;
+  padding-bottom:12px;
+}
+.BlogList .BlogList-item{
+  float:none !important;width:auto !important;margin:0 !important;
+  display:flex;flex-direction:column;height:100%;
+}
+.BlogList-item-image{flex:0 0 auto}
+/* responsive columns (match the plugin's original reflow) */
+@media(max-width:1100px){.BlogList{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.BlogList{grid-template-columns:repeat(2,1fr);gap:22px 16px}}
+@media(max-width:460px){.BlogList{grid-template-columns:1fr}}
+
+/* card: cream text area (#faf3e6, matches intro band) grounds the card,
+   lift + orange edge on hover */
+.BlogList .BlogList-item{
+  background:#faf3e6;
+  border:1px solid #ead9bd;border-radius:14px;
+  padding-bottom:20px;                 /* consistent gap below the last line of text */
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.BlogList .BlogList-item:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 22px rgba(43,38,34,.12);
+  border-color:#E57200;
+}
+
+/* image fills the top, square bottom corners so it meets the cream cleanly */
+.BlogList-item-image{
+  position:relative;overflow:hidden;border-radius:14px 14px 0 0;
+}
+.BlogList-item-image::after{
+  content:"\2013 Read More \2013";
+  position:absolute;inset:0;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(229,114,0,0.92);
+  color:#2b2622;font-weight:800;font-size:16px;letter-spacing:.02em;
+  font-family:'Proxima Nova','proxima-nova',-apple-system,sans-serif;
+  opacity:0;transition:opacity .22s ease;
+  pointer-events:none;border-radius:14px 14px 0 0;
+}
+.BlogList-item:hover .BlogList-item-image::after{opacity:1}
+
+/* gentle image zoom under the wash */
+.BlogList-item-image img{transition:transform .35s ease}
+.BlogList-item:hover .BlogList-item-image img{transform:scale(1.05)}
+
+/* title → orange on hover, inset from card edges */
+.BlogList-item-title{transition:color .18s ease;padding:0 18px}
+.BlogList-item:hover .BlogList-item-title{color:#c45f00}
+
+/* excerpt: inset for clean edges, darker for readability, 2-line clamp */
+.BlogList--posts-excerpt .BlogList-item-excerpt{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;
+  padding:0 18px;
+  color:#3f372f;font-size:13.5px;line-height:1.5;margin-top:4px;
+}
+
+/* date in brand orange, matching inset + a little bottom breathing room */
+.BlogList-item .Blog-meta,
+.BlogList-item .BlogList-item-meta{
+  color:#E57200;font-weight:700;padding:0 18px;
+}
+/* ensure excerpt doesn't add its own bottom margin (card padding handles the gap) */
+.BlogList-item-excerpt{margin-bottom:0}
+
+@media(prefers-reduced-motion:reduce){
+  .BlogList .BlogList-item,
+  .BlogList-item-image img,
+  .BlogList-item-image::after{transition:none}
+}
+</style>

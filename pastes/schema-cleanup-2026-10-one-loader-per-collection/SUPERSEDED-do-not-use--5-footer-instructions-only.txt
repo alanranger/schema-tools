@@ -1,5 +1,5 @@
-<!-- ============================================================
-Option D — site-wide FOOTER schema edits (2026-10-27)
+﻿<!-- ============================================================
+Schema clean-up Oct 2026, one loader per collection — site-wide FOOTER schema edits (2026-10-27)
 
 WHERE: Squarespace → Settings → Code Injection → FOOTER
 ACTION: Delete two blocks. Do not replace the unified graph.

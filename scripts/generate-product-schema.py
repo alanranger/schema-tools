@@ -2334,7 +2334,7 @@ def schema_to_html(schema_data, event_schema=None):
         return result
 
 def schema_to_script_tag_html(json_filename, faq_payload=None):
-    """Convert schema JSON filename to script-tag HTML with fetched FAQ injection."""
+    """Legacy paste-ready HTML. Per-product pastes are retired; hosted loader is the FAQ source."""
     # Load suppressor block (cached, only loads once)
     suppressor_block = load_suppressor_block()
     
@@ -2342,9 +2342,8 @@ def schema_to_script_tag_html(json_filename, faq_payload=None):
     # This ensures Google Rich Results Test can parse it (requires inline JSON-LD)
     # Replaces the broken <script src=""> approach with working fetch-based inline injection
     json_url = f"https://schema.alanranger.com/{json_filename}"
+    # Never emit FAQPage from this paste HTML. Hosted product-page-loader.js is the only FAQ injector.
     faq_url = ""
-    if json_filename.endswith(SCHEMA_JSON_SUFFIX):
-        faq_url = f"https://schema.alanranger.com/{json_filename.replace(SCHEMA_JSON_SUFFIX, FAQ_JSON_SUFFIX)}"
     fetch_script = f'''<!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
 <script>
 (function() {{

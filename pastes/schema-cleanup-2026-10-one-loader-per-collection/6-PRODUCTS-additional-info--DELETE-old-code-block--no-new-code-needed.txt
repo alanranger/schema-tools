@@ -1,0 +1,21 @@
+CHANGE 6 — 28 Oct 2026 — DELETE ONLY, NO NEW CODE TO PASTE
+
+What: every product (38) has an old Code Block in its "Additional Info" section containing only two scripts:
+  1. <!-- Squarespace Product Schema Suppressor v1.3 (Code-Block Safe) -->
+  2. <!-- Auto-fetch Product Schema from GitHub and inject inline JSON-LD -->
+Two products have the block twice: fine-art-photography-prints-canvas and fine-art-photography-prints-unframed.
+
+Action: delete the whole Code Block from each product's Additional Info. Do NOT paste anything in its place.
+
+Why nothing replaces it: its job is already done by the hosted product loader that is ALREADY in both shop collection page headers:
+  <script src="https://schema.alanranger.com/loaders/product-page-loader.js" defer></script>
+  (Photo Workshops UK shop header, and Photography Services Near Me shop header — unchanged.)
+
+Tested (Claude, 28 Oct): removing the block on 7 products loses nothing (Product, FAQ 11/7 questions, Service, Org all kept) and removes duplicates (Breadcrumbs 2->1, #org copies 3->2).
+
+Backup of all 40 blocks: BACKUPS-before-changes\BACKUP-2026-10-28-old-product-additional-info-code-blocks-ALL-38-before-change-6.html
+
+Batch 1: camera-sensor-clean, beginners-photography-course, fine-art-photography-prints-canvas (both blocks). Then Claude re-tests before the other 35.
+
+
+COMPLETED 28 Oct 2026 15:48 — all 38 products verified by Claude: old block gone from raw HTML on 38/38; rendered schema on every product = Product 1 (from loader), Breadcrumbs 1, one #org entity; FAQs intact on the 6 products with visible questions (beginners 11, Lightroom 10, RPS 7, Pick N Mix x3 = 3 each); no schema console errors. RRT garden workshop: Product/Merchant/Breadcrumbs/Local business/Organization all 1.

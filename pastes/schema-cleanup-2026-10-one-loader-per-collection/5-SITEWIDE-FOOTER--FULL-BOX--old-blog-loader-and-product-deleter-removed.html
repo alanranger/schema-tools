@@ -1,0 +1,1477 @@
+<!-- =============================================================
+ GLOBAL FOOTER INJECTION — Alan Ranger Photography
+ Version: v1.9.2-FULL-MERGED (2026-03-26)
+ Notes:
+ - Includes: Section Loader, GTM noscript, Microdata suppression (v1.7),
+   Unified Organization/WebSite schema graph, SS Product-schema stripper,
+   Lazy Summaries, Register Interest, Blog CSV sync, iCal/Event sync hooks,
+   Collections Index + Filters, Admin UI tweaks, Blog reading-time,
+   Back-to-top, Mega Menu (7.0), Slideshow height fix, Summary carousel wrap,
+   Footer Injection Tab, Bluesky icon injection, Broken-link replacer,
+   Reviews widget (ESM), Accordion Icons Reliability Fix (UNCHANGED),
+   CTA click tracking, Live Chat launcher,
+   Academy stable routing v4.3.3 (/academy/upgrade is public; replaces v4.3.2 router).
+ - Keep placeholders like {{page_title}} / {{page_url}} for runtime replacement.
+ ============================================================= -->
+
+<!-- Section Loader Supreme From Will-Myers.com -->
+<script src="https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/sectionLoader@1/sectionLoader.min.js"></script>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5CGB73Z"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+<!-- ===============================
+ Suppress Squarespace Microdata — v1.7 HARD STRIP (Nov 2025)
+ Purpose: Fully remove Squarespace duplicate microdata before crawl
+ =============================== -->
+<script>
+(function(){
+  const killAttrs = el=>{
+    ['itemtype','itemprop','itemscope','itemid'].forEach(a=>el.removeAttribute(a));
+  };
+  const purge = ()=>{
+    document.querySelectorAll('[itemscope],[itemtype],[itemprop],[itemid]').forEach(killAttrs);
+  };
+  // run early, then twice more post-hydration
+  purge();
+  document.addEventListener('DOMContentLoaded', purge);
+  window.addEventListener('load', ()=>setTimeout(purge, 800));
+  // catch dynamic SSR hydration loops every 2 s for 6 s total
+  let t=0; const interval=setInterval(()=>{purge(); if(++t>3) clearInterval(interval);},2000);
+})();
+</script>
+<!-- =============================== END Microdata Suppression v1.7 =============================== -->
+
+
+<!-- ✅ GLOBAL FOOTER INJECTION v1.6 — Alan Ranger Photography -->
+<!-- Cleaned version: BreadcrumbList removed (Squarespace placeholders invalid for Google) -->
+<!-- Created 2025-11-10 | Retains all global schema integrations -->
+
+<!-- =================== STRUCTURED DATA: UNIFIED GLOBAL SCHEMA =================== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://www.alanranger.com/#website",
+      "url": "https://www.alanranger.com/",
+      "name": "Alan Ranger Photography",
+      "publisher": { "@id": "https://www.alanranger.com/#org" },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.alanranger.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": ["Organization", "LocalBusiness"],
+      "@id": "https://www.alanranger.com/#org",
+      "name": "Alan Ranger Photography",
+      "legalName": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com/",
+      "foundingDate": "2011",
+      "image": "https://static1.squarespace.com/static/50134b2c4eaa4752ac69b17f/6749dba3f5275a74ca88a3bd/1752928173534/AlanRangerProfileImage.jpg",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+        "width": 800,
+        "height": 800
+      },
+      "email": "info@alanranger.com",
+      "telephone": "+44 7817 017994",
+      "priceRange": "££",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      },
+      "geo": { "@type": "GeoCoordinates", "latitude": 52.389, "longitude": -1.559 },
+      "openingHours": [
+        "Mo 08:00-18:00",
+        "Tu 08:00-18:00",
+        "We 08:00-18:00",
+        "Th 08:00-18:00",
+        "Fr 08:00-18:00",
+        "Sa 08:00-18:00",
+        "Su 08:00-18:00"
+      ],
+      "contactPoint": [
+        { "@type": "ContactPoint", "contactType": "General enquiries", "email": "info@alanranger.com", "telephone": "+44 7817 017994" },
+        { "@type": "ContactPoint", "contactType": "Bookings", "email": "info@alanranger.com", "telephone": "+44 7817 017994" }
+      ],
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://g.page/r/CW7AXsV_XMsWEAI/review",
+        "https://www.trustpilot.com/review/alanranger.com",
+        "https://www.saatchiart.com/alanranger",
+        "https://www.flickr.com/photos/alanranger",
+        "https://www.threads.net/@alanrangerphotography",
+        "https://bsky.app/profile/alanranger.bsky.social",
+        "https://www.wikidata.org/wiki/Q135415808"
+      ],
+      "memberOf": [
+        { "@type": "Organization", "name": "Royal Photographic Society (RPS)" },
+        { "@type": "Organization", "name": "British Institute of Professional Photography (BIPP)" },
+        { "@type": "Organization", "name": "Xposure International Photography Festival" }
+      ],
+      "award": [
+        "LPOTY Commended 2013, 2015, 2016, 2018, 2022",
+        "NLPA Finalist 2021, 2022",
+        "ILPOTY Award 2017",
+        "OPOTY Finalist 2013–2018"
+      ],
+      "founder": { "@id": "https://www.alanranger.com/#person" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.alanranger.com/#person",
+      "name": "Alan Ranger",
+      "url": "https://www.alanranger.com/about",
+      "jobTitle": "Photographer & Tutor",
+      "worksFor": { "@id": "https://www.alanranger.com/#org" },
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://bsky.app/profile/alanranger.bsky.social"
+      ]
+    },
+    {
+      "@type": "Service",
+  "name": "Alan Ranger Photography Workshops, Courses and Services",
+  "@id": "https://www.alanranger.com/#photography-services",
+  "serviceType": [
+    "Photography Workshops",
+    "Private Lessons",
+    "Photography Courses",
+    "Mentoring",
+    "Commercial Photography",
+    "Online Courses"
+  ],
+  "provider": { "@id": "https://www.alanranger.com/#org" },
+  "areaServed": { "@type": "Place", "name": "United Kingdom" }
+    }
+  ]
+}
+</script>
+<!-- =================== END STRUCTURED DATA =================== -->
+
+<!-- 27 Oct 2026: "ARP Blog Schema Loader v5.1" REMOVED from here. Blog post schema is now loaded only by the Blog page header (blog-page-loader.js). Backup: Schema Tools\pastes\schema-cleanup-2026-10-one-loader-per-collection\BACKUPS-before-changes -->
+
+<!-- 28 Oct 2026: "Block Squarespace-injected Product schemas only" REMOVED from here. Duplicate Squarespace Product entries are now removed by the product loader (product-page-loader.js) on store pages. Backup: Schema Tools\pastes\schema-cleanup-2026-10-one-loader-per-collection\BACKUPS-before-changes -->
+
+<!--Lazy Summaries -->
+<script>
+!function(){window.self===window.top||window.top.document.getElementById("lazy-summaries-admin")||function(e,t,s,i,a){if(s.querySelector("#"+t))i&&i(this);else{var n=document.createElement("script");n.src=e+"?cache="+((new Date).getTime()+"").substr(0,8),n.id=t,n.onload=function(){a&&this.remove(),i&&i(this)},s.appendChild(n)}}("https://assets.squarewebsites.org/lazy-summaries/lazy-summaries-admin.js","lazy-summaries-admin",window.top.document.getElementsByTagName("head")[0])}();
+</script>
+<!--<script src="//assets.squarewebsites.org/lazy-summaries/lazy-summaries.min.js"></script>-->
+
+<!--Register Interest Start -->
+<!--<style>.register-interest-button{display: none!important}</style>-->
+<script>
+ window.customRegisterInterestSettings = {
+        '.collection-type-events.view-item': {
+            render: '.eventitem-column-meta',
+            source: '/register-interest',
+            text: 'Register interest',
+            alignment: 'left',
+            size: 'small'
+        },
+   		'.collection-type-products.view-item': {
+            render: '.ProductItem-summary .sqs-add-to-cart-button-wrapper|after',
+            source: '/register-interest-product',
+            text: 'Register interest',
+            alignment: 'left', 
+            size: 'small'
+        }, 
+}
+</script>
+<!--Register Interest End   -->
+<script async src="https://assets.squarewebsites.org/custom-register-interest/custom-register-interest-new.js"></script>
+
+<!--Blogs CSV-->
+<script>
+!(function() {
+    function injectScript(file, id, node) {
+        if (node.querySelector('#' + id)) {
+            return;
+        };
+        var script = document.createElement("script");
+        script.src = file + '?cache=' + (new Date().getTime() + '').substr(0, 13);
+        script.id = id;
+        node.appendChild(script);
+    }
+    if (window.self !== window.top) {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                injectScript('https://assets.squarewebsites.org/utils/csv-sync/alan-ranger/csv-sync.min.js?time='+(new Date).getTime(), 'csv-collection-sync', window.top.document.getElementsByTagName("head")[0]);
+            }, 200)
+        })
+    }
+})();
+</script>
+
+<!-- Sync iCal && Events Dates in Descr -->
+<script>document.addEventListener('DOMContentLoaded', function(){
+	setTimeout(function(){window.self!==window.top&&(window.top.document.getElementById("sqs-admin-hooks")||window.top.Y.Get.js("https://assets.squarewebsites.org/utils/sqs-admin-hooks/sqs-admin-hooks.min.js?time="+(new Date).getTime(),function(e,o){e?console.log("Error loading Admin Hooks Script: "+e[0].error,"error"):(console.log("Admin Hooks Init"),o&&o.nodes[0].setAttribute("id","sqs-admin-hooks"))}),window.top.document.getElementById("sqs-admin-hooks-date-to-events")||window.top.Y.Get.js("https://assets.squarewebsites.org/utils/sqs-admin-hooks/prepend-date-to-events-descr-hook/date-to-events-descr-hook.min.js?time="+(new Date).getTime(),function(e,o){e?console.log("Error loading Admin Hooks Script: "+e[0].error,"error"):(console.log("Add date if same description Init"),o&&o.nodes[0].setAttribute("id","sqs-admin-hooks-date-to-events"))}),window.top.document.getElementById("events-collection-sync")||window.top.Y.Get.js("https://assets.squarewebsites.org/utils/events-ical/alanranger-com.min.js?time="+(new Date).getTime(),function(e,o){e?console.log("Error loading Admin Hooks Script: "+e[0].error,"error"):(console.log("Sync Calendar Events"),o&&o.nodes[0].setAttribute("id","events-collection-sync"))}))}, 200)  
+});</script>
+
+<!--Courses markup -->
+
+
+<!-- Collections Index -->
+<script>
+window.collectionsSyncConfig = {
+  	 gallery: {
+            enabled: true,
+            onlyDefined: false,
+       		moreThan: 1,
+            general : {
+                saveBody: false,
+                saveExcerpt: false,
+                useLZS: false
+            }
+    },
+    events: {
+            enabled: false,
+            onlyDefined: false,
+            general : {
+                saveBody: false,
+                saveExcerpt: false,
+                useLZS: false
+            }
+      },
+      blog: {
+            enabled: false,
+            onlyDefined: false,
+            general : {
+                saveBody: false,
+                saveExcerpt: true,
+                useLZS: true
+            }
+        },
+  	  products: {
+            enabled: false,
+            onlyDefined: false,
+            general : {
+                saveBody: false,
+                saveExcerpt: true,
+                useLZS: true
+            }
+        }
+  };
+  
+!function(){if(window.self!==window.top){var n,e,o,t,i,c;window.top.document.getElementById("collections-index-sync")||(window.collectionsSyncConfig&&(window.top.collectionsSyncConfig=window.collectionsSyncConfig),n="https://assets.squarewebsites.org/utils/collections-indexes/collections-sync.min.js",e=window.top.document.getElementsByTagName("head")[0],o="collections-index-sync",(c=document.createElement("script")).id=o,c.src=n+"?cache="+((new Date).getTime()+"").substr(0,7),c.async=!0,c.onload=function(){i&&this.remove(),t&&t(null,{nodes:[this]})},e.appendChild(c))}}();
+</script>
+<!-- end Collections Index -->
+<script>
+//Filter
+var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var locations = ["batsford","coventry","cumbria","devon","dorset","glencoe","hope-valley","kenilworth","lake- district","norfolk","northumbria","solihull","somerset","suffolk","warwickshire","worcestershire","yorkshire","wales","residential","ireland"];
+</script>
+
+<style>.custom-filter-container.custom-filter-view-dropdowns .customFiltersWrapper .sqs-block {
+  max-width: 33.33%
+  }</style>
+<script>
+window.customFilterSettings = {
+    'targets': [{
+            container: '.sqs-events-collection-list, #block-yui_3_17_2_1_1521549855177_44542,#block-yui_3_17_2_1_1564902899455_5204,#collection-53d39321e4b009befdb652c8 .ProductList,#collection-5eb7c3a098232c36f5d347d5 .ProductList',
+            items: '.eventlist-event--upcoming, .summary-item, .ProductList-item',
+            settings: {
+                placeFiltersTo: '.placeFilters',
+                position: 'top',
+                showItemsCount: true,
+                customClasses: '',
+                align: 'center',
+                useHistory: true,
+                updateFilterOptions: {
+                    enabled: true,
+                    nonExistOptions: {
+                        hide: false,
+                        disable: false,
+                        disableHard: false
+                    },
+                    showOptionsCounters: true,
+                    optionsCounterWrap: '- ()',
+                },
+                //keepDropdownsOpen: true,
+                simpleFilter: {
+                    show: {
+                        effect: 'fade',
+                        transitionDuration: 300,
+                        stagger: 30
+                    },
+                    hide: {
+                        effect: 'fade',
+                        transitionDuration: 100,
+                        stagger: 18
+                    }
+                },
+                hooks: {
+                    beforeCreate: function(target) {
+                        if (location.pathname.indexOf('/photography-shop') > -1 || location.pathname.indexOf('/photography-services') > -1) {
+                            target.settings.filter = {
+                                category: false,
+                                tag: false,
+                                items: [{
+                                        name: 'Categories',
+                                        multiple: true,
+                                        getAttr: 'categories'
+                                    },
+                                    {
+                                        name: 'Tag',
+                                        multiple: true,
+                                        notAllowedOptions: locations,
+                                        getAttr: 'tags'
+                                    },
+                                    {
+                                        name: 'Location',
+                                        multiple: false,
+                                        allowedOptions: locations,
+                                        getAttr: 'tags'
+                                    },
+                                ]
+                            }
+                        }
+                        if (location.pathname.indexOf('workshops') > -1) {
+                            target.settings.filter = {
+                                category: false,
+                                tag: false,
+                                items: [{
+                                        name: 'Workshops Location',
+                                        multiple: false,
+                                        getAttr: function(el, data) {
+                                            if (data && data.location && data.location.addressTitle) {
+                                                return data.location.addressTitle;
+                                            }
+                                            return false;
+                                        }
+                                    },
+                                    {
+                                        name: 'Workshops Duration',
+                                        multiple: true,
+                                        getAttr: 'categories'
+                                    }, {
+                                        name: 'Workshops Year',
+                                        multiple: false,
+                                        getAttr: function(it, data) {
+                                            it = it._node || it;
+                                            var time = it.querySelector('[datetime]');
+                                            if (time) {
+                                                time = time.getAttribute('datetime').substr(0, 4);
+                                                return time;
+                                            } else if (data && data.startDate) {
+                                                return new Date(data.startDate).getFullYear()
+                                            }
+                                        }
+                                    },
+                                    {
+                                        name: 'Workshops Month',
+                                        multiple: false,
+                                        allowedOptions: monthNames,
+                                        sort: 'asAllowed',
+                                        getAttr: function(it, data) {
+                                            it = it._node || it;
+                                            var time = it.querySelector('[datetime]');
+                                            if (time) {
+                                                time = new Date(time.getAttribute('datetime')).toLocaleString('default', { month: 'long' });
+                                                return time;
+                                            } else if (data && data.startDate) {
+                                                return new Date(data.startDate).toLocaleString('default', { month: 'long' });
+                                            }
+                                        }
+                                    },
+                                    {
+                                        name: 'Tag',
+                                        multiple: true,
+                                        getAttr: 'tags'
+                                    }
+                                ]
+                            }
+                        }
+                        if (location.pathname.indexOf('course') > -1 || location.pathname.indexOf('classes') > -1) {
+                            target.settings.filter = {
+                                category: false,
+                                tag: false,
+                                items: [{
+                                        name: 'Courses Location',
+                                        multiple: true,
+                                        getAttr: function(el, data) {
+                                            if (data && data.location && data.location.addressTitle) {
+                                                return data.location.addressTitle;
+                                            }
+                                            return false;
+                                        }
+                                    },
+                                    {
+                                        name: 'Courses Categories',
+                                        multiple: true,
+                                        getAttr: 'categories'
+                                    }, {
+                                        name: 'Courses Year',
+                                        multiple: false,
+                                        getAttr: function(it, data) {
+                                            it = it._node || it;
+                                            var time = it.querySelector('[datetime]');
+                                            if (time) {
+                                                time = time.getAttribute('datetime').substr(0, 4);
+                                                return time;
+                                            } else if (data && data.startDate) {
+                                                return new Date(data.startDate).getFullYear()
+                                            }
+                                        }
+                                    }, {
+                                        name: 'Courses Month',
+                                        multiple: false,
+                                        allowedOptions: monthNames,
+                                        sort: 'asAllowed',
+                                        getAttr: function(it, data) {
+                                            it = it._node || it;
+                                            var time = it.querySelector('[datetime]');
+                                            if (time) {
+                                                time = new Date(time.getAttribute('datetime')).toLocaleString('default', { month: 'long' });
+                                                return time;
+                                            } else if (data && data.startDate) {
+                                                return new Date(data.startDate).toLocaleString('default', { month: 'long' });
+                                            }
+                                        }
+                                    }, {
+                                        name: 'Tag',
+                                        multiple: true,
+                                        getAttr: 'tags'
+                                    }
+                                ]
+                            }
+                        }
+                        if (location.pathname.indexOf('/photographic-workshops') > -1) {
+                            target.settings.position = 'top';
+                            //target.settings.customIndexUrl = '/workshops-events-custom-index';
+                        } else if (location.pathname.indexOf('/photography-classes') > -1) {
+                            target.settings.position = 'top';
+                            //target.settings.customIndexUrl = '/classes-events-custom-index';
+                        }
+                    }
+                },
+                sort: {
+                    items: [{
+                            name: 'A-Z',
+                            order: 'asc',
+                            sort: function(el, data) {
+                                if (data) {
+                                    return data.title;
+                                }
+                            }
+                        },
+                        {
+                            name: 'Z-A',
+                            order: 'desc',
+                            sort: function(el, data) {
+                                if (data) {
+                                    return data.title;
+                                }
+                            }
+                        },
+                        {
+                            name: 'Date',
+                            order: 'asc|desc',
+                            sort: function(el, data) {
+                                var result = 1;
+                                if (data && data.id) {
+                                    result = data.startDate;
+                                }
+                                return result;
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            container: '#collection-53836c32e4b05b1c55576880 .BlogList, #block-yui_3_17_2_1_1529137402624_4143',
+            items: '.hentry, .summary-item',
+            settings: {
+                //placeFiltersTo: '.collection-header',
+                position: 'top',
+                useSessionCache: false,
+                showItemsCount: true,
+                useHistory: true,
+                //keepDropdownsOpen: true,
+                updateFilterOptions: {
+                    enabled: true,
+                    nonExistOptions: {
+                        hide: false,
+                        disable: false,
+                        disableHard: false
+                    },
+                    showOptionsCounters: true,
+                    optionsCounterWrap: '- ()',
+                },
+                hooks: {
+                    beforeCreate: function(target) {
+                        if (window.top && window.top.Static && window.top.Static.IN_BACKEND) {
+                            target.noNeedCreate = true;
+                        }
+                    },
+                    beforeInit: function(filter) {
+                        //console.log(filter.target.settings)
+                        if (Y.one('body').hasClass('view-list')) {
+                            //filter.target.settings.customIndexUrl = '/blog-blog-custom-index';
+                        }
+                    },
+                    onInit: function(filter) {
+                        filter.target.settings.pagination.loadMoreButton.enabled = false;
+                    }
+                },
+                simpleFilter: {
+                    show: {
+                        effect: 'fade',
+                        transitionDuration: 300,
+                        stagger: 30
+                    },
+                    hide: {
+                        effect: 'fade',
+                        transitionDuration: 100,
+                        stagger: 18
+                    }
+                },
+                sort: {
+                    items: [{
+                        name: 'A-Z',
+                        order: 'asc',
+                        sort: function(el, data) {
+                            var title = '';
+                            if (data) {
+                                title = data.title;
+                            }
+                            return title;
+                        }
+                    }, {
+                        name: 'Z-A',
+                        order: 'desc',
+                        sort: function(el, data) {
+                            var title = '';
+                            if (data) {
+                                title = data.title;
+                            }
+                            return title;
+                        }
+                    }, {
+                        name: 'Date',
+                        order: 'asc|desc',
+                        sort: function(el, data) {
+                            var result = 1;
+                            if (data && data.id) {
+                                result = data.publishOn;
+                            }
+                            return result;
+                        }
+                    }]
+                },
+                pagination: {
+                    enabled: true,
+                    pageSize: 8,
+                    place: "bottom",
+                    showPrevNext: { //will show next/prev elements arrows
+                        enabled: true,
+                        //hideItems: true,
+                        next: 'Next', //next link text
+                        prev: 'Prev' //previous link text
+                    },
+                    loadMoreButton: {
+                        enabled: false
+                    }
+                },
+                filter: {
+                    category: false,
+                    tag: false,
+                    items: [{
+                        name: 'Category',
+                        multiple: true,
+                        getAttr: 'categories'
+                    }, {
+                        name: 'Tag',
+                        multiple: true,
+                        getAttr: 'tags'
+                    }]
+                }
+            }
+        }
+    ]
+};
+</script>
+
+<script src="https://plugins.squarewebsites.org/js-combo/utils/schema-generator/course-jsonld.min.js,lazy-summaries/lazy-summaries.min.js,custom-filter/custom-filter.min.js,custom-tables/custom-table.js"></script>
+
+
+<!--Admin UI Tweaks-->
+<script>
+!function(){window.self===window.top||window.document.getElementById("sqstp-UI-theme-script")||function(e,t,s,i,a){if(s.querySelector("#"+t))i&&i(this);else{var n=document.createElement("script");n.src=e+"?cache="+((new Date).getTime()+"").substr(0,8),n.async=!0,n.id=t,n.onload=function(){a&&this.remove(),i&&i(this)},s.appendChild(n)}}("https://plugins.squarewebsites.org/sqstools-ext/themes/modern.min.js","sqstp-UI-theme-script",window.document.getElementsByTagName("head")[0])}();
+</script>
+<!--End Admin UI Tweaks-->
+
+
+<!--Estimated Reading Time Blog Posts  -->
+<div class="reading-time"></div>
+<script>
+$( ".reading-time" ).insertBefore( "h1.BlogItem-title" );
+</script>
+<!--End Estimated Reading Time Blog Posts  -->
+
+<!-- BACK TO TOP BUTTON ANIMATION (7.0 & 7.1) -->
+<script>
+  var scrolled = 400; $(window).scroll(function() {
+    if ( $(window).scrollTop() > scrolled ) {
+      $('a.btt').fadeIn('slow');
+    } else {
+      $('a.btt').fadeOut('slow');
+    }
+  });
+</script>
+<script>
+  $('a.btt').click(function() {
+    $('html, body').animate({ scrollTop: 0 }, 700);
+    return false;
+  });
+</script>
+
+
+
+<!-- SLIDESHOW HEIGHT ON MOBILE - by beatrizcaraballo.com -->
+<script>
+  setTimeout(function() {
+    var $galleryContainer = $('.sqs-gallery-design-stacked');
+    var $slides = $galleryContainer.find('.slide');
+
+    function setGalleryHeight() {
+      var maxHeight = 0;
+
+      $slides.each(function() {
+        var slideHeight = $(this).outerHeight();
+        maxHeight = Math.max(maxHeight, slideHeight);
+      });
+
+      $galleryContainer.css('height', maxHeight);
+    }
+
+    setGalleryHeight();
+
+    $(window).on('resize', function() {
+      setGalleryHeight();
+    });
+  }, 2000);
+</script>
+
+<!-- SUMMARY CAROUSEL STYLING - by beatrizcaraballo.com -->
+<script>
+  var addWrapper = new MutationObserver(function() {
+    wrapItems();
+  });
+  
+  addWrapper.observe(document.querySelector('.sqs-gallery-design-carousel .summary-item-list'), {
+    childList: true
+});
+</script>
+
+
+<script>
+  function wrapItems() {
+    $('.sqs-gallery-design-carousel .summary-item').each(function() {
+      $(this).children('.summary-thumbnail-outer-container, .summary-content').wrapAll('<div class="summary-item-wrapper"></div>');
+    });
+  };
+</script>
+
+<!--Footer Injection Tab-->
+<script>
+!function(){window.self===window.top||window.top.document.getElementById("custom-table-admin")||function(e,t,s,i,a){if(s.querySelector("#"+t))i&&i(this);else{var n=document.createElement("script");n.src=e+"?cache="+((new Date).getTime()+"").substr(0,7),n.id=t,n.onload=function(){a&&this.remove(),i&&i(this)},s.appendChild(n)}}("https://assets.squarewebsites.org/custom-tables/custom-table-admin.js","custom-table-admin",window.top.document.getElementsByTagName("head")[0])}();
+</script>
+
+<!-- Add BlueSky Icon -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    function replaceBskyIcons() {
+      const symbolContainer = document.querySelector('[data-usage="social-icons-svg"]');
+      if (symbolContainer && !document.getElementById('wm-bsky')) {
+        const symbolDef = `<symbol id="wm-bsky" viewBox="0 0 64 64">
+  <path d="M22.1 20.0406C26.1091 23.001 30.4455 28.7618 32 31.9623V40.4434C32 40.2834 32.0818 40.4434 32.2455 40.9235C33.0636 43.3238 36.2545 52.6051 43.7 45.1641C47.5455 41.2435 45.7455 37.323 38.7091 36.2029C42.7182 36.8429 47.3 35.7228 48.5273 31.4022C49.3455 30.122 50 22.601 50 21.4808C50 16.2801 45.3364 17.8803 41.9 20.0406L41.9328 20.02Z"></path>
+</symbol>`;
+        symbolContainer.insertAdjacentHTML('beforeend', symbolDef);
+      }
+
+      // Find all Bluesky icons and replace their content
+      const bskyHeaderLinks = document.querySelectorAll('.icon[href*="https://bsky.app"], .sqs-svg-icon--wrapper[href*="https://bsky.app"]');
+      console.log(bskyHeaderLinks)
+      bskyHeaderLinks.forEach(link => {
+        console.log('replace', link)
+        link.innerHTML = '<svg viewBox="23 23 64 64"><use xlink:href="#wm-bsky" width="110" height="110"></use></svg>';
+      });
+    }
+    replaceBskyIcons();
+  })
+</script>
+
+<!-- Replace broken Links -->
+<script>
+const linksToReplace = {"/5-steps-to-improve-your-photography":{"r":"/online-photography-course"},"/awards":{"r":"/awards-and-qualifications"},"/batsford":{"r":"/batsford-arboretum-photography"},"/beginners-lightroom-course":{"r":"/photo-editing-course-coventry"},"/beginners-photography-course":{"r":"/beginners-photography-classes"},"/blog-on-photography/lee-filter-15-percent-off":{"r":"/blog-on-photography/know-your-camera-filters/"},"/blogs/5-reasons-to-use-a-tripod":{"r":"/blog-on-photography/5-reasons-to-use-a-tripod"},"/blogs/art-of-macro-photography":{"r":"/blog-on-photography/art-of-macro-photography"},"/blogs/avoid-camera-shake":{"r":"/blog-on-photography/avoid-camera-shake"},"/blogs/choosing-a-camera":{"r":"/blog-on-photography/choosing-a-camera"},"/blogs/exposure-bracketing-a-guide-for-photographers":{"r":"/blog-on-photography/exposure-bracketing-a-guide-for-photographers"},"/blogs/finding-your-compositional-balance":{"r":"/blog-on-photography/finding-your-compositional-balance"},"/blogs/full-frame-vs-cropped-sensor":{"r":"/blog-on-photography/full-frame-vs-cropped-sensor"},"/blogs/how-to-find-your-photography-style":{"r":"/blog-on-photography/how-to-find-your-photography-style"},"/blogs/how-to-take-long-exposure-photos":{"r":"/blog-on-photography/how-to-take-long-exposure-photos"},"/blogs/jpeg-vs-raw-the-key-differences":{"r":"/blog-on-photography/jpeg-vs-raw-the-key-differences"},"/blogs/know-your-camera-filters":{"r":"/blog-on-photography/know-your-camera-filters/"},"/blogs/landscape-fine-art-photography-prints":{"r":"/blog-on-photography/landscape-fine-art-photography-prints"},"/blogs/learn-photography-how":{"r":"/blog-on-photography/learn-photography-how"},"/blogs/mastering-photography-composition-rules":{"r":"/blog-on-photography/mastering-photography-composition-rules"},"/blogs/mastering-the-art-of-shadow-photography":{"r":"/blog-on-photography/mastering-the-art-of-shadow-photography"},"/blogs/new-partnership-with-one-vision-imaging-12-off-all-products":{"r":"/blog-on-photography/know-your-camera-filters/"},"/blogs/photographers-rights-in-the-uk":{"r":"/blog-on-photography/photographers-rights-in-the-uk"},"/blogs/photography-is-an-art-of-observation":{"r":"/blog-on-photography/photography-is-an-art-of-observation"},"/blogs/product-photography-setup":{"r":"/blog-on-photography/product-photography-setup"},"/blogs/recommended-lightweight-travel-tripods":{"r":"/blog-on-photography/recommended-lightweight-travel-tripods"},"/blogs/rubys-first-photo-project":{"r":"/blog-on-photography/rubys-first-photo-project"},"/blogs/shooting-in-low-light":{"r":"/blog-on-photography/shooting-in-low-light"},"/blogs/the-art-of-storytelling-photography":{"r":"/blog-on-photography/the-art-of-storytelling-photography"},"/blogs/top-tips-for-photographing-bluebells":{"r":"/blog-on-photography/top-tips-for-photographing-bluebells"},"/blogs/tripod-for-cameras-essential-guide":{"r":"/blog-on-photography/tripod-for-cameras-essential-guide"},"/blogs/using-a-nd-filter":{"r":"/blog-on-photography/using-a-nd-filter"},"/blogs/uv-or-not-to-uv":{"r":"/blog-on-photography/are-camera-uv-filters-worth-it"},"/blogs/what-are-leading-lines-in-photography":{"r":"/blog-on-photography/what-are-leading-lines-in-photography"},"/blogs/what-do-camera-lens-filters-do":{"r":"/blog-on-photography/what-do-camera-lens-filters-do"},"/blogs/what-is-aperture-in-photography":{"r":"/blog-on-photography/what-is-aperture-in-photography"},"/blogs/what-is-contrast-in-photography":{"r":"/blog-on-photography/what-is-contrast-in-photography"},"/blogs/what-is-depth-of-field":{"r":"/blog-on-photography/what-is-depth-of-field"},"/blogs/what-is-dynamic-range-in-photography":{"r":"/blog-on-photography/what-is-dynamic-range-in-photography"},"/blogs/what-is-exposure-in-photography":{"r":"/blog-on-photography/what-is-exposure-in-photography"},"/blogs/what-is-focal-length-in-photography":{"r":"/blog-on-photography/what-is-focal-length-in-photography"},"/blogs/what-is-focus-in-photography":{"r":"/blog-on-photography/what-is-focus-in-photography"},"/blogs/what-is-framing-in-photography":{"r":"/blog-on-photography/what-is-framing-in-photography"},"/blogs/what-is-iso-in-photography":{"r":"/blog-on-photography/what-is-iso-in-photography"},"/blogs/what-is-metering-in-photography":{"r":"/blog-on-photography/what-is-metering-in-photography"},"/blogs/what-is-minimalist-photography":{"r":"/blog-on-photography/what-is-minimalist-photography"},"/blogs/what-is-negative-space-in-photography":{"r":"/blog-on-photography/what-is-negative-space-in-photography"},"/blogs/what-is-portrait-photography":{"r":"/blog-on-photography/what-is-portrait-photography"},"/blogs/what-is-shutter-speed":{"r":"/blog-on-photography/what-is-shutter-speed"},"/blogs/what-is-white-balance-in-photography":{"r":"/blog-on-photography/what-is-white-balance-in-photography"},"/bluebell-woodlands-workshops":{"r":"/bluebell-woods-near-me/"},"/contact-us":{"r":"/contact-us-alan-ranger-photography/"},"/course-finder":{"r":"/course-finder-photography-classes-near-me/"},"/events-calendar":{"r":"/photography-tuition-services/"},"/fine-art-prints/latest-images":{"r":"/fine-art-prints/latest-photography-images/"},"/four-private-photography-lessons":{"r":"/private-photography-lessons/"},"/gallery-fine-art-prints":{"r":"/gallery-image-portfolios/"},"/get-off-auto":{"r":"/beginners-photography-classes"},"/get-off-auto-beginner-photography-classes":{"r":"/newsletter-signup-form/"},"/get-updates":{"r":"/newsletter-signup-form/"},"/intermediates-intentions-course":{"r":"/intentions-course-six-month-photography-project/"},"/intermediates-rps-course":{"r":"/rps-courses-mentoring-distinctions/"},"/my-ethics":{"r":"/my-ethical-policy/"},"/photographers-composition-viewing-frames":{"r":"/free-photography-tips/"},"/photographic-mentoring":{"r":"/photography-mentoring-online-assignments/"},"/photographic-workshops":{"r":"/photographic-workshops-near-me/"},"/photographic-workshops/dingle-kerry-ireland-photography-workshop":{"r":"/photographic-workshops-near-me/dingle-kerry-ireland-photography-workshop/"},"/photographic-workshops/hartland-quay-devon-seascapes-ynfcl":{"r":"/photographic-workshops-near-me/hartland-quay-devon-seascapes-ynfcl/"},"/photographic-workshops/landscape-photography-snowdonia-workshop":{"r":"/photographic-workshops-near-me/"},"/photography-classes":{"r":"/beginners-photography-lessons/"},"/photography-courses":{"r":"/photography-courses-coventry/"},"/photography-courses-finder":{"r":"/course-finder-photography-classes-near-me/"},"/photography-equipment":{"r":"/photography-equipment-recommendations/"},"/photography-lessons-online-1-2-1":{"r":"/photography-lessons-online-121/"},"/photography-services/1-2-1-private-photography-lessons":{"r":"/private-photography-lessons/"},"/photography-services/camera-sensor-clean":{"r":"/photography-services-near-me/camera-sensor-clean/"},"/photography-services/lens-calibration":{"r":"/photography-services-near-me/camera-sensor-clean/"},"/photography-shop":{"r":"/photography-shop-services/"},"/photography-support-services":{"r":"/photography-shop-services/"},"/photography-tuition":{"r":"/photography-tuition-services/"},"/photography-workshops-near-me-residential":{"r":"/photography-workshops-near-me/"},"/photo-workshops":{"r":"/photo-workshops-uk/"},"/testimonials":{"r":"/testimonials-customer-reviews/"},"/which-photography-courses":{"r":"/photography-courses-coventry/"},"/woodland-photo-walks":{"r":"/photo-workshops-uk/woodland-photography-walk-warwickshire/"}};
+const docLinks = document.querySelectorAll('a[href]');
+if (docLinks && docLinks.length) {
+    for (let index = 0; index < docLinks.length; index++) {
+        const link = docLinks[index];
+        if (link.pathname && linksToReplace[link.pathname]) {
+            console.log(link.pathname + ' was replaced to '+ linksToReplace[link.pathname]["r"]);
+          	link.pathname = linksToReplace[link.pathname]["r"]
+        }
+    }
+}
+
+</script>
+
+<script type="module">
+  import('https://cdn.jsdelivr.net/gh/alanranger/alanranger-reviews@main/reviews-1.js')
+    .then(({ default: reviews }) => {
+      const container = document.getElementById('testimonial-widget');
+      if (!container) return;
+
+      const MAX_DISPLAY = 5;
+
+      const filtered = reviews
+        .filter(r => r.rating >= 4) // Only 4-star and 5-star
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Most recent first
+        .slice(0, MAX_DISPLAY);
+
+      container.innerHTML = '';
+
+      filtered.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'testimonial';
+        div.innerHTML = `
+          <p><strong>${r.reviewer}</strong> <span style="color: green">(${r.source})</span></p>
+          <p><em>${r.title}</em></p>
+          <p>${r.body}</p>
+          <p><strong>Event:</strong> <span style="color: orange">${r.event}</span> | <strong>Rating:</strong> ${'⭐'.repeat(r.rating)}</p>
+          <hr/>
+        `;
+        container.appendChild(div);
+      });
+    });
+</script>
+
+<!-- Accordion Icons Reliability Fix — 2025-11-05 (body-safe version) -->
+<script>
+(function(){
+  function replaceAccordionIcons(){
+    var icons = window.accordionIcons || [];
+    if(!icons.length) return;
+    var roots = document.querySelectorAll(
+      '.sqs-block-accordion, .accordion-block, .accordion, .accordion-item'
+    );
+    if(!roots.length) return;
+
+    roots.forEach(function(root){
+      if(root.__iconsApplied) return;
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode:function(node){
+          if(!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          if(node.parentElement && node.parentElement.classList.contains('accordion-icon'))
+            return NodeFilter.FILTER_REJECT;
+          return /\[[a-z0-9\-]+-icon\]/i.test(node.nodeValue)
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT;
+        }
+      });
+      var toProcess=[];
+      while(walker.nextNode()) toProcess.push(walker.currentNode);
+
+      toProcess.forEach(function(textNode){
+        var original=textNode.nodeValue, replaced=original;
+        for(var i=0;i<icons.length;i++){
+          var key=icons[i].text, svg=icons[i].svg;
+          if(replaced.indexOf(key)!==-1){
+            replaced=replaced.split(key).join(svg);
+          }
+        }
+        if(replaced!==original){
+          var span=document.createElement('span');
+          span.className='accordion-icon';
+          span.innerHTML=replaced;
+          textNode.parentNode.replaceChild(span,textNode);
+        }
+      });
+      root.__iconsApplied=true;
+    });
+  }
+
+  function safeRun(){
+    try{ replaceAccordionIcons(); }catch(e){} 
+  }
+
+  function startWhenReady(){
+    if(!document.body){ setTimeout(startWhenReady, 150); return; }
+    safeRun();
+    window.addEventListener('load', safeRun);
+    [500,1200,2500,4000].forEach(function(t){ setTimeout(safeRun,t); });
+
+    // MutationObserver (now guaranteed valid)
+    try{
+      var mo=new MutationObserver(function(muts){
+        for(var i=0;i<muts.length;i++){
+          if(muts[i].addedNodes && muts[i].addedNodes.length){ safeRun(); break; }
+        }
+      });
+      mo.observe(document.body,{childList:true,subtree:true});
+    }catch(e){}
+  }
+
+  startWhenReady();
+})();
+</script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll("a[data-cta]").forEach(function(link) {
+      link.addEventListener("click", function() {
+        if (typeof gtag !== "undefined") {
+          gtag('event', 'cta_click', {
+            'event_category': 'CTA',
+            'event_label': link.getAttribute("data-cta"),
+            'value': 1
+          });
+        }
+      });
+    });
+  });
+</script>
+
+<!-- Live Chat -->
+<!-- Alan Ranger Assistant: embed launcher -->
+<script async src="https://alan-chat-proxy.vercel.app/embed.js"
+        data-chat-src="https://alan-chat-proxy.vercel.app/chat.html"
+        data-position="br"
+        data-color="#4CAF50"
+        data-size="680x860"
+        data-offset="24"></script>
+
+<!-- ============================================================
+  ARP Academy — Editor-Safe Routing + UI Suppression (v4.3.3)
+  Changelog from v4.3.2:
+  - Public funnel: /academy/upgrade (Memberstack checkout + Zapier links)
+============================================================ -->
+
+<style id="arp-academy-ui-css-v433">
+/* Applies ONLY when JS adds html.arp-academy-app */
+html.arp-academy-app footer,
+html.arp-academy-app #footer,
+html.arp-academy-app #footer-sections,
+html.arp-academy-app #footer-spacer,
+html.arp-academy-app .Footer,
+html.arp-academy-app .sqs-footer,
+html.arp-academy-app .footer-spacer,
+html.arp-academy-app .Footer-spacer,
+html.arp-academy-app .sqs-footer-spacer{
+  display:none !important;
+}
+
+/* Remove reserved footer spacing */
+html.arp-academy-app #page,
+html.arp-academy-app #siteWrapper,
+html.arp-academy-app #siteWrapper .Main,
+html.arp-academy-app .Main,
+html.arp-academy-app main{
+  padding-bottom:0 !important;
+  margin-bottom:0 !important;
+}
+
+/* Hide header NAV + actions/buttons (leave branding/logo area intact) */
+html.arp-academy-app header nav,
+html.arp-academy-app header nav[role="navigation"],
+html.arp-academy-app header .header-nav,
+html.arp-academy-app header .Header-nav,
+html.arp-academy-app header .header-nav-wrapper,
+html.arp-academy-app header .Header-nav-inner,
+html.arp-academy-app header .header-nav-list,
+html.arp-academy-app header .Header-nav-list,
+html.arp-academy-app header .header-actions,
+html.arp-academy-app header .Header-actions,
+html.arp-academy-app header .header-actions-wrapper,
+html.arp-academy-app header .Header-actions-wrapper,
+html.arp-academy-app header .header-buttons,
+html.arp-academy-app header .Header-buttons{
+  display:none !important;
+}
+
+/* Hide the page while recovering from /undefined to avoid visible 404 flashes */
+html.arp-academy-hold body{ opacity:0 !important; }
+html.arp-academy-hold{ background:#000 !important; }
+
+/* ACADEMY pill (dashboard only) */
+#arp-academy-pill{
+  position:fixed !important;
+  left:50vw !important;
+  top:34px !important;
+  transform:translate(-50%, -50%) !important;
+
+  display:inline-block !important;
+  padding:10px 22px !important;
+  border:2px solid #E57200 !important;
+  border-radius:999px !important;
+  color:#E57200 !important;
+
+  font-weight:800 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  font-size:24px !important;
+  line-height:1 !important;
+
+  background:rgba(255,255,255,0.92) !important;
+  z-index:999999 !important;
+  pointer-events:none !important;
+}
+@media (max-width:640px){
+  #arp-academy-pill{ top:30px !important; font-size:14px !important; padding:9px 18px !important; }
+}
+</style>
+
+<script>
+/* ============================================================
+   ARP Academy — Stable Routing + UI Suppression (v4.3.3)
+============================================================ */
+(function () {
+  if (window.__ARP_ACADEMY_ROUTER_V433__) return;
+  window.__ARP_ACADEMY_ROUTER_V433__ = true;
+
+  function isInIframe() {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  }
+
+  function isSquarespaceEditorContext() {
+    try {
+      var host = String(location.hostname || "");
+      var path = String(location.pathname || "");
+      var qs   = String(location.search || "");
+
+      if (window.__ARP_SQS_EDITOR__ === true) return true;
+      if (window.__ARP_DISABLE_ACADEMY_AUTOROUTE__ === true) return true;
+
+      if (host.indexOf("squarespace.com") !== -1) return true;
+
+      if (path.indexOf("/config") === 0) return true;
+
+      if (qs.indexOf("sqs_edit") !== -1 || qs.indexOf("mode=edit") !== -1) return true;
+
+      if (document.documentElement && document.documentElement.classList.contains("sqs-edit-mode")) return true;
+      if (document.body && document.body.classList.contains("sqs-edit-mode")) return true;
+
+      if (isInIframe()) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function removePill() {
+    var el = document.getElementById("arp-academy-pill");
+    if (el) el.remove();
+  }
+  function ensurePill() {
+    if (document.getElementById("arp-academy-pill")) return;
+    var pill = document.createElement("div");
+    pill.id = "arp-academy-pill";
+    pill.textContent = "ACADEMY";
+    document.body.appendChild(pill);
+  }
+
+  function setAcademyClass(on) {
+    document.documentElement.classList.toggle("arp-academy-app", !!on);
+  }
+  function setHoldClass(on) {
+    document.documentElement.classList.toggle("arp-academy-hold", !!on);
+  }
+
+  function hardStopForEditor() {
+    try { document.documentElement.classList.remove("arp-academy-app", "arp-academy-hold"); } catch (e) {}
+    try { removePill(); } catch (e) {}
+  }
+
+  if (isSquarespaceEditorContext()) {
+    hardStopForEditor();
+    return;
+  }
+
+  var LS_LAST_GOOD = "arpAcademyLastGoodPath";
+  var LS_SEEN_MEMBER = "arpAcademySeenMember";
+
+  function normPath() {
+    var p = (location.pathname || "/").replace(/\/$/, "");
+    return p || "/";
+  }
+
+  function isAcademyAppPage(p) {
+    if (p.indexOf("/academy/") !== 0) return false;
+    if (p === "/academy/login") return false;
+    if (p === "/academy/trial-expired") return false;
+    if (p === "/academy/upgrade") return false;
+    return true;
+  }
+
+  function withMemberstack(cb, tries) {
+    tries = tries || 0;
+    if (window.$memberstackDom && typeof window.$memberstackDom.getCurrentMember === "function") {
+      cb(window.$memberstackDom);
+      return;
+    }
+    if (tries > 80) return;
+    setTimeout(function(){ withMemberstack(cb, tries + 1); }, 100);
+  }
+
+  function markLastGood(p) {
+    if (p.indexOf("/academy/") !== 0) return;
+    if (p === "/academy/login" || p === "/academy/trial-expired" || p === "/academy/upgrade") return;
+    if (p === "/academy/undefined") return;
+    try { localStorage.setItem(LS_LAST_GOOD, p); } catch (e) {}
+  }
+
+  function getLastGood() {
+    try { return localStorage.getItem(LS_LAST_GOOD) || ""; } catch (e) { return ""; }
+  }
+
+  function seenMemberFlag() {
+    try { return localStorage.getItem(LS_SEEN_MEMBER) === "1"; } catch (e) { return false; }
+  }
+
+  function setSeenMemberFlag() {
+    try { localStorage.setItem(LS_SEEN_MEMBER, "1"); } catch (e) {}
+  }
+
+  function recoverUndefinedFast() {
+    setHoldClass(true);
+    setAcademyClass(false);
+    removePill();
+
+    var lastGood = getLastGood();
+    if (lastGood && lastGood.indexOf("/academy/") === 0 && lastGood !== "/academy/undefined") {
+      location.replace(lastGood);
+      return;
+    }
+    if (seenMemberFlag()) location.replace("/academy/dashboard");
+    else location.replace("/academy/login");
+  }
+
+  function stripeSafeLoginMode() {
+    setAcademyClass(false);
+    removePill();
+
+    withMemberstack(function(ms){
+      ms.getCurrentMember()
+        .then(function(member){
+          if (member && member.data) {
+            setSeenMemberFlag();
+            location.replace("/academy/dashboard");
+          }
+        })
+        .catch(function(){});
+    });
+  }
+
+  function apply() {
+    var p = normPath();
+
+    if (p === "/undefined" || p === "/academy/undefined") {
+      recoverUndefinedFast();
+      return;
+    }
+
+    setHoldClass(false);
+
+    if (p === "/academy/login") {
+      stripeSafeLoginMode();
+      return;
+    }
+
+    if (p === "/academy/trial-expired") {
+      setAcademyClass(false);
+      removePill();
+      return;
+    }
+
+    if (p === "/academy/upgrade") {
+      setAcademyClass(false);
+      removePill();
+      return;
+    }
+
+    var onApp = isAcademyAppPage(p);
+    setAcademyClass(onApp);
+
+    if (onApp) {
+      withMemberstack(function(ms){
+        ms.getCurrentMember()
+          .then(function(member){
+            if (member && member.data) {
+              setSeenMemberFlag();
+              markLastGood(p);
+            } else {
+              location.replace("/academy/login");
+            }
+          })
+          .catch(function(){
+            location.replace("/academy/login");
+          });
+      });
+    }
+
+    if (p === "/academy/dashboard") {
+      ensurePill();
+      markLastGood(p);
+    } else {
+      removePill();
+      if (p.indexOf("/academy/") === 0) markLastGood(p);
+    }
+  }
+
+  apply();
+  setTimeout(apply, 400);
+
+  var lastPath = normPath();
+  setInterval(function(){
+    var now = normPath();
+    if (now !== lastPath) {
+      lastPath = now;
+      apply();
+    }
+  }, 250);
+
+  window.addEventListener("popstate", function(){ setTimeout(apply, 0); });
+})();
+</script>
+
+<!-- ===========================
+AR | MEMBERSTACK HISTORY TRACKER (SITE-WIDE) — v1.1 (KEEP DUPLICATES)
+WHAT IT DOES:
+- If a member is logged in, stores their last 5 visited pages into Memberstack Member JSON: json.history[]
+- Keeps duplicates so the history reflects actual visits in order.
+=========================== -->
+
+<script>
+(function(){
+  async function waitForMS(){
+    for(let i=0;i<60;i++){
+      if(window.$memberstackDom) return window.$memberstackDom;
+      await new Promise(r=>setTimeout(r,200));
+    }
+    return null;
+  }
+
+  function cleanTitle(){
+    return (document.title || '').split('—')[0].trim() || 'Page';
+  }
+
+  function cleanUrl(){
+    // Keep query so different filtered views are distinct; do not include origin.
+    return window.location.pathname + window.location.search;
+  }
+
+  async function run(){
+    const ms = await waitForMS();
+    if(!ms) return;
+
+    const res = await ms.getCurrentMember();
+    if(!res || !res.data) return; // not logged in
+
+    const jsonRes = await ms.getMemberJSON();
+    const memberJson = (jsonRes && jsonRes.data) ? jsonRes.data : {};
+    let history = Array.isArray(memberJson.history) ? memberJson.history : [];
+
+    const currentPage = {
+      title: cleanTitle(),
+      url: cleanUrl(),
+      date: new Date().toISOString()
+    };
+
+    // Keep duplicates: do NOT de-dupe by url.
+    history.unshift(currentPage);
+    history = history.slice(0, 5);
+
+    await ms.updateMemberJSON({
+      json: { ...memberJson, history }
+    });
+  }
+
+  window.addEventListener('load', () => setTimeout(run, 500));
+})();
+</script>
+
+<!-- ===========================
+END: AR | MEMBERSTACK HISTORY TRACKER (SITE-WIDE)
+=========================== -->
+
+<!-- AR | Site Search Modal (Global Footer) | v2.0 | Vercel assets + scroll lock -->
+
+<style>
+  /* Modal sizing + scroll */
+  #ar-search-modal{
+    width: min(980px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    border: 0;
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    background:#fff;
+  }
+  #ar-search-modal::backdrop{ background: rgba(0,0,0,.45); }
+
+  .ar-search-modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    background: #fff;
+  }
+  .ar-search-modal-title{ font-size: 18px; font-weight: 700; margin: 0; }
+  .ar-search-modal-close{
+    appearance:none; border:0; background:transparent; cursor:pointer;
+    font-size: 22px; line-height: 1; padding: 6px 10px;
+  }
+
+  /* Key part: body scrolls, dialog doesn't */
+  .ar-search-modal-body{
+    background:#fff;
+    padding: 14px 16px 18px;
+    overflow: auto;
+    max-height: calc(100vh - 32px - 56px); /* viewport - margins - header */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* When modal open: lock page scroll */
+  html.ar-modal-open, body.ar-modal-open{
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+</style>
+
+<script>
+(function(){
+  if (window.__AR_SEARCH_MODAL_V2_INSTALLED__) return;
+  window.__AR_SEARCH_MODAL_V2_INSTALLED__ = true;
+
+  var ASSET_BASE = "https://alan-chat-proxy.vercel.app";
+  var CSS_URL = ASSET_BASE + "/ar-site-search.css";
+  var JS_URL  = ASSET_BASE + "/ar-site-search.js";
+
+  var MODAL_ID = "ar-search-modal";
+  var ROOT_ID  = "ar-search-modal-root";
+
+  function loadCssOnce(){
+    if (document.querySelector('link[data-ar-site-search-css="1"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = CSS_URL;
+    link.setAttribute("data-ar-site-search-css", "1");
+    document.head.appendChild(link);
+  }
+
+  function loadJsOnce(cb){
+    if (window.ARSiteSearch && typeof window.ARSiteSearch.mount === "function") { cb(); return; }
+    if (document.querySelector('script[data-ar-site-search-js="1"]')) {
+      // already loading; poll
+      var t0 = Date.now();
+      (function wait(){
+        if (window.ARSiteSearch && typeof window.ARSiteSearch.mount === "function") return cb();
+        if (Date.now() - t0 > 6000) return cb(new Error("ARSiteSearch.mount not available"));
+        setTimeout(wait, 50);
+      })();
+      return;
+    }
+
+    var s = document.createElement("script");
+    s.src = JS_URL;
+    s.defer = true;
+    s.setAttribute("data-ar-site-search-js", "1");
+    s.onload = function(){ cb(); };
+    s.onerror = function(){ cb(new Error("Failed to load " + JS_URL)); };
+    document.head.appendChild(s);
+  }
+
+  function ensureModal(){
+    var d = document.getElementById(MODAL_ID);
+    if (d) return d;
+
+    d = document.createElement("dialog");
+    d.id = MODAL_ID;
+    d.innerHTML =
+      '<div class="ar-search-modal-head">' +
+        '<div class="ar-search-modal-title">Search</div>' +
+        '<button class="ar-search-modal-close" type="button" aria-label="Close">×</button>' +
+      '</div>' +
+      '<div class="ar-search-modal-body">' +
+        '<div id="'+ROOT_ID+'" class="ar-site-search"></div>' +
+      '</div>';
+
+    document.body.appendChild(d);
+
+    d.querySelector(".ar-search-modal-close").addEventListener("click", function(){ d.close(); });
+
+    // Click outside closes
+    d.addEventListener("click", function(ev){
+      var rect = d.getBoundingClientRect();
+      var inDialog = (
+        ev.clientX >= rect.left && ev.clientX <= rect.right &&
+        ev.clientY >= rect.top  && ev.clientY <= rect.bottom
+      );
+      if (!inDialog) d.close();
+    });
+
+    // Lock/unlock background scroll
+    d.addEventListener("close", function(){
+      document.documentElement.classList.remove("ar-modal-open");
+      document.body.classList.remove("ar-modal-open");
+      try {
+        var root = document.getElementById(ROOT_ID);
+        if (root && window.ARSiteSearch && typeof window.ARSiteSearch.unmount === "function") {
+          window.ARSiteSearch.unmount(root);
+        } else if (root) {
+          root.innerHTML = "";
+        }
+      } catch(e){}
+    });
+
+    return d;
+  }
+
+  function parseQueryFromHref(href){
+    try {
+      var u = new URL(href, window.location.origin);
+      return (u.searchParams.get("q") || "").trim();
+    } catch(e){ return ""; }
+  }
+
+  function openSearchModal(initialQuery){
+    loadCssOnce();
+    loadJsOnce(function(err){
+      var dlg = ensureModal();
+      var root = document.getElementById(ROOT_ID);
+
+      // Open modal + lock scroll
+      if (typeof dlg.showModal === "function") {
+        dlg.showModal();
+        document.documentElement.classList.add("ar-modal-open");
+        document.body.classList.add("ar-modal-open");
+      } else {
+        window.location.href = "/site-search-results" + (initialQuery ? ("?q="+encodeURIComponent(initialQuery)) : "");
+        return;
+      }
+
+      if (err || !root || !window.ARSiteSearch || typeof window.ARSiteSearch.mount !== "function") {
+        // visible error inside modal
+        root.innerHTML =
+          '<div style="padding:12px 2px;color:#0f172a;">' +
+            '<div style="font-weight:800;margin-bottom:6px;">Search failed to load.</div>' +
+            '<div style="font-size:12px;color:#64748b;">' + (err ? String(err.message || err) : "ARSiteSearch.mount not available") + '</div>' +
+          '</div>';
+        return;
+      }
+
+      // Fresh mount each open
+      if (typeof window.ARSiteSearch.unmount === "function") window.ARSiteSearch.unmount(root);
+      root.innerHTML = "";
+
+      window.ARSiteSearch.mount(root, {
+        initialQuery: initialQuery || "",
+        autoSearch: true,
+        autoFocus: !initialQuery,
+        updateUrl: false
+      });
+    });
+  }
+
+  function isSearchResultsLink(a){
+    var href = (a && a.getAttribute) ? (a.getAttribute("href") || "") : "";
+    if (!href) return false;
+    try {
+      var u = new URL(href, window.location.origin);
+      return (u.pathname === "/site-search-results" || u.pathname === "/site-search-results/");
+    } catch(e){
+      return href === "site-search-results" || href === "site-search-results/" || href.indexOf("/site-search-results") === 0;
+    }
+  }
+
+  // CAPTURE + stopImmediatePropagation to beat Squarespace handlers
+  document.addEventListener("click", function(ev){
+    var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
+    if (!a) return;
+
+    if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    if (!isSearchResultsLink(a)) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (typeof ev.stopImmediatePropagation === "function") ev.stopImmediatePropagation();
+
+    openSearchModal(parseQueryFromHref(a.href || a.getAttribute("href")));
+  }, true);
+
+  // Optional: expose manual opener if needed
+  window.AROpenSearchModal = openSearchModal;
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  function manualToggle(e) {
+    var btn = e.currentTarget;
+    var item = btn.closest('.accordion-item');
+    if (!item) return;
+    var dd = item.querySelector('.accordion-item__dropdown');
+    if (!dd) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var container = item.closest('.accordion-items-container');
+    var allowMulti = container && container.getAttribute('data-should-allow-multiple-open-items') === 'true';
+    var open = item.getAttribute('data-is-open') === 'true';
+    if (!allowMulti && !open) {
+      container.querySelectorAll('.accordion-item[data-is-open="true"]').forEach(function (other) {
+        if (other === item) return;
+        var ob = other.querySelector('.accordion-item__click-target');
+        var od = other.querySelector('.accordion-item__dropdown');
+        other.removeAttribute('data-is-open');
+        if (ob) ob.setAttribute('aria-expanded', 'false');
+        if (od) { od.classList.remove('accordion-item__dropdown--open'); od.style.removeProperty('height'); }
+      });
+    }
+    if (open) {
+      item.removeAttribute('data-is-open');
+      btn.setAttribute('aria-expanded', 'false');
+      dd.classList.remove('accordion-item__dropdown--open');
+      dd.style.removeProperty('height');
+    } else {
+      item.setAttribute('data-is-open', 'true');
+      btn.setAttribute('aria-expanded', 'true');
+      dd.classList.add('accordion-item__dropdown--open');
+      dd.style.removeProperty('height');
+    }
+  }
+  function wire() {
+    document.querySelectorAll('.sqs-block-accordion .accordion-item__click-target').forEach(function (btn) {
+      if (btn.__arManualAcc) return;
+      btn.__arManualAcc = true;
+      btn.addEventListener('click', manualToggle, true);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+  window.addEventListener('load', wire);
+  [800, 2000, 4000, 8000].forEach(function (ms) { setTimeout(wire, ms); });
+})();
+</script>

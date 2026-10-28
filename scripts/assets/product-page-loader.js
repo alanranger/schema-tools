@@ -277,6 +277,29 @@
     }
     return null;
   }
+  var AR_SCHEMA_HOST = 'https://schema.alanranger.com/';
+  function arLoadHostedProduct() {
+    if (window.__arHostedProductLoad) return window.__arHostedProductLoad;
+    window.__arHostedProductLoad = (async function () {
+      var product = null;
+      try {
+        var manifest = await fetch(AR_SCHEMA_HOST + 'products-manifest.json').then(function (r) { return r.json(); });
+        var entry = (manifest.entries || []).find(function (e) { return arNormPath(e.pathKey) === arNormPath(location.pathname); });
+        if (entry && entry.schemaFileName) {
+          var schema = await fetch(AR_SCHEMA_HOST + entry.schemaFileName).then(function (r) { return r.json(); });
+          var nodes = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
+          product = arFindProductNode(nodes);
+          arInjectGithubSchema(schema);
+          arRemoveLegacyDuplicateProducts();
+          if (entry.faqFileName) {
+            fetch(AR_SCHEMA_HOST + entry.faqFileName).then(function (r) { return r.ok ? r.json() : null; }).then(arInjectProductFaq).catch(function () {});
+          }
+        }
+      } catch (e) {}
+      return product;
+    })();
+    return window.__arHostedProductLoad;
+  }
 
 
   function arStars(n) {
@@ -297,6 +320,7 @@
   var isServices = path === '/photography-services-near-me' || path.indexOf('/photography-services-near-me/') === 0;
   if (!isWorkshops && !isServices) return;
 
+  /* Workshops and services keep separate card/tile UIs. Only one runs (path gate). Schema inject is shared. */
   if (isWorkshops) {
     (function arWorkshopsProductPage() {
       'use strict';
@@ -630,21 +654,7 @@
           style.textContent = CSS;
           document.head.appendChild(style);
 
-          var product = null;
-          try {
-            var manifest = await fetch(CFG.SCHEMA_HOST + 'products-manifest.json').then(function (r) { return r.json(); });
-            var entry = (manifest.entries || []).find(function (e) { return arNormPath(e.pathKey) === arNormPath(location.pathname); });
-            if (entry && entry.schemaFileName) {
-              var schema = await fetch(CFG.SCHEMA_HOST + entry.schemaFileName).then(function (r) { return r.json(); });
-              var nodes = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
-              product = arFindProductNode(nodes);
-              arInjectGithubSchema(schema);
-              arRemoveLegacyDuplicateProducts();
-              if (entry.faqFileName) {
-                fetch(CFG.SCHEMA_HOST + entry.faqFileName).then(function (r) { return r.ok ? r.json() : null; }).then(arInjectProductFaq).catch(function () {});
-              }
-            }
-          } catch (e) {}
+          var product = await arLoadHostedProduct();
 
           var variants = [];
           var categories = [];
@@ -1546,21 +1556,7 @@
           style.id = 'ar-pb-style'; style.textContent = CSS;
           document.head.appendChild(style);
 
-          var product = null;
-          try {
-            var manifest = await fetch(CFG.SCHEMA_HOST + 'products-manifest.json').then(function (r) { return r.json(); });
-            var entry = (manifest.entries || []).find(function (e) { return arNormPath(e.pathKey) === arNormPath(location.pathname); });
-            if (entry && entry.schemaFileName) {
-              var schema = await fetch(CFG.SCHEMA_HOST + entry.schemaFileName).then(function (r) { return r.json(); });
-              var nodes = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
-              product = arFindProductNode(nodes);
-              arInjectGithubSchema(schema);
-              arRemoveLegacyDuplicateProducts();
-              if (entry.faqFileName) {
-                fetch(CFG.SCHEMA_HOST + entry.faqFileName).then(function (r) { return r.ok ? r.json() : null; }).then(arInjectProductFaq).catch(function () {});
-              }
-            }
-          } catch (e) {}
+          var product = await arLoadHostedProduct();
 
           var variants = [];
           try {

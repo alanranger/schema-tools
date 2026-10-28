@@ -1,0 +1,196 @@
+<link rel="stylesheet" href="//assets.squarewebsites.org/custom-filter/custom-filter.min.css"/>
+<script>
+window.customFilterSettings = {
+    'targets': [{
+        container: '.BlogList,.blog-list,.article-list, body.collection-type-blog.view-list #page-body .main-content',// css selector for filter container
+        items: 'article',// css selector for items to filter
+        settings: {
+            position: 'left',//set the position for filter to appear. May be: top, left, right
+            align: 'left',// align filter options, may be: left, center, right, space-between
+            showItemsCount: false, // show (true) or hide (false) Items count
+            collectionUrl: '',// you need to set source collection url slug (like /blog) if your items have external links (not linked to themselves)
+            wrapFilterContainer: false,// needed to prevent 7.1 Grid CSS styles for filter options
+            itemsCount: {
+                enabled: false, // same as showItemsCount
+                text: '', // set the items text before counter, it is Items: by default and you may set your own text
+                positionOrder: 1 // items counter position, higher means last
+            },
+            keepDropdownsOpenOnInit: false, // if set to true, dropdowns will be opened initially
+            customClasses: 'lite-dropdowns',
+            /* Add any custom classes to filter container if you want to have your own to use in CSS styling,
+            available: cf-sort-right (move sorting element right), cf-sort-left (move sort left), lite-dropdowns(gives lighter dropdowns stylings), cf-ctrls-inline (makes dropdowns fit one line space)*/
+            view: 'dropdowns', // available: dropdowns, breadcrumbs, modern, buttons, buttons-round, buttons-pill, buttons-inline
+            sticky: {// if enabled: true - trying enable sticky position of Filter to be seen on scroll
+                enabled: false,
+                top: '6%'
+            },
+            simpleFilter: {
+                show: {
+                    effect: 'fade',
+                    transitionDuration: 300,
+                    stagger: 60
+                },
+                hide: {
+                    effect: 'fade',
+                    transitionDuration: 100,
+                    stagger: 18
+                }
+            },
+            pagination: {
+              enabled: true, // enable pagination
+              pageSize: 30, // set the page size to 30
+            },
+            /*----Mobile Panel Section----*/
+            mobilePanel: {// control if you want to have separate offscreen panel with filters on small screens
+                enabled: true,// if set to false, no filter buttons on mobiles will be showed
+                triggerButtonName: 'Filter', // trigger button text
+                keepDropdownsOpen: null, // if false it overrides desktop settings, if true - dropdowns opened
+                closeOnSelect: false, // mobile panel closed just after user selected something
+                closeOnSearch: false, // mobile panel closed if user searced something in searc field
+                closeOnOutsideClick: false // if true, mobile panel will be closed if user clicks outside it
+            },
+            /*----Filters Section----*/
+            filter: { // here you define all filters you need and name them
+                category: false, // disabling default Category dropdown
+                tag: false, // disabling default Tag dropdown
+                items: [{
+                    name: 'Category', // give the dropdown (fiter entity) name you want
+                    multiple: true, // if true, allow to select multiple options
+                    logic: 'and', // how to combine dropdown options with other dropdowns logic. Other value is or
+                    multipleLogic: 'or',// combine each selected option with OR or AND logic within one dropdown
+                    closedSubOptions: false, // works for Products 7.1 subcategories onl
+                    sort: 'asc', // may be asc, desc, asAllowed (need define options list in allowedOptions), or your own custom function
+                    getAttr: 'categories'// here you say Filter to look for options in items categories
+                }, {
+					name: "Tags",
+					multiple: true,
+					getAttr: "tags"
+				}]
+            },
+            sort: {// define the sorters
+                enabled: true,// if false - no sorters visible/working
+                //defined: 'date_desc',// select which of defined sorters will work initially
+                items: [{
+                    name: 'Alphabetical',
+                    order: 'asc|desc',
+                    orderTexts: 'A-Z|Z-A',
+                    hideName: true,
+                    sort: 'title'
+                },{
+                    name: 'Date',// name your sorter
+                    order: 'asc|desc',// apply the orders you want to use
+                    orderTexts: 'Older|Newer',// name the orders in format you need
+                    hideName: true,// if true, you will not see Date name
+                    sort: '[data-publish-on] parseInt'//if properly configured, each Squarespace item will have publish date as data attribute. parseInt saysFilter operate it as integer number
+                }]
+            },
+            search: {
+                enabled: true,// if false, no Search input will be showed
+                text: 'Search', //set the placeholder to your search field, otherwise Search will be used
+            }
+        }
+    }]
+};
+</script>
+<script src="//assets.squarewebsites.org/custom-filter/custom-filter.min.js"></script>
+
+<!-- BLOG SCHEMA LOADER (schema clean-up 27 Oct 2026)
+     One hosted loader for the blog index AND every blog post. It replaces:
+       - the old "BLOG INDEX ONLY" blog-schema.json fetch
+       - the old "Auto-load Blog Schema Files (GitHub)" WebPage stub + loader
+       - (later) the footer "ARP Blog Schema Loader v5.1"
+     It loads each post's schema from schema.alanranger.com, keeps ONE article entry,
+     keeps FAQ schema only for questions visible on the page, and no longer adds the
+     hidden off-screen TLDR (dropped by Alan 27 Oct 2026).
+     Code lives in GitHub: alanranger-schema/loaders/blog-page-loader.js — do not edit here. -->
+<script src="https://schema.alanranger.com/loaders/blog-page-loader.js"></script>
+
+<style>
+/* BLOG CARD RESTYLE + "Read More" hover overlay
+   Paste this whole block (including the <style> tags) into the
+   /blog-on-photography PAGE HEADER CODE INJECTION, after the
+   existing filter plugin + schema scripts. Pure CSS — no logic touched.
+   Overlay is anchored to .BlogList-item-image (real height), NOT
+   .BlogList-item-image-link (0px tall in this template). */
+
+/* The plugin lays cards out with float:left, so cards in a row take their
+   own content height — a wrapped (2-line) title makes that card taller and
+   the row goes ragged. Converting the list to CSS grid makes every card in a
+   row stretch to equal height. Also fixes the overflow-clip on lower rows. */
+.BlogList{
+  display:grid !important;
+  grid-template-columns:repeat(5,1fr);
+  gap:33px 22px;
+  overflow:visible !important;
+  padding-bottom:12px;
+}
+.BlogList .BlogList-item{
+  float:none !important;width:auto !important;margin:0 !important;
+  display:flex;flex-direction:column;height:100%;
+}
+.BlogList-item-image{flex:0 0 auto}
+/* responsive columns (match the plugin's original reflow) */
+@media(max-width:1100px){.BlogList{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.BlogList{grid-template-columns:repeat(2,1fr);gap:22px 16px}}
+@media(max-width:460px){.BlogList{grid-template-columns:1fr}}
+
+/* card: cream text area (#faf3e6, matches intro band) grounds the card,
+   lift + orange edge on hover */
+.BlogList .BlogList-item{
+  background:#faf3e6;
+  border:1px solid #ead9bd;border-radius:14px;
+  padding-bottom:20px;                 /* consistent gap below the last line of text */
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.BlogList .BlogList-item:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 22px rgba(43,38,34,.12);
+  border-color:#E57200;
+}
+
+/* image fills the top, square bottom corners so it meets the cream cleanly */
+.BlogList-item-image{
+  position:relative;overflow:hidden;border-radius:14px 14px 0 0;
+}
+.BlogList-item-image::after{
+  content:"\2013 Read More \2013";
+  position:absolute;inset:0;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(229,114,0,0.92);
+  color:#2b2622;font-weight:800;font-size:16px;letter-spacing:.02em;
+  font-family:'Proxima Nova','proxima-nova',-apple-system,sans-serif;
+  opacity:0;transition:opacity .22s ease;
+  pointer-events:none;border-radius:14px 14px 0 0;
+}
+.BlogList-item:hover .BlogList-item-image::after{opacity:1}
+
+/* gentle image zoom under the wash */
+.BlogList-item-image img{transition:transform .35s ease}
+.BlogList-item:hover .BlogList-item-image img{transform:scale(1.05)}
+
+/* title → orange on hover, inset from card edges */
+.BlogList-item-title{transition:color .18s ease;padding:0 18px}
+.BlogList-item:hover .BlogList-item-title{color:#c45f00}
+
+/* excerpt: inset for clean edges, darker for readability, 2-line clamp */
+.BlogList--posts-excerpt .BlogList-item-excerpt{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;
+  padding:0 18px;
+  color:#3f372f;font-size:13.5px;line-height:1.5;margin-top:4px;
+}
+
+/* date in brand orange, matching inset + a little bottom breathing room */
+.BlogList-item .Blog-meta,
+.BlogList-item .BlogList-item-meta{
+  color:#E57200;font-weight:700;padding:0 18px;
+}
+/* ensure excerpt doesn't add its own bottom margin (card padding handles the gap) */
+.BlogList-item-excerpt{margin-bottom:0}
+
+@media(prefers-reduced-motion:reduce){
+  .BlogList .BlogList-item,
+  .BlogList-item-image img,
+  .BlogList-item-image::after{transition:none}
+}
+</style>

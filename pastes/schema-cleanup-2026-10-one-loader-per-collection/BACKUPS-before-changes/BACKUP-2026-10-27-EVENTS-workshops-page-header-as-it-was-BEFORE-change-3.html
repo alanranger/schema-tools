@@ -1,0 +1,231 @@
+<!-- ============================================================
+     ALAN RANGER — EVENT-LIST H1 DEMOTE FIX
+     Where to paste: Page Settings (Event List Settings) -> Advanced
+                     -> PAGE HEADER CODE INJECTION  (this page only)
+     What it does:  Squarespace renders every event title in the list
+                    as an <h1>, giving ~82 H1s on this page. This script
+                    runs after the page loads and converts ONLY the
+                    event-list H1s into <h2>, leaving the real page H1
+                    ("Landscape Photographic Workshops Near Me ...") as
+                    the single page H1. Improves heading hierarchy / SEO.
+     Safe:          Does NOT touch schema, links, styling, or the page H1.
+                    Reversible - remove this block to revert.
+     ============================================================ -->
+<script>
+(function () {
+  function demoteEventH1s() {
+    // Every event title H1 lives inside an .eventlist-event item.
+    // The real page H1 is NOT inside .eventlist-event, so it is left alone.
+    var eventH1s = document.querySelectorAll('.eventlist-event h1');
+    eventH1s.forEach(function (h1) {
+      if (h1.dataset.arDemoted === '1') return;          // idempotent
+      var h2 = document.createElement('h2');
+      // preserve classes, inline styles and inner HTML (keeps the title link + styling)
+      h2.className = h1.className;
+      if (h1.getAttribute('style')) h2.setAttribute('style', h1.getAttribute('style'));
+      h2.innerHTML = h1.innerHTML;
+      h2.dataset.arDemoted = '1';
+      h1.parentNode.replaceChild(h2, h1);
+    });
+  }
+
+  // Run after DOM is ready, then once more shortly after in case the
+  // event list renders/repaints late (Squarespace can hydrate async).
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', demoteEventH1s);
+  } else {
+    demoteEventH1s();
+  }
+  window.addEventListener('load', demoteEventH1s);
+  setTimeout(demoteEventH1s, 1200);
+  setTimeout(demoteEventH1s, 3000);
+})();
+</script>
+
+
+
+
+<!-- TO REDIRECT THE BACK TO ALL EVENTS LINK - by beatrizcaraballo.com -->
+<script>
+  $(function() {
+    $('.eventitem-backlink').attr('href', '/photographic-workshops-near-me');
+  });
+</script>
+<div class="gradient-background"></div>
+
+<!-- Workshops Schema -->
+<script type="application/ld+json"
+        src="https://schema.alanranger.com/workshops-schema.json">
+</script>
+
+<!-- ARP Event Posts Loader v1.0 (Workshops only) -->
+<script type="application/ld+json" id="arp-critical-schema-workshops">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "<PAGE_URL>#webpage",
+  "isPartOf": { "@id": "https://www.alanranger.com/#website" },
+  "about": { "@id": "<PAGE_URL>#article" }
+}
+</script>
+<script>
+(function() {
+  const pageUrl = window.location.href.split("#")[0];
+  const critical = document.getElementById("arp-critical-schema-workshops");
+  if (critical) critical.textContent = critical.textContent.replace(/<PAGE_URL>/g, pageUrl);
+  const path = window.location.pathname.replace(/\/+$/, "").toLowerCase() || "/";
+  if (!path.startsWith("/photographic-workshops-near-me/")) return;
+  const MANIFEST_URL = "https://schema.alanranger.com/events-manifest.json";
+  const base = "https://schema.alanranger.com/";
+  const targetGroup = "workshops";
+  function appendJsonLd(payload) {
+    if (!payload || typeof payload !== "object") return;
+    const el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.textContent = JSON.stringify(payload);
+    document.head.appendChild(el);
+  }
+  function hasExistingFaqSchema() {
+    return Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some((block) => {
+      try {
+        const json = JSON.parse(block.textContent || "{}");
+        if (json && json["@type"] === "FAQPage") return true;
+        if (Array.isArray(json && json["@graph"])) {
+          return json["@graph"].some((node) => {
+            if (!node) return false;
+            const t = node["@type"];
+            if (Array.isArray(t)) return t.includes("FAQPage");
+            return t === "FAQPage";
+          });
+        }
+        return false;
+      } catch (_err) {
+        return /"@type"\s*:\s*"FAQPage"/i.test(block.textContent || "");
+      }
+    });
+  }
+  function hasVisibleFaqBlock() {
+    const faqSelectors = [".faq-block", ".sqs-faq-block", '[data-section-type*="faq"]', '[id*="faq"]', '[class*="faq"]'].join(",");
+    const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+    const faqHeading = headings.find((h) => /\bfaq\b|frequently asked questions?/i.test(String(h.textContent || "")));
+    if (!faqHeading) return false;
+    const scope = faqHeading.closest("section, article, [data-section-id], [id], [class]") || faqHeading.parentElement || document.body;
+    if (!scope) return false;
+    if (scope.querySelector(faqSelectors)) return true;
+    const siblings = [faqHeading.previousElementSibling, faqHeading.nextElementSibling].filter(Boolean);
+    return siblings.some((el) => Boolean(el.querySelector && el.querySelector(faqSelectors)));
+  }
+  function hasExistingTldrSignal() {
+    if (document.getElementById("ar-tldr-block")) return true;
+    return Array.from(document.querySelectorAll("h1,h2,h3,h4"))
+      .some((h) => /(^|\s)(tl;?dr|tldr|summary|quick answer)(\s|$)/i.test(String(h.textContent || "")));
+  }
+  function injectTldrBlock(summaryText) {
+    if (hasExistingTldrSignal()) return;
+    const summary = String(summaryText || "").replace(/\s+/g, " ").trim();
+    if (summary.length < 40) return;
+    const container = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+    if (!container) return;
+    const block = document.createElement("section");
+    block.id = "ar-tldr-block";
+    block.style.margin = "1rem 0";
+    block.style.padding = "0.85rem 1rem";
+    block.style.border = "1px solid #dbe3ec";
+    block.style.borderRadius = "8px";
+    block.style.background = "#f8fbff";
+    const title = document.createElement("h2");
+    title.textContent = "TLDR";
+    title.style.margin = "0 0 0.45rem 0";
+    title.style.fontSize = "1rem";
+    const body = document.createElement("p");
+    body.textContent = summary;
+    body.style.margin = "0";
+    body.style.lineHeight = "1.55";
+    block.appendChild(title);
+    block.appendChild(body);
+    const firstHeading = container.querySelector("h1, h2");
+    if (firstHeading && firstHeading.parentNode) firstHeading.parentNode.insertBefore(block, firstHeading.nextSibling);
+    else if (container.firstChild) container.insertBefore(block, container.firstChild);
+    else container.appendChild(block);
+  }
+  function getEntryByPath(entries) {
+    if (!Array.isArray(entries) || !entries.length) return null;
+    const exact = entries.find((entry) => String(entry.pathKey || "").toLowerCase() === path && String(entry.group || "").toLowerCase() === targetGroup);
+    if (exact) return exact;
+    const slug = path.split("/").filter(Boolean).pop() || "";
+    if (!slug) return null;
+    return entries.find((entry) => String(entry.slug || "").toLowerCase() === slug && String(entry.group || "").toLowerCase() === targetGroup) || null;
+  }
+  fetch(MANIFEST_URL)
+    .then((r) => r.ok ? r.json() : null)
+    .then((manifest) => {
+      const entry = getEntryByPath(manifest && manifest.entries ? manifest.entries : []);
+      if (!entry || !entry.schemaFileName) return;
+      fetch(base + String(entry.schemaFileName))
+        .then((r) => r.ok ? r.json() : null)
+        .then((schemaJson) => {
+          if (!schemaJson || typeof schemaJson !== "object") return;
+          appendJsonLd(schemaJson);
+          const graph = Array.isArray(schemaJson["@graph"]) ? schemaJson["@graph"] : [];
+          const eventNode = graph.find((node) => {
+            const t = node && node["@type"];
+            return Array.isArray(t) ? t.includes("Event") : t === "Event";
+          }) || schemaJson;
+          injectTldrBlock(eventNode.description || eventNode.name || "");
+          if (!entry.faqFileName) return;
+          if (hasExistingFaqSchema() || hasVisibleFaqBlock()) return;
+          fetch(base + String(entry.faqFileName))
+            .then((r) => r.ok ? r.json() : null)
+            .then((faqJson) => {
+              if (!faqJson || String(faqJson["@type"] || "").toLowerCase() !== "faqpage") return;
+              appendJsonLd(faqJson);
+            });
+        });
+    });
+})();
+</script>
+
+<!-- ============================================================================
+ /photographic-workshops-near-me (EVENTS COLLECTION) — WORKSHOPS POINTER INJECTION (v1)
+ Ruling 3b (Alan, 19 Jul): dated workshop event pages compete with the
+ workshops pages ('macro photography workshops' ranks #10 on a single dated
+ event). Events are live booking pages — they stay; this injection banners
+ EVERY workshop date page back to the right catalogue automatically:
+   • event title contains "landscape" → /landscape-photography-workshops
+   • otherwise                        → /photography-workshops (the hub)
+ PASTE (one time, covers all current and future workshop dates):
+ Squarespace → https://www.alanranger.com/config/pages → find the events
+ collection whose URL slug is  photographic-workshops-near-me
+ (live URL: https://www.alanranger.com/photographic-workshops-near-me)
+ → ⚙️ settings → Advanced → PAGE HEADER CODE INJECTION → paste this whole
+ file → Save.
+ Only renders on individual event pages, never the calendar listing.
+============================================================================ -->
+<style>
+ body .ar-wsevtcta-wrap{--o:#f15a22;--o-darker:#8c2c0a;--cream:#fef7ed;--card-border:#f3d9c8;--navy:#0f172a;--slate:#334155;
+ max-width:720px;margin:1.2rem auto;background:var(--cream);border:1px solid var(--card-border);border-left:4px solid var(--o);border-radius:12px;padding:1.1rem 1.3rem;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;box-sizing:border-box;}
+ body .ar-wsevtcta-title{margin:0 0 .3rem;font-size:1rem;font-weight:800;color:var(--navy) !important;line-height:1.4;}
+ body .ar-wsevtcta-title a{color:var(--o-darker) !important;text-decoration:underline !important;text-decoration-color:rgba(241,90,34,.4) !important;text-underline-offset:3px;}
+ body .ar-wsevtcta-title a:hover{text-decoration-color:var(--o) !important;}
+ body .ar-wsevtcta-desc{margin:0;font-size:.86rem;color:var(--slate) !important;line-height:1.6;}
+</style>
+<script>
+(function(){
+ function addBanner(){
+ try{
+ var parts=location.pathname.split('/').filter(Boolean);
+ if(parts.length<2 || parts[0]!=='photographic-workshops-near-me'){return;}
+ if(document.querySelector('.ar-wsevtcta-wrap')){return;}
+ var isLandscape=/landscape/i.test(document.title+' '+location.pathname);
+ var href=isLandscape?'/landscape-photography-workshops':'/photography-workshops';
+ var anchor=isLandscape?'half and one-day landscape photography workshops':'all upcoming photography workshops';
+ var el=document.createElement('div');
+ el.className='ar-wsevtcta-wrap';
+ el.innerHTML='<p class="ar-wsevtcta-title">This page is one workshop date &mdash; browse <a href="'+href+'">'+anchor+'</a></p><p class="ar-wsevtcta-desc">Every location, date and price on the workshops calendar &mdash; then book the date that suits you.</p>';
+ var host=document.querySelector('.eventitem-column-content, .eventitem, article, main');
+ if(host){host.insertBefore(el, host.firstChild);}
+ }catch(e){}
+ }
+ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded', addBanner);}else{addBanner();}
+})();
+</script>

@@ -27,3 +27,14 @@ Thumbs.db
 .env.local
 
 .vercel
+
+__pycache__/
+*.pyc
+.firecrawl/
+.server-port
+Open-PowerShell-Here*.bat
+outputs/_debug_*
+*Copy.html
+*.restored
+/backups/
+*.ics

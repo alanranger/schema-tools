@@ -1088,3 +1088,43 @@ Each line is ISO timestamp plus message. Processing uses batches (default 50 URL
 2026-09-27T15:22:28.536Z the-art-of-storytelling-photography howto=none/0 faq=arp-faq/8 files=skip-howto,ok-faq
 2026-09-27T15:22:28.837Z Finished bulk HowTo/FAQ regen (1 URL(s)). FAQ files: ok-faq=1, delete-faq=0, skip-faq=0.
 2026-09-27T15:22:28.907Z Upserted 5 nodes (pruned 0) into blog-schema.json
+2026-10-26T18:53:06.358Z Starting bulk HowTo/FAQ regen: 5 URL(s), batch=50, repo=C:\TEMP\faq-regen-run1, noCommit=true
+2026-10-26T18:53:06.563Z best-cameras-for-beginners howto=none/0 faq=C-headings/5 files=skip-howto,ok-faq
+2026-10-26T18:53:06.903Z photography-concepts-for-beginners howto=E/3 faq=none/0 files=ok-howto,skip-faq
+2026-10-26T18:53:07.243Z free-outdoor-photography-exposure-calculator howto=B/4 faq=none/0 files=ok-howto,skip-faq
+2026-10-26T18:53:07.585Z midlands-photography-workshops-with-alan-ranger howto=E/20 faq=C-headings/10 files=ok-howto,ok-faq
+2026-10-26T18:53:07.917Z photography-lessons-for-beginners howto=none/0 faq=arp-faq/5 files=skip-howto,ok-faq
+2026-10-26T18:53:08.217Z Finished bulk HowTo/FAQ regen (5 URL(s)). FAQ files: ok-faq=3, delete-faq=0, skip-faq=2, fail-faq=0.
+2026-10-26T18:53:08.218Z blog-schema upsert failed: ENOENT: no such file or directory, open 'C:\TEMP\faq-regen-run1\blog-schema.json'
+2026-10-26T18:54:04.935Z Starting bulk HowTo/FAQ regen: 5 URL(s), batch=50, repo=C:\TEMP\faq-regen-run1, noCommit=true
+2026-10-26T18:54:05.149Z best-cameras-for-beginners howto=none/0 faq=C-headings/5 files=skip-howto,ok-faq
+2026-10-26T18:54:05.588Z midlands-photography-workshops-with-alan-ranger howto=E/20 faq=C-headings/10 files=ok-howto,ok-faq
+2026-10-26T18:54:05.926Z photography-lessons-for-beginners howto=none/0 faq=arp-faq/5 files=skip-howto,ok-faq
+2026-10-26T18:54:06.266Z photography-concepts-for-beginners howto=E/3 faq=none/0 files=ok-howto,skip-faq
+2026-10-26T18:54:06.605Z free-outdoor-photography-exposure-calculator howto=B/4 faq=none/0 files=ok-howto,skip-faq
+2026-10-26T18:54:06.905Z Finished bulk HowTo/FAQ regen (5 URL(s)). FAQ files: ok-faq=3, delete-faq=0, skip-faq=2, fail-faq=0.
+2026-10-26T18:54:06.906Z blog-schema upsert failed: ENOENT: no such file or directory, open 'C:\TEMP\faq-regen-run1\blog-schema.json'
+2026-10-26T18:56:12.185Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\faq-regen-run2, noCommit=true
+2026-10-26T18:56:12.349Z best-cameras-for-beginners ERROR HTTP 429
+2026-10-26T18:56:12.737Z midlands-photography-workshops-with-alan-ranger ERROR HTTP 429
+2026-10-26T18:56:13.133Z photography-lessons-for-beginners ERROR HTTP 429
+2026-10-26T18:56:13.435Z Halted: batch error rate 100.0% exceeds 10% (3/3).
+2026-10-26T18:56:27.747Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\faq-regen-run2, noCommit=true
+2026-10-26T18:56:27.925Z best-cameras-for-beginners ERROR HTTP 429
+2026-10-26T18:56:28.313Z midlands-photography-workshops-with-alan-ranger ERROR HTTP 429
+2026-10-26T18:56:28.700Z photography-lessons-for-beginners ERROR HTTP 429
+2026-10-26T18:56:29.000Z Halted: batch error rate 100.0% exceeds 10% (3/3).
+2026-10-26T18:56:39.354Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\faq-regen-run2, noCommit=true
+2026-10-26T18:56:39.526Z best-cameras-for-beginners ERROR HTTP 429
+2026-10-26T18:56:39.918Z midlands-photography-workshops-with-alan-ranger ERROR HTTP 429
+2026-10-26T18:56:40.311Z photography-lessons-for-beginners ERROR HTTP 429
+2026-10-26T18:56:40.611Z Halted: batch error rate 100.0% exceeds 10% (3/3).
+2026-10-26T19:00:08.907Z Starting bulk HowTo/FAQ regen: 3 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\faq-regen-run2, noCommit=true
+2026-10-26T19:00:09.125Z best-cameras-for-beginners howto=none/0 faq=C-headings/5 files=skip-howto,ok-faq
+2026-10-26T19:00:09.470Z midlands-photography-workshops-with-alan-ranger howto=E/20 faq=C-headings/10 files=ok-howto,ok-faq
+2026-10-26T19:00:09.805Z photography-lessons-for-beginners howto=none/0 faq=arp-faq/5 files=skip-howto,ok-faq
+2026-10-26T19:00:10.105Z Finished bulk HowTo/FAQ regen (3 URL(s)). FAQ files: ok-faq=3, delete-faq=0, skip-faq=0, fail-faq=0.
+2026-10-26T19:00:10.105Z blog-schema upsert failed: ENOENT: no such file or directory, open 'C:\Users\alan\AppData\Local\Temp\faq-regen-run2\blog-schema.json'
+2026-10-26T20:49:34.865Z Starting bulk HowTo/FAQ regen: 1 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\bulk-dry, noCommit=true
+2026-10-26T20:49:35.259Z why-youtube-cant-teach-photography ERROR HTTP 404
+2026-10-26T20:49:35.561Z Halted: batch error rate 100.0% exceeds 10% (1/1).
