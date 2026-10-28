@@ -19,9 +19,25 @@
   if (inEditor()) return;
 
   /* ---------- Product-list H1 tidy (shop cards + related products) ---------- */
+  function injectProductListTitleStyle() {
+    if (document.getElementById('ar-pl-title-h2')) return;
+    var el = document.createElement('style');
+    el.id = 'ar-pl-title-h2';
+    el.textContent = 'html body h2.ProductList-title[data-ar-demoted]{'
+      + 'font-family:proxima-nova!important;'
+      + 'font-size:16px!important;font-weight:400!important;font-style:normal!important;'
+      + 'color:rgb(13,13,13)!important;text-transform:capitalize!important;'
+      + 'letter-spacing:.02em!important;line-height:1.4!important;'
+      + 'margin:1em 0 0!important;padding:0!important;text-align:center!important;'
+      + 'text-decoration:none!important;display:block!important;hyphens:manual!important'
+      + '}'
+      + '@media (max-width:640px){html body h2.ProductList-title[data-ar-demoted]{'
+      + 'margin-top:.7em!important;hyphens:auto!important}}';
+    (document.head || document.documentElement).appendChild(el);
+  }
   function demoteProductListTitleH1s() {
     var nodes = document.querySelectorAll('h1.ProductList-title');
-    var i, h1, h2, j, attr, cs;
+    var i, h1, h2, j, attr;
     for (i = 0; i < nodes.length; i++) {
       h1 = nodes[i];
       if (h1.getAttribute('data-ar-demoted') === '1') continue;
@@ -31,16 +47,11 @@
         h2.setAttribute(attr.name, attr.value);
       }
       h2.innerHTML = h1.innerHTML;
-      try {
-        cs = window.getComputedStyle(h1);
-        h2.style.setProperty('font-size', cs.fontSize, 'important');
-        h2.style.setProperty('font-weight', cs.fontWeight, 'important');
-        h2.style.setProperty('color', cs.color, 'important');
-      } catch (e) {}
       h2.setAttribute('data-ar-demoted', '1');
       if (h1.parentNode) h1.parentNode.replaceChild(h2, h1);
     }
   }
+  injectProductListTitleStyle();
   if (!window.__arProductListH1TidyBound) {
     window.__arProductListH1TidyBound = true;
     if (document.readyState === 'loading') {
@@ -378,7 +389,7 @@
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]{position:relative}'
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]:hover:before,body:not(.ar-fp-edit-mode) [data-ar-tip]:focus-visible:before{content:attr(data-ar-tip);position:absolute;bottom:calc(100% + 12px);left:0;width:300px;background:#1a1a1a;color:#fff;font:500 12.5px/1.55 "Segoe UI",sans-serif;letter-spacing:.01em;text-transform:none;padding:11px 14px;border-radius:9px;z-index:99999;white-space:normal;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none}'
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]:hover:after,body:not(.ar-fp-edit-mode) [data-ar-tip]:focus-visible:after{content:"";position:absolute;bottom:calc(100% + 1px);left:26px;border:6px solid transparent;border-top-color:#1a1a1a;pointer-events:none}'
-          + 'body:not(.ar-fp-edit-mode) .ProductItem-relatedProducts h2.ProductList-title{font-size:17px !important;line-height:1.4;font-weight:600;margin:10px 0 4px}'
+          + 'body:not(.ar-fp-edit-mode) .ProductItem-relatedProducts h2.ProductList-title:not([data-ar-demoted]){font-size:17px !important;line-height:1.4;font-weight:600;margin:10px 0 4px}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:14px 18px 14px 22px;border-radius:12px;display:flex;gap:16px;align-items:center;z-index:999999;font:600 13.5px "Segoe UI",sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25)}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast a{background:#e8853d;color:#fff;padding:9px 18px;border-radius:20px;font-weight:700;text-decoration:none;white-space:nowrap}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast a:hover{background:#c96a1e}'
@@ -1237,7 +1248,7 @@
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]{position:relative}'
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]:hover:before,body:not(.ar-fp-edit-mode) [data-ar-tip]:focus-visible:before{content:attr(data-ar-tip);position:absolute;bottom:calc(100% + 12px);left:0;width:300px;background:#1a1a1a;color:#fff;font:500 12.5px/1.55 "Segoe UI",sans-serif;letter-spacing:.01em;text-transform:none;padding:11px 14px;border-radius:9px;z-index:99999;white-space:normal;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none}'
           + 'body:not(.ar-fp-edit-mode) [data-ar-tip]:hover:after,body:not(.ar-fp-edit-mode) [data-ar-tip]:focus-visible:after{content:"";position:absolute;bottom:calc(100% + 1px);left:26px;border:6px solid transparent;border-top-color:#1a1a1a;pointer-events:none}'
-          + 'body:not(.ar-fp-edit-mode) .ProductItem-relatedProducts h2.ProductList-title{font-size:17px !important;line-height:1.4;font-weight:600;margin:10px 0 4px}'
+          + 'body:not(.ar-fp-edit-mode) .ProductItem-relatedProducts h2.ProductList-title:not([data-ar-demoted]){font-size:17px !important;line-height:1.4;font-weight:600;margin:10px 0 4px}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:14px 18px 14px 22px;border-radius:12px;display:flex;gap:16px;align-items:center;z-index:999999;font:600 13.5px "Segoe UI",sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25)}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast a{background:#e8853d;color:#fff;padding:9px 18px;border-radius:20px;font-weight:700;text-decoration:none;white-space:nowrap}'
           + 'body:not(.ar-fp-edit-mode) #ar-toast a:hover{background:#c96a1e}'
