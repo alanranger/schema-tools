@@ -3065,25 +3065,17 @@
             • Or copy the schema directly</span>
           </li>
           <li><strong>Step 5 - Deploy to GitHub:</strong><br>
-            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Export JSON & Deploy to GitHub" button<br>
-            • Schema file is automatically committed and pushed to GitHub<br>
-            • GitHub Pages auto-deploys schema to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
-            • <strong>Option A (Recommended):</strong> Add auto-fetch script to blog index page (see info box below)<br>
-            • <strong>Option B:</strong> Manually copy and paste schema into blog index page header code injection or Code Block</span>
+            <span style="color: #64748b; font-size: 1rem; font-weight: 600;">• Click "Export JSON & Deploy to GitHub" only when you are told to deploy<br>
+            • GitHub Pages serves <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
+            • <code>blog-page-loader.js</code> in the blog page header already loads that file. Do not paste schema into the page header or a Code Block.</span>
           </li>
         </ol>
       </div>
       
       <div style="background: #dbeafe; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 1rem; margin-bottom: 1rem;">
-        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.1rem;">✅ Auto-Fetch from GitHub Pages (Recommended)</h4>
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.1rem;">✅ Loader already on the blog index page</h4>
         <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
-          <strong>After deploying to GitHub (Step 5), you can add an auto-fetch script to your blog index page.</strong> This automatically loads the schema from GitHub Pages at <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code>.
-        </p>
-        <p style="margin: 0.75rem 0; color: #1e3a8a; font-size: 1rem; line-height: 1.7;">
-          <strong>How it works:</strong> Add a Code Block to your blog index page with a script that fetches the schema JSON from GitHub Pages and injects it as JSON-LD. When you regenerate and deploy the schema, the blog index page automatically uses the updated schema—no manual copying or pasting needed!
-        </p>
-        <p style="margin: 0.75rem 0 0 0; color: #1e3a8a; font-size: 0.95rem; font-style: italic;">
-          <strong>Alternative:</strong> If you prefer, you can manually copy and paste the schema into the blog index page header code injection or a Code Block. This is a one-time setup since the blog index page is a single page.
+          <strong><code>blog-page-loader.js</code> in the blog page header</strong> already fetches <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code>. After a deploy, the live blog index picks up the new file. Do not paste JSON-LD into the header or a Code Block.
         </p>
       </div>
     </div>
@@ -3646,11 +3638,9 @@
           </li>
           <li><strong>Step 5 - Deploy to GitHub:</strong><br>
             <span style="color: #64748b; font-size: 1rem; font-weight: 600;">
-            • Click "Export JSON & Deploy to GitHub" button<br>
-            • Schema file is automatically committed and pushed to GitHub<br>
-            • GitHub Pages auto-deploys schema to <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
-            • <strong>Option A (Recommended):</strong> Add auto-fetch script to blog index page (fetches from GitHub Pages)<br>
-            • <strong>Option B:</strong> Manually copy and paste schema into blog index page header code injection or Code Block<br>
+            • Click "Export JSON & Deploy to GitHub" only when you are told to deploy<br>
+            • GitHub Pages serves <code style="background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 1rem; font-weight: 700;">https://schema.alanranger.com/blog-schema.json</code><br>
+            • <code>blog-page-loader.js</code> in the blog page header already loads that file. Do not paste schema into the page header or a Code Block.<br>
             • Validate using Schema Validator tab</span>
           </li>
         </ol>
@@ -8479,7 +8469,7 @@
     const BLOG_DESCRIPTION = 'Photography tips, creative projects, case studies, and news by Alan Ranger. Covering composition, exposure, field techniques, editing, and real workshop insights.';
 
     // Declare IDs before use
-    const ORGANIZATION_ID = 'https://www.alanranger.com#organization';
+    const ORGANIZATION_ID = 'https://www.alanranger.com/#org';
     const WEBSITE_ID = 'https://www.alanranger.com/#website';
 
     blogLog(`   Blog URL: ${BLOG_URL}`);
@@ -8803,38 +8793,11 @@
         ]
       }));
 
-    const webSite = {
-      '@type': 'WebSite',
-      '@id': 'https://www.alanranger.com#website',
-      url: 'https://www.alanranger.com',
-      name: 'Alan Ranger Photography',
-      publisher: { '@id': 'https://www.alanranger.com#organization' }
-    };
-
-    const organization = {
-      '@type': 'Organization',
-      '@id': 'https://www.alanranger.com#organization',
-      name: 'Alan Ranger Photography',
-      url: 'https://www.alanranger.com',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
-        width: 600,
-        height: 60
-      },
-      sameAs: [
-        'https://www.facebook.com/AlanRangerPhotography',
-        'https://www.instagram.com/alan_ranger_photography',
-        'https://www.linkedin.com/in/alanranger'
-      ]
-    };
-
-    // Index file only: Blog + ItemList + WebPage + Breadcrumb. Per-post files carry BlogPosting.
+    // Index file only: Blog + ItemList + WebPage + Breadcrumb.
+    // Footer already emits Organization (#org) and WebSite (#website) — reference, do not duplicate.
     const blogSchema = {
       '@context': 'https://schema.org',
       '@graph': [
-        webSite,
-        organization,
         blog,
         itemList,
         webPage,
@@ -8883,15 +8846,21 @@
         const postUrls = new Set();
         
         // Check for required top-level objects
-        const hasWebSite = graph.some(obj => obj['@type'] === 'WebSite');
-        const hasOrganization = graph.some(obj => obj['@type'] === 'Organization');
         const hasBlog = graph.some(obj => obj['@type'] === 'Blog');
         const hasItemList = graph.some(obj => obj['@type'] === 'ItemList');
-        
-        if (!hasWebSite) errors.push('Missing WebSite object');
-        if (!hasOrganization) errors.push('Missing Organization object');
         if (!hasBlog) errors.push('Missing Blog object');
         if (!hasItemList) errors.push('Missing ItemList object');
+        graph.forEach(obj => {
+          const id = String(obj['@id'] || '');
+          if (id.includes('#organization') || /alanranger\.com#website(\b|$)/.test(id)) {
+            errors.push(`Non-canonical @id (use /#org and /#website): ${id}`);
+          }
+        });
+        const blogNode = graph.find(obj => obj['@type'] === 'Blog');
+        const blogPublisherId = blogNode && blogNode.publisher && blogNode.publisher['@id'];
+        if (blogPublisherId !== 'https://www.alanranger.com/#org') {
+          errors.push('Blog.publisher must reference https://www.alanranger.com/#org');
+        }
         
         // Check for duplicate @id values
         graph.forEach(obj => {
