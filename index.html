@@ -18381,7 +18381,7 @@ ${minifiedJson}
   // Both accordion markups: classic `.ar-faq` blocks and the newer
   // `.ar-faq-wrap` / `details.ar-faq-item` sections (Academy page).
   function landingFaqClassDetails(doc, found) {
-    doc.querySelectorAll('.ar-faq, .ar-faq-wrap').forEach((root) => {
+    doc.querySelectorAll('.ar-faq, .ar-faq-wrap, [class*="-faq"]').forEach((root) => {
       root.querySelectorAll('details').forEach((det) => found.add(det));
     });
     doc.querySelectorAll('details.ar-faq-item').forEach((det) => found.add(det));
@@ -18395,10 +18395,30 @@ ${minifiedJson}
     });
   }
 
+  function landingFaqIsWidgetToggle(raw) {
+    return /[▾▼▶▸]/.test(String(raw || ''));
+  }
+
+  function landingFaqLooksLikeQuestion(raw) {
+    const q = landingCleanText(String(raw || ''))
+      .replace(/[▾▼▶▸▲▴+]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (q.length < 12 || q.charAt(q.length - 1) !== '?') return '';
+    if (/^(description|itinerary|dates)\b/i.test(q)) return '';
+    return q;
+  }
+
   function landingFaqDetailsElements(doc) {
     const found = new Set();
     landingFaqClassDetails(doc, found);
     landingFaqHeadingDetails(doc, found);
+    doc.querySelectorAll('details').forEach((det) => {
+      const raw = String((det.querySelector('summary') && det.querySelector('summary').textContent) || '');
+      if (landingFaqIsWidgetToggle(raw)) return;
+      if (landingFaqLooksLikeQuestion(raw)) found.add(det);
+    });
+    doc.querySelectorAll('li.accordion-item').forEach((item) => found.add(item));
     return Array.from(found);
   }
 
@@ -18408,21 +18428,23 @@ ${minifiedJson}
       .map((p) => landingCleanText(p.textContent || ''))
       .filter(Boolean);
     if (paragraphs.length) return paragraphs.join(' ');
-    const answerBox = det.querySelector('.ar-faq-a');
+    const answerBox = det.querySelector('.ar-faq-a, .accordion-item__description');
     if (answerBox) return landingCleanText(answerBox.textContent || '');
     const clone = det.cloneNode(true);
-    const summary = clone.querySelector('summary');
+    const summary = clone.querySelector('summary, .accordion-item__title');
     if (summary) summary.remove();
     return landingCleanText(clone.textContent || '');
   }
 
   // Summary text without the toggle icon (e.g. `.ar-faq-q-icon` "+").
   function landingFaqQuestionText(det) {
-    const summary = det.querySelector('summary');
+    const summary = det.querySelector('summary, .accordion-item__title, .ar-faq-q');
     if (!summary) return '';
     const clone = summary.cloneNode(true);
     clone.querySelectorAll('[class*="icon"]').forEach((el) => el.remove());
-    return landingCleanText(clone.textContent || '');
+    const raw = clone.textContent || '';
+    if (landingFaqIsWidgetToggle(raw)) return '';
+    return landingFaqLooksLikeQuestion(raw);
   }
 
   // R2: Mirror the visible FAQ accordion exactly (summary = question). Returns a FAQPage
@@ -18436,16 +18458,19 @@ ${minifiedJson}
       return null;
     }
     const questions = [];
+    const seen = {};
     landingFaqDetailsElements(doc).forEach((det) => {
       const question = landingFaqQuestionText(det);
       const answer = landingFaqAnswerText(det);
-      if (question && answer) {
-        questions.push({
-          '@type': 'Question',
-          name: question,
-          acceptedAnswer: { '@type': 'Answer', text: answer }
-        });
-      }
+      if (!question || !answer || answer.length < 24) return;
+      const key = question.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = 1;
+      questions.push({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer }
+      });
     });
     if (!questions.length) return null;
     const base = String(pageUrl || '').trim().replace(/\/+$/, '') || 'https://www.alanranger.com';
