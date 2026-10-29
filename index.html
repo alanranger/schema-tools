@@ -18359,6 +18359,9 @@ ${minifiedJson}
     return nodes.some((node) => landingHasType(node, 'FAQPage'));
   }
 
+  // Historical fallback invented 4 boilerplate Q&As when no accordion existed:
+  // "What is [title] about?", "Who is this suitable for?", "How do I get started?",
+  // "Can I get help choosing the right option?". Stubbed — FAQPage only from scrape.
   function buildLandingFaqQuestions() {
     return [];
   }
@@ -18600,6 +18603,36 @@ ${minifiedJson}
       return { ...schema, '@graph': schema['@graph'].filter((node) => !landingHasType(node, 'FAQPage')) };
     }
     return landingHasType(schema, 'FAQPage') ? { '@context': 'https://schema.org', '@graph': [] } : schema;
+  }
+
+  function landingValueIsFaqIdRef(value) {
+    if (typeof value === 'string') return /#faq$/i.test(value);
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return /#faq$/i.test(String(value['@id'] || '')) && !landingHasType(value, 'FAQPage');
+    }
+    return false;
+  }
+
+  function stripLandingFaqRefsFromNode(node) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+    ['hasPart', 'mainEntity', 'subjectOf', 'about'].forEach((key) => {
+      const val = node[key];
+      if (val == null) return;
+      if (Array.isArray(val)) {
+        const next = val.filter((item) => !landingValueIsFaqIdRef(item));
+        if (next.length) node[key] = next;
+        else delete node[key];
+      } else if (landingValueIsFaqIdRef(val)) {
+        delete node[key];
+      }
+    });
+  }
+
+  function stripLandingFaqRefs(schema) {
+    if (!schema || typeof schema !== 'object') return schema;
+    const nodes = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
+    nodes.forEach((node) => stripLandingFaqRefsFromNode(node));
+    return schema;
   }
 
   function landingFindGraphNode(schema, typeName) {
@@ -19211,6 +19244,7 @@ ${minifiedJson}
       improvements.push(`✅ FAQPage mirrors the visible .ar-faq accordion (${scrapedLandingFaq.mainEntity.length} Q&As)`);
       addLandingDebugLog(`✅ FAQPage built from visible .ar-faq accordion (${scrapedLandingFaq.mainEntity.length} questions)`);
     } else {
+      finalSchema = stripLandingFaqRefs(finalSchema);
       addLandingDebugLog('ℹ No .ar-faq block found on page — FAQPage omitted (no fabricated FAQ)');
       if (hasExistingLandingFaqContent) {
         await postSchemaToolsRunReport('landing-faq-drop', {
