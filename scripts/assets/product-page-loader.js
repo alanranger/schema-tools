@@ -131,7 +131,7 @@
         } catch (e) {}
       }
       document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq') return;
+        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq' || el.id === 'arp-landing-schema') return;
         var txt = (el.textContent || '').trim();
         if (!txt) return;
         try {
@@ -145,7 +145,7 @@
     }
     function suppressSquarespaceCore() {
       document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq') return;
+        if (el.id === 'arp-critical-schema' || el.id === 'ar-github-product-schema' || el.id === 'ar-github-product-faq' || el.id === 'arp-landing-schema') return;
         var txt = (el.textContent || '').trim();
         if (!txt) return;
         try {
@@ -204,7 +204,7 @@
   }
   function arStripOtherFaqPages() {
     document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-      if (el.id === 'ar-github-product-faq' || el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema') return;
+      if (el.id === 'ar-github-product-faq' || el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema' || el.id === 'arp-landing-schema') return;
       var txt = (el.textContent || '').trim();
       if (!txt || txt.indexOf('FAQPage') === -1) return;
       try {
@@ -254,7 +254,7 @@
   }
   function arRemoveLegacyDuplicateProducts() {
     document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
-      if (el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema' || el.id === 'ar-github-product-faq') return;
+      if (el.id === 'ar-github-product-schema' || el.id === 'arp-critical-schema' || el.id === 'ar-github-product-faq' || el.id === 'arp-landing-schema') return;
       var txt = (el.textContent || '').trim();
       if (!txt || txt.indexOf('Product') === -1) return;
       try {

@@ -81,6 +81,7 @@ export const LANDING_FAQ_KEEP = {
   '/fine-art-prints': 7,
   '/free-online-photography-course': 12,
   '/hire-a-professional-photographer-in-coventry': 8,
+  '/landscape-photography-workshops': 11,
   '/photo-editing-course-coventry': 10,
   '/photography-courses-coventry': 8,
   '/photography-gift-vouchers': 7,
