@@ -19,17 +19,21 @@
   var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
   if (path !== '/blog-on-photography' && path.indexOf('/blog-on-photography/') !== 0) return;
 
-  try {
-    if (document.querySelector('article.category-1-page-field-checklists')) {
+  function addChecklistNoindex() {
+    try {
+      if (!document.querySelector('article.category-1-page-field-checklists')) return;
       var existingRobots = document.querySelector('meta[name="robots"]');
-      if (!(existingRobots && /noindex/i.test(existingRobots.getAttribute('content') || ''))) {
-        var robots = document.createElement('meta');
-        robots.setAttribute('name', 'robots');
-        robots.setAttribute('content', 'noindex');
-        document.head.appendChild(robots);
-      }
-    }
-  } catch (e) {}
+      if (existingRobots && /noindex/i.test(existingRobots.getAttribute('content') || '')) return;
+      var robots = document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      robots.setAttribute('content', 'noindex');
+      document.head.appendChild(robots);
+    } catch (e) {}
+  }
+  addChecklistNoindex();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addChecklistNoindex);
+  }
 
   function getTypes(node) {
     if (!node) return [];
