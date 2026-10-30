@@ -22,7 +22,9 @@ export const FAQ_LAYOUT_FIXTURES = [
   { slug: 'what-is-shutter-speed', expectedVisible: 4, file: 'what-is-shutter-speed.html' },
   { slug: 'what-is-iso-in-photography', expectedVisible: 6, file: 'what-is-iso-in-photography.html' },
   { slug: 'what-is-aperture-in-photography', expectedVisible: 4, file: 'what-is-aperture-in-photography.html' },
-  { slug: 'case-study-mike-ford', expectedVisible: 0, file: 'case-study-mike-ford.html' }
+  { slug: 'case-study-mike-ford', expectedVisible: 0, file: 'case-study-mike-ford.html' },
+  { slug: 'black-and-white-when-to-convert', expectedVisible: 8, file: 'black-and-white-when-to-convert.html' },
+  { slug: 'uk-street-photography-ethics-guide', expectedVisible: 8, file: 'uk-street-photography-ethics-guide.html' }
 ];
 
 export function loadFaqLayoutManifest() {
@@ -31,8 +33,8 @@ export function loadFaqLayoutManifest() {
 
 export function assertFaqLayoutFixtures() {
   const manifest = loadFaqLayoutManifest();
-  if (!Array.isArray(manifest) || manifest.length < 12) {
-    throw new Error(`FAQ layout manifest too small (${manifest?.length ?? 0}); need 12+ fixtures`);
+  if (!Array.isArray(manifest) || manifest.length < 14) {
+    throw new Error(`FAQ layout manifest too small (${manifest?.length ?? 0}); need 14+ fixtures`);
   }
   for (const row of manifest) {
     const html = readFileSync(join(fixtureDir, row.file), 'utf8');

@@ -393,6 +393,26 @@ function testNumberedAndToggleQuestionCleaning() {
   assert.equal(cleanFaqQuestionText('? Do I need to shoot in RAW to follow this workflow?'), 'Do I need to shoot in RAW to follow this workflow?');
 }
 
+function testNumberedChecklistQuestionsDropped() {
+  const ans = 'Answer text for this FAQ item needs thirty plus characters.';
+  const html = `<article>
+  <h2>FAQs</h2>
+  <p><strong>When should I convert to black and white?</strong><br>${ans}</p>
+  <p><strong>Does colour ever weaken a photograph?</strong><br>${ans}</p>
+  <p><strong>How do I judge a black and white conversion?</strong><br>${ans}</p>
+  <p><strong>Should I shoot in colour first?</strong><br>${ans}</p>
+  <p><strong>What subjects suit black and white?</strong><br>${ans}</p>
+  <p><strong>How do I keep texture in the print?</strong><br>${ans}</p>
+  <p><strong>Is contrast more important than colour?</strong><br>${ans}</p>
+  <p><strong>When is a colour version the better story?</strong><br>${ans}</p>
+  <p>1 Does removing colour add power?</p>
+  <p>1 BEFORE — would I want this on my wall?</p>
+  </article>`;
+  const r = extractFAQFromArticle(html, '', null);
+  assert.equal(r.pairs.length, 8, `got ${r.pairs.length}: ${r.pairs.map((p) => p.question).join(' | ')}`);
+  assert.ok(r.pairs.every((p) => !/^\d+\s/.test(p.question)));
+}
+
 function testDetailsAccordionAndEmojiList() {
   const detailsHtml = `<article>
   <h2>FAQs — Exposure Bracketing</h2>
@@ -494,6 +514,7 @@ function testCommonQuestionsHeadingWithLongAnswersAndFooter() {
 }
 
 testNumberedAndToggleQuestionCleaning();
+testNumberedChecklistQuestionsDropped();
 testDetailsAccordionAndEmojiList();
 testShutterListAnswerAndExposureHeading();
 testVisibleShortfallKeepsExisting();

@@ -1,6 +1,6 @@
 /**
  * event-page-loader.js — https://schema.alanranger.com/loaders/event-page-loader.js
- * ARP Event Loader v1.1. No WebPage stub. Collection-header one-liner only.
+ * ARP Event Loader v1.2. Hub FAQ inject for collection pages. Collection-header one-liner only.
  */
 (function () {
   'use strict';
@@ -92,8 +92,50 @@
     document.head.appendChild(s);
   }
 
+  function dropOtherJsonLd(typeName, keepId) {
+    document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
+      if (el.id === keepId) return;
+      var txt = (el.textContent || '').trim();
+      if (!txt) return;
+      try {
+        var json = JSON.parse(txt);
+        var nodes = Array.isArray(json['@graph']) ? json['@graph'] : [json];
+        var kept = nodes.filter(function (n) { return getTypes(n).indexOf(typeName) === -1; });
+        if (!kept.length) { el.remove(); return; }
+        if (Array.isArray(json['@graph'])) {
+          json['@graph'] = kept;
+          el.textContent = JSON.stringify(json);
+        } else {
+          el.textContent = JSON.stringify(kept[0]);
+        }
+      } catch (e) {}
+    });
+  }
+
+  function injectHubFaq() {
+    var slug = path.replace(/^\//, '');
+    var faqId = 'ar-github-event-faq';
+    fetch('https://schema.alanranger.com/' + slug + '_faq.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (faq) {
+        if (!faq || String(faq['@type'] || '').toLowerCase() !== 'faqpage') return;
+        var text = visText();
+        var me = faq.mainEntity;
+        var qs = Array.isArray(me) ? me : (me ? [me] : []);
+        var vis = qs.filter(function (q) { return qVisible(q, text); });
+        if (!vis.length) return;
+        faq.mainEntity = vis;
+        inject(faqId, faq);
+        dropOtherJsonLd('FAQPage', faqId);
+      })
+      .catch(function () {});
+  }
+
   installSuppressor();
-  if (isHub) return;
+  if (isHub) {
+    injectHubFaq();
+    return;
+  }
 
   fetch('https://schema.alanranger.com/events-manifest.json', { cache: 'no-store' })
     .then(function (r) { return r.ok ? r.json() : null; })

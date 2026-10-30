@@ -609,6 +609,9 @@ function validateQuestion(q) {
   if (!t.endsWith('?')) return false;
   if ((t.match(/\?/g) || []).length !== 1) return false;
   if (t.includes('\n')) return false;
+  // Numbered checklist items ("1 Does …?" or "1Does …?" from a badge span) are not FAQs.
+  // Real numbered FAQs use "1. What is ISO?" — cleanFaqQuestionText already stripped those.
+  if (/^\d+\s/.test(t) || /^\d+[A-Za-z]/.test(t)) return false;
   const before = t.slice(0, -1);
   if (before.includes('. ')) return false;
   return true;
