@@ -156,6 +156,44 @@ function testArpFaqInDivContainerWithNestedAnswer() {
   assert.equal(r.pairs[0].question, 'How can I improve my photography composition?');
 }
 
+function testGuideFaqSectionBeatsStaleJsonLd() {
+  const visible = `
+<article>
+  <h2><strong>FAQs - What is aperture</strong></h2>
+  <p><strong>1. What does aperture refer to in the context of photography?</strong><br>${LONG_A} Aperture is the opening in the lens.</p>
+  <p><strong>2. What guidelines should be followed when setting the aperture in photography?</strong><br>${LONG_A} Use a mid-range f-stop.</p>
+  <p><strong>3. Can you provide an aperture photography example of how aperture is used in photography?</strong><br>${LONG_A} Wide aperture makes bokeh.</p>
+  <p><strong>4. What are the primary functions of aperture in a camera?</strong><br>${LONG_A} It controls light like a pupil.</p>
+</article>
+<script type="application/ld+json">${JSON.stringify({
+    '@type': 'FAQPage',
+    mainEntity: Array.from({ length: 8 }, (_, i) => ldQuestion(
+      `What is stale aperture question number ${i} about photography?`,
+      LONG_A
+    ))
+  })}</script>`;
+  const r = extractFAQFromArticle(visible, '', null);
+  assert.equal(r.strategy, 'C');
+  assert.equal(r.pairs.length, 4);
+  assert.equal(r.pairs[0].question, 'What does aperture refer to in the context of photography?');
+}
+
+function testPackedStrongQuestionsInOneParagraph() {
+  const html = `
+<article>
+  <h2>FAQs - What is ISO in photography?</h2>
+  <p><strong>What does ISO mean in photography?</strong><br>${LONG_A} Sensor sensitivity to light.</p>
+  <p><strong>How is ISO calculated in photography?</strong><br>${LONG_A} Each stop doubles sensitivity.</p>
+  <p><strong>What is the difference between ISO 200 and ISO 400?</strong><br>${LONG_A} ISO 400 is one stop more sensitive.<br><br><strong>What ISO should I use indoors without flash?</strong><br>${LONG_A} Start around ISO 800 to 1600.</p>
+  <p><strong>What ISO is best for landscape in daylight?</strong><br>${LONG_A} Stay at ISO 100 to 200.</p>
+  <p><strong>How do I set Auto-ISO for sharp results?</strong><br>${LONG_A} Set a minimum shutter and a max ISO cap.</p>
+</article>`;
+  const r = extractFAQFromArticle(html, '', null);
+  assert.equal(r.strategy, 'C');
+  assert.equal(r.pairs.length, 6);
+  assert.equal(r.pairs[3].question, 'What ISO should I use indoors without flash?');
+}
+
 function testAccordionQuestionTitlesOnly() {
   const html = `
 <ul class="accordion-items-container">
@@ -379,6 +417,8 @@ function testCommonQuestionsHeadingWithLongAnswersAndFooter() {
 
 testNumberedAndToggleQuestionCleaning();
 testCommonQuestionsHeadingWithLongAnswersAndFooter();
+testGuideFaqSectionBeatsStaleJsonLd();
+testPackedStrongQuestionsInOneParagraph();
 testUnnumberedStrongFaqSection();
 testPlainParagraphFaqSection();
 testArpFaqInDivContainerWithNestedAnswer();

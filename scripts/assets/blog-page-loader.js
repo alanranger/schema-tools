@@ -96,6 +96,26 @@
     document.head.appendChild(s);
   }
 
+  function dropOtherJsonLd(typeName, keepId) {
+    document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach(function (el) {
+      if (el.id === keepId) return;
+      var txt = (el.textContent || '').trim();
+      if (!txt) return;
+      try {
+        var json = JSON.parse(txt);
+        var nodes = Array.isArray(json['@graph']) ? json['@graph'] : [json];
+        var kept = nodes.filter(function (n) { return getTypes(n).indexOf(typeName) === -1; });
+        if (!kept.length) { el.remove(); return; }
+        if (Array.isArray(json['@graph'])) {
+          json['@graph'] = kept;
+          el.textContent = JSON.stringify(json);
+        } else {
+          el.textContent = JSON.stringify(kept[0]);
+        }
+      } catch (e) {}
+    });
+  }
+
   function filterFaq(data) {
     if (!data) return { json: null, before: 0, after: 0, reason: 'no-faq-file' };
     var nodes = Array.isArray(data['@graph']) ? data['@graph'] : [data];
@@ -139,10 +159,26 @@
     { kind: 'breadcrumb', file: slug + '_breadcrumb.json' }
   ];
   kinds.forEach(function (k) {
-    fetchJson(base + k.file).then(function (j) { if (j) inject('arp-schema-' + slug + '-' + k.kind, j); });
+    fetchJson(base + k.file).then(function (j) {
+      if (!j) return;
+      var id = 'arp-schema-' + slug + '-' + k.kind;
+      inject(id, j);
+      if (k.kind === 'howto') dropOtherJsonLd('HowTo', id);
+    });
   });
   fetchJson(base + slug + '_faq.json').then(function (j) {
     var f = filterFaq(j);
-    if (f.json) inject('arp-schema-' + slug + '-faq', f.json);
+    if (!f.json) return;
+    var id = 'arp-schema-' + slug + '-faq';
+    inject(id, f.json);
+    dropOtherJsonLd('FAQPage', id);
+  });
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var faqId = 'arp-schema-' + slug + '-faq';
+      var howId = 'arp-schema-' + slug + '-howto';
+      if (document.getElementById(faqId)) dropOtherJsonLd('FAQPage', faqId);
+      if (document.getElementById(howId)) dropOtherJsonLd('HowTo', howId);
+    }, 900);
   });
 })();

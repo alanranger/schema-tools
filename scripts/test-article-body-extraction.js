@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict';
 import {
   extractBlogArticleText,
+  extractEmbedFallbackText,
   findArticleContentStart,
   blogPostingSaveDecision,
   countWords
@@ -88,6 +89,20 @@ function testInfographicSvgTextAndEntitiesKept() {
   assert.ok(r.text.includes('Mattia Tosi \u00b7 JLR employee \u2192 workshops'));
 }
 
+function testChecklistEmbedFallbackNotPageChrome() {
+  const html = blogPage({
+    title: 'Macro Photography Guide: 1-Page Field Checklist PDF',
+    body: `<iframe src="https://mozilla.github.io/pdf.js/web/viewer.html?file=https%3A%2F%2Fexample.com%2FMacro_Photography_Field_Checklist.pdf"></iframe>`
+  });
+  const r = extractBlogArticleText(html);
+  assert.equal(r.found, true);
+  assert.equal(r.words, 0);
+  const embed = extractEmbedFallbackText(html, 'Macro Photography Guide: 1-Page Field Checklist PDF');
+  assert.match(embed, /1-page field checklist PDF/i);
+  assert.ok(!/Cart 0|Facebook/.test(embed));
+  assert.equal(blogPostingSaveDecision({ htmlFetched: true, bodySource: 'embed', articleWords: countWords(embed), pageWords: 0 }).save, true);
+}
+
 function testNoArticleElement() {
   const r = extractBlogArticleText('<html><body><div class="ProductList">Lee filters 15% off</div></body></html>');
   assert.equal(r.found, false);
@@ -101,6 +116,7 @@ testChecklistPageHasEmptyBodyButIsPublishable();
 testFailedFetchIsNeverPublished();
 testTitleFallbackAndThinBodyAreNeverPublished();
 testNoArticleElement();
+testChecklistEmbedFallbackNotPageChrome();
 testNestedArticleInCodeBlockDoesNotTruncate();
 testInfographicSvgTextAndEntitiesKept();
 console.log('✅ Article body extraction tests passed (title-at-0, before-you mid-text, container chrome, checklist, failed fetch, guard).');

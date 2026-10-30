@@ -8069,19 +8069,34 @@
     let articleBody = container.text;
     let articleBodyRaw = container.text;
     if (container.words < 5) {
-      bodySource = 'text';
-      if (providedPlainText) {
-        articleBodyRaw = providedPlainText;
-        blogPosts_log(`   [ArticleBody] No post container text - using provided plainText (${articleBodyRaw.length} chars)`);
+      const embed = articleBodyMod.extractEmbedFallbackText
+        ? articleBodyMod.extractEmbedFallbackText(html, title)
+        : '';
+      if (embed) {
+        bodySource = 'embed';
+        articleBodyRaw = embed;
+        articleBody = embed;
+        blogPosts_log(`   [ArticleBody] From checklist/PDF embed (${countWords(embed)} words)`);
+      } else if (container.found) {
+        bodySource = 'container';
+        articleBodyRaw = container.text;
+        articleBody = container.text;
+        blogPosts_log('   [ArticleBody] Post container found but empty — not using page chrome');
       } else {
-        articleBodyRaw = stripHtmlToText(html || chunksText || '');
-      }
-      articleBody = cleanFullArticleBody(articleBodyRaw, title);
-      if (!articleBody || articleBody.length < 100) {
-        articleBody = articleBodyRaw
-          .replace(/\[\/[^\]]+\]/g, '')
-          .replace(/\/Cart\s+\d+/gi, '')
-          .replace(/Sign In My Account/gi, '');
+        bodySource = 'text';
+        if (providedPlainText) {
+          articleBodyRaw = providedPlainText;
+          blogPosts_log(`   [ArticleBody] No post container text - using provided plainText (${articleBodyRaw.length} chars)`);
+        } else {
+          articleBodyRaw = stripHtmlToText(html || chunksText || '');
+        }
+        articleBody = cleanFullArticleBody(articleBodyRaw, title);
+        if (!articleBody || articleBody.length < 100) {
+          articleBody = articleBodyRaw
+            .replace(/\[\/[^\]]+\]/g, '')
+            .replace(/\/Cart\s+\d+/gi, '')
+            .replace(/Sign In My Account/gi, '');
+        }
       }
     } else {
       blogPosts_log(`   [ArticleBody] From post container: ${container.words} words`);
