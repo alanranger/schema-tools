@@ -105,23 +105,6 @@ window.customFilterSettings = {
      Code lives in GitHub: alanranger-schema/loaders/blog-page-loader.js — do not edit here. -->
 <script src="https://schema.alanranger.com/loaders/blog-page-loader.js"></script>
 
-<!-- Members-only 1-page field checklists: Squarespace 7.0 has no per-post noindex.
-     When the post is in category "1 page field checklists", add robots noindex.
-     Google honours a JS-added robots tag. Keep braces spaced so 7.0 does not strip them. -->
-<script>
-(function () {
-  try {
-    if (!document.querySelector('article.category-1-page-field-checklists')) return;
-    var existing = document.querySelector('meta[name="robots"]');
-    if (existing && /noindex/i.test(existing.getAttribute('content') || '')) return;
-    var m = document.createElement('meta');
-    m.setAttribute('name', 'robots');
-    m.setAttribute('content', 'noindex');
-    document.head.appendChild(m);
-  } catch (e) {}
-})();
-</script>
-
 <style>
 /* BLOG CARD RESTYLE + "Read More" hover overlay
    Paste this whole block (including the <style> tags) into the

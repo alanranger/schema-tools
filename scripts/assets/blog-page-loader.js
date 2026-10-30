@@ -1,7 +1,7 @@
 /**
  * blog-page-loader.js — https://schema.alanranger.com/loaders/blog-page-loader.js
  * Option D (2026-10-27): one collection-header loader for /blog-on-photography.
- * Replaces footer ARP Blog Schema Loader v5.1 and the WebPage stub.
+ * Checklist category posts: inject robots noindex (Squarespace 7.0 has no per-post switch).
  * Source of truth: alanranger-schema. Paste the one-line script tag, do not edit on Squarespace.
  */
 (function () {
@@ -18,6 +18,18 @@
 
   var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
   if (path !== '/blog-on-photography' && path.indexOf('/blog-on-photography/') !== 0) return;
+
+  try {
+    if (document.querySelector('article.category-1-page-field-checklists')) {
+      var existingRobots = document.querySelector('meta[name="robots"]');
+      if (!(existingRobots && /noindex/i.test(existingRobots.getAttribute('content') || ''))) {
+        var robots = document.createElement('meta');
+        robots.setAttribute('name', 'robots');
+        robots.setAttribute('content', 'noindex');
+        document.head.appendChild(robots);
+      }
+    }
+  } catch (e) {}
 
   function getTypes(node) {
     if (!node) return [];

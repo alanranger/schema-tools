@@ -13490,6 +13490,30 @@
     return null;
   }
 
+  const EVENT_HUB_PATHS = [
+    '/photographic-workshops-near-me',
+    '/beginners-photography-lessons'
+  ];
+
+  async function buildEventHubFaqArtifacts() {
+    const files = [];
+    for (const p of EVENT_HUB_PATHS) {
+      const url = 'https://www.alanranger.com' + p;
+      try {
+        const html = await fetchProductPage(url);
+        const faq = scrapeLandingFaqFromHtml(html, url);
+        if (!faq) continue;
+        files.push({
+          fileName: p.replace(/^\//, '') + '_faq.json',
+          jsonContent: JSON.stringify(faq, null, 2)
+        });
+      } catch (err) {
+        addDebugLog('Event hub FAQ ' + p + ': ' + (err && err.message ? err.message : err));
+      }
+    }
+    return files;
+  }
+
   function buildPerEventArtifacts(eventList, breadcrumbs) {
     const breadcrumbByUrl = new Map();
     (breadcrumbs || []).forEach((crumb) => {
@@ -13638,6 +13662,8 @@
     }
 
     const artifacts = buildPerEventArtifacts(window.currentEventList, window.currentEventBreadcrumbs);
+    const hubFiles = await buildEventHubFaqArtifacts();
+    artifacts.files.push(...hubFiles);
     window.currentEventPerPageFiles = artifacts.files;
     window.currentEventManifest = artifacts.manifest;
 
@@ -13648,12 +13674,14 @@
       `Event rows used after filters: ${window.currentEventList.length}`,
       `Manifest entries: ${artifacts.manifest.totalEvents}`,
       `Per-event schema files: ${artifacts.files.length}`,
+      `Hub FAQ files: ${hubFiles.length}`,
       'Per-event FAQ files: 0 (templates disabled — FAQPage only when visible FAQs exist)',
       ...formatBlockedEventLines(artifacts.blocked),
       '',
       'Files:',
       ' - events-manifest.json',
-      ' - <slug>_event_schema.json'
+      ' - <slug>_event_schema.json',
+      ' - <hub-slug>_faq.json (event hubs with visible FAQs)'
     ];
     if (output) output.textContent = lines.join('\n');
     return true;

@@ -1128,3 +1128,8 @@ Each line is ISO timestamp plus message. Processing uses batches (default 50 URL
 2026-10-26T20:49:34.865Z Starting bulk HowTo/FAQ regen: 1 URL(s), batch=50, repo=C:\Users\alan\AppData\Local\Temp\bulk-dry, noCommit=true
 2026-10-26T20:49:35.259Z why-youtube-cant-teach-photography ERROR HTTP 404
 2026-10-26T20:49:35.561Z Halted: batch error rate 100.0% exceeds 10% (1/1).
+2026-10-30T22:53:35.918Z Starting bulk HowTo/FAQ regen: 2 URL(s), batch=50, repo=G:\Dropbox\alan ranger photography\Website Code\Schema Tools\alanranger-schema, noCommit=true
+2026-10-30T22:53:36.221Z black-and-white-when-to-convert howto=A/3 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-10-30T22:53:36.591Z uk-street-photography-ethics-guide howto=A/5 faq=arp-faq/8 files=ok-howto,ok-faq
+2026-10-30T22:53:36.894Z Finished bulk HowTo/FAQ regen (2 URL(s)). FAQ files: ok-faq=2, delete-faq=0, skip-faq=0, fail-faq=0.
+2026-10-30T22:53:36.895Z Skipped blog-schema.json (index-only; written by generateBlogIndexSchema).
