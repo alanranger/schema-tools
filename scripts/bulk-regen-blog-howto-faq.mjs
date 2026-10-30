@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { extractHowToFromArticle, htmlBlockToPlainText } from './howto-extraction.mjs';
 import { extractFAQFromArticle } from './faq-extraction.mjs';
+import { assertFaqLayoutFixtures } from './faq-layout-fixtures.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -174,9 +175,8 @@ function writeHowTo(repo, slug, url, extracted, headline) {
 
 function writeFaq(repo, slug, url, extracted) {
   const filePath = path.join(repo, `${slug}_faq.json`);
-  // Visible FAQ markup present but extraction failed: delete stale file and fail the URL.
-  if (extracted && extracted.visibleFaqFailed) {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  // Visible FAQ heading/markup present but extraction failed or is short: keep the file.
+  if (extracted && (extracted.visibleFaqFailed || extracted.keepExisting)) {
     return 'fail-faq';
   }
   if (!extracted || extracted.pairs.length < 3) {
@@ -231,6 +231,13 @@ async function main() {
     process.exit(1);
   }
 
+  try {
+    assertFaqLayoutFixtures();
+  } catch (e) {
+    console.error(`FAQ layout fixtures failed — bulk run refused: ${e.message}`);
+    process.exit(1);
+  }
+
   appendLog(`Starting bulk HowTo/FAQ regen: ${urls.length} URL(s), batch=${opts.batch}, repo=${opts.repo}, noCommit=${opts.noCommit}`);
 
   let batchNum = 1;
@@ -277,7 +284,7 @@ async function main() {
       else if (fRes === 'fail-faq') {
         faqFail += 1;
         batchErrors += 1;
-        appendLog(`${slug} ERROR visible FAQ markup found but no valid pairs (stale FAQ removed)`);
+        appendLog(`${slug} ERROR visible FAQ shortfall — existing file kept`);
       }
       appendLog(`${slug} howto=${how.strategy}/${how.steps.length} faq=${faq.strategy}/${faq.pairs.length} files=${hRes},${fRes}`);
     } catch (e) {

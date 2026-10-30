@@ -389,6 +389,84 @@ function testNumberedAndToggleQuestionCleaning() {
   assert.equal(cleanFaqQuestionText('10) Who can attend the workshops?'), 'Who can attend the workshops?');
   assert.equal(cleanFaqQuestionText("I'm a complete beginner &mdash; is that OK? +"), "I'm a complete beginner \u2014 is that OK?");
   assert.equal(cleanFaqQuestionText('How do the lessons work? \u2212'), 'How do the lessons work?');
+  assert.equal(cleanFaqQuestionText('What size should my Etsy listing photos actually be? ▼'), 'What size should my Etsy listing photos actually be?');
+  assert.equal(cleanFaqQuestionText('? Do I need to shoot in RAW to follow this workflow?'), 'Do I need to shoot in RAW to follow this workflow?');
+}
+
+function testDetailsAccordionAndEmojiList() {
+  const detailsHtml = `<article>
+  <h2>FAQs — Exposure Bracketing</h2>
+  <div class="faq-accordion">
+    <details><summary>What is exposure bracketing in photography?</summary><div>${LONG_A} One.</div></details>
+    <details>
+      <summary>When should I use exposure bracketing?</summary>
+      <div>${LONG_A} Two.</div>
+    </details>
+    <details><summary>How many bracketed shots should I take?</summary><div>${LONG_A} Three.</div></details>
+  </div>
+</article>`;
+  const d = extractFAQFromArticle(detailsHtml, '', null);
+  assert.ok(['details', 'arp-faq'].includes(d.strategy), d.strategy);
+  assert.equal(d.pairs.length, 3);
+  assert.equal(d.keepExisting, undefined);
+
+  const listHtml = `<article>
+  <h3>❓ Frequently Asked Questions</h3>
+  <ul>
+    <li><strong>Which photography style is most popular in 2025?</strong><br><p>${LONG_A} Portrait remains the largest share.</p></li>
+    <li><strong>What is portrait photography?</strong><br><p>${LONG_A} Capturing people and expressions.</p></li>
+    <li><strong>What is landscape photography?</strong><br><p>${LONG_A} Expansive natural environments.</p></li>
+  </ul>
+</article>`;
+  const l = extractFAQFromArticle(listHtml, '', null);
+  assert.equal(l.strategy, 'list');
+  assert.equal(l.pairs.length, 3);
+}
+
+function testShutterListAnswerAndExposureHeading() {
+  const shutter = `<article>
+  <h2><strong>FAQs - What is shutter speed</strong></h2>
+  <p><strong>What is the ideal shutter speed setting for photography?</strong><br>${LONG_A} General purposes.</p>
+  <p><strong>Can you explain the shutter speed rule in photography?</strong><br>${LONG_A} 180-degree shutter rule.</p>
+  <p><strong>What are some general guidelines for shutter speeds in photography?</strong><br>Here are a few guidelines:</p>
+  <ul><li><p>1/2000 sec: Ideal for capturing birds in flight.</p></li><li><p>1/1000 sec: Suitable for sports photography.</p></li></ul>
+  <p><strong>What are some effective shutter speeds for different photography needs?</strong></p>
+  <ul><li><p>1/60 sec: This is a standard shutter speed used for general photography.</p></li></ul>
+</article>`;
+  const s = extractFAQFromArticle(shutter, '', null);
+  assert.equal(s.strategy, 'C');
+  assert.equal(s.pairs.length, 4, 'shutter should keep the list-answer pair');
+  assert.ok(s.pairs[2].answer.includes('1/2000'));
+
+  const exposure = `<article>
+  <p>What is exposure in photography? In this beginner-friendly photography lesson, you will learn exactly how aperture, shutter speed and ISO work together to control brightness.</p>
+  <h2><strong>FAQs - </strong>What is exposure in photography?</h2>
+  <p><strong>What does the exposure process in photography entail?</strong><br>${LONG_A} Managed through shutter speed.</p>
+  <p><strong>What are exposure modes in photography?</strong><br>${LONG_A} Programmed Auto and Manual.</p>
+  <p><strong>Why is exposure significant in photography?</strong><br>${LONG_A} Lightness or darkness of the image.</p>
+</article>`;
+  const e = extractFAQFromArticle(exposure, '', null);
+  assert.equal(e.strategy, 'C');
+  assert.equal(e.pairs.length, 4);
+  assert.equal(e.pairs[0].question, 'What is exposure in photography?');
+}
+
+function testVisibleShortfallKeepsExisting() {
+  const html = `<article>
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-accordion">
+    <details><summary>What is the first visible question here?</summary><div>${LONG_A}</div></details>
+    <details><summary>What is the second visible question here?</summary><div>${LONG_A}</div></details>
+    <details><summary>What is the third visible question here?</summary><div>${LONG_A}</div></details>
+    <details><summary>What is the fourth visible question here?</summary><div>Too short.</div></details>
+  </div>
+</article>`;
+  const r = extractFAQFromArticle(html, '', null);
+  assert.ok(r.strategy === 'details' || r.strategy === 'arp-faq', r.strategy);
+  assert.equal(r.pairs.length, 3);
+  assert.equal(r.keepExisting, true);
+  assert.equal(r.shortfall, true);
+  assert.equal(r.visibleCount, 4);
 }
 
 function testCommonQuestionsHeadingWithLongAnswersAndFooter() {
@@ -416,6 +494,9 @@ function testCommonQuestionsHeadingWithLongAnswersAndFooter() {
 }
 
 testNumberedAndToggleQuestionCleaning();
+testDetailsAccordionAndEmojiList();
+testShutterListAnswerAndExposureHeading();
+testVisibleShortfallKeepsExisting();
 testCommonQuestionsHeadingWithLongAnswersAndFooter();
 testGuideFaqSectionBeatsStaleJsonLd();
 testPackedStrongQuestionsInOneParagraph();

@@ -10369,8 +10369,8 @@
   /**
    * Generate FAQ schema for a blog post from on-page Q&A content only.
    * Returns null when fewer than three valid pairs are extracted (no generic fallback).
-   * Returns { __faqVisibleFailed: true } when a visible arp-*-faq container exists but yields no valid pairs
-   * (caller must delete stale _faq.json and treat as an error — do not keep old FAQ data).
+   * Returns { __faqVisibleFailed: true, __keepExisting: true } when a visible FAQ heading or arp
+   * container exists but extraction is short or failed. Caller must NOT delete or shrink _faq.json.
    */
   async function generateFAQSchema(csvRow, blogPosting, articleBody, html) {
     const url = csvRow.url;
@@ -10393,11 +10393,19 @@
       return null;
     }
 
-    if (extracted && extracted.visibleFaqFailed) {
+    if (extracted && (extracted.visibleFaqFailed || extracted.keepExisting)) {
+      const vis = extracted.visibleCount ?? '?';
+      const got = extracted.acceptedCount ?? extracted.pairs?.length ?? 0;
       blogPosts_log(
-        `   ❌ Visible FAQ markup found but no valid Q&A pairs for ${slug} — refusing to retain stale FAQ`
+        `   ❌ FAQ extraction failed/shortfall for ${slug}: ${got} accepted vs ${vis} visible — existing file kept`
       );
-      return { __faqVisibleFailed: true };
+      return {
+        __faqVisibleFailed: !!extracted.visibleFaqFailed,
+        __keepExisting: true,
+        __shortfall: !!extracted.shortfall,
+        __visibleCount: extracted.visibleCount,
+        __acceptedCount: got
+      };
     }
 
     if (!extracted || extracted.pairs.length < 3) {
@@ -10533,6 +10541,16 @@
   async function blogPosts_generateSchema() {
     if (!blogPostsData || blogPostsData.length === 0) {
       alert('Please upload a blog CSV file first.');
+      return;
+    }
+
+    try {
+      const fx = await import('./scripts/faq-layout-fixtures.mjs');
+      fx.assertFaqLayoutFixtures();
+      blogPosts_log('   ✅ FAQ layout fixtures passed — bulk generation allowed');
+    } catch (e) {
+      blogPosts_log(`   ❌ FAQ layout fixtures failed — bulk run refused: ${e.message}`);
+      alert(`FAQ layout fixtures failed. Bulk generation refused.\n${e.message}`);
       return;
     }
 
@@ -10899,15 +10917,8 @@
         try {
             const faqFileName = `${slug}_faq.json`;
             const faqSchema = await generateFAQSchema(row, blogPosting, plainText, html);
-            if (faqSchema && faqSchema.__faqVisibleFailed) {
-              if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
-                try {
-                  await window.electronAPI.deleteSchemaFile(faqFileName);
-                  blogPosts_log(`   ❌ Removed stale FAQ after visible-FAQ extraction failure: ${faqFileName}`);
-                } catch (delErr) {
-                  blogPosts_log(`   ❌ Visible FAQ failed; delete skipped: ${delErr.message}`);
-                }
-              }
+            if (faqSchema && (faqSchema.__faqVisibleFailed || faqSchema.__keepExisting)) {
+              blogPosts_log(`   ❌ FAQ not overwritten for ${slug} — existing file kept (visible FAQ shortfall/fail)`);
               errors++;
             } else if (faqSchema) {
                 const faqJson = JSON.stringify(faqSchema, null, 2);
@@ -11725,15 +11736,8 @@
         try {
             const faqFileName = `${slug}_faq.json`;
             const faqSchema = await generateFAQSchema(mockRow, blogPosting, plainText, html);
-            if (faqSchema && faqSchema.__faqVisibleFailed) {
-              if (saveToGithub && window.electronAPI && window.electronAPI.deleteSchemaFile) {
-                try {
-                  await window.electronAPI.deleteSchemaFile(faqFileName);
-                  blogPosts_log(`   ❌ Removed stale FAQ after visible-FAQ extraction failure: ${faqFileName}`);
-                } catch (delErr) {
-                  blogPosts_log(`   ❌ Visible FAQ failed; delete skipped: ${delErr.message}`);
-                }
-              }
+            if (faqSchema && (faqSchema.__faqVisibleFailed || faqSchema.__keepExisting)) {
+              blogPosts_log(`   ❌ FAQ not overwritten for ${slug} — existing file kept (visible FAQ shortfall/fail)`);
             } else if (faqSchema) {
               const faqJson = JSON.stringify(faqSchema, null, 2);
               
