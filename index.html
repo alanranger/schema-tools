@@ -18500,15 +18500,22 @@ ${minifiedJson}
   // Answer = joined <p> text, else the `.ar-faq-a` box, else the details text minus its summary.
   function landingFaqAnswerText(det) {
     const paragraphs = Array.from(det.querySelectorAll('p'))
-      .map((p) => landingCleanText(landingStripIconLabels(p.textContent)))
+      .map((p) => landingCleanText(landingStripIconLabels(landingSpacedText(p))))
       .filter(Boolean);
     if (paragraphs.length) return paragraphs.join(' ');
     const answerBox = det.querySelector('.ar-faq-a, .accordion-item__description');
-    if (answerBox) return landingCleanText(landingStripIconLabels(answerBox.textContent));
+    if (answerBox) return landingCleanText(landingStripIconLabels(landingSpacedText(answerBox)));
     const clone = det.cloneNode(true);
     const summary = clone.querySelector('summary, .accordion-item__title');
     if (summary) summary.remove();
-    return landingCleanText(landingStripIconLabels(clone.textContent));
+    return landingCleanText(landingStripIconLabels(landingSpacedText(clone)));
+  }
+
+  // textContent runs adjacent blocks together ("course.Each"); put a space before each block element first.
+  function landingSpacedText(el) {
+    const copy = el.cloneNode(true);
+    copy.querySelectorAll('p, li, br, div, h1, h2, h3, h4, h5, h6').forEach((block) => block.before(' '));
+    return copy.textContent || '';
   }
 
   // Summary text without the toggle icon (e.g. `.ar-faq-q-icon` "+").
