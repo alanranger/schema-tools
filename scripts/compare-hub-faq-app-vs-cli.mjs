@@ -20,7 +20,7 @@ const MAPPINGS = path.resolve(arg('--mappings', path.join(WEB, 'alan-shared-reso
 const APP_DIR = path.join(process.env.LOCALAPPDATA, 'SchemaTools', 'SchemaTools-win32-x64');
 const PACKAGED = path.join(APP_DIR, 'resources', 'app');
 const HUB_FILES = ['beginners-photography-lessons_faq.json', 'photographic-workshops-near-me_faq.json'];
-const DEBUG_PORT = 9333;
+const DEBUG_PORT = 9400 + Math.floor(Math.random() * 500);
 
 /** The packaged desktop build must carry the same app code as the source the CLI loads. */
 function packagedMatchesSource() {
