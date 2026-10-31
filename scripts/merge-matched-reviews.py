@@ -129,12 +129,23 @@ elif 'reviewBody' not in google_df.columns:
 # Both matched CSVs already have a `date` column, but it can be partly-populated (Trustpilot)
 # or fully empty (Google — dates live in `date_parsed`). Without this coalesce, the sort step
 # below puts all Google reviews at the bottom regardless of how recent they are.
+DAY_FIRST_COLS = {'review_created_(utc)'}  # Trustpilot export: DD/MM/YYYY HH:MM
+
+
+def _parse_date_col(series, col):
+    """Trustpilot export dates are day-first; everything else here is ISO."""
+    if col not in DAY_FIRST_COLS:
+        return pd.to_datetime(series, errors='coerce')
+    exact = pd.to_datetime(series, format='%d/%m/%Y %H:%M', errors='coerce')
+    return exact.fillna(pd.to_datetime(series, errors='coerce', dayfirst=True))
+
+
 def _coalesce_date(df, candidate_cols):
     """Return a Series of parsed datetimes, taking the first non-null across candidate columns."""
     parsed = []
     for col in candidate_cols:
         if col in df.columns:
-            parsed.append(pd.to_datetime(df[col], errors='coerce'))
+            parsed.append(_parse_date_col(df[col], col))
     if not parsed:
         return pd.Series([pd.NaT] * len(df), index=df.index)
     combined = parsed[0]

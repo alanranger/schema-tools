@@ -2561,6 +2561,10 @@ def main():
                 # ISO timestamps -> date part first (avoid dayfirst mangling YYYY-MM-DD)
                 if "T" in val_str:
                     val_str = val_str.split("T")[0]
+                # DD/MM/YYYY (Trustpilot export) is day-first; ISO stays as is
+                if re.match(r"^\d{1,2}/\d{1,2}/\d{4}", val_str):
+                    dt = pd.to_datetime(val_str, errors="coerce", dayfirst=True)
+                    return None if pd.isna(dt) else dt
                 dt = pd.to_datetime(val_str, errors="coerce", format="mixed")
                 if pd.isna(dt):
                     dt = pd.to_datetime(val_str, errors="coerce", dayfirst=True)
