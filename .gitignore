@@ -6,6 +6,7 @@ package-lock.json
 *.json
 !package.json
 !package-lock.json
+!scripts/app-settings.json
 
 # Results
 *-results.json

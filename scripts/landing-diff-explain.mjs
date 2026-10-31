@@ -44,7 +44,8 @@ function ratingNote(h, n) {
   const no = n[0] || {};
   if (same([ho.aggregateRating, ho.review], [no.aggregateRating, no.review])) return null;
   const fmt = (r) => (r ? `${r.ratingValue} from ${r.reviewCount}` : 'none');
-  return `business rating ${fmt(ho.aggregateRating)} → ${fmt(no.aggregateRating)}: ${no.aggregateRating ? 'page shows the reviews strip; rating from product_reviews (non-excluded)' : 'page has no reviews strip'}`;
+  if (no.aggregateRating || no.review) return `UNEXPECTED business rating ${fmt(no.aggregateRating)} on the business node`;
+  return `business rating ${fmt(ho.aggregateRating)} removed (P23: Google treats self-serving LocalBusiness/Organization reviews as ineligible)`;
 }
 
 function websiteNote(h, n) {
@@ -83,10 +84,20 @@ function explain(file) {
   return { file: file.replace('_landing_schema.json', ''), keyOrderOnly, notes };
 }
 
-const files = fs.readdirSync(path.join(OUT, 'alanranger-schema')).filter((f) => f.endsWith('_landing_schema.json') && fs.existsSync(path.join(REPO, f)));
+const isBusiness = (n) => types(n).some((t) => t === 'LocalBusiness' || t === 'Organization');
+/** Business nodes still carrying aggregateRating / review in the new output (must be 0, P23). */
+function businessRatingFiles(all) {
+  return all.filter((f) => (JSON.parse(fs.readFileSync(path.join(OUT, 'alanranger-schema', f), 'utf8'))['@graph'] || [])
+    .some((n) => isBusiness(n) && (n.aggregateRating || n.review))).map((f) => f.replace('_landing_schema.json', ''));
+}
+
+const allNew = fs.readdirSync(path.join(OUT, 'alanranger-schema')).filter((f) => f.endsWith('_landing_schema.json'));
+const files = allNew.filter((f) => fs.existsSync(path.join(REPO, f)));
 const rows = files.map(explain);
-const unexplained = rows.filter((r) => !r.keyOrderOnly && !r.notes.length).map((r) => r.file);
-const summary = { files: rows.length, keyOrderOrIdentical: rows.filter((r) => r.keyOrderOnly).length, unexplained, rows };
+const unexplained = rows.filter((r) => (!r.keyOrderOnly && !r.notes.length) || r.notes.some((n) => n.startsWith('UNEXPECTED'))).map((r) => r.file);
+const businessRating = businessRatingFiles(allNew);
+const summary = { files: rows.length, landingFilesGenerated: allNew.length, keyOrderOrIdentical: rows.filter((r) => r.keyOrderOnly).length,
+  unexplained, businessRatingFiles: businessRating, rows };
 if (jsonArg > 0) fs.writeFileSync(process.argv[jsonArg + 1], JSON.stringify(summary, null, 2));
-console.log(JSON.stringify({ files: summary.files, keyOrderOrIdentical: summary.keyOrderOrIdentical, unexplained }, null, 1));
+console.log(JSON.stringify({ files: summary.files, landingFilesGenerated: allNew.length, keyOrderOrIdentical: summary.keyOrderOrIdentical, unexplained, businessRatingFiles: businessRating }, null, 1));
 for (const r of rows) if (r.notes.length) console.log(`${r.file}: ${r.notes.join(' | ')}`);

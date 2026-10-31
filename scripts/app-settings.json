@@ -1,0 +1,8 @@
+{
+  "_note": "The desktop app's saved tab options (its localStorage), read from the installed app on 2026-10-31. app-cli.mjs applies them so command-line runs generate exactly what the app does. The compare-*-app-vs-cli proofs fail if the app's saved options no longer match this file.",
+  "localStorage": {
+    "eventSchema.groupRepeatingEvents": "true",
+    "eventSchema.includeMerchantFields": "true",
+    "eventSchema.includeAvailabilityStarts": "true"
+  }
+}

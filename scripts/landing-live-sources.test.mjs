@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import './landing-live-sources.js';
-import { businessRating } from './build-business-rating.mjs';
 
 const L = globalThis.LandingLiveSources;
 const PAGE = 'https://www.alanranger.com/photography-workshops';
@@ -62,18 +61,15 @@ test('WebSite fields come from Squarespace\'s site-level WebSite JSON-LD on the 
   assert.equal(graph[0].image, 'https://x/logo.png');
 });
 
-test('business rating: from non-excluded product_reviews like products (2 dp, all rated, 25 newest with text), only on pages with the reviews strip', () => {
-  const rows = [
-    { reviewer_name: 'A', review_date: '2026-01-02', rating: 5, quote: 'Great', source: 'Google' },
-    { reviewer_name: 'B', review_date: '2026-03-01', rating: 4, quote: '', source: 'Trustpilot' },
-    { reviewer_name: 'C', review_date: '2026-02-01', rating: 4, quote: 'Good', source: 'Google' }
+test('no business rating on any landing page: aggregateRating / review removed from LocalBusiness and Organization nodes', () => {
+  const graph = [
+    { '@type': ['Organization', 'LocalBusiness'], '@id': '#org', aggregateRating: { ratingValue: '4.8' }, review: [{ '@type': 'Review' }] },
+    { '@type': 'Organization', '@id': '#other', aggregateRating: { ratingValue: '5' } },
+    { '@type': 'Course', '@id': '#course', aggregateRating: { ratingValue: '5.0' } }
   ];
-  const r = businessRating(rows);
-  assert.deepEqual(r.aggregateRating, { '@type': 'AggregateRating', ratingValue: '4.33', reviewCount: 3, bestRating: '5', worstRating: '1' });
-  assert.deepEqual(r.review.map((x) => x.author.name), ['C', 'A']);
-  const graph = () => [{ '@type': ['Organization', 'LocalBusiness'], aggregateRating: { stale: true } }];
-  const withStrip = L.applyBusinessRating(graph(), '<body><div class="ar-reviews"></div></body>', r);
-  assert.equal(withStrip[0].aggregateRating.ratingValue, '4.33');
-  const noStrip = L.applyBusinessRating(graph(), '<body></body>', r);
-  assert.equal(noStrip[0].aggregateRating, undefined, 'no reviews strip on the page → no rating (and no stale one)');
+  assert.equal(L.businessRatingNodes(graph), 2);
+  L.stripBusinessRating(graph);
+  assert.equal(L.businessRatingNodes(graph), 0);
+  assert.equal(graph[0].review, undefined);
+  assert.deepEqual(graph[2].aggregateRating, { ratingValue: '5.0' }, 'Course (a product-type offer) is not a business rating');
 });

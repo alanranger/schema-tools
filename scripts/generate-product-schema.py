@@ -3588,54 +3588,9 @@ def main():
     except Exception as e:
         print(f"⚠️ Could not save review summary: {e}")
     
-    # Generate unified JSON file with all products in @graph structure
-    if all_schema_graphs:
-        print("\n" + "="*60)
-        print("📦 GENERATING UNIFIED PRODUCT SCHEMA")
-        print("="*60)
-        
-        # Collect all graph items from all schemas
-        unified_graph_items = []
-        seen_urls = set()  # Track URLs to avoid duplicates
-        
-        for schema_graph in all_schema_graphs:
-            if '@graph' in schema_graph and isinstance(schema_graph['@graph'], list):
-                for item in schema_graph['@graph']:
-                    # Only include Product/Course objects (skip LocalBusiness and BreadcrumbList duplicates)
-                    # Event schemas now use Product with nested "event" object, so we check for Product
-                    item_type = item.get('@type', [])
-                    if isinstance(item_type, list):
-                        if 'Product' in item_type or 'Course' in item_type:
-                            # Check for duplicate URLs
-                            item_url = item.get('url', '')
-                            if item_url and item_url not in seen_urls:
-                                unified_graph_items.append(item)
-                                seen_urls.add(item_url)
-                    elif isinstance(item_type, str) and item_type in ['Product', 'Course']:
-                        item_url = item.get('url', '')
-                        if item_url and item_url not in seen_urls:
-                            unified_graph_items.append(item)
-                            seen_urls.add(item_url)
-        
-        # Create unified schema with @graph structure
-        unified_schema = {
-            "@context": "https://schema.org",
-            "@graph": unified_graph_items
-        }
-        
-        # Save unified JSON file (in root schema folder, not products subfolder)
-        unified_json_path = shared_resources_dir / 'outputs' / 'schema' / 'products-schema.json'
-        try:
-            with open(unified_json_path, 'w', encoding='utf-8') as f:
-                json.dump(unified_schema, f, indent=2, ensure_ascii=False)
-            file_size_kb = unified_json_path.stat().st_size / 1024
-            print(f"✅ Unified product schema saved: {unified_json_path.name}")
-            print(f"   Products included: {len(unified_graph_items)}")
-            print(f"   File size: {file_size_kb:.2f} KB")
-            print(f"   Location: {unified_json_path.absolute()}")
-        except Exception as e:
-            print(f"⚠️ Could not save unified JSON: {e}")
-    
+    # products-schema.json (one unified @graph of every product) is retired (Alan, 31 Oct 2026, batch 5): no loader,
+    # manifest or page uses it; each product page loads its own <slug>_schema.json via product-page-loader.js.
+
     # Summary
     products_without_reviews = valid_products - products_with_reviews_count
     
@@ -3975,44 +3930,8 @@ def write_mentoring_manual_paste(outputs_dir):
                 }
             )
 
-    # Homepage + About org review blocks (already on CDN; flag hash drift)
-    for page_id, filename, url in [
-        ("homepage", "organization-homepage-reviews.json", "https://www.alanranger.com/"),
-        ("about", "organization-about-reviews.json", "https://www.alanranger.com/about-alan-ranger"),
-    ]:
-        src = Path(outputs_dir) / filename
-        if not src.exists():
-            src = cdn_dir / filename
-        digest, data = _hash_file(src)
-        if not digest:
-            continue
-        hash_path = paste_dir / f"{page_id}-reviews.sha256"
-        prev_hash = ""
-        if hash_path.exists():
-            try:
-                prev_hash = (_json.loads(hash_path.read_text(encoding="utf-8"))).get("hash") or ""
-            except Exception:
-                prev_hash = hash_path.read_text(encoding="utf-8").strip()
-        changed = bool(prev_hash) and prev_hash != digest
-        # first run: seed hash without forcing a paste alert
-        if not prev_hash:
-            changed = False
-        hash_path.write_text(
-            _json.dumps({"hash": digest, "updatedAt": datetime.now().isoformat(), "source": str(src)}, indent=2),
-            encoding="utf-8",
-        )
-        paste_copy = paste_dir / filename
-        if src.exists():
-            paste_copy.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-        register["pages"].append(
-            {
-                "id": page_id,
-                "url": url,
-                "needsRepaste": changed,
-                "pasteFile": filename,
-                "reason": "org review JSON hash changed" if changed else "unchanged",
-            }
-        )
+    # Homepage + About organization review blocks are retired (Alan, 31 Oct 2026, batch 5): both pages use the hosted
+    # landing loader and carry no business rating (Google treats self-serving LocalBusiness reviews as ineligible).
 
     # Academy: track CDN/org file if present; otherwise placeholder for Monday brief
     academy_candidates = [

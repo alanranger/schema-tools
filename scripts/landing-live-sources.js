@@ -5,7 +5,7 @@
  *   BreadcrumbList ← the URL path, with intermediate levels named from the site's own navigation links
  *   VideoObject    ← YouTube videos embedded on the page; fields from the video's own YouTube watch page
  *   WebSite fields ← Squarespace's site-level WebSite JSON-LD on the page (site description + logo)
- *   Business rating← product_reviews (non-excluded), on pages that show the reviews strip (.ar-reviews)
+ *   No business aggregateRating / review on any landing page (P23: self-serving reviews are ineligible)
  */
 (function (root, factory) {
   const api = factory();
@@ -160,23 +160,17 @@
     return graph;
   }
 
-  // ---------- Business rating ----------
-  /** The page visibly shows reviews: the ar-reviews strip, the Elfsight reviews widget or the review widget/summary boxes. */
-  const REVIEW_MARKERS = [/class="(?:[^"]*\s)?ar-reviews(?:\s[^"]*)?"/i, /class="elfsight-app-[\w-]+"/i, /id="(?:review-widget-container|reviewSummary)"/i];
-  const showsReviews = (html) => REVIEW_MARKERS.some((re) => re.test(bodyOf(html)));
+  // ---------- No business rating (Alan, 31 Oct 2026, P23) ----------
+  /** Google treats self-serving LocalBusiness/Organization reviews as ineligible: landing pages carry none. */
+  const isBusiness = (n) => n && [].concat(n['@type']).some((t) => t === 'LocalBusiness' || t === 'Organization');
 
-  function applyBusinessRating(graph, html, rating) {
-    const org = graph.find((n) => n && [].concat(n['@type']).includes('LocalBusiness'));
-    if (!org) return graph;
-    delete org.aggregateRating;
-    delete org.review;
-    if (rating && rating.aggregateRating && showsReviews(html)) {
-      org.aggregateRating = rating.aggregateRating;
-      if (Array.isArray(rating.review) && rating.review.length) org.review = rating.review;
-    }
+  function stripBusinessRating(graph) {
+    graph.filter(isBusiness).forEach((org) => { delete org.aggregateRating; delete org.review; });
     return graph;
   }
 
+  const businessRatingNodes = (graph) => (graph || []).filter((n) => isBusiness(n) && (n.aggregateRating || n.review)).length;
+
   return { buildItemList, summaryItems, storeItems, buildBreadcrumbList, youtubeIds, watchPageFields, buildVideoObjects,
-    squarespaceWebSite, applyWebSiteFields, showsReviews, applyBusinessRating, REQUIRED_VIDEO_FIELDS };
+    squarespaceWebSite, applyWebSiteFields, stripBusinessRating, businessRatingNodes, REQUIRED_VIDEO_FIELDS };
 });

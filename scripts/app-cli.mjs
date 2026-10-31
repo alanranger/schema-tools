@@ -25,6 +25,8 @@ const COMMAND = process.argv[2];
 const OUT = path.resolve(arg('--out') || path.join(ROOT, 'outputs', 'app-cli'));
 const CSV = path.resolve(arg('--csv') || path.join(WEB, 'alan-shared-resources', 'csv'));
 const GAP_MS = Number(process.env.ALAN_SITE_GAP_SECONDS || 1.5) * 1000;
+/** The desktop app's saved tab options, so command-line runs use the same settings as Alan's app. */
+const APP_SETTINGS = JSON.parse(fs.readFileSync(path.join(HERE, 'app-settings.json'), 'utf8')).localStorage;
 const writes = [];
 let lastSiteRequest = 0;
 
@@ -73,11 +75,12 @@ async function openApp(browser) {
     if (!API[method]) return { success: false, error: `${method} is not available in app-cli` };
     return API[method](...args);
   });
-  await page.addInitScript((methods) => {
+  await page.addInitScript(({ methods, saved }) => {
     const api = { isElectron: true };
     methods.forEach((m) => { api[m] = (...args) => window.__appCliCall(m, args); });
     window.electronAPI = api;
-  }, Object.keys(API));
+    Object.entries(saved).forEach(([k, v]) => localStorage.setItem(k, v));
+  }, { methods: Object.keys(API), saved: APP_SETTINGS });
   // The app's page fetch tries public CORS proxies first (20 s timeouts each). Answer the first one with a direct,
   // paced fetch in its own response shape, so the same app code runs without third-party hops.
   await page.route('https://api.allorigins.win/get?**', async (route) => {
@@ -91,6 +94,26 @@ async function openApp(browser) {
   await page.goto(pathToFileURL(path.join(ROOT, 'index.html')).href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof window.generateEventPostBundle === 'function' && typeof window.generateBlogIndexSchema === 'function', null, { timeout: 60000 });
   return page;
+}
+
+/** One Event Index tab run (lessons or workshops): the tab's own inputs, generateEventSchema(), exportAndDeploySchema(). */
+async function eventIndexRun(page, type, csvFile, processed) {
+  await page.setInputFiles('#eventCsvFile', csvFile);
+  await page.waitForFunction(() => Array.isArray(events) && events.length > 0, null, { timeout: 30000 });
+  await page.setInputFiles('#mappingsCsvFile', arg('--mappings') || path.join(WEB, 'alan-shared-resources', 'csv processed', '05-event-product-mappings-latest.csv'));
+  const optional = [['#productsExcelFile', '02 – products_cleaned.xlsx'], ['#reviewsCsvFile', '03 – combined_product_reviews.csv']];
+  for (const [sel, name] of optional) if (fs.existsSync(path.join(processed, name))) await page.setInputFiles(sel, path.join(processed, name));
+  await page.evaluate(() => generateEventSchema());
+  const today = new Date().toISOString().slice(0, 10);
+  const got = await page.evaluate((day) => ({ csvType: window.currentEventSchemaCsvType, rows: events.length,
+    products: (window.productsData || []).length,
+    loadLog: (window.debugLog || []).filter((l) => /products Excel|reviews CSV|XLSX/i.test(String(l))).slice(0, 4),
+    past: events.filter((e) => String(e.End_Date || e.Start_Date || '') < day).length,
+    eventNodes: ((window.currentEventSchema || {})['@graph'] || []).filter((n) => [].concat(n['@type']).includes('Event')).length }), today);
+  if (got.csvType !== type) throw new Error(`event-index ${type}: the tab detected "${got.csvType}"`);
+  await page.evaluate(() => exportAndDeploySchema());
+  return { type, file: `${type}-schema.json`, csv_rows: got.rows, past_dated_dropped: got.past, events_listed: got.eventNodes,
+    other_not_listed: Math.max(0, got.rows - got.past - got.eventNodes), products_loaded: got.products, load_log: got.loadLog };
 }
 
 const COMMANDS = {
@@ -110,6 +133,16 @@ const COMMANDS = {
     if (!(await page.evaluate(() => !!window.currentBlogSchema))) throw new Error('blog index generate failed');
     await page.evaluate(() => exportAndDeployBlogSchema());
     return page.evaluate(() => (blogDebugLog || []).slice(-6).join('\n'));
+  },
+  'event-index': async (page) => {
+    const processed = arg('--processed') || path.join(WEB, 'alan-shared-resources', 'csv processed');
+    const runs = [];
+    for (const [type, csv] of [['lessons', '02-beginners-photography-lessons.csv'], ['workshops', '03-photographic-workshops-near-me.csv']]) {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => typeof window.generateEventSchema === 'function', null, { timeout: 60000 });
+      runs.push(await eventIndexRun(page, type, path.join(CSV, csv), processed));
+    }
+    return JSON.stringify(runs);
   },
   landings: async (page) => {
     const only = arg('--paths');

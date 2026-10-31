@@ -26,8 +26,7 @@
     "bulk:blog-howto-faq": "node scripts/bulk-regen-blog-howto-faq.mjs",
     "repair:blog-title-sync": "node scripts/repair-blog-title-sync.mjs",
     "test:reconcile-reviews": "python scripts/test-reconcile-removed-from-google.py",
-    "test:landing-live-sources": "node --test scripts/landing-live-sources.test.mjs",
-    "build:business-rating": "node scripts/build-business-rating.mjs"
+    "test:landing-live-sources": "node --test scripts/landing-live-sources.test.mjs"
   },
   "keywords": [
     "schema",

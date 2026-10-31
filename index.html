@@ -20352,21 +20352,9 @@ ${minifiedJson}
     }
   }
 
-  // Alan 2026-10-31 (batch 4): ItemList, BreadcrumbList, VideoObject, WebSite description/image and the business
-  // rating are rebuilt every run from live sources (scripts/landing-live-sources.js), never copied from a published file.
-  const BUSINESS_RATING_FILE = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\outputs\\schema\\business-rating-LATEST.json';
+  // Alan 2026-10-31 (batch 4/5): ItemList, BreadcrumbList, VideoObject and WebSite description/image are rebuilt every
+  // run from live sources (scripts/landing-live-sources.js), never copied from a published file. No business rating.
   const LANDING_REBUILT_TYPES = ['ItemList', 'BreadcrumbList', 'VideoObject'];
-
-  async function readBusinessRating() {
-    if (!window.electronAPI || !window.electronAPI.readFile) return null;
-    try {
-      const res = await window.electronAPI.readFile(BUSINESS_RATING_FILE);
-      return res && res.success ? JSON.parse(res.content) : null;
-    } catch (e) {
-      addLandingDebugLog('   No business rating file (run scripts/build-business-rating.mjs): business rating omitted');
-      return null;
-    }
-  }
 
   async function applyLandingLiveSources(schema, pageUrl, html, pageName) {
     const live = window.LandingLiveSources;
@@ -20375,7 +20363,7 @@ ${minifiedJson}
     const videos = await live.buildVideoObjects(html, pageUrl, fetchProductPage, (msg) => addLandingDebugLog(`   ${msg}`));
     const graph = [...kept, live.buildBreadcrumbList(pageUrl, pageName, html), live.buildItemList(html, pageUrl, pageName), ...videos].filter(Boolean);
     live.applyWebSiteFields(graph, live.squarespaceWebSite(html));
-    live.applyBusinessRating(graph, html, await readBusinessRating());
+    live.stripBusinessRating(graph);
     return { ...schema, '@graph': graph };
   }
 
