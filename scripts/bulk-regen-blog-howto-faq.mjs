@@ -2,7 +2,8 @@
 
 /**
  * Bulk-regenerate blog `_howto.json` and `_faq.json` from live HTML (force overwrite on disk).
- * Waits 300 ms between URLs to reduce HTTP 429 throttling from the origin server.
+ * Waits between URLs to reduce HTTP 429 throttling from the origin server: ALAN_SITE_GAP_SECONDS (default 0.3 s;
+ * the Update-all runner sets 2).
  * Skips slugs whose filenames contain `_event` (events / event-style posts). Commits every `--batch` URLs (default 50).
  *
  * Usage (from Schema Tools repo root):
@@ -24,6 +25,7 @@ import { assertFaqLayoutFixtures } from './faq-layout-fixtures.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
+const URL_GAP_MS = Number(process.env.ALAN_SITE_GAP_SECONDS || 0.3) * 1000;
 
 function parseArgs() {
   const a = process.argv.slice(2);
@@ -292,7 +294,7 @@ async function main() {
       appendLog(`${slug} ERROR ${e.message}`);
     }
 
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, URL_GAP_MS));
 
     const posInBatch = (i + 1) % opts.batch;
     const countInBatch = posInBatch === 0 ? opts.batch : posInBatch;

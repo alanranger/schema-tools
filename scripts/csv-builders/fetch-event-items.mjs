@@ -1,5 +1,6 @@
 /**
  * Per-event item JSON (holds the body that the export's Text_Block comes from). Paced 6s.
+ * Fetched when the event is new or its feed updatedOn changed since the cached copy.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ let n = 0;
 for (const slug of ['beginners-photography-lessons', 'photographic-workshops-near-me']) {
   const f = readFeed(slug);
   for (const ev of [...f.upcoming, ...f.past]) {
-    if (out[ev.fullUrl]) continue;
+    if (out[ev.fullUrl] && out[ev.fullUrl].updatedOn === ev.updatedOn) continue;
     const j = JSON.parse(await fetchText(`${ORIGIN}${ev.fullUrl}?format=json`));
     out[ev.fullUrl] = { body: j.item?.body || '', updatedOn: j.item?.updatedOn };
     n += 1;
