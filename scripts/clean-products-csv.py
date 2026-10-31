@@ -20,6 +20,7 @@ import html
 from pathlib import Path
 import sys
 import os
+import time
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
@@ -115,11 +116,23 @@ def normalize_url(product_page, product_url, product_name=None):
     else:
         return ''
 
+_LAST_SITE_REQUEST = [0.0]
+
+
+def pace_site_request():
+    """Gap between alanranger.com requests (ALAN_SITE_GAP_SECONDS, default 1 s) to stay clear of 429."""
+    gap = float(os.environ.get('ALAN_SITE_GAP_SECONDS') or 1.0)
+    wait = gap - (time.time() - _LAST_SITE_REQUEST[0])
+    if wait > 0:
+        time.sleep(wait)
+    _LAST_SITE_REQUEST[0] = time.time()
+
+
 def validate_url(url, timeout=5):
     """Check if URL returns 200 OK (not 404)"""
     if not url or not url.startswith('http'):
         return False, 'Invalid URL format'
-    
+    pace_site_request()
     try:
         req = urllib.request.Request(url, method='HEAD')
         req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
@@ -233,6 +246,7 @@ def fetch_product_price_from_page(url, timeout=8):
     """Fetch page and try to extract a GBP price."""
     if not url or not isinstance(url, str):
         return None
+    pace_site_request()
     try:
         req = urllib.request.Request(url, method='GET')
         req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')

@@ -19,6 +19,7 @@
     "test:faq-fetch-guard": "python scripts/check-faq-fetch-guard.py",
     "test:review-dates": "python scripts/check-review-dates.py",
     "shadow:review-matcher": "node scripts/shadow-review-matcher.mjs",
+    "test:csv-builders": "node --test scripts/csv-builders/csv-builders.test.mjs",
     "test:blog-schema-index-only": "node scripts/test-blog-schema-index-only.mjs",
     "test:article-body": "node scripts/test-article-body-extraction.js",
     "test:howto-extraction": "node scripts/test-howto-extraction.js",

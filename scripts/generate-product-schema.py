@@ -437,7 +437,8 @@ def enrich_html_with_snippets(page_url, html):
 
 
 _HTML_CACHE = {}
-FETCH_GAP_SECONDS = 1.5
+FETCH_GAP_SECONDS = float(os.environ.get("ALAN_SITE_GAP_SECONDS") or 1.5)
+UNKNOWN_FAQ_RETRY_WAIT_SECONDS = float(os.environ.get("ALAN_FAQ_RETRY_WAIT_SECONDS") or 60)
 FETCH_BACKOFF_SECONDS = (5, 20, 60)
 _LAST_FETCH = [0.0]
 
@@ -452,6 +453,28 @@ def fetch_html(url, timeout_sec=12):
         html = resp.read().decode("utf-8", errors="ignore")
     _HTML_CACHE[cache_key] = html
     return html
+
+
+def retry_unknown_faqs(failed):
+    """One paced retry (after a cool-down) for pages whose FAQ came back unknown; returns those still unknown."""
+    if not failed:
+        return failed
+    print(f"⏳ Retrying {len(failed)} unknown FAQ page(s) after {UNKNOWN_FAQ_RETRY_WAIT_SECONDS:.0f}s cool-down...")
+    time.sleep(UNKNOWN_FAQ_RETRY_WAIT_SECONDS)
+    still = []
+    for item in failed:
+        _HTML_CACHE.clear()
+        snapshot = fetch_page_snapshot(item["url"], {})
+        pairs = scrape_visible_faq_pairs(snapshot.get("html", "")) if snapshot.get("fetched_ok") else []
+        if not snapshot.get("fetched_ok"):
+            still.append(item)
+            continue
+        if pairs:
+            write_json_with_retry(Path(item["faq_path"]), build_faq_jsonld(item["url"], pairs))
+            print(f"✅ FAQ recovered on retry [{item['slug']}] {len(pairs)} Q&As")
+        else:
+            print(f"ℹ️ FAQ retry [{item['slug']}]: page has no visible FAQ (existing file kept for review)")
+    return still
 
 
 def fetch_html_paced(url, timeout_sec=12):
@@ -3426,7 +3449,7 @@ def main():
                 except Exception as e:
                     print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
             elif not snapshot.get("fetched_ok"):
-                faq_fetch_failed.append({"url": product_url, "error": snapshot.get("fetch_error", "")})
+                faq_fetch_failed.append({"url": product_url, "error": snapshot.get("fetch_error", ""), "faq_path": str(faq_path), "slug": product_name_slug})
                 print(f"⚠️ Page fetch failed [{product_name_slug}] ({snapshot.get('fetch_error')}) — existing FAQ kept")
             else:
                 faq_skipped_quality_count += 1
@@ -3546,6 +3569,7 @@ def main():
     print(f"✅ Product FAQ files generated: {faq_generated_count}")
     print(f"ℹ️ FAQ skipped (already exists on page): {faq_skipped_existing_count}")
     print(f"ℹ️ FAQ skipped (quality rules not met): {faq_skipped_quality_count}")
+    faq_fetch_failed = retry_unknown_faqs(faq_fetch_failed)
     print(f"⚠️ FAQ unknown (page or snippet fetch failed, live FAQ kept): {len(faq_fetch_failed)}")
     try:
         write_json_with_retry(outputs_dir / FAQ_FETCH_STATUS_FILE, {

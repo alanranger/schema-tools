@@ -20364,8 +20364,10 @@ ${minifiedJson}
       for (let i = 0; i < LANDING_HOSTED_PATHS.length; i++) {
         const p = LANDING_HOSTED_PATHS[i];
         const url = p === '/home' ? 'https://www.alanranger.com/home' : 'https://www.alanranger.com' + p;
-        const urlInput = document.getElementById('landingPageUrlFinal');
-        if (urlInput) urlInput.value = url;
+        ['landingPageUrl', 'landingPageUrlFinal'].forEach((id) => {
+          const input = document.getElementById(id);
+          if (input) input.value = url;
+        });
         addLandingDebugLog(`\n[${i + 1}/${LANDING_HOSTED_PATHS.length}] ${p}`);
         await scanLandingPageMetadata();
         await generateLandingSchema();
