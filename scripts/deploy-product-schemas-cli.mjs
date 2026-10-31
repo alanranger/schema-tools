@@ -109,11 +109,26 @@ function liveFaqByPathKey() {
 }
 const LIVE_FAQ = KEEP_LIVE_FAQ ? liveFaqByPathKey() : null;
 
+function faqFetchFailedPathKeys() {
+  const file = path.join(SCHEMA_DIR, "faq-fetch-status.json");
+  if (!fs.existsSync(file)) return new Set();
+  const failed = JSON.parse(fs.readFileSync(file, "utf8")).failed || [];
+  return new Set(failed.map((f) => derivePathKey(f.url)));
+}
+const FAQ_FETCH_FAILED = faqFetchFailedPathKeys();
+const LIVE_FAQ_FOR_FAILED = FAQ_FETCH_FAILED.size ? liveFaqByPathKey() : new Map();
+
+function keepLiveFaq(liveMap, pathKey) {
+  const kept = liveMap.get(pathKey) || "";
+  if (kept) keepNames.add(kept);
+  return kept;
+}
+
 function syncFaq(jsonFile, pathKey) {
-  if (LIVE_FAQ) {
-    const kept = LIVE_FAQ.get(pathKey) || "";
-    if (kept) keepNames.add(kept);
-    return kept;
+  if (LIVE_FAQ) return keepLiveFaq(LIVE_FAQ, pathKey);
+  if (FAQ_FETCH_FAILED.has(pathKey)) {
+    console.warn(`FAQ unknown (fetch failed) — keeping live mapping: ${pathKey}`);
+    return keepLiveFaq(LIVE_FAQ_FOR_FAILED, pathKey);
   }
   const faqSrc = path.join(SCHEMA_DIR, jsonFile.replace("_schema.json", "_faq.json"));
   if (!fs.existsSync(faqSrc)) return "";

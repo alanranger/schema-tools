@@ -43,6 +43,7 @@ import os
 import time
 from datetime import datetime, date, timedelta
 from urllib.parse import urlparse, urljoin
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from collections import defaultdict
 
@@ -57,6 +58,7 @@ warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
 
 SCHEMA_JSON_SUFFIX = "_schema.json"
 FAQ_JSON_SUFFIX = "_faq.json"
+FAQ_FETCH_STATUS_FILE = "faq-fetch-status.json"
 MAX_FAQ_QUESTIONS = 7
 
 # Static schema blocks
@@ -266,17 +268,41 @@ def scrape_strong_faq_pairs(html, add_pair):
         add_pair(match.group(1), match.group(2))
 
 
+FAQ_ACCORDION_TITLE = re.compile(r'accordion-item__title"[^>]*>([\s\S]*?)</span>', flags=re.IGNORECASE)
+MAX_FAQ_QUESTION_CHARS = 200
+
+
+def faq_accordion_items(html):
+    """Bodies of Squarespace accordion items titled FAQ(s); each item ends at the next item or block."""
+    bodies = []
+    for chunk in re.split(r'<li class="accordion-item"', html, flags=re.IGNORECASE)[1:]:
+        chunk = chunk.split('class="sqs-block ')[0]
+        title = FAQ_ACCORDION_TITLE.search(chunk)
+        if title and re.search(r"\bfaqs?\b", html_to_plain_text(title.group(1)), flags=re.IGNORECASE):
+            bodies.append(chunk[title.end():])
+    return bodies
+
+
+def faq_scopes(html):
+    """Blocks that are visibly an FAQ: after a 'Frequently asked questions' heading, or a Squarespace
+    accordion item titled FAQ(s). Content outside these (e.g. 'Is this for me?' headings) is not FAQ."""
+    scopes = [html[m.end():m.end() + 20000] for m in re.finditer(r"frequently asked questions", html, flags=re.IGNORECASE)]
+    return scopes + faq_accordion_items(html)
+
+
 def scrape_visible_faq_pairs(source_html):
-    """Mirror visible FAQ only: details, heading Q&A, or strong-list items. Never invent Q&As."""
-    html = html_lib.unescape(str(source_html or ""))
+    """Mirror visible FAQ only: details, or heading/strong Q&As inside an FAQ section. Never invent Q&As."""
+    html = re.sub(r"<!--[\s\S]*?-->", "", html_lib.unescape(str(source_html or "")))
     pairs = []
     seen = set()
 
-    def add_pair(question, answer):
+    def add_pair(question, answer, needs_question_mark=True):
         question = html_to_plain_text(question)
         answer = html_to_plain_text(answer)
         key = question.lower()
-        if len(question) < 8 or len(answer) < 12 or key in seen:
+        if len(question) < 8 or len(question) > MAX_FAQ_QUESTION_CHARS or len(answer) < 12 or key in seen:
+            return
+        if needs_question_mark and not question.endswith("?"):
             return
         seen.add(key)
         pairs.append((question, answer))
@@ -286,17 +312,11 @@ def scrape_visible_faq_pairs(source_html):
         if not summary:
             continue
         answer_html = re.sub(r"<summary[^>]*>[\s\S]*?</summary>", "", block, flags=re.IGNORECASE)
-        add_pair(summary.group(1), answer_html)
+        add_pair(summary.group(1), answer_html, needs_question_mark=False)
 
-    faq_starts = [m.end() for m in re.finditer(r"frequently asked questions", html, flags=re.IGNORECASE)]
-    if faq_starts:
-        for start in faq_starts:
-            block = html[start:start + 20000]
-            scrape_heading_faq_pairs(block, add_pair)
-            scrape_strong_faq_pairs(block, add_pair)
-    else:
-        scrape_heading_faq_pairs(html, add_pair)
-        scrape_strong_faq_pairs(html, add_pair)
+    for block in faq_scopes(html):
+        scrape_heading_faq_pairs(block, add_pair)
+        scrape_strong_faq_pairs(block, add_pair)
     return pairs
 
 
@@ -345,19 +365,26 @@ def extract_snippet_targets(source_html, page_url):
 
 
 def enrich_html_with_snippets(page_url, html):
-    """Append Will-Myers snippet page HTML so visible FAQs can be scraped."""
+    """Append Will-Myers snippet page HTML so visible FAQs can be scraped.
+
+    Returns (html, failed_targets). A failed snippet means the visible FAQ is unknown.
+    """
     parts = [str(html or "")]
+    failed = []
     for target in extract_snippet_targets(html, page_url):
         try:
-            snippet_html = fetch_html(target, timeout_sec=8)
-        except Exception:
-            snippet_html = ""
-        if snippet_html:
-            parts.append(snippet_html)
-    return "\n".join(parts)
+            snippet_html = fetch_html_paced(target, timeout_sec=12)
+        except Exception as err:
+            failed.append(f"{target} ({type(err).__name__}: {err})")
+            continue
+        parts.append(snippet_html)
+    return "\n".join(parts), failed
 
 
 _HTML_CACHE = {}
+FETCH_GAP_SECONDS = 1.5
+FETCH_BACKOFF_SECONDS = (5, 20, 60)
+_LAST_FETCH = [0.0]
 
 
 def fetch_html(url, timeout_sec=12):
@@ -370,6 +397,25 @@ def fetch_html(url, timeout_sec=12):
         html = resp.read().decode("utf-8", errors="ignore")
     _HTML_CACHE[cache_key] = html
     return html
+
+
+def fetch_html_paced(url, timeout_sec=12):
+    """fetch_html with a gap between live requests and backoff on 429/5xx."""
+    if str(url or "").strip() in _HTML_CACHE:
+        return fetch_html(url, timeout_sec)
+    last_err = None
+    for wait in (0,) + FETCH_BACKOFF_SECONDS:
+        time.sleep(max(wait, FETCH_GAP_SECONDS - (time.time() - _LAST_FETCH[0])))
+        _LAST_FETCH[0] = time.time()
+        try:
+            return fetch_html(url, timeout_sec)
+        except HTTPError as err:
+            last_err = err
+            if err.code != 429 and err.code < 500:
+                raise
+        except Exception as err:
+            last_err = err
+    raise last_err
 
 
 GIFT_VOUCHER_URL = "https://www.alanranger.com/photography-services-near-me/photography-gift-vouchers"
@@ -518,22 +564,11 @@ def fetch_page_snapshot(url, cache):
     if url in cache:
         return cache[url]
 
-    html = ""
-    fetch_error = ""
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        try:
-            html = fetch_html(url, timeout_sec=12)
-            fetch_error = ""
-            break
-        except Exception as err:
-            fetch_error = f"{type(err).__name__}: {err}"
-            if attempt < max_attempts - 1:
-                time.sleep(0.8)
-
-    if not html:
+    try:
+        html = fetch_html_paced(url, timeout_sec=12)
+    except Exception as err:
         failed_snapshot = dict(empty_snapshot)
-        failed_snapshot["fetch_error"] = fetch_error
+        failed_snapshot["fetch_error"] = f"{type(err).__name__}: {err}"
         cache[url] = failed_snapshot
         return failed_snapshot
 
@@ -542,7 +577,7 @@ def fetch_page_snapshot(url, cache):
     if title_match:
         title = html_lib.unescape(re.sub(r"\s+", " ", title_match.group(1))).strip()
 
-    html = enrich_html_with_snippets(url, html)
+    html, snippet_failures = enrich_html_with_snippets(url, html)
     plain_text = html_to_plain_text(html)
     has_existing_faq = contains_faq_signal(html)
 
@@ -551,8 +586,8 @@ def fetch_page_snapshot(url, cache):
         "title": title,
         "plain_text": plain_text[:8000],
         "html": html,
-        "fetched_ok": True,
-        "fetch_error": ""
+        "fetched_ok": not snippet_failures,
+        "fetch_error": "; ".join(f"snippet {f}" for f in snippet_failures)
     }
     cache[url] = snapshot
     return snapshot
@@ -2712,6 +2747,7 @@ def main():
     faq_generated_count = 0
     faq_skipped_existing_count = 0
     faq_skipped_quality_count = 0
+    faq_fetch_failed = []
     
     # Track schema types
     schema_type_counts = {
@@ -3329,6 +3365,7 @@ def main():
                 except Exception as e:
                     print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
             elif not snapshot.get("fetched_ok"):
+                faq_fetch_failed.append({"url": product_url, "error": snapshot.get("fetch_error", "")})
                 print(f"⚠️ Page fetch failed [{product_name_slug}] ({snapshot.get('fetch_error')}) — existing FAQ kept")
             else:
                 faq_skipped_quality_count += 1
@@ -3441,6 +3478,14 @@ def main():
     print(f"✅ Product FAQ files generated: {faq_generated_count}")
     print(f"ℹ️ FAQ skipped (already exists on page): {faq_skipped_existing_count}")
     print(f"ℹ️ FAQ skipped (quality rules not met): {faq_skipped_quality_count}")
+    print(f"⚠️ FAQ unknown (page or snippet fetch failed, live FAQ kept): {len(faq_fetch_failed)}")
+    try:
+        write_json_with_retry(outputs_dir / FAQ_FETCH_STATUS_FILE, {
+            "generatedAt": datetime.now().isoformat(timespec="seconds"),
+            "failed": faq_fetch_failed,
+        })
+    except Exception as e:
+        print(f"⚠️ Could not save {FAQ_FETCH_STATUS_FILE}: {e}")
     
     # Save QA Summary CSV (in products folder)
     summary_df = pd.DataFrame(summary_rows)

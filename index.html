@@ -8973,6 +8973,25 @@
     }
   }
 
+  // Pages whose FAQ couldn't be read in Step 4 keep their live manifest FAQ mapping.
+  async function loadFaqFetchFailedLiveMappings(schemaDir, derivePathKeyFromUrl) {
+    const kept = new Map();
+    try {
+      const status = await window.electronAPI.readFile(`${schemaDir}\\faq-fetch-status.json`);
+      const failed = status && status.success ? (JSON.parse(status.content).failed || []) : [];
+      if (!failed.length) return kept;
+      const live = await fetch(`https://schema.alanranger.com/products-manifest.json?t=${Date.now()}`).then(r => r.json());
+      const liveFaq = new Map((live.entries || []).map(e => [e.pathKey, e.faqFileName || '']));
+      failed.forEach(f => {
+        const key = derivePathKeyFromUrl(f.url);
+        if (liveFaq.get(key)) kept.set(key, liveFaq.get(key));
+      });
+    } catch (error) {
+      console.warn('FAQ fetch-status fallback unavailable:', error.message);
+    }
+    return kept;
+  }
+
   // Export and Deploy All Product Schema JSON Files to GitHub (Electron only)
   async function exportAndDeployProductSchema() {
     if (!window.electronAPI || !window.electronAPI.isElectron) {
@@ -9134,6 +9153,7 @@
       const manifestEntries = [];
       let failedCount = 0;
       const errors = [];
+      const faqFetchFallback = await loadFaqFetchFailedLiveMappings(schemaDir, derivePathKeyFromUrl);
 
       if (statusDiv) {
         statusDiv.innerHTML = ` Reading ${jsonFiles.length} JSON files...`;
@@ -9188,7 +9208,7 @@
               url: canonicalUrl,
               pathKey,
               schemaFileName: fileInfo.fileName,
-              faqFileName: faqDeployed ? faqFileName : ''
+              faqFileName: faqDeployed ? faqFileName : (faqFetchFallback.get(pathKey) || '')
             });
           }
 
