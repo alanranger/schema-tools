@@ -182,6 +182,24 @@ def slug_matches(review_slug, product_slug, threshold=0.85):
     # Strategy 4: Fuzzy match
     return SequenceMatcher(None, a, b).ratio() >= threshold
 
+def load_all_product_slugs(csv_dir):
+    """Every product slug in the Squarespace export, hidden ones included.
+
+    A review on any real product stays with that product (exact slug only). Hidden products'
+    reviews are kept but not shown, and are never fuzzy-moved onto a similar visible product.
+    """
+    path = Path(csv_dir) / "raw-01-products-sqsp-export.csv"
+    if not path.exists():
+        return set()
+    try:
+        raw = pd.read_csv(path, encoding="utf-8-sig", dtype=str, keep_default_na=False)
+    except Exception:
+        return set()
+    if "Product URL" not in raw.columns:
+        return set()
+    return {s.strip().lower() for s in raw["Product URL"] if s.strip()}
+
+
 def find_best_slug_match(review_slug, product_slugs):
     """Return the best fuzzy match for a review_slug among product_slugs."""
     best_match, best_ratio = None, 0.0
@@ -2596,6 +2614,7 @@ def main():
     # Match reviews to products - trust Step 3b slugs, but add fuzzy fallback for variations
     matched_products = set()
     review_slug_to_product_slug = {}  # review slug -> product slug
+    all_product_slugs = load_all_product_slugs(csv_dir)
     
     for _, review_row in reviews_df.iterrows():
         review_slug = str(review_row.get('product_slug', '')).strip()
@@ -2608,6 +2627,9 @@ def main():
         # Strategy 1: Exact match (trust Step 3b slug)
         if review_slug in product_lookup:
             matched_product_slug = review_slug
+        elif review_slug.lower() in all_product_slugs:
+            # A real (hidden) product: keep the review there, never move it to a similar product.
+            continue
         else:
             # Strategy 2: Try matching against product slugs with fuzzy fallback
             for prod_slug, prod_info in product_lookup.items():
@@ -2771,6 +2793,8 @@ def main():
             ps = str(product_slug or "").strip().lower().split("/")[-1]
             for s in grouped_reviews.groups:
                 ss = str(s or "").strip().lower().split("/")[-1]
+                if ss in all_product_slugs:
+                    continue  # reviews of another real product never fuzzy-attach here
                 if ps in F2F_EXACT or ss in F2F_EXACT:
                     if ps == ss:
                         reviews_for_product = grouped_reviews.get_group(s)
@@ -2786,6 +2810,8 @@ def main():
             if product_url:
                 for _, review_row in reviews_df.iterrows():
                     review_slug = str(review_row.get('product_slug', '')).strip()
+                    if review_slug.lower() in all_product_slugs:
+                        continue  # belongs to a real product; exact slug only
                     if review_slug and slug_matches(review_slug, product_url, threshold=0.85):
                         if reviews_for_product is None:
                             reviews_for_product = pd.DataFrame([review_row])
