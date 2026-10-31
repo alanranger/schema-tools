@@ -32,6 +32,7 @@ v6.2.0 Changes (Baseline Restore Point):
 """
 
 import pandas as pd
+import csv
 import json
 import re
 import html as html_lib
@@ -59,6 +60,60 @@ warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
 SCHEMA_JSON_SUFFIX = "_schema.json"
 FAQ_JSON_SUFFIX = "_faq.json"
 FAQ_FETCH_STATUS_FILE = "faq-fetch-status.json"
+
+# 07 = chat-ingest product schema CSV (Title, JSON-LD Structured Data). Written only with --write-07 <path>.
+PRODUCT_07_NAME = "07-product-schema-with-review-ratings.csv"
+# Non-store pages in 07 that this generator doesn't build: copied unchanged from the live 07 (Alan decides later).
+KEEP_07_URLS = {
+    "https://www.alanranger.com/free-online-photography-course",
+    "https://www.alanranger.com/photography-mentoring-online-assignments",
+}
+
+
+def cli_value(flag):
+    """Value after a --flag on the command line, or ''."""
+    args = sys.argv[1:]
+    return args[args.index(flag) + 1] if flag in args and args.index(flag) + 1 < len(args) else ""
+
+
+def ld_json_script(payload):
+    """JSON-LD <script> block (the 04 schema_html / 07 cell format the chat ingest parses)."""
+    return f'<script type="application/ld+json">\n{json.dumps(payload, indent=2, ensure_ascii=False)}\n</script>'
+
+
+def product_node(schema_graph):
+    for node in schema_graph.get("@graph", []):
+        types = node.get("@type") if isinstance(node.get("@type"), list) else [node.get("@type")]
+        if "Product" in types:
+            return node
+    return None
+
+
+def kept_07_rows(live_07):
+    """Rows of the live 07 whose JSON-LD url is in KEEP_07_URLS, values unchanged."""
+    if not live_07.exists():
+        return []
+    with open(live_07, encoding="utf-8", newline="") as f:
+        rows = list(csv.reader(f))[1:]
+    return [r for r in rows if len(r) > 1 and re.search(r'"url":\s*"([^"]+)"', r[1]) and
+            re.search(r'"url":\s*"([^"]+)"', r[1]).group(1) in KEEP_07_URLS]
+
+
+def row_07(product_name, schema_graph):
+    """[Title, flat Product node script] for 07, or None when the graph has no Product with a url."""
+    node = product_node(schema_graph)
+    return [product_name, ld_json_script(node)] if node and node.get("url") else None
+
+
+def write_07_csv(out_path, rows, live_07):
+    """Generated product rows, then the kept non-store rows from the live 07. LF, no BOM."""
+    kept = kept_07_rows(live_07)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(["Title", "JSON-LD Structured Data"])
+        writer.writerows(rows + kept)
+    return len(rows), len(kept)
 MAX_FAQ_QUESTIONS = 7
 
 # Static schema blocks
@@ -2742,6 +2797,7 @@ def main():
     print(f"   Sample product slugs: {sample_product_slugs.tolist()}")
     
     schemas_data = []
+    rows_07 = []
     html_files = []
     all_schema_graphs = []  # Collect all schema graphs for unified JSON output
     nan_count = 0
@@ -3411,10 +3467,12 @@ def main():
                 review_count = int(aggregate.get('reviewCount') or review_count)
                 avg_rating = aggregate.get('ratingValue')
         
+        if row_07(product_name, schema_graph):
+            rows_07.append(row_07(product_name, schema_graph))
         schemas_data.append({
             'product_name': product_name,
             'url': row.get('url', ''),
-            'schema_html': '',
+            'schema_html': ld_json_script(schema_graph),
             'review_count': review_count,
             'average_rating': avg_rating or '',
             'has_reviews': 'Yes' if review_count > 0 else 'No',
@@ -3479,6 +3537,11 @@ def main():
     except Exception as e:
         print(f"❌ Error saving CSV: {e}")
         sys.exit(1)
+
+    out_07 = cli_value('--write-07')
+    if out_07:
+        written, kept = write_07_csv(Path(out_07), rows_07, shared_resources_dir / 'csv' / PRODUCT_07_NAME)
+        print(f"✅ Wrote 07 ({written} products + {kept} kept non-store rows): {out_07}")
 
     print(f"✅ Product FAQ files generated: {faq_generated_count}")
     print(f"ℹ️ FAQ skipped (already exists on page): {faq_skipped_existing_count}")
