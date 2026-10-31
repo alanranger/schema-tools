@@ -3242,7 +3242,8 @@ def main():
             product_obj = None
             for obj in graph:
                 obj_type = obj.get('@type', [])
-                if isinstance(obj_type, list) and 'Product' in obj_type:
+                types = obj_type if isinstance(obj_type, list) else [obj_type]
+                if 'Product' in types:
                     product_obj = obj
                     break
             
