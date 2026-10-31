@@ -376,8 +376,8 @@ def scrape_visible_faq_pairs(source_html):
 
 
 def post_faq_drop_report(url, before_count, after_count, reason):
-    """Record a FAQ drop for the Monday brief. Never blocks generate."""
-    if after_count >= before_count:
+    """Record a FAQ drop for the Monday brief. Never blocks generate. Skipped in dry runs (Update-all sandbox)."""
+    if after_count >= before_count or os.environ.get("SCHEMA_TOOLS_DRY_RUN") == "1":
         return
     payload = {
         "tool": "schema-tools",
