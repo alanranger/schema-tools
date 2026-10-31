@@ -213,6 +213,15 @@ print()
 # Step 4: Guard — the combined file must carry the frozen Trustpilot attribution exactly
 run_step("Step 4: Checking Trustpilot against the frozen attribution...", "check-frozen-trustpilot.py")
 
+# Step 5: SHADOW matcher — report only (outputs/reports/shadow-review-matcher-LATEST.*); never blocks the merge
+print("Step 5: Shadow review matcher (report only)...")
+try:
+    shadow = subprocess.run(["node", str(script_dir / "shadow-review-matcher.mjs")], capture_output=True, text=True, encoding="utf-8")
+    print(shadow.stdout[-1500:] if shadow.returncode == 0 else f"WARN: shadow matcher failed (ignored): {shadow.stderr[-500:]}")
+except Exception as e:
+    print(f"WARN: shadow matcher not run (ignored): {e}")
+print()
+
 print("="*80)
 print("MERGE COMPLETE")
 print("="*80)
