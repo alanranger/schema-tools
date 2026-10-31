@@ -49,6 +49,8 @@ def _norm_date(val) -> str:
 
 def apply_to_frame(df: pd.DataFrame, name_cols, date_cols, source_label: str) -> int:
     odf = pd.read_csv(overrides_path, encoding="utf-8-sig")
+    if "source" in odf.columns:
+        odf = odf[odf["source"].astype(str).str.strip().str.lower() == source_label.lower()]
     applied = 0
     name_series = None
     for col in name_cols:
@@ -120,16 +122,20 @@ g_hits = apply_to_frame(out_df, ["reviewer", "reviewer_name", "author"], ["date"
 out_df.to_csv(google_path, index=False, encoding="utf-8-sig")
 print(f"Applied {g_hits} durable override row-hits → {google_path.name}")
 
-tp_df = pd.read_csv(trustpilot_path, encoding="utf-8-sig")
-if "attribution_source" not in tp_df.columns:
-    tp_df["attribution_source"] = ""
-if "product_name" not in tp_df.columns:
-    tp_df["product_name"] = ""
-t_hits = apply_to_frame(
-    tp_df,
-    ["review_username", "reviewer", "reviewer_name"],
-    ["review_created_(utc)", "date", "date_parsed"],
-    "Trustpilot",
-)
-tp_df.to_csv(trustpilot_path, index=False, encoding="utf-8-sig")
-print(f"Applied {t_hits} durable override row-hits → {trustpilot_path.name}")
+frozen_path = shared / "csv" / "raw-03a-trustpilot-attributed-FROZEN.csv"
+if frozen_path.exists():
+    print(f"Trustpilot skipped: attribution is frozen in {frozen_path.name} (edit that file to change one)")
+else:
+    tp_df = pd.read_csv(trustpilot_path, encoding="utf-8-sig")
+    if "attribution_source" not in tp_df.columns:
+        tp_df["attribution_source"] = ""
+    if "product_name" not in tp_df.columns:
+        tp_df["product_name"] = ""
+    t_hits = apply_to_frame(
+        tp_df,
+        ["review_username", "reviewer", "reviewer_name"],
+        ["review_created_(utc)", "date", "date_parsed"],
+        "Trustpilot",
+    )
+    tp_df.to_csv(trustpilot_path, index=False, encoding="utf-8-sig")
+    print(f"Applied {t_hits} durable override row-hits → {trustpilot_path.name}")

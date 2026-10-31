@@ -14,6 +14,7 @@
     "postbuild:inject-suppressor:out": "node scripts/inject-schema-suppressor.js out",
     "test:faq-extraction": "node scripts/test-faq-extraction.js",
     "test:faq-layouts": "node scripts/faq-layout-fixtures.mjs",
+    "test:frozen-trustpilot": "python scripts/check-frozen-trustpilot.py",
     "test:blog-schema-index-only": "node scripts/test-blog-schema-index-only.mjs",
     "test:article-body": "node scripts/test-article-body-extraction.js",
     "test:howto-extraction": "node scripts/test-howto-extraction.js",

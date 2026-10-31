@@ -2,6 +2,9 @@
 /**
  * CLI equivalent of Electron Step 5: sync product *_schema.json (+ optional *_faq.json)
  * to alanranger-schema, update products-manifest.json, commit and push.
+ *
+ *   --no-git         sync files + manifest only; commit/push separately
+ *   --keep-live-faq  do not copy *_faq.json; keep each product's faqFileName from the current manifest
  */
 import fs from "fs";
 import path from "path";
@@ -95,6 +98,31 @@ function git(args, desc) {
   return (res.stdout || "").trim();
 }
 
+const NO_GIT = process.argv.includes("--no-git");
+const KEEP_LIVE_FAQ = process.argv.includes("--keep-live-faq");
+
+function liveFaqByPathKey() {
+  const file = path.join(REPO_PATH, "products-manifest.json");
+  if (!fs.existsSync(file)) return new Map();
+  const entries = JSON.parse(fs.readFileSync(file, "utf8")).entries || [];
+  return new Map(entries.map((e) => [e.pathKey, e.faqFileName || ""]));
+}
+const LIVE_FAQ = KEEP_LIVE_FAQ ? liveFaqByPathKey() : null;
+
+function syncFaq(jsonFile, pathKey) {
+  if (LIVE_FAQ) {
+    const kept = LIVE_FAQ.get(pathKey) || "";
+    if (kept) keepNames.add(kept);
+    return kept;
+  }
+  const faqSrc = path.join(SCHEMA_DIR, jsonFile.replace("_schema.json", "_faq.json"));
+  if (!fs.existsSync(faqSrc)) return "";
+  const faqFileName = path.basename(faqSrc);
+  fs.copyFileSync(faqSrc, path.join(REPO_PATH, faqFileName));
+  keepNames.add(faqFileName);
+  return faqFileName;
+}
+
 const csvText = fs.readFileSync(CSV_PATH, "utf8").replace(/^\uFEFF/, "");
 const rows = parseCsv(csvText);
 const headers = rows[0].map((h) => h.trim());
@@ -134,16 +162,9 @@ for (let i = 1; i < rows.length; i++) {
   fs.copyFileSync(src, dest);
   keepNames.add(jsonFile);
 
-  let faqFileName = "";
-  const faqSrc = path.join(SCHEMA_DIR, jsonFile.replace("_schema.json", "_faq.json"));
-  if (fs.existsSync(faqSrc)) {
-    faqFileName = path.basename(faqSrc);
-    fs.copyFileSync(faqSrc, path.join(REPO_PATH, faqFileName));
-    keepNames.add(faqFileName);
-  }
-
   const canonicalUrl = normalizeCanonicalUrl(url);
   const pathKey = derivePathKey(url);
+  const faqFileName = syncFaq(jsonFile, pathKey);
   if (canonicalUrl && pathKey && !MANIFEST_EXCLUDE_PATH_KEYS.has(pathKey)) {
     manifestEntries.push({ url: canonicalUrl, pathKey, schemaFileName: jsonFile, faqFileName });
   }
@@ -166,7 +187,8 @@ keepNames.add("products-manifest.json");
 
 let removed = 0;
 for (const name of fs.readdirSync(REPO_PATH)) {
-  if (!name.endsWith("_schema.json") || name.endsWith("_event_schema.json") || keepNames.has(name)) continue;
+  if (!name.endsWith("_schema.json") || keepNames.has(name)) continue;
+  if (name.endsWith("_event_schema.json") || name.endsWith("_landing_schema.json")) continue;
   const candidate = path.join(REPO_PATH, name);
   if (isLikelyProductSchemaJson(candidate)) {
     fs.unlinkSync(candidate);
@@ -182,6 +204,11 @@ if (fs.existsSync(loaderSrc)) {
   fs.mkdirSync(loaderDir, { recursive: true });
   fs.copyFileSync(loaderSrc, path.join(loaderDir, "product-page-loader.js"));
   console.log("synced loaders/product-page-loader.js");
+}
+
+if (NO_GIT) {
+  console.log(`Synced ${keepNames.size - 1} files + manifest; removed ${removed} stale (--no-git: commit/push not run)`);
+  process.exit(0);
 }
 
 git(["checkout", "main"], "checkout main");

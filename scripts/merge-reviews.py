@@ -29,12 +29,12 @@ print("REVIEW MERGER - Step 3b (Using Dedicated Matchers)")
 print("="*80)
 print()
 
-# Step 1: Run Trustpilot matcher
-print("Step 1: Matching Trustpilot reviews...")
+# Step 1: Trustpilot is frozen history — copy the frozen attribution, never re-match
+print("Step 1: Loading frozen Trustpilot reviews...")
 print()
 try:
     result = subprocess.run(
-        [sys.executable, str(script_dir / "match-trustpilot-reviews.py")],
+        [sys.executable, str(script_dir / "apply-frozen-trustpilot.py")],
         capture_output=True,
         text=True,
         encoding='utf-8'
@@ -43,10 +43,10 @@ try:
     if result.stderr:
         print(result.stderr)
     if result.returncode != 0:
-        print(f"ERROR: Trustpilot matching failed with code {result.returncode}")
+        print(f"ERROR: Loading frozen Trustpilot failed with code {result.returncode}")
         sys.exit(1)
 except Exception as e:
-    print(f"ERROR running Trustpilot matcher: {e}")
+    print(f"ERROR loading frozen Trustpilot: {e}")
     sys.exit(1)
 
 print()
@@ -139,6 +139,33 @@ except Exception as e:
 
 print()
 
+
+def run_step(label, script_name):
+    """Run one pipeline script; stop the merge if it fails."""
+    print(label)
+    print()
+    try:
+        step = subprocess.run(
+            [sys.executable, str(script_dir / script_name)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+    except Exception as e:
+        print(f"ERROR running {script_name}: {e}")
+        sys.exit(1)
+    print(step.stdout)
+    if step.stderr:
+        print(step.stderr)
+    if step.returncode != 0:
+        print(f"ERROR: {script_name} failed with code {step.returncode}")
+        sys.exit(1)
+    print()
+
+
+# Step 2d: Google append-only — DB keeps existing attributions; new reviews held for Alan
+run_step("Step 2d: Locking Google attributions to the database (new reviews held as pending)...", "lock-google-attributions.py")
+
 # Step 3: Merge matched reviews
 print("Step 3: Merging matched reviews...")
 print()
@@ -182,6 +209,10 @@ except Exception as e:
     sys.exit(1)
 
 print()
+
+# Step 4: Guard — the combined file must carry the frozen Trustpilot attribution exactly
+run_step("Step 4: Checking Trustpilot against the frozen attribution...", "check-frozen-trustpilot.py")
+
 print("="*80)
 print("MERGE COMPLETE")
 print("="*80)

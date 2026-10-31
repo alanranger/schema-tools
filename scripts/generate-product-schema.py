@@ -3302,6 +3302,8 @@ def main():
                     print(f"✅ FAQ from visible accordion/snippet [{product_name_slug}] {len(visible_pairs)} Q&As")
                 except Exception as e:
                     print(f"⚠️ Error writing {faq_filename}: {e} (continuing...)")
+            elif not snapshot.get("fetched_ok"):
+                print(f"⚠️ Page fetch failed [{product_name_slug}] ({snapshot.get('fetch_error')}) — existing FAQ kept")
             else:
                 faq_skipped_quality_count += 1
                 if faq_path.exists():
