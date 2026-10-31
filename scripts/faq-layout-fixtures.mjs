@@ -24,8 +24,17 @@ export const FAQ_LAYOUT_FIXTURES = [
   { slug: 'what-is-aperture-in-photography', expectedVisible: 4, file: 'what-is-aperture-in-photography.html' },
   { slug: 'case-study-mike-ford', expectedVisible: 0, file: 'case-study-mike-ford.html' },
   { slug: 'black-and-white-when-to-convert', expectedVisible: 8, file: 'black-and-white-when-to-convert.html' },
-  { slug: 'uk-street-photography-ethics-guide', expectedVisible: 8, file: 'uk-street-photography-ethics-guide.html' }
+  { slug: 'uk-street-photography-ethics-guide', expectedVisible: 8, file: 'uk-street-photography-ethics-guide.html' },
+  { slug: 'icon-label-accordion', expectedVisible: 3, file: 'icon-label-accordion.html' }
 ];
+
+const ICON_LABEL = /\[[a-z0-9-]+-icon\]/i;
+
+function assertNoIconLabels(slug, pairs) {
+  for (const p of pairs) {
+    assert.ok(!ICON_LABEL.test(p.question) && !ICON_LABEL.test(p.answer), `${slug} kept an icon label: ${p.question}`);
+  }
+}
 
 export function loadFaqLayoutManifest() {
   return FAQ_LAYOUT_FIXTURES;
@@ -56,7 +65,11 @@ export function assertFaqLayoutFixtures() {
       `${row.slug} extracted ${extracted.pairs.length} !== ${row.expectedVisible} (${extracted.strategy})`
     );
     assert.equal(extracted.keepExisting, undefined, `${row.slug} must not shortfall`);
+    assertNoIconLabels(row.slug, extracted.pairs);
   }
+  const icon = extractFAQFromArticle(readFileSync(join(fixtureDir, 'icon-label-accordion.html'), 'utf8'), '', null);
+  assert.equal(icon.pairs[0].question, 'Where are the lessons held in Coventry?');
+  assert.ok(icon.pairs[0].answer.startsWith('Lessons run at'), 'icon label stripped from the answer');
 }
 
 if (process.argv[1] && process.argv[1].replace(/\\/g, '/').endsWith('faq-layout-fixtures.mjs')) {

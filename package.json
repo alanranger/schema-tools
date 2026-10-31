@@ -24,7 +24,8 @@
     "test:article-body": "node scripts/test-article-body-extraction.js",
     "test:howto-extraction": "node scripts/test-howto-extraction.js",
     "bulk:blog-howto-faq": "node scripts/bulk-regen-blog-howto-faq.mjs",
-    "repair:blog-title-sync": "node scripts/repair-blog-title-sync.mjs"
+    "repair:blog-title-sync": "node scripts/repair-blog-title-sync.mjs",
+    "test:reconcile-reviews": "python scripts/test-reconcile-removed-from-google.py"
   },
   "keywords": [
     "schema",

@@ -17174,7 +17174,7 @@ ${minifiedJson}
       image: 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
       priceRange: '½50–½500',
       email: 'info@alanranger.com',
-      telephone: '+44 781 701 7994',
+      telephone: '+44 7817 017994',
       address: {
         '@type': 'PostalAddress',
         streetAddress: '45 Hathaway Road',
@@ -18236,7 +18236,7 @@ ${minifiedJson}
     orgNode.legalName = orgNode.legalName || orgNode.name;
     orgNode.url = landingNormalizeUrlValue(orgNode.url || 'https://www.alanranger.com/', pageUrl);
     orgNode.email = orgNode.email || 'info@alanranger.com';
-    orgNode.telephone = '+44 781 701 7994';
+    orgNode.telephone = '+44 7817 017994';
     orgNode.image = landingNormalizeUrlValue(
       orgNode.image || 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w',
       pageUrl
@@ -18484,7 +18484,7 @@ ${minifiedJson}
     landingFaqClassDetails(doc, found);
     landingFaqHeadingDetails(doc, found);
     doc.querySelectorAll('details').forEach((det) => {
-      const raw = String((det.querySelector('summary') && det.querySelector('summary').textContent) || '');
+      const raw = landingStripIconLabels(det.querySelector('summary') && det.querySelector('summary').textContent);
       if (landingFaqIsWidgetToggle(raw)) return;
       if (landingFaqLooksLikeQuestion(raw)) found.add(det);
     });
@@ -18492,18 +18492,23 @@ ${minifiedJson}
     return Array.from(found);
   }
 
+  // Accordion icon shortcodes left in the text (e.g. "[travel-icon] Where?"); the page script turns them into icons.
+  function landingStripIconLabels(text) {
+    return String(text || '').replace(/\[[a-z0-9]+(?:-[a-z0-9]+)*-icon\][\s\u00a0]*/gi, '');
+  }
+
   // Answer = joined <p> text, else the `.ar-faq-a` box, else the details text minus its summary.
   function landingFaqAnswerText(det) {
     const paragraphs = Array.from(det.querySelectorAll('p'))
-      .map((p) => landingCleanText(p.textContent || ''))
+      .map((p) => landingCleanText(landingStripIconLabels(p.textContent)))
       .filter(Boolean);
     if (paragraphs.length) return paragraphs.join(' ');
     const answerBox = det.querySelector('.ar-faq-a, .accordion-item__description');
-    if (answerBox) return landingCleanText(answerBox.textContent || '');
+    if (answerBox) return landingCleanText(landingStripIconLabels(answerBox.textContent));
     const clone = det.cloneNode(true);
     const summary = clone.querySelector('summary, .accordion-item__title');
     if (summary) summary.remove();
-    return landingCleanText(clone.textContent || '');
+    return landingCleanText(landingStripIconLabels(clone.textContent));
   }
 
   // Summary text without the toggle icon (e.g. `.ar-faq-q-icon` "+").
@@ -18512,7 +18517,7 @@ ${minifiedJson}
     if (!summary) return '';
     const clone = summary.cloneNode(true);
     clone.querySelectorAll('[class*="icon"]').forEach((el) => el.remove());
-    const raw = clone.textContent || '';
+    const raw = landingStripIconLabels(clone.textContent);
     if (landingFaqIsWidgetToggle(raw)) return '';
     return landingFaqLooksLikeQuestion(raw);
   }
@@ -18738,8 +18743,8 @@ ${minifiedJson}
       live.image ? 'og:image used as primaryImage' : 'no og:image found on page');
     addRow('FAQ mirrors visible .ar-faq', true,
       faqNode ? `${(faqNode.mainEntity || []).length} Q&As scraped from .ar-faq` : 'no .ar-faq block \u2192 FAQPage omitted');
-    addRow('ItemList absent (landing rule)', !itemListNode,
-      itemListNode ? 'ItemList present \u2014 was this opted in?' : 'absent (correct for landing pages)');
+    addRow('ItemList only when the page already has one', true,
+      itemListNode ? 'ItemList kept from the hosted landing file (or opted in)' : 'none (no existing ItemList)');
     body.innerHTML = rows.join('');
     panel.style.display = 'block';
   }
@@ -18896,7 +18901,7 @@ ${minifiedJson}
 
       addLandingDebugLog(` Searching for JSON-LD blocks...`);
       
-      const htmlForSchemaScan = await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog);
+      const htmlForSchemaScan = await withHostedLandingSchema(url, await enrichHtmlWithSnippetLoaderContent(url, html, addLandingDebugLog));
       const plainTextForFaqCheck = htmlToPlainText(htmlForSchemaScan || html || '');
       try {
         hasExistingLandingFaqContent = await hasExistingFAQBlockWithSnippets(
@@ -19223,7 +19228,7 @@ ${minifiedJson}
         if (enhanced['@id'] === 'https://www.alanranger.com/#org' || 
             (Array.isArray(enhanced['@type']) && enhanced['@type'].includes('Organization'))) {
           if (!enhanced.telephone) {
-            enhanced.telephone = '+44 781 701 7994';
+            enhanced.telephone = '+44 7817 017994';
           }
           if (!enhanced.image) {
             enhanced.image = 'https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w';
@@ -19329,6 +19334,7 @@ ${minifiedJson}
     
     try {
       finalSchema = normalizeLandingSchemaOutput(finalSchema, selectedTypes, url, landingLiveMeta);
+      finalSchema = await carryHostedLandingItemList(finalSchema, url);
       if (landingCoursePageConfig(url)) {
         finalSchema = applyLandingCourseOverride(finalSchema, url, existingSchemas, { title, description: finalDescription });
         const courseNode = landingFindGraphNode(finalSchema, 'Course');
@@ -20336,6 +20342,82 @@ ${minifiedJson}
     if (window.electronAPI && window.electronAPI.writeFile) {
       await window.electronAPI.writeFile(repoPath, manifest);
     }
+  }
+
+  // A page on the one-line landing loader no longer carries its JSON-LD inline: its published schema is the hosted
+  // landing file, so the generator reads that as the page's existing schema (as it read the inline copy before).
+  async function withHostedLandingSchema(pageUrl, html) {
+    if (!html || !/landing-page-loader/.test(html)) return html;
+    if (!window.electronAPI || !window.electronAPI.readSchemaFile) return html;
+    try {
+      const hosted = await window.electronAPI.readSchemaFile(landingHostedFileName(pageUrl));
+      if (!hosted) return html;
+      addLandingDebugLog('   Page uses the landing loader: hosted landing file read as its existing schema');
+      return `${html}\n<script type="application/ld+json">${hosted}<\/script>`;
+    } catch (e) {
+      return html;
+    }
+  }
+
+  // Alan 2026-10-31 (P5): keep what the page's hosted landing file already has and the generator does not rebuild:
+  // its ItemList / BreadcrumbList nodes (same @id, same graph position), the business rating, and the WebSite
+  // description / SearchAction @id. Auto-detected ItemLists are still never added (R3).
+  const LANDING_CARRIED_NODE_TYPES = ['ItemList', 'BreadcrumbList'];
+
+  async function readHostedLandingGraph(pageUrl) {
+    if (!window.electronAPI || !window.electronAPI.readSchemaFile) return [];
+    try {
+      const hosted = JSON.parse(await window.electronAPI.readSchemaFile(landingHostedFileName(pageUrl)));
+      return Array.isArray(hosted && hosted['@graph']) ? hosted['@graph'] : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function carryLandingNodes(graph, hostedGraph) {
+    const ids = new Set(graph.map((n) => n && n['@id']));
+    const next = graph.slice();
+    hostedGraph.forEach((node, at) => {
+      if (!LANDING_CARRIED_NODE_TYPES.some((t) => landingHasType(node, t)) || ids.has(node['@id'])) return;
+      next.splice(Math.min(at, next.length), 0, node);
+      addLandingDebugLog(`   Kept ${[].concat(node['@type']).join(',')} ${node['@id'] || ''} from the hosted landing file`);
+    });
+    return next;
+  }
+
+  const pickLandingNode = (graph, type) => graph.find((n) => landingHasType(n, type)) || null;
+
+  function carryMissing(node, hostedNode, keys) {
+    if (!node || !hostedNode) return;
+    keys.forEach((k) => { if (hostedNode[k] && !node[k]) node[k] = hostedNode[k]; });
+  }
+
+  function carryLandingSiteFields(site, hostedSite) {
+    if (!site || !hostedSite) return;
+    carryMissing(site, hostedSite, ['description', 'image']);
+    const hostedActionId = hostedSite.potentialAction && hostedSite.potentialAction['@id'];
+    if (site.potentialAction && !site.potentialAction['@id'] && hostedActionId) site.potentialAction['@id'] = hostedActionId;
+  }
+
+  function carryLandingFields(graph, hostedGraph) {
+    carryMissing(pickLandingNode(graph, 'LocalBusiness'), pickLandingNode(hostedGraph, 'LocalBusiness'), ['aggregateRating', 'review']);
+    const service = pickLandingNode(graph, 'Service');
+    const hostedService = pickLandingNode(hostedGraph, 'Service');
+    if (service && hostedService && service['@id'] === hostedService['@id']) {
+      const types = [...new Set([...[].concat(service['@type']), ...[].concat(hostedService['@type'])])];
+      if (types.length > 1) service['@type'] = types;
+    }
+    carryLandingSiteFields(pickLandingNode(graph, 'WebSite'), pickLandingNode(hostedGraph, 'WebSite'));
+    return graph;
+  }
+
+  async function carryHostedLandingItemList(schema, pageUrl) {
+    const graph = schema && schema['@graph'];
+    if (!Array.isArray(graph)) return schema;
+    const hostedGraph = await readHostedLandingGraph(pageUrl);
+    if (!hostedGraph.length) return schema;
+    const next = carryLandingFields(carryLandingNodes(graph, hostedGraph), hostedGraph);
+    return { ...schema, '@graph': next };
   }
 
   async function saveLandingHostedJson(pageUrl, schema) {

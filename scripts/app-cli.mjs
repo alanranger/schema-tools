@@ -68,6 +68,7 @@ const API = {
 async function openApp(browser) {
   const page = await browser.newPage();
   page.on('dialog', (d) => { console.log(`[app dialog] ${d.message().slice(0, 200)}`); d.accept().catch(() => {}); });
+  page.on('pageerror', (e) => console.error(`[app error] ${String(e.message || e).slice(0, 300)}`));
   await page.exposeFunction('__appCliCall', async (method, args) => {
     if (!API[method]) return { success: false, error: `${method} is not available in app-cli` };
     return API[method](...args);
