@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { FEEDS, LIVE_CSV, OUT, ORIGIN, readFeed, readCsvObjects, londonParts, pathKey } from './lib.mjs';
 const abs = (u) => (String(u || '').startsWith('http') ? u : `${ORIGIN}${u}`);
 
@@ -106,18 +107,40 @@ function raw01Rows() {
 const NON_LANDING = [/^\/blog-on-photography\/.+/, /^\/beginners-photography-lessons(\/.*)?$/, /^\/photographic-workshops-near-me\/.+/,
   /^\/photography-services-near-me\/.+/, /^\/photo-workshops-uk\/.+/];
 
-/** Alan's existing 08 order and types are kept; pages new in 06 are appended with a suggested type. */
-function landingRows() {
-  const live = readCsvObjects(`${LIVE_CSV}/08-landing-and-service-pages.csv`).rows;
-  const candidates = readCsvObjects(`${LIVE_CSV}/06-site-urls.csv`).rows
-    .filter((r) => !NON_LANDING.some((re) => re.test(pathKey(r.url))));
+const SERVICE_WORDS = /service|course|class|lesson|tuition|mentor|commission|hire|voucher|gift|photographer|portrait|headshot|event|wedding|corporate|product/;
+/** Suggested 08 type for a page Alan hasn't classified yet (he decides with the buttons on BAU Monthly). */
+export const suggestCategory = (url) => (SERVICE_WORDS.test(pathKey(url)) ? 'service' : 'landing');
+
+/**
+ * Alan's existing 08 order and types are kept. Pages new in 06 use Alan's saved choice (CSV_BUILDERS_08_CHOICES:
+ * { pathKey: 'service' | 'landing' | 'exclude' }): service/landing are appended, exclude stays out. An undecided page
+ * is left out of 08 (no schema, nothing blocked) and listed in 08-new-pages-pending.json with a suggested type.
+ */
+export function landingRows(live, siteRows, choices = {}) {
+  const candidates = siteRows.filter((r) => !NON_LANDING.some((re) => re.test(pathKey(r.url))));
   const keep = new Set(candidates.map((r) => pathKey(r.url)));
   const known = new Set(live.map((r) => pathKey(r.url)));
   const kept = live.filter((r) => keep.has(pathKey(r.url))).map((r) => ({ url: r.url, category: r.category }));
-  const added = candidates.filter((r) => !known.has(pathKey(r.url))).map((r) => ({ url: r.url, category: 'NEW-suggested' }));
-  return [...kept, ...added];
+  const fresh = candidates.filter((r) => !known.has(pathKey(r.url)));
+  const decided = fresh.filter((r) => ['service', 'landing'].includes(choices[pathKey(r.url)])).map((r) => ({ url: r.url, category: choices[pathKey(r.url)] }));
+  const pending = fresh.filter((r) => !choices[pathKey(r.url)]).map((r) => ({ url: r.url, suggested: suggestCategory(r.url) }));
+  return { rows: [...kept, ...decided], pending, excluded: fresh.filter((r) => choices[pathKey(r.url)] === 'exclude').map((r) => r.url) };
 }
 
+function landingFile() {
+  const choicesFile = process.env.CSV_BUILDERS_08_CHOICES;
+  const choices = choicesFile && fs.existsSync(choicesFile) ? JSON.parse(fs.readFileSync(choicesFile, 'utf8')) : {};
+  const simulated = String(process.env.CSV_BUILDERS_SIMULATE_06 || '').split(',').filter(Boolean).map((url) => ({ url }));
+  const site = [...readCsvObjects(`${LIVE_CSV}/06-site-urls.csv`).rows, ...simulated];
+  const r = landingRows(readCsvObjects(`${LIVE_CSV}/08-landing-and-service-pages.csv`).rows, site, choices);
+  fs.writeFileSync(path.join(OUT, '08-new-pages-pending.json'), JSON.stringify({ pending: r.pending, excluded: r.excluded }, null, 2));
+  return r.rows;
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) main();
+
+function main() {
 fs.mkdirSync(OUT, { recursive: true });
 const events = (feed) => { const f = readFeed(feed); return [...f.upcoming, ...f.past].map(eventRow); };
 const counts = {
@@ -127,6 +150,7 @@ const counts = {
   '04': writeExact('04-photography-services-courses-mentoring.csv', COLLECTION_HEADER, readFeed('photography-services-near-me').items.map(collectionRow), FORMATS.collection),
   '05': writeExact('05-photo-workshops-uk-landscape.csv', COLLECTION_HEADER, readFeed('photo-workshops-uk').items.map(collectionRow), FORMATS.collection),
   'raw-01': writeExact('raw-01-products-sqsp-export.csv', RAW01_HEADER, raw01Rows(), FORMATS.raw01),
-  '08': writeExact('08-landing-and-service-pages.csv', ['url', 'category'], landingRows(), FORMATS.landing)
+  '08': writeExact('08-landing-and-service-pages.csv', ['url', 'category'], landingFile(), FORMATS.landing)
 };
 console.log(JSON.stringify(counts));
+}

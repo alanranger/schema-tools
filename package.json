@@ -27,7 +27,8 @@
     "repair:blog-title-sync": "node scripts/repair-blog-title-sync.mjs",
     "test:reconcile-reviews": "python scripts/test-reconcile-removed-from-google.py",
     "test:landing-live-sources": "node --test scripts/landing-live-sources.test.mjs",
-    "test:stale-cleanup": "node --test scripts/stale-schema-cleanup.test.mjs"
+    "test:stale-cleanup": "node --test scripts/stale-schema-cleanup.test.mjs",
+    "test:review-matcher-orders": "node --test scripts/review-matcher-orders.test.mjs"
   },
   "keywords": [
     "schema",

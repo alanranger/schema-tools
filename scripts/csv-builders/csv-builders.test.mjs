@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FEEDS, LIVE_CSV, londonParts, parseCsv, pathKey } from './lib.mjs';
+import { landingRows, suggestCategory } from './build-exact.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const haveFeeds = fs.existsSync(path.join(FEEDS, 'blog-on-photography.json')) && fs.existsSync(path.join(FEEDS, 'commerce-api-products-v2.json'));
@@ -60,4 +61,16 @@ test('build-raw01-api: hidden products included, categories carried forward by d
   assert.ok(hidden.some((r) => r[cat]), 'carried-forward categories on hidden products');
   assert.ok(rows(strict).slice(1).filter((r) => r[vis] === 'No').every((r) => !r[cat]), 'strict mode leaves hidden categories blank');
   assert.deepEqual(fmt(path.join(carry, 'raw-01-products-sqsp-export.csv')), fmt(path.join(LIVE_CSV, 'raw-01-products-sqsp-export.csv')));
+});
+
+test('08 new pages: saved choices apply (service / landing appended, exclude left out), undecided pending with a suggestion, other rows unchanged', () => {
+  const live = [{ url: 'https://www.alanranger.com/about-alan-ranger', category: 'landing' }, { url: 'https://www.alanranger.com/photography-tuition-services', category: 'service' }];
+  const site = [...live, { url: 'https://www.alanranger.com/new-a' }, { url: 'https://www.alanranger.com/new-b' }, { url: 'https://www.alanranger.com/new-c' },
+    { url: 'https://www.alanranger.com/new-mentoring-course' }, { url: 'https://www.alanranger.com/blog-on-photography/a-post' }];
+  const r = landingRows(live, site, { '/new-a': 'service', '/new-b': 'landing', '/new-c': 'exclude' });
+  assert.deepEqual(r.rows, [...live, { url: 'https://www.alanranger.com/new-a', category: 'service' }, { url: 'https://www.alanranger.com/new-b', category: 'landing' }]);
+  assert.deepEqual(r.excluded, ['https://www.alanranger.com/new-c']);
+  assert.deepEqual(r.pending, [{ url: 'https://www.alanranger.com/new-mentoring-course', suggested: 'service' }]);
+  assert.equal(suggestCategory('https://www.alanranger.com/some-landing-page'), 'landing');
+  assert.deepEqual(landingRows(live, site, {}).rows, live, 'undecided pages are not added to 08');
 });

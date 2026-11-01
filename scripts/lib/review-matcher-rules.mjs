@@ -57,6 +57,15 @@ export const SERVICES = [
   ['photography-mentoring-online-assignments', /mentoring/]
 ];
 
+/**
+ * Ordered products that carry no reviews themselves → the product whose page holds their reviews. Only where Alan's
+ * decisions show it: the 3 decided reviews from monthly/yearly mentoring subscribers are all on the assignments page.
+ */
+export const ORDER_HOMES = {
+  'monthly-online-photography-mentoring': 'photography-mentoring-online-assignments',
+  'monthly-online-photography-mentoring-one-year': 'photography-mentoring-online-assignments'
+};
+
 export const match = (rules, text) => [...new Set(rules.filter(([, re]) => re.test(text)).map(([slug]) => slug))];
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
