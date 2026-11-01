@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { assertBlogSchemaIndexOnly } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
 import { deployCommitMessage } from "./scripts/lib/deploy-commit-message.mjs";
+import { removeStaleEventSchemaFiles, removeStaleProductSchemaFiles } from "./scripts/lib/stale-schema-cleanup.mjs";
 import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,59 +64,6 @@ function formatGitFailureError(desc, code, stdout, stderr) {
   return gitOutputSuggestsIndexWriteFailure(stdout, stderr) ? `${base}${GIT_INDEX_WRITE_HINT}` : base;
 }
 
-function isLikelyProductSchemaJson(filePath) {
-  try {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw);
-    const graph = Array.isArray(data?.["@graph"]) ? data["@graph"] : [];
-    return graph.some((node) => {
-      const typeVal = node?.["@type"];
-      const types = Array.isArray(typeVal) ? typeVal : [typeVal];
-      const hasProductType = types.includes("Product");
-      const hasOffers = !!node?.offers;
-      return hasProductType && hasOffers;
-    });
-  } catch {
-    return false;
-  }
-}
-
-function removeStaleEventSchemaFiles(schemaRepoPath, keepNames) {
-  const keepSet = new Set(keepNames);
-  const deletedFileNames = [];
-  for (const fileName of fs.readdirSync(schemaRepoPath)) {
-    if (!fileName.endsWith("_event_schema.json") && !fileName.endsWith("_event_faq.json")) continue;
-    if (keepSet.has(fileName)) continue;
-    fs.unlinkSync(path.join(schemaRepoPath, fileName));
-    deletedFileNames.push(fileName);
-    console.log(`🧹 Removed stale event schema file: ${fileName}`);
-  }
-  return deletedFileNames;
-}
-
-function removeStaleProductSchemaFiles(schemaRepoPath, keepNames) {
-  const keepSet = new Set(keepNames);
-  const deletedFileNames = [];
-  const repoSchemaFiles = fs.readdirSync(schemaRepoPath)
-    .filter((name) => name.endsWith("_schema.json")
-      && !name.endsWith("_event_schema.json")
-      && !name.endsWith("_landing_schema.json"));
-
-  for (const fileName of repoSchemaFiles) {
-    if (keepSet.has(fileName)) {
-      continue;
-    }
-    const candidatePath = path.join(schemaRepoPath, fileName);
-    if (!isLikelyProductSchemaJson(candidatePath)) {
-      continue;
-    }
-    fs.unlinkSync(candidatePath);
-    deletedFileNames.push(fileName);
-    console.log(`🧹 Removed stale product schema file: ${candidatePath}`);
-  }
-
-  return deletedFileNames;
-}
 
 function createWindow() {
   mainWindow = new BrowserWindow({

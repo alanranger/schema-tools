@@ -64,8 +64,12 @@ const API = {
   saveAndDeploySchema: (name, json) => { writeOut(repoMirror(name), json); return { success: true, message: 'app-cli: written to --out (no git)', filePath: repoMirror(name) }; },
   saveSchemaToOutputs: (name, json) => { writeOut(path.join(OUT, 'alan-shared-resources', 'outputs', 'schema', name), json); return { success: true }; },
   batchDeploySchemas: (files) => { files.forEach((f) => writeOut(repoMirror(f.fileName), f.jsonContent)); return { success: true, message: `app-cli: ${files.length} files written to --out`, deletedCount: 0 }; },
-  httpGetManual: async (url) => { const r = await pacedFetch(url, { method: 'GET', redirect: 'manual' }); return { status: r.status, location: r.headers.get('location') || '' }; }
+  httpGetManual: async (url) => { const r = await pacedFetch(url, { method: 'GET', redirect: 'manual' }); return { status: r.status, location: r.headers.get('location') || '' }; },
+  /** Stale HowTo/FAQ removal: recorded, and applied only to the copy inside OUT (never the real repo). */
+  deleteSchemaFile: (name) => { deletes.push(name); fs.rmSync(repoMirror(name), { force: true }); return { success: true }; }
 };
+const deletes = [];
+const runReports = [];
 
 async function openApp(browser) {
   const page = await browser.newPage();
@@ -89,11 +93,44 @@ async function openApp(browser) {
     const contents = res.ok ? await res.text() : '';
     await route.fulfill({ status: res.ok ? 200 : res.status, contentType: 'application/json', body: JSON.stringify({ contents }) });
   });
+  // The app's direct page fetches (e.g. Blog Posts' live HTML) go through the same paced fetch.
+  await page.route(/^https:\/\/www\.alanranger\.com\//, async (route) => {
+    const res = await pacedFetch(route.request().url(), { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124 Safari/537.36' } });
+    await route.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/html', body: await res.text() });
+  });
+  // The app's run report to AI GEO Audit is recorded, never sent, from app-cli runs.
+  await page.route('https://ai-geo-audit.vercel.app/api/aigeo/tool-run-report', async (route) => {
+    runReports.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"app_cli":"not sent"}' });
+  });
   // file:// like the Electron window: the generators fall back to https://www.alanranger.com for ids when the
   // page URL is not http(s) (getBaseId), so an http origin here would change the output.
   await page.goto(pathToFileURL(path.join(ROOT, 'index.html')).href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof window.generateEventPostBundle === 'function' && typeof window.generateBlogIndexSchema === 'function', null, { timeout: 60000 });
   return page;
+}
+
+/** Changed posts only: never all 324. */
+const MAX_BLOG_POSTS = 60;
+const BLOG_BASE = 'https://www.alanranger.com/blog-on-photography/';
+
+function blogPostSlugs() {
+  const list = arg('--list');
+  const fromList = list ? fs.readFileSync(list, 'utf8').split(/\r?\n/).slice(1).map((u) => u.trim().split('/').filter(Boolean).pop()) : [];
+  return [...new Set([...(arg('--slugs') || '').split(','), ...fromList].map((s) => (s || '').trim()).filter(Boolean))];
+}
+
+/** One post through the Blog Posts tab's own single-URL generator (all 6 file types; stale HowTo/FAQ removed). */
+async function blogPostRun(page, slug) {
+  const before = writes.length;
+  const deletedBefore = deletes.length;
+  await page.evaluate(({ url }) => {
+    document.getElementById('blogPostsTestUrl').value = url;
+    document.getElementById('blogPostsSaveToGithub').checked = true;
+  }, { url: `${BLOG_BASE}${slug}` });
+  await page.evaluate(() => blogPosts_generateSingleUrl());
+  const files = writes.slice(before).map((f) => path.basename(f));
+  return { slug, files, removed_stale: deletes.slice(deletedBefore), run_report_recorded: runReports.length > 0 };
 }
 
 /** One Event Index tab run (lessons or workshops): the tab's own inputs, generateEventSchema(), exportAndDeploySchema(). */
@@ -133,6 +170,14 @@ const COMMANDS = {
     if (!(await page.evaluate(() => !!window.currentBlogSchema))) throw new Error('blog index generate failed');
     await page.evaluate(() => exportAndDeployBlogSchema());
     return page.evaluate(() => (blogDebugLog || []).slice(-6).join('\n'));
+  },
+  'blog-posts': async (page) => {
+    const slugs = blogPostSlugs();
+    if (!slugs.length) throw new Error('blog-posts: give --slugs a,b or --list <csv with a url column>');
+    if (slugs.length > MAX_BLOG_POSTS) throw new Error(`blog-posts: ${slugs.length} posts requested; the limit is ${MAX_BLOG_POSTS} per run`);
+    const results = [];
+    for (const slug of slugs) results.push(await blogPostRun(page, slug));
+    return JSON.stringify(results);
   },
   'event-index': async (page) => {
     const processed = arg('--processed') || path.join(WEB, 'alan-shared-resources', 'csv processed');
