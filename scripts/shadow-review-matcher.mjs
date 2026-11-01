@@ -190,7 +190,14 @@ async function loadEvidence() {
   const slugById = slugIndex(readCsv(path.join(SHARED, 'csv', 'raw-01-products-sqsp-export.csv')));
   const orders = await loadOrders({ slugById }).catch((e) => ({ orders: [], error: String(e.message || e) }));
   const homes = new Set(readCsv(path.join(PROC, '03 – combined_product_reviews.csv')).map((r) => r.product_slug).filter(Boolean));
-  return { bookings: bookingRows(raw), orders, homes };
+  return { bookings: bookingRows(raw), orders, homes, ids: reviewIds() };
+}
+
+/** product_reviews ids (the runner's DB snapshot) so reports can name a review by id, not by person. */
+function reviewIds() {
+  const file = path.join(PROC, 'product-reviews-db-snapshot.csv');
+  if (!fs.existsSync(file)) return new Map();
+  return new Map(readCsv(file).filter((r) => r.source === 'Google').map((r) => [key(r.reviewer_name, r.review_date), r.id]));
 }
 
 function scoreRow(r, ev, decisions) {
@@ -198,7 +205,7 @@ function scoreRow(r, ev, decisions) {
   const s = scoreReview(review, ev.bookings);
   const o = scoreReviewWithOrders(review, ev.bookings, ev.orders.orders, ev.homes);
   const decision = decisions.get(key(r.reviewer, review.date));
-  return { review_id: r.reference_id || '', reviewer: r.reviewer, date: String(review.date).slice(0, 10), current: r.product_slug, attribution_source: r.attribution_source,
+  return { review_id: r.reference_id || ev.ids?.get(key(r.reviewer, review.date)) || '', reviewer: r.reviewer, date: String(review.date).slice(0, 10), current: r.product_slug, attribution_source: r.attribution_source,
     shadow_slug: s.slug, score: s.score, action: actionFor(s.score), why: s.why,
     orders_slug: o.slug, orders_score: o.score, orders_action: actionFor(o.score), orders_why: o.why, transfer: o.transfer || '',
     alan_decision: decision ? (decision.scope === 'business_level' ? '(business level)' : decision.product_slug) : '',
