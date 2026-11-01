@@ -65,8 +65,13 @@ const API = {
   saveSchemaToOutputs: (name, json) => { writeOut(path.join(OUT, 'alan-shared-resources', 'outputs', 'schema', name), json); return { success: true }; },
   batchDeploySchemas: (files) => { files.forEach((f) => writeOut(repoMirror(f.fileName), f.jsonContent)); return { success: true, message: `app-cli: ${files.length} files written to --out`, deletedCount: 0 }; },
   httpGetManual: async (url) => { const r = await pacedFetch(url, { method: 'GET', redirect: 'manual' }); return { status: r.status, location: r.headers.get('location') || '' }; },
-  /** Stale HowTo/FAQ removal: recorded, and applied only to the copy inside OUT (never the real repo). */
-  deleteSchemaFile: (name) => { deletes.push(name); fs.rmSync(repoMirror(name), { force: true }); return { success: true }; }
+  /** Stale HowTo/FAQ removal: recorded only when the file exists, and applied only to the copy inside OUT (never the real repo).
+   *  The Blog Posts tab asks to delete _faq/_howto for every post without one, whether or not the file exists. */
+  deleteSchemaFile: (name) => {
+    if (API.checkFileExists(name)) deletes.push(name);
+    fs.rmSync(repoMirror(name), { force: true });
+    return { success: true };
+  }
 };
 const deletes = [];
 const runReports = [];
