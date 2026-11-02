@@ -44,6 +44,7 @@ import os
 import time
 from datetime import datetime, date, timedelta
 from offer_dates import keep_or_stable_until, stable_price_valid_until, stable_valid_from
+from site_identity import SITE_UA
 from urllib.parse import urlparse, urljoin
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -449,7 +450,7 @@ def fetch_html(url, timeout_sec=12):
     cache_key = str(url or "").strip()
     if cache_key in _HTML_CACHE:
         return _HTML_CACHE[cache_key]
-    req = Request(cache_key, headers={"User-Agent": "Mozilla/5.0 (SchemaTools FAQ Builder)"})
+    req = Request(cache_key, headers={"User-Agent": SITE_UA})
     with urlopen(req, timeout=timeout_sec) as resp:
         html = resp.read().decode("utf-8", errors="ignore")
     _HTML_CACHE[cache_key] = html

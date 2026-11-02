@@ -26,6 +26,7 @@ import urllib.error
 from urllib.parse import urlparse
 from datetime import date, timedelta
 from offer_dates import load_created_dates, stable_price_valid_until, stable_valid_from
+from site_identity import SITE_UA
 
 CREATED_DATES = load_created_dates()
 
@@ -138,7 +139,7 @@ def validate_url(url, timeout=5):
     pace_site_request()
     try:
         req = urllib.request.Request(url, method='HEAD')
-        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        req.add_header('User-Agent', SITE_UA)
         with urllib.request.urlopen(req, timeout=timeout) as response:
             status_code = response.getcode()
             if status_code == 200:
@@ -251,7 +252,7 @@ def fetch_product_price_from_page(url, timeout=8):
     pace_site_request()
     try:
         req = urllib.request.Request(url, method='GET')
-        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        req.add_header('User-Agent', SITE_UA)
         with urllib.request.urlopen(req, timeout=timeout) as response:
             html_text = response.read().decode('utf-8', errors='ignore')
     except Exception:
