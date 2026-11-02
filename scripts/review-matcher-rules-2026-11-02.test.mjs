@@ -26,6 +26,10 @@ test('2. season check: out of season only when Squarespace has no order for the 
   assert.equal(outOfSeason({ slug: HEATHER, date: '2016-07-25', orders: [] }), true, 'July is before the August heather (Fay)');
   assert.equal(outOfSeason({ slug: HEATHER, date: '2025-08-19', orders: [] }), false, 'in season');
   assert.equal(outOfSeason({ slug: 'beginners-photography-course', date: '2015-01-16', orders: [] }), false, 'not seasonal');
+  assert.equal(outOfSeason({ slug: 'christmas-photography-workshops', date: '2016-01-10', orders: [] }), false, 'Christmas Nov–Jan wraps the year');
+  assert.equal(outOfSeason({ slug: 'christmas-photography-workshops', date: '2016-04-28', orders: [] }), true, 'Emma Clift, April');
+  assert.equal(outOfSeason({ slug: 'photography-workshops-lavender-fields', date: '2015-08-20', orders: [] }), false, 'lavender Jul–Aug');
+  assert.equal(outOfSeason({ slug: HEATHER, date: '2015-09-05', orders: [] }), true, 'Robin: September, no 2015 Heather order');
   const held = withSeason({ slug: 'photography-workshops-lavender-fields', score: 0.8, why: 'place/workshop alias' }, { date: '2015-01-16' }, []);
   assert.equal(held.score < 0.6, true);
   assert.match(held.why, /outside its season/);

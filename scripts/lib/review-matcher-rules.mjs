@@ -79,23 +79,20 @@ export function bookingLabelSlugs(label) {
 }
 
 /**
- * Seasonal products: event months (1–12). A review is out of season when it is more than 3 months after the
- * season, or before it. Heather is August and Bluebell April/May (Alan's decisions); the rest follow the product.
+ * In-season months (1–12, event month through to about a month after, as reviews arrive after the event).
+ * Alan / Claude 2 Nov 2026 (QUESTION 12b). A range may wrap the year (Christmas Nov–Jan).
  */
 export const SEASONS = {
   'peak-district-heather-photography-workshop': [8, 8],
   'bluebell-woodlands-photography-workshops': [4, 5],
-  'photography-workshops-lavender-fields': [6, 7],
+  'photography-workshops-lavender-fields': [7, 8],
   'poppy-fields-photography-workshops': [6, 7],
-  'fireworks-photography-workshop-kenilworth': [11, 11],
-  'christmas-photography-workshops': [11, 12],
-  'batsford-arboretum-photography-workshops': [10, 11],
+  'fireworks-photography-workshop-kenilworth': [11, 12],
+  'christmas-photography-workshops': [11, 1],
+  'batsford-arboretum-photography-workshops': [10, 12],
 };
 
-const monthsAfter = (month, [from, to]) => {
-  if (month >= from && month <= to) return 0;
-  return (month - to + 12) % 12;
-};
+const inSeason = (month, [from, to]) => (from <= to ? month >= from && month <= to : month >= from || month <= to);
 
 /**
  * Out of season only if the review falls outside the product's season AND Squarespace has no order for that product
@@ -105,8 +102,7 @@ export function outOfSeason({ slug, date, orders = [] }) {
   const season = SEASONS[slug];
   const d = new Date(String(date || '').slice(0, 10));
   if (!season || Number.isNaN(d.getTime())) return false;
-  const after = monthsAfter(d.getUTCMonth() + 1, season);
-  if (after <= 3) return false;
+  if (inSeason(d.getUTCMonth() + 1, season)) return false;
   const year = d.getUTCFullYear();
   return !orders.some((o) => String(o.createdOn || '').startsWith(String(year)) && (o.items || []).some((i) => i.slug === slug));
 }
