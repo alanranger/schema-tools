@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emailMatches, minimalOrder, orderEvidence, variantDate } from './lib/squarespace-orders.mjs';
+import { emailMatches, isMine, minimalOrder, orderEvidence, orderNumberIn, variantDate } from './lib/squarespace-orders.mjs';
 import { scoreReviewWithOrders, bucket } from './shadow-review-matcher.mjs';
 
 const order = (n, created, slug, variant, extra = {}) => ({ orderNumber: n, createdOn: created, names: ['Jane Example'], emailLocal: 'jane.exa', notes: [],
@@ -12,6 +12,17 @@ test('email local part matches a run-together Google name; short parts never mat
   assert.equal(emailMatches('Jane Example', 'jane.exa'), true);
   assert.equal(emailMatches('Jo', 'jo'), false);
   assert.equal(emailMatches('Bob Smith', 'jane.exa'), false);
+});
+
+test('Alan 2 Nov: an order counts only on surname, email local part or order number — never the first name alone', () => {
+  const o = { orderNumber: '2042', names: ['Mike Example'], emailLocal: 'mikeexa' };
+  assert.equal(isMine({ reviewer: 'Mike', review: 'Great day' }, { ...o, emailLocal: 'zzzzzz' }), false, 'first name only (the Mike 2023-11 case)');
+  assert.equal(isMine({ reviewer: 'Mike Example', review: 'Great day' }, o), true, 'surname matches');
+  assert.equal(isMine({ reviewer: 'M Example', review: 'Great day' }, o), true, 'initial + surname');
+  assert.equal(isMine({ reviewer: 'Mike Other', review: 'Great day' }, o), false, 'different surname');
+  assert.equal(isMine({ reviewer: 'Mikeexample', review: 'Great day' }, { ...o, names: ['Someone Else'] }), true, 'email local part');
+  assert.equal(isMine({ reviewer: 'Mike', review: 'Loved it, order #2042 was easy' }, { ...o, names: ['Someone Else'], emailLocal: 'zzzzzz' }), true, 'order number in the text');
+  assert.equal(orderNumberIn('ref 120421', '2042'), false, 'part of a longer number does not count');
 });
 
 test('minimal order keeps only the email local part (no address, phone or full email)', () => {

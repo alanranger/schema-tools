@@ -98,7 +98,14 @@ function timing(item, created, t) {
   return t - at > EVENT_WINDOW.after ? 'old' : 'dated';
 }
 
-const isMine = (review, o) => o.names.some((n) => nameMatches(review.reviewer, n)) || emailMatches(review.reviewer, o.emailLocal);
+/** Reviewer name with a surname, matching the order name on that surname (one-word names never count). */
+const surnameMatches = (reviewer, name) => String(reviewer || '').trim().split(/\s+/).length > 1 && nameMatches(reviewer, name);
+/** The order number written in the review text ("#2042", "order 2042"). */
+export const orderNumberIn = (text, orderNumber) => Boolean(orderNumber) && new RegExp(`(^|[^0-9])${orderNumber}([^0-9]|$)`).test(String(text || ''));
+
+/** Alan's rule (2 Nov 2026): an order is evidence only if the surname, the email local part or the order number matches — never the first name alone. */
+export const isMine = (review, o) => o.names.some((n) => surnameMatches(review.reviewer, n))
+  || emailMatches(review.reviewer, o.emailLocal) || orderNumberIn(review.review, o.orderNumber);
 
 /** The review home for an ordered product: itself, its ORDER_HOMES alias, or '' (a product with no reviews says nothing). */
 const homeOf = (slug, homes) => (ORDER_HOMES[slug] || (!homes || homes.has(slug) ? slug : ''));
