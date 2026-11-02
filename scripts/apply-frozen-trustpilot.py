@@ -5,7 +5,8 @@ Step 1 of merge-reviews.py: Trustpilot is frozen history.
 Copies alan-shared-resources/csv/raw-03a-trustpilot-attributed-FROZEN.csv to
 csv processed/03a_trustpilot_matched.csv. Trustpilot reviews are never re-matched, so hiding
 or renaming a product can no longer drop or move them. To change one attribution, edit the
-FROZEN file by hand (it is the source of truth).
+FROZEN file by hand (it is the source of truth). Business level: product_slug blank and
+attribution_source override_business_level.
 """
 import sys
 from pathlib import Path
@@ -25,12 +26,14 @@ def main():
         print(f"ERROR: frozen Trustpilot file missing: {FROZEN}")
         return 1
     df = pd.read_csv(FROZEN, encoding="utf-8-sig", dtype=str, keep_default_na=False)
-    blank = df[df["product_slug"].str.strip() == ""]
+    # Business level (Alan's choice): kept on record, shown on no product — the only allowed blank slug.
+    business = df["attribution_source"] == "override_business_level"
+    blank = df[(df["product_slug"].str.strip() == "") & ~business]
     if df["review_id"].duplicated().any() or len(blank):
         print(f"ERROR: frozen file invalid (duplicate ids or {len(blank)} blank slugs)")
         return 1
     df.to_csv(OUT, index=False, encoding="utf-8-sig")
-    print(f"Trustpilot frozen: {len(df)} reviews copied to {OUT.name} (no re-matching)")
+    print(f"Trustpilot frozen: {len(df)} reviews copied to {OUT.name} (no re-matching; {int(business.sum())} business level)")
     return 0
 
 
