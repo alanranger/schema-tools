@@ -25,6 +25,9 @@ import urllib.request
 import urllib.error
 from urllib.parse import urlparse
 from datetime import date, timedelta
+from offer_dates import load_created_dates, stable_price_valid_until, stable_valid_from
+
+CREATED_DATES = load_created_dates()
 
 HTTPS_PREFIX = 'https://'
 
@@ -151,8 +154,8 @@ def validate_url(url, timeout=5):
     except Exception as e:
         return False, f'Error: {str(e)}'
 
-def create_offer_from_row(row):
-    """Create an Offer object from a CSV row"""
+def create_offer_from_row(row, created_on=None):
+    """Create an Offer object from a CSV row (stable dates: see offer_dates.py)"""
     sku = str(row.get('SKU', '')).strip() if pd.notna(row.get('SKU')) else ''
     if not sku or sku.lower() in ['nan', 'none', '']:
         return None
@@ -185,9 +188,8 @@ def create_offer_from_row(row):
     else:
         availability = "https://schema.org/InStock"
     
-    # Calculate dates
-    valid_from = date.today().isoformat()
-    price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+    valid_from = stable_valid_from(created_on)
+    price_valid_until = stable_price_valid_until(option_value)
     
     offer = {
         "@type": "Offer",
@@ -544,13 +546,15 @@ def main():
         offers = []
         
         # Add main product as first offer
-        main_offer = create_offer_from_row(row)
+        product_id = str(row.get('Product ID [Non Editable]', '') or '').strip()
+        created_on = CREATED_DATES.get(product_id) or CREATED_DATES.get(product_url_slug)
+        main_offer = create_offer_from_row(row, created_on)
         if main_offer:
             offers.append(main_offer)
         
         # Add variant offers
         for variant_row in product_variants:
-            variant_offer = create_offer_from_row(pd.Series(variant_row))
+            variant_offer = create_offer_from_row(pd.Series(variant_row), created_on)
             if variant_offer:
                 offers.append(variant_offer)
         

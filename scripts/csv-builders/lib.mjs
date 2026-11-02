@@ -7,13 +7,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_UA } from '../lib/site-identity.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const LIVE_CSV = process.env.CSV_BUILDERS_LIVE_CSV || path.resolve(HERE, '..', '..', '..', 'alan-shared-resources', 'csv');
 export const FEEDS = process.env.CSV_BUILDERS_FEEDS || path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'AlanCsvBuilders', 'feeds');
 export const OUT = process.env.CSV_BUILDERS_OUT || path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'AlanCsvBuilders', 'out');
 export const ORIGIN = 'https://www.alanranger.com';
-const UA = 'Mozilla/5.0 (compatible; AlanCsvBuilders/1.0)';
+const UA = SITE_UA;
 
 export function parseCsv(text) {
   const t = String(text || '').replace(/^\uFEFF/, '');

@@ -43,6 +43,7 @@ import sys
 import os
 import time
 from datetime import datetime, date, timedelta
+from offer_dates import keep_or_stable_until, stable_price_valid_until, stable_valid_from
 from urllib.parse import urlparse, urljoin
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -551,8 +552,8 @@ def build_gift_voucher_row(csv_dir):
             "price": "5.00",
             "priceCurrency": "GBP",
             "availability": "https://schema.org/InStock",
-            "validFrom": date.today().isoformat(),
-            "priceValidUntil": (date.today() + timedelta(days=365)).isoformat(),
+            "validFrom": stable_valid_from(None),
+            "priceValidUntil": stable_price_valid_until(None),
             "name": "Photography Gift Vouchers"
         }]),
         "total_variants": 1,
@@ -1810,8 +1811,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
             try:
                 price_val = float(price)
                 
-                # Determine validFrom date - try product date field, then default to current date
-                valid_from = date.today().isoformat()
+                # Determine validFrom date - try product date field, then the stable default
+                valid_from = stable_valid_from(None)
                 if 'date' in product_row.index and pd.notna(product_row.get('date')):
                     try:
                         product_date = pd.to_datetime(product_row.get('date'), errors='coerce')
@@ -1820,8 +1821,7 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                     except:
                         pass
                 
-                # Calculate priceValidUntil (12 months from today)
-                price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+                price_valid_until = stable_price_valid_until(None)
                 
                 # Determine return fees
                 return_fees_val = "https://schema.org/ReturnShippingFees" if is_course_workshop else "https://schema.org/FreeReturn"
@@ -1873,9 +1873,6 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
     
     # Add offers to schema (can be single offer or array)
     if offers_data:
-        # Ensure all offers have priceValidUntil set to +12 months
-        price_valid_until = (date.today() + timedelta(days=365)).isoformat()
-        
         # Add URL, shipping details, seller, and @id to each offer if missing, and ensure priceValidUntil
         for idx, offer in enumerate(offers_data):
             if 'url' not in offer and product_url:
@@ -1948,21 +1945,8 @@ def generate_product_schema_graph(product_row, reviews_list, include_aggregate_r
                             "currency": "GBP"
                         }
             
-            # Ensure priceValidUntil is always set to +12 months
-            if 'priceValidUntil' not in offer:
-                offer['priceValidUntil'] = price_valid_until
-            else:
-                # Validate existing priceValidUntil is at least 12 months away
-                try:
-                    existing_date = pd.to_datetime(offer['priceValidUntil'], errors='coerce')
-                    if pd.notna(existing_date):
-                        min_valid_date = date.today() + timedelta(days=365)
-                        if existing_date.date() < min_valid_date:
-                            # Update to +12 months if it's too soon
-                            offer['priceValidUntil'] = price_valid_until
-                except:
-                    # If parsing fails, set to +12 months
-                    offer['priceValidUntil'] = price_valid_until
+            # A future priceValidUntil (event date / end of next year) is kept; missing or past -> stable rule
+            offer['priceValidUntil'] = keep_or_stable_until(offer.get('priceValidUntil'), offer.get('name'))
             
             # Event objects are NOT added to offers - they are separate @graph nodes
             # Do NOT add event to offers

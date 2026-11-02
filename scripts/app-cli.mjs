@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { SITE_UA } from './lib/site-identity.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -94,13 +95,13 @@ async function openApp(browser) {
   // paced fetch in its own response shape, so the same app code runs without third-party hops.
   await page.route('https://api.allorigins.win/get?**', async (route) => {
     const target = new URL(route.request().url()).searchParams.get('url');
-    const res = await pacedFetch(target, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124 Safari/537.36' } });
+    const res = await pacedFetch(target, { headers: { 'User-Agent': SITE_UA } });
     const contents = res.ok ? await res.text() : '';
     await route.fulfill({ status: res.ok ? 200 : res.status, contentType: 'application/json', body: JSON.stringify({ contents }) });
   });
   // The app's direct page fetches (e.g. Blog Posts' live HTML) go through the same paced fetch.
   await page.route(/^https:\/\/www\.alanranger\.com\//, async (route) => {
-    const res = await pacedFetch(route.request().url(), { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124 Safari/537.36' } });
+    const res = await pacedFetch(route.request().url(), { headers: { 'User-Agent': SITE_UA } });
     await route.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/html', body: await res.text() });
   });
   // The app's run report to AI GEO Audit is recorded, never sent, from app-cli runs.

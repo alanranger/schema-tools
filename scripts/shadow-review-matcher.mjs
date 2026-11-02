@@ -190,7 +190,36 @@ async function loadEvidence() {
   const slugById = slugIndex(readCsv(path.join(SHARED, 'csv', 'raw-01-products-sqsp-export.csv')));
   const orders = await loadOrders({ slugById }).catch((e) => ({ orders: [], error: String(e.message || e) }));
   const homes = new Set(readCsv(path.join(PROC, '03 – combined_product_reviews.csv')).map((r) => r.product_slug).filter(Boolean));
-  return { bookings: bookingRows(raw), orders, homes, ids: reviewIds() };
+  return { bookings: bookingRows(raw), orders, homes, ids: reviewIds(), aliases: loadAliases() };
+}
+
+/** Name-alias list (backup evidence): reviewer name → products Alan chose for their earlier held reviews. */
+export const ALIAS_FILE = '16-review-reviewer-aliases.csv';
+function loadAliases() {
+  const file = path.join(PROC, ALIAS_FILE);
+  const out = new Map();
+  if (!fs.existsSync(file)) return out;
+  for (const r of readCsv(file)) {
+    const k = String(r.reviewer_name || '').trim().toLowerCase();
+    if (k && r.product_slug) out.set(k, [...new Set([...(out.get(k) || []), r.product_slug])]);
+  }
+  return out;
+}
+
+/** Alternatives for Alan: products named by the orders, booking sheet, text and alias list (not the suggestion). */
+function candidatesFor(review, ev, chosen) {
+  const named = namedIn(String(review.review || ''));
+  const booking = bookingEvidence(review, ev.bookings)?.slugs || [];
+  const order = orderEvidence(review, ev.orders.orders, ev.homes)?.slugs || [];
+  const alias = ev.aliases?.get(String(review.reviewer || '').trim().toLowerCase()) || [];
+  return [...new Set([...order, ...booking, ...named, ...alias])].filter((s) => s && s !== chosen).slice(0, 3);
+}
+
+/** Last resort before a hold: the alias list (Alan decided an earlier review by this name). */
+function withAlias(result, review, ev) {
+  const alias = ev.aliases?.get(String(review.reviewer || '').trim().toLowerCase()) || [];
+  if (result.score >= SUGGEST || alias.length !== 1) return result;
+  return { slug: alias[0], score: 0.7, why: `name alias: Alan chose ${alias[0]} for an earlier review by this name` };
 }
 
 /** product_reviews ids (the runner's DB snapshot) so reports can name a review by id, not by person. */
@@ -203,9 +232,9 @@ function reviewIds() {
 function scoreRow(r, ev, decisions) {
   const review = { reviewer: r.reviewer, date: r.date_parsed || r.date, review: r.review };
   const s = scoreReview(review, ev.bookings);
-  const o = scoreReviewWithOrders(review, ev.bookings, ev.orders.orders, ev.homes);
+  const o = withAlias(scoreReviewWithOrders(review, ev.bookings, ev.orders.orders, ev.homes), review, ev);
   const decision = decisions.get(key(r.reviewer, review.date));
-  return { review_id: r.reference_id || ev.ids?.get(key(r.reviewer, review.date)) || '', reviewer: r.reviewer, date: String(review.date).slice(0, 10), current: r.product_slug, attribution_source: r.attribution_source,
+  return { review_id: r.reference_id || ev.ids?.get(key(r.reviewer, review.date)) || '', reviewer: r.reviewer, candidates: candidatesFor(review, ev, o.slug), date: String(review.date).slice(0, 10), current: r.product_slug, attribution_source: r.attribution_source,
     shadow_slug: s.slug, score: s.score, action: actionFor(s.score), why: s.why,
     orders_slug: o.slug, orders_score: o.score, orders_action: actionFor(o.score), orders_why: o.why, transfer: o.transfer || '',
     alan_decision: decision ? (decision.scope === 'business_level' ? '(business level)' : decision.product_slug) : '',
@@ -224,7 +253,7 @@ function backtestSummary(results, decisions) {
     transfer_cases: results.filter((r) => r.transfer).map((r) => ({ review_id: r.review_id, first_name: firstName(r.reviewer), date: r.date, found_in: r.transfer, why: r.orders_why })) };
 }
 
-const REPORT_COLS = ['review_id', 'reviewer', 'date', 'current', 'shadow_slug', 'score', 'action', 'why', 'orders_slug', 'orders_score', 'orders_action', 'orders_why', 'transfer', 'alan_decision', 'backtest', 'backtest_orders'];
+const REPORT_COLS = ['review_id', 'reviewer', 'date', 'current', 'shadow_slug', 'score', 'action', 'why', 'orders_slug', 'orders_score', 'orders_action', 'orders_why', 'transfer', 'candidates', 'alan_decision', 'backtest', 'backtest_orders'];
 
 async function main() {
   const ev = await loadEvidence();
