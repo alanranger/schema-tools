@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PLACES, SERVICES, match, nameMatches } from './lib/review-matcher-rules.mjs';
+import { PLACES, SERVICES, bookingLabelSlugs, match, nameMatches, outOfSeason } from './lib/review-matcher-rules.mjs';
 import { WEB_ROOT, loadOrders, orderEvidence, slugIndex } from './lib/squarespace-orders.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -86,7 +86,7 @@ function bookingEvidence(review, bookings) {
     return days >= -3 && days <= WINDOW_DAYS[b.kind] && nameMatches(review.reviewer, b.client);
   });
   if (!hits.length) return null;
-  const slugs = [...new Set(hits.flatMap((h) => [...match(PLACES, h.label.toLowerCase()), ...match(SERVICES, h.label.toLowerCase())]))];
+  const slugs = [...new Set(hits.flatMap((h) => bookingLabelSlugs(h.label)))];
   return { slugs, labels: [...new Set(hits.map((h) => `${String(h.date).slice(0, 10)} ${h.client}: ${h.label.trim()}`))].slice(0, 3) };
 }
 
@@ -222,6 +222,12 @@ function withAlias(result, review, ev) {
   return { slug: alias[0], score: 0.7, why: `name alias: Alan chose ${alias[0]} for an earlier review by this name` };
 }
 
+/** A pick for a seasonal product outside its season (and no order that year) is held, not assigned. */
+export function withSeason(result, review, orders) {
+  if (!result.slug || result.score < SUGGEST || !outOfSeason({ slug: result.slug, date: review.date, orders })) return result;
+  return { ...result, score: 0.5, why: `hold: ${result.slug} is outside its season on ${String(review.date).slice(0, 10)} and no order that year; was: ${result.why}` };
+}
+
 /** product_reviews ids (the runner's DB snapshot) so reports can name a review by id, not by person. */
 function reviewIds() {
   const file = path.join(PROC, 'product-reviews-db-snapshot.csv');
@@ -232,7 +238,7 @@ function reviewIds() {
 function scoreRow(r, ev, decisions) {
   const review = { reviewer: r.reviewer, date: r.date_parsed || r.date, review: r.review };
   const s = scoreReview(review, ev.bookings);
-  const o = withAlias(scoreReviewWithOrders(review, ev.bookings, ev.orders.orders, ev.homes), review, ev);
+  const o = withSeason(withAlias(scoreReviewWithOrders(review, ev.bookings, ev.orders.orders, ev.homes), review, ev), review, ev.orders.orders);
   const decision = decisions.get(key(r.reviewer, review.date));
   return { review_id: r.reference_id || ev.ids?.get(key(r.reviewer, review.date)) || '', reviewer: r.reviewer, candidates: candidatesFor(review, ev, o.slug), date: String(review.date).slice(0, 10), current: r.product_slug, attribution_source: r.attribution_source,
     shadow_slug: s.slug, score: s.score, action: actionFor(s.score), why: s.why,

@@ -50,7 +50,7 @@ export const SERVICES = [
   ['photography-masterclasses-coventry', /masterclass|bracketing|filters? (workshop|evening|session|masterclass)/],
   ['private-online-photography-classes-zoom', /(over|via|on) zoom|zoom (session|lesson|call|class|multi)|hr zoom|\bzooms\b/],
   ['four-private-photography-classes', /1-2-1|1:1|one[- ]to[- ]one|\b1-1\b|private (lesson|session|class|tuition)|face to face/],
-  ['beginners-photography-course', /beginners? (camera |photography )?course|camera course|evening class|(3|three|5|five)[- ]week|get off auto/],
+  ['beginners-photography-course', /beginners? (camera |photography )?course|camera course|evening class|(3|three|5|five)[- ]week|get(ting)? off auto|(3|three) hours? of beginners/],
   ['intermediates-intentions-photography-project-course', /intentions/],
   ['beginners-portrait-photography-course', /portrait (course|class|workshop)/],
   ['free-online-photography-course', /academy|free online/],
@@ -67,6 +67,49 @@ export const ORDER_HOMES = {
 };
 
 export const match = (rules, text) => [...new Set(rules.filter(([, re]) => re.test(text)).map(([slug]) => slug))];
+
+/**
+ * A booking-sheet label names ONE event, so it maps to its most specific place (the first PLACES match):
+ * "Heathers Peaks" is the heather workshop, not heather + Peak District (Alan's Heather check, 2 Nov 2026).
+ */
+export function bookingLabelSlugs(label) {
+  const text = String(label || '').toLowerCase();
+  const place = PLACES.find(([, re]) => re.test(text));
+  return place ? [place[0]] : match(SERVICES, text);
+}
+
+/**
+ * Seasonal products: event months (1–12). A review is out of season when it is more than 3 months after the
+ * season, or before it. Heather is August and Bluebell April/May (Alan's decisions); the rest follow the product.
+ */
+export const SEASONS = {
+  'peak-district-heather-photography-workshop': [8, 8],
+  'bluebell-woodlands-photography-workshops': [4, 5],
+  'photography-workshops-lavender-fields': [6, 7],
+  'poppy-fields-photography-workshops': [6, 7],
+  'fireworks-photography-workshop-kenilworth': [11, 11],
+  'christmas-photography-workshops': [11, 12],
+  'batsford-arboretum-photography-workshops': [10, 11],
+};
+
+const monthsAfter = (month, [from, to]) => {
+  if (month >= from && month <= to) return 0;
+  return (month - to + 12) % 12;
+};
+
+/**
+ * Out of season only if the review falls outside the product's season AND Squarespace has no order for that product
+ * in the review's year — products that ran year-round in past years (2018 Batsford Calendar workshops) are not flagged.
+ */
+export function outOfSeason({ slug, date, orders = [] }) {
+  const season = SEASONS[slug];
+  const d = new Date(String(date || '').slice(0, 10));
+  if (!season || Number.isNaN(d.getTime())) return false;
+  const after = monthsAfter(d.getUTCMonth() + 1, season);
+  if (after <= 3) return false;
+  const year = d.getUTCFullYear();
+  return !orders.some((o) => String(o.createdOn || '').startsWith(String(year)) && (o.items || []).some((i) => i.slug === slug));
+}
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
