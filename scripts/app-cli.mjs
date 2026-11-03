@@ -146,6 +146,9 @@ async function eventIndexRun(page, type, csvFile, processed) {
   await page.setInputFiles('#mappingsCsvFile', arg('--mappings') || path.join(WEB, 'alan-shared-resources', 'csv processed', '05-event-product-mappings-latest.csv'));
   const optional = [['#productsExcelFile', '02 – products_cleaned.xlsx'], ['#reviewsCsvFile', '03 – combined_product_reviews.csv']];
   for (const [sel, name] of optional) if (fs.existsSync(path.join(processed, name))) await page.setInputFiles(sel, path.join(processed, name));
+  // Events list their product's published 04 review set (Claude 3 Nov, 11): this run's own 04, not the shared one.
+  const p04 = path.join(processed, '04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv');
+  if (fs.existsSync(p04)) await page.evaluate((csv) => window.setProduct04Reviews(csv), fs.readFileSync(p04, 'utf8'));
   await page.evaluate(() => generateEventSchema());
   const today = new Date().toISOString().slice(0, 10);
   const got = await page.evaluate((day) => ({ csvType: window.currentEventSchemaCsvType, rows: events.length,

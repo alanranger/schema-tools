@@ -12967,7 +12967,40 @@
   }
 
   // Load reviews and mappings CSVs from file inputs (optional, for review enrichment)
+  /** Published product schema (04): product url → { aggregateRating, review } (Claude 3 Nov, 11). */
+  window.product04Reviews = window.product04Reviews || null;
+  function setProduct04Reviews(csvText) {
+    const map = {};
+    (Papa.parse(String(csvText || ''), { header: true, skipEmptyLines: true }).data || []).forEach((row) => {
+      const m = String(row.schema_html || '').match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+      let doc = null;
+      try { doc = JSON.parse(m ? m[1] : row.schema_html); } catch (e) { doc = null; }
+      const nodes = doc ? (Array.isArray(doc['@graph']) ? doc['@graph'] : [doc]) : [];
+      const product = nodes.find((n) => [].concat(n['@type'] || []).includes('Product'));
+      if (product && row.url) map[normalizeUrl(row.url)] = { aggregateRating: product.aggregateRating || null, review: [].concat(product.review || []) };
+    });
+    window.product04Reviews = map;
+    return Object.keys(map).length;
+  }
+  window.setProduct04Reviews = setProduct04Reviews;
+
+  function product04ReviewSet(productUrl) {
+    const map = window.product04Reviews;
+    return map ? (map[normalizeUrl(productUrl)] || null) : null;
+  }
+
+  /** The desktop app reads the shared 04; the CLI hands in the run's own copy before generating. */
+  async function loadProduct04Reviews() {
+    if (window.product04Reviews || !window.electronAPI?.readFile) return;
+    const p = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources\\csv processed\\04 – alanranger_product_schema_FINAL_WITH_REVIEW_RATINGS.csv';
+    try {
+      const r = await window.electronAPI.readFile(p);
+      if (r && r.success) setProduct04Reviews(r.content);
+    } catch (e) { /* no 04 on this machine: events keep the 03 match */ }
+  }
+
   async function loadReviewData() {
+    await loadProduct04Reviews();
     const debugLog = [];
     
     // Load products Excel first (for SKU lookup)
@@ -15020,7 +15053,18 @@
         
         // Add individual review snippets (top 5 reviews, trimmed to 300 chars)
         // Enhanced matching: use same logic as findReviewData for consistency
-        if (reviewsData && productUrl) {
+        // Claude 3 Nov (11): a product in the published product schema (04) gives its own review set — the same
+        // reviews the product page publishes — so an event never lists more (or other) reviews than its product.
+        const set04 = productUrl ? product04ReviewSet(productUrl) : null;
+        if (set04) {
+          if (set04.aggregateRating) eventSchema.aggregateRating = set04.aggregateRating;
+          eventSchema.review = set04.review
+            .filter((r) => { const v = parseFloat(r?.reviewRating?.ratingValue || 0); return v >= 4 && v <= 5 && String(r?.reviewBody || '').trim(); })
+            .sort((a, b) => String(b.datePublished || '').localeCompare(String(a.datePublished || '')))
+            .slice(0, 5)
+            .map((r) => ({ ...r, reviewBody: r.reviewBody.length > 300 ? `${r.reviewBody.substring(0, 297)}...` : r.reviewBody }));
+          stats.reviewSnippetsAdded += eventSchema.review.length;
+        } else if (reviewsData && productUrl) {
           const productSlug = normalizeUrl(productUrl).split('/').pop() || '';
           const productReviews = reviewsData.filter(r => {
             // Try multiple ways to match product URL (same logic as buildReviewsDict and findReviewData)
