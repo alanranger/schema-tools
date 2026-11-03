@@ -6,7 +6,7 @@
  *
  *   node scripts/app-cli.mjs event-posts --out <dir> --csv <csv dir> --mappings <05-event-product-mappings-latest.csv>
  *   node scripts/app-cli.mjs blog-index  --out <dir> --csv <csv dir>
- *   node scripts/app-cli.mjs landings    --out <dir> [--paths /home,/about-alan-ranger]
+ *   node scripts/app-cli.mjs landings    --out <dir> [--paths /home,/about-alan-ranger] [--products <dir>] [--reviews <03 csv>]
  *
  * Output: <out>/alanranger-schema/... and <out>/alan-shared-resources/... (mirrors of the real paths), plus
  * <out>/app-cli-report.json. Requests to alanranger.com made through the API stand-in are paced.
@@ -58,7 +58,8 @@ async function pacedFetch(url, opts) {
 /** The electronAPI methods the generators use; deploy-type calls only write into OUT. */
 const API = {
   getAppBuildMetadata: () => ({ app: 'SchemaTools', mode: 'app-cli' }),
-  readFile: (p) => { const c = readFirst(mirror(p), p); if (c == null) throw new Error(`File not found: ${p}`); return { success: true, content: c }; },
+  // Reads may come from a run's sandbox outside Website Code (--products / --reviews); only writes are confined.
+  readFile: (p) => { const m = (() => { try { return mirror(p); } catch { return null; } })(); const c = readFirst(...[m, p].filter(Boolean)); if (c == null) throw new Error(`File not found: ${p}`); return { success: true, content: c }; },
   writeFile: (p, content) => { writeOut(mirror(p), content); return { success: true }; },
   readSchemaFile: (name) => { const c = readFirst(repoMirror(name), path.join(REPO, name)); if (c == null) throw new Error(`Schema file not found: ${name}`); return c; },
   checkFileExists: (name) => fs.existsSync(repoMirror(name)) || fs.existsSync(path.join(REPO, name)),
@@ -200,6 +201,9 @@ const COMMANDS = {
   },
   landings: async (page) => {
     const only = arg('--paths');
+    // Selling pages take offers/ratings from this run's products (D) and review file (C) (Claude/Alan 3 Nov, 10).
+    const sources = { productsDir: arg('--products') || null, reviewsCsv: arg('--reviews') || null };
+    await page.evaluate((s) => { window.__LANDING_SOURCES = s; }, sources);
     if (only) await page.evaluate((list) => { LANDING_HOSTED_PATHS.splice(0, LANDING_HOSTED_PATHS.length, ...list); }, only.split(','));
     await page.evaluate(() => regenerateAllLandingPages());
     await page.evaluate(() => deployLandingHostedSchemas());

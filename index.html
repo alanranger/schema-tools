@@ -20409,8 +20409,55 @@ ${minifiedJson}
     live.applyWebSiteFields(graph, live.squarespaceWebSite(html));
     live.stripBusinessRating(graph);
     const hosted = await fetchHostedLandingSchema(pageUrl);
-    live.carryForwardSelling(graph, hosted).forEach((m) => addLandingDebugLog(`   ${m}`));
+    const selling = live.applyLiveSelling(graph, pageUrl, await landingSellingSources(html));
+    const report = selling.map((r) => ({ ...r }));
+    // Fallback only: a configured field with no live source, or selling fields on a page not configured, is carried
+    // forward from the hosted file and reported as "carried forward (may be stale)" — never silent.
+    const missing = selling.filter((r) => r.source === 'missing').map((r) => r.field);
+    if (missing.length || !live.SELLING_PAGES[landingPathFromUrl(pageUrl).replace(/^\//, '')]) {
+      live.carryForwardSelling(graph, hosted).filter((m) => !/WatchAction/.test(m))
+        .forEach((m) => report.push({ page: landingPathFromUrl(pageUrl).replace(/^\//, ''), field: m, source: 'carried forward (may be stale)' }));
+    } else {
+      live.carryForwardSelling(graph.filter((n) => [].concat(n['@type'] || []).includes('VideoObject')), hosted);
+    }
+    report.forEach((r) => addLandingDebugLog(`   selling: ${r.page} ${r.field} = ${r.source}`));
+    await recordLandingSelling(pageUrl, report);
     return { ...schema, '@graph': graph };
+  }
+
+  const SHARED_ROOT = 'G:\\Dropbox\\alan ranger photography\\Website Code\\alan-shared-resources';
+  const readText = async (p) => {
+    if (!window.electronAPI?.readFile) return null;
+    try { const r = await window.electronAPI.readFile(p); return typeof r === 'string' ? r : (r && r.success ? r.content : null); } catch (e) { return null; }
+  };
+
+  /** Live selling sources: this run's product files (D) and review file (C); the CLI points them at the run's sandbox. */
+  async function landingSellingSources(html) {
+    const src = window.__LANDING_SOURCES || {};
+    const productsDir = src.productsDir || `${SHARED_ROOT}\\outputs\\schema\\products`;
+    const reviewsCsv = src.reviewsCsv || `${SHARED_ROOT}\\csv processed\\03 – combined_product_reviews.csv`;
+    if (!window.__landingReviewRows) {
+      const csv = await readText(reviewsCsv);
+      window.__landingReviewRows = csv ? (Papa.parse(csv, { header: true, skipEmptyLines: true }).data || []) : [];
+    }
+    const files = [...new Set(Object.values(window.LandingLiveSources.SELLING_PAGES).flatMap((c) => (c.offers && c.offers.products) || []))];
+    const docs = {};
+    for (const file of files) {
+      const t = await readText(`${productsDir}\\${file}`);
+      try { docs[file] = t ? JSON.parse(t) : null; } catch (e) { docs[file] = null; }
+    }
+    const rows = window.__landingReviewRows;
+    return { html, year: new Date().getFullYear(), products: (file) => docs[file] || null,
+      reviews: (slug) => rows.filter((r) => String(r.product_slug || '').trim() === slug) };
+  }
+
+  /** Per page: where each selling field came from (written next to the landing files; the BAU run reads it). */
+  async function recordLandingSelling(pageUrl, report) {
+    window.__landingSellingReport = window.__landingSellingReport || {};
+    window.__landingSellingReport[landingPathFromUrl(pageUrl).replace(/^\//, '')] = report;
+    if (window.electronAPI && window.electronAPI.writeFile) {
+      await window.electronAPI.writeFile(`${SHARED_ROOT}\\outputs\\schema\\landings\\landing-selling-report.json`, JSON.stringify(window.__landingSellingReport, null, 2));
+    }
   }
 
   /** The published landing file the live page serves (landing-page-loader.js injects it), or null. */

@@ -218,6 +218,101 @@
     return [...report, ...carryVideoActions(graph, hosted)];
   }
 
+  // ---------- selling fields from LIVE sources (Claude/Alan 3 Nov, 10) ----------
+  // Offers from the products the run built (Squarespace + offer_dates rules, as D) or the page's own membership plan;
+  // ratings/reviews from the combined review file (product_reviews), same rules as the product schema (04):
+  // excluded rows out, aggregate over every rated review, text reviews listed newest first, at most 25.
+  const PRINTS = ['fine-art-photography-prints-canvas-wrap-round-multi-size_schema.json',
+    'fine-art-photography-prints-unframed-prints-multi-sizes_schema.json', 'framed-fine-art-photography-prints-multiple-sizes_schema.json'];
+  const SELLING_PAGES = {
+    'photography-gift-vouchers': { node: 'product', offers: { products: ['photography-gift-vouchers-digital-ecard-email-delivery_schema.json'] } },
+    'photo-editing-course-coventry': { node: 'service', offers: { products: ['lightroom-courses-for-beginners-photo-editing-coventry_schema.json'] } },
+    'photography-mentoring-online-assignments': { node: 'service', types: ['Service', 'Product'], offers: { plan: true }, reviews: 'photography-mentoring-online-assignments' },
+    'gallery-image-portfolios': { node: 'schema', offers: { products: PRINTS, aggregate: true } },
+    // The Service node becomes the Course afterwards (applyLandingCourseOverride takes its rating from the rated Service).
+    'free-online-photography-course': { node: 'service', reviews: 'free-online-photography-course' }
+  };
+  const MAX_LISTED_REVIEWS = 25;
+  const pageSlug = (pageUrl) => String(pageUrl || '').replace(/\/+$/, '').split('/').pop() || 'home';
+  const productNode = (doc) => graphOf(doc).find((n) => [].concat(n['@type'] || []).includes('Product')) || null;
+
+  function offersFromProducts(cfg, docs) {
+    const offers = cfg.products.flatMap((f) => [].concat(productNode(docs(f))?.offers || []));
+    if (!offers.length) return null;
+    if (!cfg.aggregate) return offers.length === 1 ? offers[0] : offers;
+    const prices = offers.map((o) => Number(o.price)).filter((p) => p > 0);
+    return { '@type': 'AggregateOffer', priceCurrency: 'GBP', lowPrice: Math.min(...prices).toFixed(2), highPrice: Math.max(...prices).toFixed(2),
+      offerCount: String(offers.length), availability: 'https://schema.org/InStock' };
+  }
+
+  /** A membership plan on the page: "<name> £20.00 Every month" (Squarespace Member Areas, not a commerce product). */
+  function offerFromPlan(html, pageUrl, year) {
+    const m = text(bodyOf(html)).match(/([A-Z][^£]{2,60}?)\s*£\s?(\d+(?:\.\d{2})?)\s*Every month/);
+    if (!m) return null;
+    const price = Number(m[2]).toFixed(2);
+    return { '@type': 'Offer', name: m[1].trim(), price, priceCurrency: 'GBP', availability: 'https://schema.org/InStock', url: pageUrl,
+      validFrom: `${year}-01-01`, priceValidUntil: `${year + 1}-12-31`,
+      priceSpecification: { '@type': 'UnitPriceSpecification', price, priceCurrency: 'GBP', billingDuration: 'P1M', unitText: 'MONTH' } };
+  }
+
+  const stars = (r) => Number(r.rating_numeric || r.ratingValue || r.rating || r.review_stars || 0);
+  const bodyText = (r) => String(r.reviewBody || r.review || r.review_content || '').trim();
+  const excluded = (r) => /^(true|yes|1)$/i.test(String(r.ingest_is_excluded || r.is_excluded || ''));
+
+  /** aggregateRating + review list from the review rows for one slug (null when it has no rated review). */
+  function ratingFromReviews(rows) {
+    const rated = rows.filter((r) => !excluded(r) && stars(r) >= 1 && stars(r) <= 5);
+    if (!rated.length) return null;
+    const avg = rated.reduce((a, r) => a + stars(r), 0) / rated.length;
+    const listed = rated.filter((r) => bodyText(r)).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, MAX_LISTED_REVIEWS);
+    return {
+      aggregateRating: { '@type': 'AggregateRating', ratingValue: String(Math.round(avg * 10) / 10), reviewCount: rated.length, bestRating: '5', worstRating: '1' },
+      review: listed.map((r) => ({ '@type': 'Review', author: { '@type': 'Person', name: String(r.reviewer || r.review_username || 'Anonymous').trim() },
+        reviewBody: bodyText(r), reviewRating: { '@type': 'Rating', ratingValue: String(stars(r)), bestRating: '5', worstRating: '1' },
+        datePublished: String(r.date || '').slice(0, 10), publisher: { '@type': 'Organization', name: r.source || 'Google' } }))
+    };
+  }
+
+  function sellingNode(graph, pageUrl, cfg, docs) {
+    const id = `${pageUrl}#${cfg.node}`;
+    let node = graph.find((n) => n && n['@id'] === id);
+    if (!node && cfg.node === 'product') {
+      const p = productNode(docs(cfg.offers.products[0]));
+      if (!p) return null;
+      node = { '@type': 'Product', '@id': id, name: p.name, description: p.description, image: p.image, brand: p.brand, url: pageUrl };
+      graph.push(node);
+    }
+    return node || null;
+  }
+
+  /**
+   * Selling page (SELLING_PAGES): offers / rating / reviews from live sources. sources: { products(fileName) → doc,
+   * reviews(slug) → rows, html, year }. Returns [{ page, field, source }] — source 'missing' when no live source answered.
+   */
+  function applyLiveSelling(graph, pageUrl, sources) {
+    const cfg = SELLING_PAGES[pageSlug(pageUrl)];
+    if (!cfg) return [];
+    const node = sellingNode(graph, pageUrl, cfg, sources.products);
+    const page = pageSlug(pageUrl);
+    if (!node) return [{ page, field: `#${cfg.node} node`, source: 'missing' }];
+    const out = [];
+    if (cfg.types) node['@type'] = [...new Set([...[].concat(node['@type'] || []), ...cfg.types])];
+    if (cfg.offers) {
+      const offers = cfg.offers.plan ? offerFromPlan(sources.html, pageUrl, sources.year) : offersFromProducts(cfg.offers, sources.products);
+      if (offers) { node.offers = offers; out.push({ page, field: 'offers', source: cfg.offers.plan ? 'page membership plan' : `live product (${cfg.offers.products.length} product file${cfg.offers.products.length > 1 ? 's' : ''})` }); } else out.push({ page, field: 'offers', source: 'missing' });
+    }
+    if (cfg.reviews) {
+      const rating = ratingFromReviews(sources.reviews(cfg.reviews));
+      if (rating) { Object.assign(node, rating); out.push({ page, field: 'aggregateRating, review', source: `review DB (${rating.aggregateRating.reviewCount} rated)` }); } else out.push({ page, field: 'aggregateRating, review', source: 'missing' });
+    } else {
+      out.push({ page, field: 'aggregateRating, review', source: 'none — the page has no genuine reviews of its own' });
+      delete node.aggregateRating;
+      delete node.review;
+    }
+    return out;
+  }
+
   return { buildItemList, summaryItems, storeItems, buildBreadcrumbList, youtubeIds, watchPageFields, buildVideoObjects,
-    squarespaceWebSite, applyWebSiteFields, stripBusinessRating, businessRatingNodes, carryForwardSelling, REQUIRED_VIDEO_FIELDS };
+    squarespaceWebSite, applyWebSiteFields, stripBusinessRating, businessRatingNodes, carryForwardSelling,
+    applyLiveSelling, ratingFromReviews, offerFromPlan, SELLING_PAGES, REQUIRED_VIDEO_FIELDS };
 });

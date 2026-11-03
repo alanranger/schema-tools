@@ -106,3 +106,37 @@ test('carry-forward: generated values win; offers without a price take the hoste
   assert.equal(graph.filter((n) => n['@type'] === 'VideoObject').length, 1, 'a video no longer on the page is not brought back');
   assert.deepEqual(L.carryForwardSelling([{ '@id': 'x' }], null), []);
 });
+
+test('live selling (10): offers from the product files, rating from the review rows (excluded out, text reviews newest first)', () => {
+  const docs = { 'lightroom-courses-for-beginners-photo-editing-coventry_schema.json': { '@graph': [{ '@type': 'Product', offers: [{ price: '150.00' }, { price: '150.00' }] }] } };
+  const rows = [
+    { product_slug: 'free-online-photography-course', rating_numeric: '5', reviewBody: 'Great', date: '2025-08-25', reviewer: 'A' },
+    { product_slug: 'free-online-photography-course', rating_numeric: '4', reviewBody: '', date: '2025-09-01', reviewer: 'B' },
+    { product_slug: 'free-online-photography-course', rating_numeric: '1', reviewBody: 'Spam', ingest_is_excluded: 'true' }
+  ];
+  const sources = { html: '', year: 2026, products: (f) => docs[f] || null, reviews: (s) => rows.filter((r) => r.product_slug === s) };
+  const g1 = [{ '@id': 'https://www.alanranger.com/photo-editing-course-coventry#service', '@type': 'Service' }];
+  const r1 = L.applyLiveSelling(g1, 'https://www.alanranger.com/photo-editing-course-coventry', sources);
+  assert.equal(g1[0].offers.length, 2);
+  assert.match(r1[0].source, /live product/);
+  const g2 = [{ '@id': 'https://www.alanranger.com/free-online-photography-course#service', '@type': 'Service' }];
+  L.applyLiveSelling(g2, 'https://www.alanranger.com/free-online-photography-course', sources);
+  assert.equal(g2[0].aggregateRating.reviewCount, 2, 'every rated, non-excluded review counts');
+  assert.equal(g2[0].aggregateRating.ratingValue, '4.5');
+  assert.deepEqual(g2[0].review.map((r) => r.reviewBody), ['Great'], 'only text reviews are listed');
+});
+
+test('live selling: membership plan price from the page; no review source → no rating (reported); unknown page untouched', () => {
+  const html = '<body><div>Foundation Plus — Monthly Support £20.00 Every month</div></body>';
+  const o = L.offerFromPlan(html, 'https://www.alanranger.com/x', 2026);
+  assert.equal(o.price, '20.00');
+  assert.equal(o.priceSpecification.billingDuration, 'P1M');
+  const g = [{ '@id': 'https://www.alanranger.com/gallery-image-portfolios#schema', '@type': 'Product', aggregateRating: { ratingValue: 5 } }];
+  const docs = { 'fine-art-photography-prints-canvas-wrap-round-multi-size_schema.json': { '@graph': [{ '@type': 'Product', offers: [{ price: '50.57' }, { price: '459.95' }] }] } };
+  const report = L.applyLiveSelling(g, 'https://www.alanranger.com/gallery-image-portfolios', { html: '', year: 2026, products: (f) => docs[f] || null, reviews: () => [] });
+  assert.equal(g[0].offers['@type'], 'AggregateOffer');
+  assert.equal(g[0].offers.lowPrice, '50.57');
+  assert.equal(g[0].aggregateRating, undefined);
+  assert.ok(report.some((r) => /no genuine reviews/.test(r.source)));
+  assert.deepEqual(L.applyLiveSelling([{ '@id': 'x' }], 'https://www.alanranger.com/home', {}), []);
+});
