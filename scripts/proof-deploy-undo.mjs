@@ -72,7 +72,7 @@ function proofPurityAbort({ remote, work }) {
   const remoteBefore = remoteHead(remote);
   fs.copyFileSync(path.join(SANDBOX, PUBLISH[0].from, PUBLISH[0].file), path.join(work, PUBLISH[0].file));
   let err = '';
-  try { commitAndPush({ repo: work, files: [PUBLISH[0].file, 'blog-schema.json'], message: 'BAU proof: impure', expectExact: true }); } catch (e) { err = e.message; }
+  try { commitAndPush({ repo: work, files: [PUBLISH[0].file, 'blog-schema.json'], message: 'BAU proof: impure', expectExact: true, restoreOnAbort: true }); } catch (e) { err = e.message; }
   check('a commit that does not match the publish list is refused', /did not match/.test(err), err);
   check('the refused commit was dropped locally and nothing was pushed',
     must(git(work, ['rev-parse', 'HEAD']), 'head') === head && remoteHead(remote) === remoteBefore && !git(work, ['status', '--porcelain']).stdout.trim());
@@ -81,9 +81,31 @@ function proofPurityAbort({ remote, work }) {
   must(git(work, ['add', 'blog-schema.json']), 'pre-stage');
   fs.copyFileSync(path.join(SANDBOX, PUBLISH[0].from, PUBLISH[0].file), path.join(work, PUBLISH[0].file));
   let err2 = '';
-  try { commitAndPush({ repo: work, files: [PUBLISH[0].file], message: 'BAU proof: extra', expectExact: true }); } catch (e) { err2 = e.message; }
+  try { commitAndPush({ repo: work, files: [PUBLISH[0].file], message: 'BAU proof: extra', expectExact: true, restoreOnAbort: true }); } catch (e) { err2 = e.message; }
   check('a commit carrying a file outside the publish list (pre-staged) is refused', /extra: blog-schema\.json/.test(err2), err2);
-  check('…and nothing was pushed', remoteHead(remote) === remoteBefore);
+  check('…nothing was pushed, the stage\'s own file went back to HEAD, and the other pending change was kept (not destroyed)',
+    remoteHead(remote) === remoteBefore && lines(work).join() === ' M blog-schema.json', lines(work).join(' | '));
+  must(git(work, ['checkout', '--', 'blog-schema.json']), 'tidy throwaway');
+}
+
+const lines = (work) => git(work, ['status', '--porcelain']).stdout.split(/\r?\n/).filter(Boolean);
+
+/** The app's single-file "save and deploy": only the saved file may be committed, whatever else is pending. */
+function proofSingleFileApp({ remote, work }) {
+  const save = (p) => fs.copyFileSync(path.join(SANDBOX, p.from, p.file), path.join(work, p.file));
+  fs.appendFileSync(path.join(work, 'blog-schema.json'), '\n');
+  save(PUBLISH[1]);
+  const r = commitAndPush({ repo: work, files: [PUBLISH[1].file], message: `Update ${PUBLISH[1].file}`, expectExact: true });
+  const inCommit = git(work, ['diff', '--name-only', 'HEAD^', 'HEAD']).stdout.trim();
+  check('single-file save with a stray UNSTAGED change: the commit has only the saved file, pushed', inCommit === PUBLISH[1].file && remoteHead(remote) === r.commit, inCommit);
+  check('…the stray change is still pending, not committed', lines(work).join() === ' M blog-schema.json', lines(work).join(' | '));
+  must(git(work, ['add', 'blog-schema.json']), 'stray staged');
+  const remoteBefore = remoteHead(remote);
+  save(PUBLISH[0]);
+  let err = '';
+  try { commitAndPush({ repo: work, files: [PUBLISH[0].file], message: `Update ${PUBLISH[0].file}`, expectExact: true }); } catch (e) { err = e.message; }
+  check('single-file save with a stray STAGED change: refused, nothing pushed', /extra: blog-schema\.json/.test(err) && remoteHead(remote) === remoteBefore, err);
+  check('…both pending changes are kept on disk (nothing destroyed)', lines(work).sort().join() === [' M blog-schema.json', ` M ${PUBLISH[0].file}`].sort().join(), lines(work).join(' | '));
 }
 
 function proofLaterCommitRefusal({ work }) {
@@ -112,6 +134,7 @@ try {
   proofPublishUndo(env);
   proofPurityAbort(env);
   proofLaterCommitRefusal(env);
+  proofSingleFileApp(env);
 } catch (e) {
   check('proof ran to the end', false, e.message);
 }

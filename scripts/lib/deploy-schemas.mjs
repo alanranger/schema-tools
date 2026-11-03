@@ -3,10 +3,11 @@
  * stage in batches → one commit → push. Used by the Schema Tools app's batch-deploy handler and by the
  * BAU Monthly runner's live stages, so both publish the same way.
  *
- * Runner extras (opt-in, the app keeps its old behaviour):
+ * Options:
  *   expectExact — the commit must contain exactly these files (`git diff --name-only HEAD^ HEAD`), else the
- *                 commit is dropped and nothing is pushed;
- *   requireClean — refuse if the repo has uncommitted changes before the stage writes.
+ *                 commit is dropped (working tree kept) and nothing is pushed;
+ *   restoreOnAbort — runner only: on a dropped commit, its own written files go back to HEAD;
+ *   assertClean() — runner only: refuse if the repo has uncommitted changes before the stage writes.
  * undoCommit() restores the parent versions of exactly one commit's files, as its own commit, through the same path.
  */
 import fs from 'node:fs';
@@ -66,12 +67,16 @@ function sameSet(a, b) {
   return a.length === b.length && [...a].sort().every((x, i) => x === sb[i]);
 }
 
-/** Drops the commit just made (the tree was clean before, so nothing else is lost) and explains why. */
-function abortCommit(repo, expected, actual) {
-  git(repo, ['reset', '--hard', 'HEAD^']);
+/**
+ * Drops the commit just made and explains why. A mixed reset keeps every working-tree change (nobody's
+ * pending work is lost); `restore` files (the runner's own writes) go back to HEAD.
+ */
+function abortCommit(repo, expected, actual, restore) {
+  git(repo, ['reset', '-q', '--mixed', 'HEAD^']);
+  if (restore.length) git(repo, ['checkout', 'HEAD', '--', ...restore]);
   const extra = actual.filter((f) => !expected.includes(f));
   const missing = expected.filter((f) => !actual.includes(f));
-  throw new Error(`Commit did not match the stage's publish list (extra: ${extra.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}); commit dropped, nothing pushed`);
+  throw new Error(`Commit did not match the publish list (extra: ${extra.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}); commit dropped, nothing pushed`);
 }
 
 export function assertClean(repo) {
@@ -83,7 +88,7 @@ export function assertClean(repo) {
  * Stage `files` (and deletions already made on disk) in batches, commit once, push once.
  * Returns { commit, nothing, files } — commit is the new SHA (null when there was nothing to commit).
  */
-export function commitAndPush({ repo, files, message, branch = 'main', push = true, expectExact = false }) {
+export function commitAndPush({ repo, files, message, branch = 'main', push = true, expectExact = false, restoreOnAbort = false }) {
   ensureGitOnBranch(repo, branch);
   removeStaleGitIndexLock(repo);
   const targets = [...new Set(files)];
@@ -93,7 +98,7 @@ export function commitAndPush({ repo, files, message, branch = 'main', push = tr
   const c = gitStep(repo, ['commit', '-m', message], 'Commit changes');
   if (c.nothing) return { commit: null, nothing: true, files: [] };
   const actual = lines(git(repo, ['diff', '--name-only', 'HEAD^', 'HEAD']).stdout);
-  if (expectExact && !sameSet(actual, targets)) abortCommit(repo, targets, actual);
+  if (expectExact && !sameSet(actual, targets)) abortCommit(repo, targets, actual, restoreOnAbort ? targets.filter((f) => actual.includes(f)) : []);
   const commit = git(repo, ['rev-parse', 'HEAD']).stdout.trim();
   if (push) gitStep(repo, ['push'], 'Push to GitHub');
   return { commit, nothing: false, files: actual };
@@ -120,5 +125,5 @@ export function undoCommit({ repo, commit, message, branch = 'main', push = true
     if (c.status === 'A') fs.rmSync(path.join(repo, c.file), { force: true });
     else gitStep(repo, ['checkout', `${commit}^`, '--', c.file], `Restore ${c.file}`);
   }
-  return commitAndPush({ repo, files: names, message: message || `Undo ${commit.slice(0, 8)}`, branch, push, expectExact: true });
+  return commitAndPush({ repo, files: names, message: message || `Undo ${commit.slice(0, 8)}`, branch, push, expectExact: true, restoreOnAbort: true });
 }

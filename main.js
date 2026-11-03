@@ -482,97 +482,17 @@ ipcMain.handle('save-and-deploy-schema', async (event, { fileName, jsonContent }
       fs.writeFileSync(filePath, jsonContent, 'utf-8');
       console.log(`✅ Saved schema file: ${filePath}`);
       
-      // Git operations - stage all changes (including deletions), commit, and push
-      const commitMessage = `Update ${fileName}`;
-      const gitCommands = [
-        { cmd: 'git', args: ['add', '-A'], desc: 'Stage all changes (including deletions)' },
-        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
-        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
-      ];
-      
-      let currentStep = 0;
-      let indexWriteRetries = 0;
-      const runNextCommand = () => {
-        if (currentStep >= gitCommands.length) {
-          resolve({ 
-            success: true, 
-            message: `✅ Schema saved and deployed successfully!`,
-            filePath: filePath,
-            fileName: fileName
-          });
-          return;
-        }
-        
-        const { cmd, args, desc } = gitCommands[currentStep];
-        console.log(`🔄 Git: ${desc}...`);
-        
-        // Use shell: false for git commands to ensure proper argument handling
-        // This prevents commit messages from being interpreted as pathspecs
-        const gitProcess = spawn(cmd, args, {
-          cwd: schemaRepoPath,
-          shell: false,
-          stdio: ['ignore', 'pipe', 'pipe']
-        });
-        
-        let stdout = '';
-        let stderr = '';
-        
-        gitProcess.stdout.on('data', (data) => {
-          stdout += data.toString();
-        });
-        
-        gitProcess.stderr.on('data', (data) => {
-          stderr += data.toString();
-        });
-        
-        gitProcess.on('close', (code) => {
-          // Check if stderr contains only warnings (not actual errors)
-          const hasOnlyWarnings = stderr && (
-            stderr.includes('LF will be replaced by CRLF') ||
-            stderr.includes('CRLF will be replaced by LF') ||
-            stderr.includes('warning:')
-          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
-          
-          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
-            // Success, or exit code 1 with only warnings (which is OK)
-            if (hasOnlyWarnings) {
-              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
-            } else {
-              console.log(`✅ Git: ${desc} completed`);
-            }
-            indexWriteRetries = 0;
-            currentStep++;
-            runNextCommand();
-          } else {
-            // For commit, code 1 might mean "nothing to commit" - that's OK
-            if (currentStep === 1 && code === 1 && (stderr.includes('nothing to commit') || stdout.includes('nothing to commit'))) {
-              console.log(`ℹ️ Git: No changes to commit (file unchanged)`);
-              indexWriteRetries = 0;
-              currentStep++;
-              runNextCommand();
-            } else if (gitOutputSuggestsIndexWriteFailure(stdout, stderr) && indexWriteRetries < 3) {
-              indexWriteRetries++;
-              removeStaleGitIndexLock(schemaRepoPath);
-              console.warn(`Git index write failed; retry ${indexWriteRetries}/3 after short delay...`);
-              setTimeout(() => runNextCommand(), 800);
-            } else {
-              const error = formatGitFailureError(desc, code, stdout, stderr);
-              console.error(`❌ ${error}`);
-              reject(new Error(error));
-            }
-          }
-        });
-        
-        gitProcess.on('error', (err) => {
-          const error = `Git ${desc} error: ${err.message}`;
-          console.error(`❌ ${error}`);
-          reject(new Error(error));
-        });
-      };
-      
-      // Start git operations
-      runNextCommand();
-      
+      // Git: commit ONLY the saved file (exact-files check: anything else pending is never swept in), then push —
+      // the shared deploy path (scripts/lib/deploy-schemas.mjs).
+      const deployed = commitAndPush({ repo: schemaRepoPath, files: [fileName], message: `Update ${fileName}`, expectExact: true });
+      if (deployed.nothing) console.log('ℹ️ Git: No changes to commit (file unchanged)');
+      resolve({
+        success: true,
+        message: `✅ Schema saved and deployed successfully!`,
+        filePath: filePath,
+        fileName: fileName,
+        commit: deployed.commit
+      });
     } catch (error) {
       console.error('❌ Error saving/deploying schema:', error);
       reject(error);
