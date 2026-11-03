@@ -14828,7 +14828,7 @@
         "eventStatus": "https://schema.org/EventScheduled",
         "isAccessibleForFree": false,
         "inLanguage": "en-GB",
-        "organizer": { "@id": "https://www.alanranger.com/#org" },
+        "organizer": organizerBlock, // full Organization (6.2): a bare #org reference is not defined on the event hub pages
         "location": location,
         "about": about,
         "keywords": allKeywords.join(', '),
@@ -15282,7 +15282,7 @@
                 "repeatFrequency": repeatFreq,
                 "scheduleTimezone": "Europe/London"
               },
-              "organizer": { "@id": "https://www.alanranger.com/#org" },
+              "organizer": organizerBlock,
               "location": firstEvent.schema.location,
               "offers": firstEvent.schema.offers
             };
