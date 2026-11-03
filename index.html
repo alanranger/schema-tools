@@ -14900,11 +14900,11 @@
       
       stats.offersBlocks++;
       
-      // Calculate priceValidUntil (+12 months from today)
+      // Stable priceValidUntil (same rule as product offers, Schema Tools scripts/offer_dates.py): the event's own date
+      // while it is in the future, else 31 Dec of next year — was today + 12 months, so every event page changed every run.
       const today = new Date();
-      const priceValidUntilDate = new Date(today);
-      priceValidUntilDate.setMonth(priceValidUntilDate.getMonth() + 12);
-      const priceValidUntil = priceValidUntilDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const eventDay = String(startDate || '').slice(0, 10);
+      const priceValidUntil = /^\d{4}-\d{2}-\d{2}$/.test(eventDay) && eventDay >= today.toISOString().slice(0, 10) ? eventDay : `${today.getFullYear() + 1}-12-31`;
       
       eventSchema.offers = {
         "@type": "Offer",
