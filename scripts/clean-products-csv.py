@@ -24,7 +24,7 @@ import time
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
-from datetime import date, timedelta
+from datetime import date
 from offer_dates import load_created_dates, stable_price_valid_until, stable_valid_from
 from site_identity import SITE_UA
 
@@ -304,14 +304,16 @@ def build_supplement_row(row, title, full_url, price_val, lessons_df, workshops_
         image = ''
 
     synthetic_sku = f"SUP-{slugify(title).upper()[:32]}"
+    url_slug = str(full_url or '').rstrip('/').split('/')[-1]
     offer = {
         "@type": "Offer",
         "sku": synthetic_sku,
         "price": f"{price_val:.2f}",
         "priceCurrency": "GBP",
         "availability": "https://schema.org/InStock",
-        "validFrom": date.today().isoformat(),
-        "priceValidUntil": (date.today() + timedelta(days=365)).isoformat(),
+        # Same stable rule as the main product rows (offer_dates.py) — was today / today + 365, so it moved every run.
+        "validFrom": stable_valid_from(CREATED_DATES.get(url_slug)),
+        "priceValidUntil": stable_price_valid_until(None),
         "name": title
     }
 
