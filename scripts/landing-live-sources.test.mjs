@@ -73,3 +73,36 @@ test('no business rating on any landing page: aggregateRating / review removed f
   assert.equal(graph[0].review, undefined);
   assert.deepEqual(graph[2].aggregateRating, { ratingValue: '5.0' }, 'Course (a product-type offer) is not a business rating');
 });
+
+test('carry-forward (6.1): a selling page keeps its offers, ratings, reviews and types from the hosted file; never the business rating', () => {
+  const hosted = { '@graph': [
+    { '@id': 'p#org', '@type': ['LocalBusiness', 'Organization'], aggregateRating: { ratingValue: 4.8 }, review: [{}] },
+    { '@id': 'p#service', '@type': ['Service', 'Product'], offers: { '@type': 'Offer', price: '50' }, aggregateRating: { ratingValue: 5 }, review: [{}, {}] },
+    { '@id': 'p#product', '@type': 'Product', offers: { price: '25' } }
+  ] };
+  const graph = [{ '@id': 'p#org', '@type': ['LocalBusiness', 'Organization'] }, { '@id': 'p#service', '@type': 'Service' }];
+  const report = L.carryForwardSelling(graph, hosted);
+  const service = graph.find((n) => n['@id'] === 'p#service');
+  assert.equal(service.offers.price, '50');
+  assert.equal(service.review.length, 2);
+  assert.deepEqual(service['@type'], ['Service', 'Product']);
+  assert.ok(graph.some((n) => n['@id'] === 'p#product'), 'a priced node the generator no longer builds is kept');
+  assert.equal(graph.find((n) => n['@id'] === 'p#org').aggregateRating, undefined, 'P23: no business rating carried');
+  assert.equal(report.length, 2);
+});
+
+test('carry-forward: generated values win; offers without a price take the hosted priced offers; WatchAction only for a video still on the page', () => {
+  const hosted = { '@graph': [
+    { '@id': 'a#s', '@type': 'Product', offers: { price: '9' }, aggregateRating: { ratingValue: 4 } },
+    { '@id': 'a#v1', '@type': 'VideoObject', embedUrl: 'https://www.youtube.com/embed/AAAAAAAAAAA', potentialAction: { '@type': 'WatchAction' } },
+    { '@id': 'a#v2', '@type': 'VideoObject', embedUrl: 'https://www.youtube.com/embed/BBBBBBBBBBB', potentialAction: { '@type': 'WatchAction' } }
+  ] };
+  const graph = [{ '@id': 'a#s', '@type': 'Product', offers: { availability: 'InStock' }, aggregateRating: { ratingValue: 5 } },
+    { '@id': 'a#new-id', '@type': 'VideoObject', embedUrl: 'https://www.youtube.com/embed/AAAAAAAAAAA' }];
+  L.carryForwardSelling(graph, hosted);
+  assert.equal(graph[0].offers.price, '9');
+  assert.equal(graph[0].aggregateRating.ratingValue, 5, 'the generated rating is not overwritten');
+  assert.equal(graph[1].potentialAction['@type'], 'WatchAction');
+  assert.equal(graph.filter((n) => n['@type'] === 'VideoObject').length, 1, 'a video no longer on the page is not brought back');
+  assert.deepEqual(L.carryForwardSelling([{ '@id': 'x' }], null), []);
+});

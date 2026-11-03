@@ -20364,7 +20364,20 @@ ${minifiedJson}
     const graph = [...kept, live.buildBreadcrumbList(pageUrl, pageName, html), live.buildItemList(html, pageUrl, pageName), ...videos].filter(Boolean);
     live.applyWebSiteFields(graph, live.squarespaceWebSite(html));
     live.stripBusinessRating(graph);
+    const hosted = await fetchHostedLandingSchema(pageUrl);
+    live.carryForwardSelling(graph, hosted).forEach((m) => addLandingDebugLog(`   ${m}`));
     return { ...schema, '@graph': graph };
+  }
+
+  /** The published landing file the live page serves (landing-page-loader.js injects it), or null. */
+  async function fetchHostedLandingSchema(pageUrl) {
+    try {
+      const res = await fetch(`https://schema.alanranger.com/${landingHostedFileName(pageUrl)}?t=${Date.now()}`);
+      return res.ok ? await res.json() : null;
+    } catch (e) {
+      addLandingDebugLog(`   ⚠️ Hosted landing file not readable (${e.message}); nothing carried forward`);
+      return null;
+    }
   }
 
   async function saveLandingHostedJson(pageUrl, schema) {

@@ -171,6 +171,53 @@
 
   const businessRatingNodes = (graph) => (graph || []).filter((n) => isBusiness(n) && (n.aggregateRating || n.review)).length;
 
+  // ---------- selling fields carried forward from the hosted file (Claude 3 Nov, 6.1) ----------
+  // Since 28 Oct the pages' own JSON-LD lives only in the hosted landing file (injected by landing-page-loader.js), so a
+  // fetch of the page no longer shows a selling page's offers / price or its ratings. The hosted file is what the live
+  // page serves; its offers, aggregateRating and reviews (never on the business node — P23) are kept, and a video keeps
+  // its WatchAction while the page still embeds that video.
+  const SELLING = ['offers', 'aggregateRating', 'review'];
+  const hasPrice = (offers) => JSON.stringify(offers || '').includes('"price"');
+  const graphOf = (doc) => (Array.isArray(doc && doc['@graph']) ? doc['@graph'] : []);
+  const isVideo = (n) => [].concat(n && n['@type']).includes('VideoObject');
+  const videoKey = (n) => (String(n.embedUrl || n.contentUrl || n.url || '').match(/(?:embed\/|v=|youtu\.be\/)([\w-]{11})/) || [])[1] || null;
+
+  function carryFields(node, prev) {
+    const carried = [];
+    for (const f of SELLING) {
+      const missing = node[f] == null || (f === 'offers' && !hasPrice(node[f]) && hasPrice(prev[f]));
+      if (prev[f] != null && missing) { node[f] = prev[f]; carried.push(f); }
+    }
+    // A selling node keeps the types it is published with (e.g. Service+Product), so its offers stay eligible.
+    const types = [].concat(node['@type'] || []);
+    const lost = [].concat(prev['@type'] || []).filter((t) => !types.includes(t));
+    if (lost.length) { node['@type'] = [...types, ...lost]; carried.push(`@type ${lost.join('+')}`); }
+    return carried;
+  }
+
+  function carryVideoActions(graph, hosted) {
+    const report = [];
+    for (const prev of graphOf(hosted).filter((n) => isVideo(n) && n.potentialAction)) {
+      const v = graph.find((n) => isVideo(n) && !n.potentialAction && videoKey(n) && videoKey(n) === videoKey(prev));
+      if (v) { v.potentialAction = prev.potentialAction; report.push(`${v['@id'] || videoKey(v)}: WatchAction kept (the video is still on the page)`); }
+    }
+    return report;
+  }
+
+  /** Mutates graph; returns one line per carried field / node. hosted = the published landing JSON (or null). */
+  function carryForwardSelling(graph, hosted) {
+    const report = [];
+    const byId = new Map(graph.filter((n) => n && n['@id']).map((n) => [n['@id'], n]));
+    for (const prev of graphOf(hosted)) {
+      if (!prev || isBusiness(prev) || !SELLING.some((f) => prev[f] != null)) continue;
+      const node = prev['@id'] && byId.get(prev['@id']);
+      if (!node) { graph.push(prev); report.push(`${prev['@id'] || [].concat(prev['@type']).join('+')}: node kept from the hosted file (${SELLING.filter((f) => prev[f] != null).join(', ')})`); continue; }
+      const carried = carryFields(node, prev);
+      if (carried.length) report.push(`${prev['@id']}: ${carried.join(', ')} kept from the hosted file`);
+    }
+    return [...report, ...carryVideoActions(graph, hosted)];
+  }
+
   return { buildItemList, summaryItems, storeItems, buildBreadcrumbList, youtubeIds, watchPageFields, buildVideoObjects,
-    squarespaceWebSite, applyWebSiteFields, stripBusinessRating, businessRatingNodes, REQUIRED_VIDEO_FIELDS };
+    squarespaceWebSite, applyWebSiteFields, stripBusinessRating, businessRatingNodes, carryForwardSelling, REQUIRED_VIDEO_FIELDS };
 });
