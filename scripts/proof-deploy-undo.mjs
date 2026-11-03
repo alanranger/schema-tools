@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { git, commitAndPush, undoCommit, assertClean } from './lib/deploy-schemas.mjs';
+import { git, commitAndPush, undoCommit, assertClean, normPath } from './lib/deploy-schemas.mjs';
 
 const LIVE_REPO = 'G:/Dropbox/alan ranger photography/Website Code/Schema Tools/alanranger-schema';
 const argSandbox = process.argv.indexOf('--sandbox');
@@ -128,6 +128,39 @@ function proofAppMode({ remote, work }) {
   check('app mode: changed file → one commit pushed', !!r.commit && remoteHead(remote) === r.commit, r.commit);
 }
 
+/** Live C (a1671ada): an en dash in a path came back from git octal-escaped and failed the exact-files check. */
+function proofNonAsciiPath({ remote, work }) {
+  const rel = 'csv processed/03 – combined_product_reviews.csv';
+  must(git(work, ['reset', '-q']), 'tidy throwaway');
+  must(git(work, ['checkout', '--', '.']), 'tidy throwaway');
+  check('git\'s escaped spelling decodes to the real name', normPath('"csv processed/03 \\342\\200\\223 combined_product_reviews.csv"') === rel);
+  must(git(work, ['config', 'core.quotePath', 'true']), 'quotePath on, as in the real repos');
+  fs.mkdirSync(path.join(work, 'csv processed'), { recursive: true });
+  fs.writeFileSync(path.join(work, rel), 'id,product\n1,before\n');
+  commitAndPush({ repo: work, files: [rel], message: 'baseline: en-dash file', expectExact: true });
+  const baseTree = tree(work, 'HEAD');
+  const before = sha(path.join(work, rel));
+  assertClean(work, [rel]);
+  fs.writeFileSync(path.join(work, rel), 'id,product\n1,after\n');
+  const pub = commitAndPush({ repo: work, files: [rel], message: 'BAU proof: publish en-dash file', expectExact: true, restoreOnAbort: true });
+  check('en-dash file: the exact-files check passes and the commit lists the real name', pub.files.length === 1 && pub.files[0] === rel, pub.files.join(', '));
+  check('en-dash file: published to the remote', remoteHead(remote) === pub.commit);
+  const undo = undoCommit({ repo: work, commit: pub.commit, message: 'BAU proof: undo en-dash file', filesOnly: true });
+  check('en-dash file: undo restores it byte-identical and the tree matches', sha(path.join(work, rel)) === before && tree(work, 'HEAD') === baseTree && undo.files[0] === rel, undo.files.join(', '));
+  // A refused commit puts back EVERY file the caller wrote (live C left the en-dash file modified on disk).
+  const remoteBefore = remoteHead(remote);
+  fs.appendFileSync(path.join(work, 'blog-schema.json'), '\n');
+  must(git(work, ['add', 'blog-schema.json']), 'someone else\'s staged change');
+  fs.writeFileSync(path.join(work, rel), 'id,product\n1,after again\n');
+  fs.writeFileSync(path.join(work, 'csv processed/03c – new.csv'), 'new\n');
+  let err = '';
+  try { commitAndPush({ repo: work, files: [rel, 'csv processed/03c – new.csv'], message: 'BAU proof: refused', expectExact: true, restoreOnAbort: true }); } catch (e) { err = e.message; }
+  check('refused commit: the en-dash file is back to HEAD and the new file is removed, nothing pushed',
+    /did not match/.test(err) && sha(path.join(work, rel)) === before && !fs.existsSync(path.join(work, 'csv processed/03c – new.csv')) && remoteHead(remote) === remoteBefore, err);
+  check('…the other pending change is kept', lines(work).join() === ' M blog-schema.json', lines(work).join(' | '));
+  must(git(work, ['checkout', '--', 'blog-schema.json']), 'tidy throwaway');
+}
+
 const env = setup();
 try {
   proofAppMode(env);
@@ -135,6 +168,7 @@ try {
   proofPurityAbort(env);
   proofLaterCommitRefusal(env);
   proofSingleFileApp(env);
+  proofNonAsciiPath(env);
 } catch (e) {
   check('proof ran to the end', false, e.message);
 }

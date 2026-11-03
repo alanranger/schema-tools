@@ -20,12 +20,31 @@ const INDEX_RETRIES = 3;
 export const GIT_INDEX_WRITE_HINT =
   ' Fixes: pause Dropbox/OneDrive on Schema Tools/alanranger-schema, close other Git tools, free disk space, delete alanranger-schema/.git/index.lock only if no git process is running, then retry.';
 
+/** core.quotePath=false: git prints non-ASCII paths as-is ("03 – combined…"), not octal-escaped ("03 \342\200\223 …"). */
 export function git(repo, args) {
-  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], shell: false });
+  const r = spawnSync('git', ['-c', 'core.quotePath=false', ...args], { cwd: repo, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], shell: false });
   return { code: r.status ?? -1, stdout: r.stdout || '', stderr: r.stderr || (r.error ? String(r.error) : '') };
 }
 
 const lines = (s) => s.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+/** A C-quoted git path ("a\tb", "\342\200\223") back to the real name. */
+function unquoteGitPath(p) {
+  if (!(p.length > 1 && p.startsWith('"') && p.endsWith('"'))) return p;
+  const bytes = [];
+  const body = p.slice(1, -1);
+  const ESC = { n: 10, t: 9, r: 13, b: 8, f: 12, v: 11, a: 7, '"': 34, '\\': 92 };
+  for (let i = 0; i < body.length; i += 1) {
+    if (body[i] !== '\\') { bytes.push(...Buffer.from(body[i], 'utf8')); continue; }
+    const oct = body.slice(i + 1, i + 4);
+    if (/^[0-7]{3}$/.test(oct)) { bytes.push(parseInt(oct, 8)); i += 3; } else { bytes.push(ESC[body[i + 1]] ?? body.charCodeAt(i + 1)); i += 1; }
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+
+/** One spelling per file for every comparison: unquoted, NFC, forward slashes. */
+export const normPath = (p) => unquoteGitPath(String(p).trim()).normalize('NFC').replace(/\\/g, '/');
+const pathLines = (s) => lines(s).map(normPath);
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 export function ensureGitOnBranch(repo, branch = 'main') {
@@ -68,12 +87,27 @@ function sameSet(a, b) {
 }
 
 /**
+ * The caller's own writes go back: files in HEAD to their HEAD version, files new since HEAD are removed
+ * (assertClean ran before the write, so nothing else was pending on these paths).
+ */
+function restoreFiles(repo, files) {
+  const tracked = files.filter((f) => git(repo, ['cat-file', '-e', `HEAD:${f}`]).code === 0);
+  for (let i = 0; i < tracked.length; i += ADD_BATCH) git(repo, ['checkout', 'HEAD', '--', ...tracked.slice(i, i + ADD_BATCH)]);
+  for (const f of files.filter((x) => !tracked.includes(x))) removeFile(path.join(repo, f));
+}
+
+/** unlinkSync, not rmSync({ force }): on Windows rmSync silently left a non-ASCII path ("03c – new.csv") in place. */
+function removeFile(p) {
+  try { fs.unlinkSync(p); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+}
+
+/**
  * Drops the commit just made and explains why. A mixed reset keeps every working-tree change (nobody's
  * pending work is lost); `restore` files (the runner's own writes) go back to HEAD.
  */
 function abortCommit(repo, expected, actual, restore) {
   git(repo, ['reset', '-q', '--mixed', 'HEAD^']);
-  if (restore.length) git(repo, ['checkout', 'HEAD', '--', ...restore]);
+  restoreFiles(repo, restore);
   const extra = actual.filter((f) => !expected.includes(f));
   const missing = expected.filter((f) => !actual.includes(f));
   throw new Error(`Commit did not match the publish list (extra: ${extra.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}); commit dropped, nothing pushed`);
@@ -84,7 +118,7 @@ function abortCommit(repo, expected, actual, restore) {
  * nothing may be staged and those files must be unmodified; other pending work elsewhere is left alone.
  */
 export function assertClean(repo, files = null) {
-  const staged = lines(git(repo, ['diff', '--cached', '--name-only']).stdout);
+  const staged = pathLines(git(repo, ['diff', '--cached', '--name-only']).stdout);
   const dirty = lines(git(repo, ['status', '--porcelain', ...(files ? ['--', ...files] : [])]).stdout);
   const problems = [...staged.map((f) => `staged ${f}`), ...dirty];
   if (problems.length) throw new Error(`The repo has uncommitted changes (${[...new Set(problems)].slice(0, 5).join('; ')}); nothing was written`);
@@ -97,14 +131,14 @@ export function assertClean(repo, files = null) {
 export function commitAndPush({ repo, files, message, branch = 'main', push = true, expectExact = false, restoreOnAbort = false }) {
   ensureGitOnBranch(repo, branch);
   removeStaleGitIndexLock(repo);
-  const targets = [...new Set(files)];
+  const targets = [...new Set(files.map(normPath))];
   for (let i = 0; i < targets.length; i += ADD_BATCH) {
     gitStep(repo, ['add', '-A', '--', ...targets.slice(i, i + ADD_BATCH)], `Stage files (batch ${i / ADD_BATCH + 1})`);
   }
   const c = gitStep(repo, ['commit', '-m', message], 'Commit changes');
   if (c.nothing) return { commit: null, nothing: true, files: [] };
-  const actual = lines(git(repo, ['diff', '--name-only', 'HEAD^', 'HEAD']).stdout);
-  if (expectExact && !sameSet(actual, targets)) abortCommit(repo, targets, actual, restoreOnAbort ? targets.filter((f) => actual.includes(f)) : []);
+  const actual = pathLines(git(repo, ['diff', '--name-only', 'HEAD^', 'HEAD']).stdout);
+  if (expectExact && !sameSet(actual, targets)) abortCommit(repo, targets, actual, restoreOnAbort ? targets : []);
   const commit = git(repo, ['rev-parse', 'HEAD']).stdout.trim();
   if (push) gitStep(repo, ['push'], 'Push to GitHub');
   return { commit, nothing: false, files: actual };
@@ -113,7 +147,7 @@ export function commitAndPush({ repo, files, message, branch = 'main', push = tr
 /** Files one commit changed, with status (A added, M modified, D deleted). */
 export function commitFiles(repo, commit) {
   return lines(git(repo, ['diff-tree', '--no-commit-id', '--name-status', '-r', commit]).stdout)
-    .map((l) => { const [status, ...rest] = l.split(/\s+/); return { status: status[0], file: rest.join(' ') }; });
+    .map((l) => { const [status, ...rest] = l.split('\t'); return { status: status[0], file: normPath(rest.join('\t')) }; });
 }
 
 /**
@@ -128,7 +162,7 @@ export function undoCommit({ repo, commit, message, branch = 'main', push = true
   const later = lines(git(repo, ['log', '--format=%h', `${commit}..HEAD`, '--', ...names]).stdout);
   if (later.length) throw new Error(`Later commits (${later.join(', ')}) changed the same files; undo refused`);
   for (const c of changed) {
-    if (c.status === 'A') fs.rmSync(path.join(repo, c.file), { force: true });
+    if (c.status === 'A') removeFile(path.join(repo, c.file));
     else gitStep(repo, ['checkout', `${commit}^`, '--', c.file], `Restore ${c.file}`);
   }
   return commitAndPush({ repo, files: names, message: message || `Undo ${commit.slice(0, 8)}`, branch, push, expectExact: true, restoreOnAbort: true });
