@@ -6,6 +6,7 @@ import fs from "fs";
 import { assertBlogSchemaIndexOnly } from "./scripts/lib/upsert-blog-schema-nodes.mjs";
 import { deployCommitMessage } from "./scripts/lib/deploy-commit-message.mjs";
 import { removeStaleEventSchemaFiles, removeStaleProductSchemaFiles } from "./scripts/lib/stale-schema-cleanup.mjs";
+import { commitAndPush } from "./scripts/lib/deploy-schemas.mjs";
 import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -712,124 +713,19 @@ ipcMain.handle('batch-deploy-schemas', async (event, { files, options = {} }) =>
           : [])
       ];
 
-      // Git operations - stage files in batches (Windows command line limit), then commit once, push once
-      // Windows command line limit is ~8191 characters
-      // Split into batches if needed (each filename is ~50-100 chars, so ~80 files per batch is safe)
+      // Git: stage in batches, commit once, push once — the shared deploy path (scripts/lib/deploy-schemas.mjs),
+      // also used by the BAU Monthly runner, so the app and the runner publish the same way.
       const stageTargets = [...new Set([...fileNames, ...deletedFileNames])];
-      const BATCH_SIZE = 50;
-      const batches = [];
-      for (let i = 0; i < stageTargets.length; i += BATCH_SIZE) {
-        batches.push(stageTargets.slice(i, i + BATCH_SIZE));
-      }
-      
-      console.log(`📦 Splitting ${stageTargets.length} files into ${batches.length} batch(es) for git add`);
-      
       const commitMessage = deployCommitMessage(fileNames, deletedFileNames, options);
-      const gitCommands = [];
-      
-      // Stage files in batches
-      for (let i = 0; i < batches.length; i++) {
-        gitCommands.push({
-          cmd: 'git',
-          args: ['add', '-A', ...batches[i]],
-          desc: `Stage files (batch ${i + 1}/${batches.length})`
-        });
-      }
-      
-      // Single commit and push
-      gitCommands.push(
-        { cmd: 'git', args: ['commit', '-m', commitMessage], desc: 'Commit changes' },
-        { cmd: 'git', args: ['push'], desc: 'Push to GitHub' }
-      );
-      
-      let currentStep = 0;
-      let indexWriteRetries = 0;
-      const runNextCommand = () => {
-        if (currentStep >= gitCommands.length) {
-          resolve({ 
-            success: true, 
-            message: `✅ ${fileNames.length} schema files saved and deployed successfully!`,
-            fileCount: fileNames.length,
-            deletedCount: deletedFileNames.length
-          });
-          return;
-        }
-        
-        const { cmd, args, desc } = gitCommands[currentStep];
-        console.log(`🔄 Git: ${desc}...`);
-        
-        // Use shell: false for git commands to ensure proper argument handling
-        // This prevents commit messages from being interpreted as pathspecs
-        const gitProcess = spawn(cmd, args, {
-          cwd: schemaRepoPath,
-          shell: false,
-          stdio: ['ignore', 'pipe', 'pipe']
-        });
-        
-        let stdout = '';
-        let stderr = '';
-        
-        gitProcess.stdout.on('data', (data) => {
-          stdout += data.toString();
-        });
-        
-        gitProcess.stderr.on('data', (data) => {
-          stderr += data.toString();
-        });
-        
-        gitProcess.on('close', (code) => {
-          // Check if stderr contains only warnings (not actual errors)
-          const hasOnlyWarnings = stderr && (
-            stderr.includes('LF will be replaced by CRLF') ||
-            stderr.includes('CRLF will be replaced by LF') ||
-            stderr.includes('warning:')
-          ) && !stderr.toLowerCase().includes('error:') && !stderr.toLowerCase().includes('fatal:');
-          
-          if (code === 0 || (code === 1 && hasOnlyWarnings)) {
-            // Success, or exit code 1 with only warnings (which is OK)
-            if (hasOnlyWarnings) {
-              console.log(`⚠️ Git: ${desc} completed with warnings (ignored)`);
-            } else {
-              console.log(`✅ Git: ${desc} completed`);
-            }
-            indexWriteRetries = 0;
-            currentStep++;
-            runNextCommand();
-          } else {
-            // For commit, code 1 might mean "nothing to commit" - that's OK
-            // Check if this is a commit command (not by step number, but by command)
-            const isCommitCommand = args[0] === 'commit';
-            const hasNothingToCommit = (stderr.includes('nothing to commit') || stdout.includes('nothing to commit') || 
-                                       stderr.includes('working tree clean') || stdout.includes('working tree clean'));
-            
-            if (isCommitCommand && code === 1 && hasNothingToCommit) {
-              console.log(`ℹ️ Git: No changes to commit (files already committed during generation)`);
-              indexWriteRetries = 0;
-              currentStep++;
-              runNextCommand();
-            } else if (gitOutputSuggestsIndexWriteFailure(stdout, stderr) && indexWriteRetries < 3) {
-              indexWriteRetries++;
-              removeStaleGitIndexLock(schemaRepoPath);
-              console.warn(`Git index write failed; retry ${indexWriteRetries}/3 after short delay...`);
-              setTimeout(() => runNextCommand(), 800);
-            } else {
-              const error = formatGitFailureError(desc, code, stdout, stderr);
-              console.error(`❌ ${error}`);
-              reject(new Error(error));
-            }
-          }
-        });
-        
-        gitProcess.on('error', (err) => {
-          const error = `Git ${desc} error: ${err.message}`;
-          console.error(`❌ ${error}`);
-          reject(new Error(error));
-        });
-      };
-      
-      // Start git operations
-      runNextCommand();
-      
+      const deployed = commitAndPush({ repo: schemaRepoPath, files: stageTargets, message: commitMessage });
+      if (deployed.nothing) console.log('ℹ️ Git: No changes to commit (files already committed during generation)');
+      resolve({
+        success: true,
+        message: `✅ ${fileNames.length} schema files saved and deployed successfully!`,
+        fileCount: fileNames.length,
+        deletedCount: deletedFileNames.length,
+        commit: deployed.commit
+      });
     } catch (error) {
       console.error('❌ Error batch deploying schemas:', error);
       reject(error);
