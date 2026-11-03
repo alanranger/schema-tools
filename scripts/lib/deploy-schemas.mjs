@@ -79,9 +79,15 @@ function abortCommit(repo, expected, actual, restore) {
   throw new Error(`Commit did not match the publish list (extra: ${extra.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}); commit dropped, nothing pushed`);
 }
 
-export function assertClean(repo) {
-  const dirty = lines(git(repo, ['status', '--porcelain']).stdout);
-  if (dirty.length) throw new Error(`The schema repo has uncommitted changes (${dirty.slice(0, 5).join('; ')}); nothing was written`);
+/**
+ * files = null: the whole repo must be clean (schema repo). files = [...]: a busy repo (alan-shared-resources) —
+ * nothing may be staged and those files must be unmodified; other pending work elsewhere is left alone.
+ */
+export function assertClean(repo, files = null) {
+  const staged = lines(git(repo, ['diff', '--cached', '--name-only']).stdout);
+  const dirty = lines(git(repo, ['status', '--porcelain', ...(files ? ['--', ...files] : [])]).stdout);
+  const problems = [...staged.map((f) => `staged ${f}`), ...dirty];
+  if (problems.length) throw new Error(`The repo has uncommitted changes (${[...new Set(problems)].slice(0, 5).join('; ')}); nothing was written`);
 }
 
 /**
@@ -114,9 +120,9 @@ export function commitFiles(repo, commit) {
  * Undo one published commit: restore exactly its files to their parent versions (added files are removed,
  * deleted files come back), as a new commit pushed the same way. Refused if a later commit touched those files.
  */
-export function undoCommit({ repo, commit, message, branch = 'main', push = true }) {
-  assertClean(repo);
+export function undoCommit({ repo, commit, message, branch = 'main', push = true, filesOnly = false }) {
   const changed = commitFiles(repo, commit);
+  assertClean(repo, filesOnly ? changed.map((c) => c.file) : null);
   if (!changed.length) throw new Error(`Commit ${commit} changed no files`);
   const names = changed.map((c) => c.file);
   const later = lines(git(repo, ['log', '--format=%h', `${commit}..HEAD`, '--', ...names]).stdout);
