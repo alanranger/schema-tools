@@ -16634,6 +16634,7 @@ ${minifiedJson}
       // Step 5: Generate schema
       updateProgress(progressDiv, 90);
       statusDiv.textContent = '⚽ Generating schema...';
+      productData.offerDates = await stableProductOfferDates(productUrl, productData.optionTexts);
       const schema = generateProductSchemaForSingleUrl(productData, matchedReviews);
 
       // Step 6: Output schema
@@ -16973,7 +16974,9 @@ ${minifiedJson}
       image: image || '',
       price: price || '0.00',
       sku: sku || '',
-      url: url
+      url: url,
+      // Variant option texts ("Coventry 3 wks - Mon 7 Sep - 21 Sep 2026"): the source of a dated offer's priceValidUntil.
+      optionTexts: [...String(html || '').matchAll(/"attributes":\{"[^"]+":"([^"]+)"\}/g)].map((m) => m[1])
     };
   }
 
@@ -17054,6 +17057,44 @@ ${minifiedJson}
     return matchedReviews;
   }
 
+  const OFFER_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const isoDay = (d) => d.toISOString().slice(0, 10);
+
+  /** First date in a variant option text; without a year, its next occurrence on or after today (offer_dates.event_date). */
+  function optionEventDate(text, today) {
+    const m = String(text || '').match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i);
+    if (!m) return null;
+    const month = OFFER_MONTHS.indexOf(m[2].toLowerCase().slice(0, 3));
+    const y = String(text).match(/\b(20\d\d)\b/);
+    if (y) return isoDay(new Date(Date.UTC(Number(y[1]), month, Number(m[1]))));
+    const thisYear = isoDay(new Date(Date.UTC(today.getFullYear(), month, Number(m[1]))));
+    return thisYear >= isoDay(today) ? thisYear : isoDay(new Date(Date.UTC(today.getFullYear() + 1, month, Number(m[1]))));
+  }
+
+  /** validFrom = created date, else 1 Jan; priceValidUntil = earliest future variant date, else 31 Dec next year. */
+  function stableOfferDatesFrom(createdOn, optionTexts, today = new Date()) {
+    const future = (optionTexts || []).map((t) => optionEventDate(t, today)).filter((d) => d && d >= isoDay(today)).sort();
+    return { validFrom: createdOn || `${today.getFullYear()}-01-01`, priceValidUntil: future[0] || `${today.getFullYear() + 1}-12-31` };
+  }
+
+  /** Created dates from the Commerce API cache the CSV builders keep on this PC (same file offer_dates.py reads). */
+  async function stableProductOfferDates(productUrl, optionTexts) {
+    if (!window.__productCreatedDates) {
+      window.__productCreatedDates = {};
+      const cache = 'C:\\Users\\alan\\AppData\\Local\\AlanCsvBuilders\\feeds\\commerce-api-products-v2.json';
+      try {
+        const r = window.electronAPI?.readFile ? await window.electronAPI.readFile(cache) : null;
+        const text = typeof r === 'string' ? r : (r && r.success ? r.content : null);
+        const data = text ? JSON.parse(text) : [];
+        (Array.isArray(data) ? data : (data.products || data.result || [])).forEach((p) => {
+          if (p.urlSlug && p.createdOn) window.__productCreatedDates[p.urlSlug] = String(p.createdOn).slice(0, 10);
+        });
+      } catch (e) { /* no cache on this machine: 1 Jan of this year, as offer_dates.py */ }
+    }
+    const slug = String(productUrl || '').replace(/\/+$/, '').split('/').pop();
+    return stableOfferDatesFrom(window.__productCreatedDates[slug] || null, optionTexts);
+  }
+
   function generateProductSchemaForSingleUrl(productData, reviews) {
     // Determine schema type (Product or Product+Course)
     const isCourse = productData.url.includes('/beginners-photography-lessons/') || 
@@ -17106,19 +17147,17 @@ ${minifiedJson}
     // Add offers with all merchant fields (matching batch generation)
     const price = parseFloat(productData.price) || 0;
     
-    // Calculate priceValidUntil (+12 months from today)
-    const today = new Date();
-    const priceValidUntilDate = new Date(today);
-    priceValidUntilDate.setMonth(priceValidUntilDate.getMonth() + 12);
-    const priceValidUntil = priceValidUntilDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    // Stable offer dates (offer_dates.py rules) — never today + N, so a manual run matches the next BAU run.
+    const offerDates = productData.offerDates || stableOfferDatesFrom(null, []);
     
     productSchema.offers = {
       '@type': 'Offer',
+      validFrom: offerDates.validFrom,
       price: price.toFixed(2),
       priceCurrency: 'GBP',
       availability: 'https://schema.org/InStock',
       url: productData.url,
-      priceValidUntil: priceValidUntil,
+      priceValidUntil: offerDates.priceValidUntil,
       seller: {
         '@type': 'Organization',
         name: 'Alan Ranger Photography',

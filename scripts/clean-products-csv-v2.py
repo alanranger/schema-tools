@@ -23,7 +23,8 @@ import os
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
-from datetime import date, timedelta
+from datetime import date
+from offer_dates import stable_price_valid_until, stable_valid_from
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
@@ -170,9 +171,9 @@ def create_offer_from_row(row):
     else:
         availability = "https://schema.org/InStock"
     
-    # Calculate dates
-    valid_from = date.today().isoformat()
-    price_valid_until = (date.today() + timedelta(days=365)).isoformat()
+    # Stable offer dates (offer_dates.py) — never today / today + 365 (Claude 3 Nov, 13).
+    valid_from = stable_valid_from(None)
+    price_valid_until = stable_price_valid_until(option_value)
     
     offer = {
         "@type": "Offer",
