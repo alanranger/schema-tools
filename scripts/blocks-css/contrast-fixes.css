@@ -1,0 +1,7 @@
+/* academy/login: the heading sets no colour, so the theme's near-black h2 showed on the dark panel */
+#collection-694e5c5129b13e32acef23cf .ar-lh__h h2 { color: #ffffff; }
+#collection-694e5c5129b13e32acef23cf .ar-lh__maphead h3 { color: #ffffff; }
+/* jaguar-land-rover-els: the same, on the dark closing panel only (the other .ar-prop headings sit on light sections) */
+#collection-5d122431dc40b90001421849 .ar-jlr-close .ar-prop h2 { color: #ffffff; }
+/* the-art-of-slow-photography: the block's own .ll-card .ll-body strong (#20232b) sat inside the dark insight box */
+#item-6acf9aca305f0b3a3a1bfa72 .ll-insight strong { color: inherit; }
