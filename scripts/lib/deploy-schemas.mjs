@@ -113,15 +113,30 @@ function abortCommit(repo, expected, actual, restore) {
   throw new Error(`Commit did not match the publish list (extra: ${extra.join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}); commit dropped, nothing pushed`);
 }
 
+/** `git status --porcelain` lines → { file, state } (state: modified | untracked | deleted). */
+function statusEntries(stdout) {
+  return stdout.split(/\r?\n/).filter((l) => l.length > 3).map((l) => {
+    const code = l.slice(0, 2);
+    const file = normPath(l.slice(3).split(' -> ').pop());
+    return { file, state: code === '??' ? 'untracked' : code.includes('D') ? 'deleted' : 'modified' };
+  });
+}
+
 /**
- * files = null: the whole repo must be clean (schema repo). files = [...]: a busy repo (alan-shared-resources) —
- * nothing may be staged and those files must be unmodified; other pending work elsewhere is left alone.
+ * Uncommitted changes that block a write. files = null: the whole repo (schema repo). files = [...]: a busy repo
+ * (alan-shared-resources) — anything staged, plus changes to exactly those files; files = []: only anything staged
+ * (an empty list must never widen to the whole repo).
  */
+export function pendingChanges(repo, files = null) {
+  const staged = pathLines(git(repo, ['diff', '--cached', '--name-only']).stdout).map((file) => ({ file, state: 'staged' }));
+  if (files && !files.length) return staged;
+  const status = statusEntries(git(repo, ['status', '--porcelain', ...(files ? ['--', ...files] : [])]).stdout);
+  return [...staged, ...status.filter((s) => !staged.some((x) => x.file === s.file))];
+}
+
 export function assertClean(repo, files = null) {
-  const staged = pathLines(git(repo, ['diff', '--cached', '--name-only']).stdout);
-  const dirty = lines(git(repo, ['status', '--porcelain', ...(files ? ['--', ...files] : [])]).stdout);
-  const problems = [...staged.map((f) => `staged ${f}`), ...dirty];
-  if (problems.length) throw new Error(`The repo has uncommitted changes (${[...new Set(problems)].slice(0, 5).join('; ')}); nothing was written`);
+  const problems = pendingChanges(repo, files).map((p) => `${p.state} ${p.file}`);
+  if (problems.length) throw new Error(`The repo has uncommitted changes (${problems.slice(0, 5).join('; ')}); nothing was written`);
 }
 
 /**
