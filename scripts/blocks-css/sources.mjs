@@ -12,6 +12,16 @@ import { codeStyles, strippedIn } from './css-lib.mjs';
 import { ruleKeys } from './blocks-css.mjs';
 
 export const PAGE_BUILDS = 'C:/Users/alan/Google Drive/Claude shared resources/03 Page Builds';
+
+/**
+ * What a Squarespace save does to code-block CSS (reproduces the live damaged blocks exactly, 4 Nov): every run with
+ * no whitespace from a "{" to the last "}" before a space — edge spaces inside the braces trimmed — is deleted.
+ */
+export const squarespaceBlank = (css) => css.replace(/\{[ \t]*\S*[ \t]*\}/g, '');
+const flat = (s) => s.replace(/\s+/g, ' ').trim();
+/** Strongest proof a source is the block's design: blanking the source gives exactly the live block. */
+export const explains = (sourceCss, liveCss) => flat(squarespaceBlank(sourceCss)) === flat(liveCss);
+const NOT_PASTE = /MASTER PREVIEW|source-live-page|PREVIEW ONLY/i;
 const sel = (k) => k.slice(0, k.indexOf('{')).replace(/\s+/g, '');
 const body = (k) => k.slice(k.indexOf('{'));
 
@@ -40,7 +50,7 @@ export function pasteStyles(root = PAGE_BUILDS) {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) walk(p);
-      else if (/\.html?$/i.test(e.name) && !/^BACKUP/i.test(e.name)) {
+      else if (/\.html?$/i.test(e.name) && !/^BACKUP/i.test(e.name) && !NOT_PASTE.test(e.name)) {
         for (const m of fs.readFileSync(p, 'utf8').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) out.push({ file: path.relative(root, p).replace(/\\/g, '/'), mtime: fs.statSync(p).mtimeMs, css: m[1], keys: ruleKeys(m[1]) });
       }
     }
@@ -70,7 +80,9 @@ export async function resolveDamaged(block, { previous = {}, pastes = [], snapsh
   const need = ruleKeys(block.css);
   const prev = previous[block.key];
   // Last known good keeps its original source label, so an unchanged block rebuilds byte-identically.
-  if (prev?.css && covers(ruleKeys(prev.css), need)) return { css: prev.css, source: prev.source };
+  if (prev?.css && (explains(prev.css, block.css) || covers(ruleKeys(prev.css), need))) return { css: prev.css, source: prev.source };
+  const exact = pastes.filter((p) => explains(p.css, block.css)).sort((a, b) => b.mtime - a.mtime)[0];
+  if (exact) return { css: exact.css, source: `paste ${exact.file}` };
   const paste = pastes.filter((p) => need.size && p.keys.size > need.size && covers(p.keys, need)).sort((a, b) => b.mtime - a.mtime)[0];
   if (paste) return { css: paste.css, source: `paste ${paste.file}` };
   if (!snapshots) return null;
