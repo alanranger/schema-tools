@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { loadEnv } from './css-lib.mjs';
 import { pageBlocks, groupBlocks, findClashes, buildStylesheet } from './blocks-css.mjs';
 import { pasteStyles, snapshotReader, resolveDamaged } from './sources.mjs';
+import { isExcludedUrl } from '../../../alan-shared-resources/scripts/url-exclusions.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SITE = 'https://www.alanranger.com';
@@ -32,10 +33,10 @@ async function get(url, tries = 4) {
 export async function loadPages({ htmlDir, onProgress } = {}) {
   if (htmlDir) {
     const index = JSON.parse(fs.readFileSync(path.join(htmlDir, 'index.json'), 'utf8').replace(/^\uFEFF/, ''));
-    return index.filter((p) => p.file).map((p) => ({ url: p.url, html: fs.readFileSync(path.join(htmlDir, p.file), 'utf8') }));
+    return index.filter((p) => p.file && !isExcludedUrl(p.url)).map((p) => ({ url: p.url, html: fs.readFileSync(path.join(htmlDir, p.file), 'utf8') }));
   }
   const sitemap = await get(`${SITE}/sitemap.xml`);
-  const urls = [...new Set([...(sitemap || '').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim()))];
+  const urls = [...new Set([...(sitemap || '').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim()))].filter((u) => !isExcludedUrl(u));
   const pages = [];
   for (const [i, url] of urls.entries()) {
     const html = await get(url);

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FEEDS, LIVE_CSV, OUT, ORIGIN, readFeed, readCsvObjects, londonParts, pathKey } from './lib.mjs';
+import { isExcludedUrl } from '../../../alan-shared-resources/scripts/url-exclusions.mjs';
 const abs = (u) => (String(u || '').startsWith('http') ? u : `${ORIGIN}${u}`);
 
 /** Per-file byte format, measured from the live exports (format-inspect.mjs). */
@@ -117,7 +118,7 @@ export const suggestCategory = (url) => (SERVICE_WORDS.test(pathKey(url)) ? 'ser
  * is left out of 08 (no schema, nothing blocked) and listed in 08-new-pages-pending.json with a suggested type.
  */
 export function landingRows(live, siteRows, choices = {}) {
-  const candidates = siteRows.filter((r) => !NON_LANDING.some((re) => re.test(pathKey(r.url))));
+  const candidates = siteRows.filter((r) => !NON_LANDING.some((re) => re.test(pathKey(r.url))) && !isExcludedUrl(r.url));
   const keep = new Set(candidates.map((r) => pathKey(r.url)));
   const known = new Set(live.map((r) => pathKey(r.url)));
   const kept = live.filter((r) => keep.has(pathKey(r.url))).map((r) => ({ url: r.url, category: r.category }));

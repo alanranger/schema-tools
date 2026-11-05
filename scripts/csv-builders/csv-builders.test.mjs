@@ -74,3 +74,12 @@ test('08 new pages: saved choices apply (service / landing appended, exclude lef
   assert.equal(suggestCategory('https://www.alanranger.com/some-landing-page'), 'landing');
   assert.deepEqual(landingRows(live, site, {}).rows, live, 'undecided pages are not added to 08');
 });
+
+test('08: guest blog pages (shared url-exclusions rule) are never offered or added, even with a saved choice', () => {
+  const live = [{ url: 'https://www.alanranger.com/about-alan-ranger', category: 'landing' }];
+  const site = [...live, { url: 'https://www.alanranger.com/guest-blog-posts' }, { url: 'https://www.alanranger.com/guest-blog-posts/a-post' }];
+  const r = landingRows(live, site, { '/guest-blog-posts': 'landing' });
+  assert.deepEqual(r.rows, live);
+  assert.deepEqual(r.pending, []);
+  assert.deepEqual(r.excluded, []);
+});
