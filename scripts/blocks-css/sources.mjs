@@ -75,14 +75,18 @@ export function snapshotReader(env) {
   };
 }
 
-/** The CSS as designed for one damaged block, or null. */
+/**
+ * The CSS as designed for one damaged block, or null. Exact proof wins over "contains every surviving rule": when the
+ * rules a new design added are the ones Squarespace blanked, the old design still contains every surviving rule.
+ */
 export async function resolveDamaged(block, { previous = {}, pastes = [], snapshots = null }) {
   const need = ruleKeys(block.css);
   const prev = previous[block.key];
   // Last known good keeps its original source label, so an unchanged block rebuilds byte-identically.
-  if (prev?.css && (explains(prev.css, block.css) || covers(ruleKeys(prev.css), need))) return { css: prev.css, source: prev.source };
+  if (prev?.css && explains(prev.css, block.css)) return { css: prev.css, source: prev.source };
   const exact = pastes.filter((p) => explains(p.css, block.css)).sort((a, b) => b.mtime - a.mtime)[0];
   if (exact) return { css: exact.css, source: `paste ${exact.file}` };
+  if (prev?.css && covers(ruleKeys(prev.css), need)) return { css: prev.css, source: prev.source };
   const paste = pastes.filter((p) => need.size && p.keys.size > need.size && covers(p.keys, need)).sort((a, b) => b.mtime - a.mtime)[0];
   if (paste) return { css: paste.css, source: `paste ${paste.file}` };
   if (!snapshots) return null;
