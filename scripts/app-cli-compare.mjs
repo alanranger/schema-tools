@@ -28,7 +28,7 @@ function firstDiff(a, b, where = '') {
 
 const files = [];
 const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : files.push(path.join(dir, e.name))));
-walk(out);
+if (fs.existsSync(out)) walk(out);
 const result = { identical: 0, differing: [], new_files: [] };
 for (const f of files) {
   const rel = path.relative(out, f);
