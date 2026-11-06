@@ -167,27 +167,34 @@
 
   var slug = path.split('/').pop();
   if (!slug) return;
-  var kinds = [
-    { kind: 'schema', file: slug + '_schema.json' },
-    { kind: 'blogposting', file: slug + '_blogposting.json' },
-    { kind: 'howto', file: slug + '_howto.json' },
-    { kind: 'image', file: slug + '_image.json' },
-    { kind: 'breadcrumb', file: slug + '_breadcrumb.json' }
-  ];
-  kinds.forEach(function (k) {
+  function loadKind(k) {
     fetchJson(base + k.file).then(function (j) {
       if (!j) return;
       var id = 'arp-schema-' + slug + '-' + k.kind;
       inject(id, j);
       if (k.kind === 'howto') dropOtherJsonLd('HowTo', id);
     });
-  });
-  fetchJson(base + slug + '_faq.json').then(function (j) {
-    var f = filterFaq(j);
-    if (!f.json) return;
-    var id = 'arp-schema-' + slug + '-faq';
-    inject(id, f.json);
-    dropOtherJsonLd('FAQPage', id);
+  }
+  function loadFaq() {
+    fetchJson(base + slug + '_faq.json').then(function (j) {
+      var f = filterFaq(j);
+      if (!f.json) return;
+      var id = 'arp-schema-' + slug + '-faq';
+      inject(id, f.json);
+      dropOtherJsonLd('FAQPage', id);
+    });
+  }
+  [
+    { kind: 'schema', file: slug + '_schema.json' },
+    { kind: 'blogposting', file: slug + '_blogposting.json' },
+    { kind: 'image', file: slug + '_image.json' },
+    { kind: 'breadcrumb', file: slug + '_breadcrumb.json' }
+  ].forEach(loadKind);
+  // HowTo / FAQ only for posts that have them (blog-files.json, published by BAU F); without the list, ask for both.
+  fetchJson(base + 'blog-files.json').then(function (m) {
+    function has(list) { return !m || !Array.isArray(m[list]) || m[list].indexOf(slug) !== -1; }
+    if (has('howto')) loadKind({ kind: 'howto', file: slug + '_howto.json' });
+    if (has('faq')) loadFaq();
   });
   window.addEventListener('load', function () {
     setTimeout(function () {
