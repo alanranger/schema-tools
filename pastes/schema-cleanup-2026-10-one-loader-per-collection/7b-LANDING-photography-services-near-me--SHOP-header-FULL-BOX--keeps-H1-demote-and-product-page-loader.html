@@ -1,0 +1,56 @@
+<!-- ============================================================
+     ALAN RANGER — PRODUCT-LIST H1 DEMOTE FIX (photography-services-near-me)
+     Where to paste: Page Settings -> Advanced -> PAGE HEADER CODE
+                     INJECTION  (this page only)
+     What it does:  Squarespace renders every product title in the
+                    storae grid as an <h1> (h1.ProductList-title),
+                    giving ~23 H1s on this page. This script runs after
+                    load and converts ONLY those product-title H1s into
+                    <h2>, leaving the real page H1 as the single page H1.
+     Safe:          Does NOT touch schema, links, styling, or the page H1.
+                    Reversible - remove this block to revert.
+     ============================================================ -->
+<script>
+(function () {
+  function demoteProductH1s() {
+    // Product titles render as h1.ProductList-title inside .ProductList-item.
+    // The real page H1 has no .ProductList-title class, so it is left alone.
+    var productH1s = document.querySelectorAll('h1.ProductList-title');
+    productH1s.forEach(function (h1) {
+      if (h1.dataset.arDemoted === '1') return;          // idempotent
+      var h2 = document.createElement('h2');
+      h2.className = h1.className;                        // keeps ProductList-title styling
+      if (h1.getAttribute('style')) h2.setAttribute('style', h1.getAttribute('style'));
+      h2.innerHTML = h1.innerHTML;
+      h2.dataset.arDemoted = '1';
+      h1.parentNode.replaceChild(h2, h1);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', demoteProductH1s);
+  } else {
+    demoteProductH1s();
+  }
+  window.addEventListener('load', demoteProductH1s);
+  setTimeout(demoteProductH1s, 1200);
+  setTimeout(demoteProductH1s, 3000);
+})();
+</script>
+
+<!-- LANDING PAGE SCHEMA — hosted loader (change 7, 29 Oct 2026). Loads this page's schema from schema.alanranger.com; updates come from the Schema Tools generator via GitHub. Replaces the old schema paste, Core Schema Suppressor v2.1, the product-page schema remover and the hidden TLDR.
+     Shop header note: Squarespace copies this header onto every product page, but the loader only acts on /photography-services-near-me itself (product pages are not in the landing manifest), so product pages are untouched. -->
+<script src="https://schema.alanranger.com/loaders/landing-page-loader.js" defer></script>
+
+<!-- =====================================================================
+     AR PRODUCT BLOCK LOADER - COURSES & SERVICES — HOSTED (Option B, 2026-10-07)
+     Replaces the inline v2.3 block. The full loader now lives at
+     https://schema.alanranger.com/loaders/product-page-loader.js
+     and is updated via GitHub — no re-pasting needed for future fixes.
+     Adds: GitHub product schema passed to Google (ld+json), trailing-slash
+     safe page matching (e.g. camera-sensor-clean/), stars on ALL products
+     with reviews (AR_NO_REVIEWS emptied), duplicate-Product guard.
+     All v2.3 behaviour retained.
+     ROLLBACK: restore the previous inline v2.3 block.
+     ===================================================================== -->
+<script src="https://schema.alanranger.com/loaders/product-page-loader.js" defer></script>

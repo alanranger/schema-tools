@@ -1,0 +1,602 @@
+<!-- ============================================================
+     ALAN RANGER — PRODUCT-LIST H1 DEMOTE FIX (photography-services-near-me)
+     Where to paste: Page Settings -> Advanced -> PAGE HEADER CODE
+                     INJECTION  (this page only)
+     What it does:  Squarespace renders every product title in the
+                    storae grid as an <h1> (h1.ProductList-title),
+                    giving ~23 H1s on this page. This script runs after
+                    load and converts ONLY those product-title H1s into
+                    <h2>, leaving the real page H1 as the single page H1.
+     Safe:          Does NOT touch schema, links, styling, or the page H1.
+                    Reversible - remove this block to revert.
+     ============================================================ -->
+<script>
+(function () {
+  function demoteProductH1s() {
+    // Product titles render as h1.ProductList-title inside .ProductList-item.
+    // The real page H1 has no .ProductList-title class, so it is left alone.
+    var productH1s = document.querySelectorAll('h1.ProductList-title');
+    productH1s.forEach(function (h1) {
+      if (h1.dataset.arDemoted === '1') return;          // idempotent
+      var h2 = document.createElement('h2');
+      h2.className = h1.className;                        // keeps ProductList-title styling
+      if (h1.getAttribute('style')) h2.setAttribute('style', h1.getAttribute('style'));
+      h2.innerHTML = h1.innerHTML;
+      h2.dataset.arDemoted = '1';
+      h1.parentNode.replaceChild(h2, h1);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', demoteProductH1s);
+  } else {
+    demoteProductH1s();
+  }
+  window.addEventListener('load', demoteProductH1s);
+  setTimeout(demoteProductH1s, 1200);
+  setTimeout(demoteProductH1s, 3000);
+})();
+</script>
+
+
+
+<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) — 2026-10-07: "#product" added to allowed IDs so GitHub product schema is kept -->
+
+<script>
+(function(){
+  var arPath=(location.pathname||'/').replace(/\/+$/,'')||'/'; if(arPath!=='/photography-services-near-me') return; // schema clean-up 27 Oct 2026: collection page only, not inherited by product pages
+  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service","FAQPage"]);
+  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage","#product"];
+  const getTypes = (node) => {
+    if (!node) return [];
+    return Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]].filter(Boolean);
+  };
+  const isCanonical = (node) => {
+    const id = String(node && node["@id"] || "");
+    if (CANONICAL_ID_SUFFIXES.some((suffix) => id.includes(suffix))) return true;
+    if (node && Array.isArray(node["@graph"])) return true;
+    return false;
+  };
+  const shouldSuppressNode = (node) => {
+    const nodeTypes = getTypes(node);
+    if (!nodeTypes.some((t) => CORE_TYPES.has(t))) return false;
+    if (isCanonical(node)) return false;
+    return true;
+  };
+  const suppressSquarespaceCore = () => {
+    document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach((el) => {
+      if (el.id === "arp-critical-schema") return;
+      const txt = (el.textContent || "").trim();
+      if (!txt) return;
+      try {
+        const json = JSON.parse(txt);
+        const nodes = Array.isArray(json["@graph"]) ? json["@graph"] : [json];
+        const kept = nodes.filter((node) => !shouldSuppressNode(node || {}));
+        if (kept.length === nodes.length) return;
+        if (kept.length === 0) {
+          el.remove();
+          return;
+        }
+        const nextJson = Array.isArray(json["@graph"])
+          ? { ...(json || {}), "@graph": kept }
+          : kept[0];
+        el.textContent = JSON.stringify(nextJson);
+      } catch (e) {}
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  suppressSquarespaceCore();
+  document.addEventListener('DOMContentLoaded', suppressSquarespaceCore);
+  window.addEventListener('load', () => setTimeout(suppressSquarespaceCore, 1000));
+  const obs = new MutationObserver(suppressSquarespaceCore);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json" id="arp-critical-schema">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://www.alanranger.com/#person",
+      "name": "Alan Ranger",
+      "url": "https://www.alanranger.com/about",
+      "jobTitle": "Photographer & Tutor",
+      "worksFor": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://bsky.app/profile/alanranger.bsky.social"
+      ]
+    },
+    {
+      "@type": "ItemList",
+      "@id": "https://www.alanranger.com/photography-services-near-me#itemlist",
+      "name": "Photography Services | workshops, courses, 1-2-1 | mentoring",
+      "description": "Photography services and products, photography courses, photography \ntuition, photography workshops, one-to-one private lessons, camera sensor \ncleaning and more",
+      "url": "https://www.alanranger.com/photography-services-near-me",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Beginners Photography Course",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/beginners-photography-course",
+            "url": "https://www.alanranger.com/photography-services-near-me/beginners-photography-course"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Lightroom Courses For Beginners Coventry",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/lightroom-courses-for-beginners-coventry",
+            "url": "https://www.alanranger.com/photography-services-near-me/lightroom-courses-for-beginners-coventry"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Photography Gift Vouchers",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photography-gift-vouchers",
+            "url": "https://www.alanranger.com/photography-services-near-me/photography-gift-vouchers"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Private Online Photography Classes Zoom",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/private-online-photography-classes-zoom",
+            "url": "https://www.alanranger.com/photography-services-near-me/private-online-photography-classes-zoom"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Rps Mentoring Photography Course",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/rps-mentoring-photography-course",
+            "url": "https://www.alanranger.com/photography-services-near-me/rps-mentoring-photography-course"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "Annual Pick N Mix Subscription",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/annual-pick-n-mix-subscription",
+            "url": "https://www.alanranger.com/photography-services-near-me/annual-pick-n-mix-subscription"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "name": "Beginners Portrait Photography Course",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/beginners-portrait-photography-course",
+            "url": "https://www.alanranger.com/photography-services-near-me/beginners-portrait-photography-course"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 8,
+          "name": "Black And White Photography Course",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course",
+            "url": "https://www.alanranger.com/photography-services-near-me/black-and-white-photography-course"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 9,
+          "name": "Camera Sensor Clean",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/camera-sensor-clean",
+            "url": "https://www.alanranger.com/photography-services-near-me/camera-sensor-clean"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 10,
+          "name": "Camera Sensor Clean",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/camera-sensor-clean/",
+            "url": "https://www.alanranger.com/photography-services-near-me/camera-sensor-clean/"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 11,
+          "name": "Camera Settings Photography Field Checklists",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/camera-settings-photography-field-checklists",
+            "url": "https://www.alanranger.com/photography-services-near-me/camera-settings-photography-field-checklists"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 12,
+          "name": "Composition Settings Photography Field Checklists",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/composition-settings-photography-field-checklists",
+            "url": "https://www.alanranger.com/photography-services-near-me/composition-settings-photography-field-checklists"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 13,
+          "name": "Fine Art Photography Prints Canvas",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-canvas",
+            "url": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-canvas"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 14,
+          "name": "Fine Art Photography Prints Unframed",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-unframed",
+            "url": "https://www.alanranger.com/photography-services-near-me/fine-art-photography-prints-unframed"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 15,
+          "name": "Four Private Photography Classes",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/four-private-photography-classes",
+            "url": "https://www.alanranger.com/photography-services-near-me/four-private-photography-classes"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 16,
+          "name": "Framed Fine Art Photography Prints",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/framed-fine-art-photography-prints",
+            "url": "https://www.alanranger.com/photography-services-near-me/framed-fine-art-photography-prints"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 17,
+          "name": "Intermediates Intentions Photography Project Course",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/intermediates-intentions-photography-project-course",
+            "url": "https://www.alanranger.com/photography-services-near-me/intermediates-intentions-photography-project-course"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 18,
+          "name": "Monthly Online Photography Mentoring",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/monthly-online-photography-mentoring",
+            "url": "https://www.alanranger.com/photography-services-near-me/monthly-online-photography-mentoring"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 19,
+          "name": "Monthly Pick N Mix Subscription",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/monthly-pick-n-mix-subscription",
+            "url": "https://www.alanranger.com/photography-services-near-me/monthly-pick-n-mix-subscription"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 20,
+          "name": "Photo Print Preparation Service 30min",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min",
+            "url": "https://www.alanranger.com/photography-services-near-me/photo-print-preparation-service-30min"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 21,
+          "name": "Photography 35bundle Photography Field Checklists",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photography-35bundle-photography-field-checklists",
+            "url": "https://www.alanranger.com/photography-services-near-me/photography-35bundle-photography-field-checklists"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 22,
+          "name": "Photography Foundation Course Ebook",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photography-foundation-course-ebook",
+            "url": "https://www.alanranger.com/photography-services-near-me/photography-foundation-course-ebook"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 23,
+          "name": "Photography Genre Photography Field Checklists",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photography-genre-photography-field-checklists",
+            "url": "https://www.alanranger.com/photography-services-near-me/photography-genre-photography-field-checklists"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 24,
+          "name": "Photography Tips Pocket Guide Series",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/photography-tips-pocket-guide-series",
+            "url": "https://www.alanranger.com/photography-services-near-me/photography-tips-pocket-guide-series"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 25,
+          "name": "Premium Photography Academy Membership",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/premium-photography-academy-membership",
+            "url": "https://www.alanranger.com/photography-services-near-me/premium-photography-academy-membership"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 26,
+          "name": "Quarterly Pick N Mix Subscription",
+          "item": {
+            "@type": "WebPage",
+            "@id": "https://www.alanranger.com/photography-services-near-me/quarterly-pick-n-mix-subscription",
+            "url": "https://www.alanranger.com/photography-services-near-me/quarterly-pick-n-mix-subscription"
+          }
+        }
+      ],
+      "image": "https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/5c1ca16b898583ce09d79b80/1572155148567/photography-support-Services-1.png?format=1500w"
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.alanranger.com/photography-services-near-me#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Photography Services | workshops, courses, 1-2-1 | mentoring about?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Photography services and products, photography courses, photography tuition, photography workshops, one-to-one private lessons, camera sensor cleaning and more"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Who is this suitable for?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "This is suitable for photographers at beginner, intermediate, and advanced levels, depending on the option and goals described on this page."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I get started?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Use the call-to-action on this page to book, enquire, or request guidance on the best next step for your photography goals."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I get help choosing the right option?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. You can contact Alan Ranger Photography for advice on the most suitable option based on your experience level, interests, and preferred learning format."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.alanranger.com/#website",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com/",
+      "publisher": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.alanranger.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "description": ""
+    },
+    {
+      "@type": [
+        "LocalBusiness",
+        "Organization"
+      ],
+      "@id": "https://www.alanranger.com/#org",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com/",
+      "telephone": "+44 7817 017994",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "legalName": "Alan Ranger Photography",
+      "email": "info@alanranger.com",
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://bsky.app/profile/alanranger.bsky.social"
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      },
+      "location": {
+        "@id": "https://www.alanranger.com/#place"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.alanranger.com/photography-services-near-me#webpage",
+      "url": "https://www.alanranger.com/photography-services-near-me",
+      "name": "Photography Services | workshops, courses, 1-2-1 | mentoring",
+      "headline": "Photography Services | workshops, courses, 1-2-1 | mentoring",
+      "description": "Photography services and products, photography courses, photography tuition, photography workshops, one-to-one private lessons, camera sensor cleaning and more",
+      "inLanguage": "en-GB",
+      "isPartOf": {
+        "@id": "https://www.alanranger.com/#website"
+      },
+      "publisher": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "about": {
+        "@id": "https://www.alanranger.com/#person"
+      },
+      "primaryImageOfPage": {
+        "@id": "https://www.alanranger.com/photography-services-near-me#primaryimage"
+      }
+    },
+    {
+      "@type": "ImageObject",
+      "@id": "https://www.alanranger.com/photography-services-near-me#primaryimage",
+      "url": "https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/5c1ca16b898583ce09d79b80/1572155148567/photography-support-Services-1.png?format=1500w",
+      "contentUrl": "https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/5c1ca16b898583ce09d79b80/1572155148567/photography-support-Services-1.png?format=1500w",
+      "name": "Photography Services | workshops, courses, 1-2-1 | mentoring primary image"
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.alanranger.com/photography-services-near-me#service",
+      "name": "Photography Services | workshops, courses, 1-2-1 | mentoring",
+      "description": "Photography services and products, photography courses, photography tuition, photography workshops, one-to-one private lessons, camera sensor cleaning and more",
+      "url": "https://www.alanranger.com/photography-services-near-me",
+      "provider": {
+        "@id": "https://www.alanranger.com/#org",
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "url": "https://www.alanranger.com/"
+      },
+      "areaServed": [
+        {
+          "@type": "Country",
+          "name": "GB"
+        },
+        {
+          "@id": "https://www.alanranger.com/#place"
+        }
+      ],
+      "image": "https://static1.squarespace.com/static/5013f4b2c4aaa4752ac69b17/t/5c1ca16b898583ce09d79b80/1572155148567/photography-support-Services-1.png?format=1500w"
+    },
+    {
+      "@type": "Place",
+      "@id": "https://www.alanranger.com/#place",
+      "name": "Alan Ranger Photography",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    }
+  ]
+}
+</script>
+
+<!-- Schema clean-up 27 Oct 2026: the landing-page schema above belongs to /photography-services-near-me ONLY.
+     Squarespace copies this header onto every product page in the collection, so remove it there. -->
+<script>
+(function () {
+  var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+  if (path === '/photography-services-near-me') return;
+  var el = document.getElementById('arp-critical-schema');
+  if (el) el.remove();
+})();
+</script>
+
+<script>
+(function(){
+  try {
+    var arPath=(location.pathname||'/').replace(/\/+$/,'')||'/'; if(arPath!=='/photography-services-near-me') return; // schema clean-up 27 Oct 2026: collection page only, not inherited by product pages
+    const summaryText = "Photography services and products, photography courses, photography tuition, photography workshops, one-to-one private lessons, camera sensor cleaning and more";
+    function hasExistingTldrSignal(){
+      if (document.getElementById("ar-tldr-block")) return true;
+      const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+      return headings.some((h) => /(^|\s)(tl;?dr|tldr|summary|quick answer)(\s|$)/i.test(String(h.textContent || "")));
+    }
+    function injectTldrBlock(text){
+      if (hasExistingTldrSignal()) return;
+      const summary = String(text || "").replace(/\s+/g, " ").trim();
+      if (summary.length < 40) return;
+      const host = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+      if (!host) return;
+      const block = document.createElement("section");
+      block.id = "ar-tldr-block";
+      block.setAttribute("aria-hidden", "true");
+      block.style.position = "absolute";
+      block.style.left = "-99999px";
+      block.style.width = "1px";
+      block.style.height = "1px";
+      block.style.overflow = "hidden";
+      block.style.whiteSpace = "nowrap";
+      const titleEl = document.createElement("h2");
+      titleEl.textContent = "TLDR";
+      const bodyEl = document.createElement("p");
+      bodyEl.textContent = summary;
+      block.appendChild(titleEl);
+      block.appendChild(bodyEl);
+      if (host.firstChild) host.insertBefore(block, host.firstChild);
+      else host.appendChild(block);
+    }
+    injectTldrBlock(summaryText);
+  } catch (e) {
+    console.warn("Landing TLDR signal injection failed:", e);
+  }
+})();
+</script>
+
+<!-- =====================================================================
+     AR PRODUCT BLOCK LOADER - COURSES & SERVICES — HOSTED (Option B, 2026-10-07)
+     Replaces the inline v2.3 block. The full loader now lives at
+     https://schema.alanranger.com/loaders/product-page-loader.js
+     and is updated via GitHub — no re-pasting needed for future fixes.
+     Adds: GitHub product schema passed to Google (ld+json), trailing-slash
+     safe page matching (e.g. camera-sensor-clean/), stars on ALL products
+     with reviews (AR_NO_REVIEWS emptied), duplicate-Product guard.
+     All v2.3 behaviour retained.
+     ROLLBACK: restore the previous inline v2.3 block.
+     ===================================================================== -->
+<script src="https://schema.alanranger.com/loaders/product-page-loader.js" defer></script>

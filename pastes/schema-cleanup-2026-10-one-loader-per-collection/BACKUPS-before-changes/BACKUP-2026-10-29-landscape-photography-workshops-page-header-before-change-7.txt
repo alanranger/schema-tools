@@ -1,0 +1,259 @@
+<div class="manual-stacking"></div>
+
+<!-- FAQ SCHEMA — ADD to the EXISTING page header injection (Page Settings > Advanced > Page Header Code Injection).
+     Paste this BELOW whatever is already in that box. Do NOT remove the existing generator schema.
+     This is the ONLY FAQPage for the page. The 11 questions match the 11 visible accordion questions.
+     IMPORTANT: also DELETE the broken FAQ-schema Code Block you added to the page body — Squarespace strips the
+     type="application/ld+json" attribute inside Code Blocks, so it does nothing there and only risks duplication. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://www.alanranger.com/landscape-photography-workshops#faq",
+  "mainEntity": [
+    { "@type": "Question", "name": "Do I need to be experienced?", "acceptedAnswer": { "@type": "Answer", "text": "No. All levels are welcome, from first-time camera owners to experienced photographers. Groups are small (usually max 6), so you get guidance pitched exactly at your level — we start wherever you are." } },
+    { "@type": "Question", "name": "What camera and kit do I need?", "acceptedAnswer": { "@type": "Answer", "text": "Any camera you can use in manual or semi-manual mode is fine, including many bridge cameras. A tripod helps for landscapes; if you don't have one, Alan can lend you a tripod and filters on the day. A full kit list is sent with your joining instructions." } },
+    { "@type": "Question", "name": "How long are the workshops?", "acceptedAnswer": { "@type": "Answer", "text": "They range from short two-hour woodland walks to full days at the coast or in the hills. The length is shown on each workshop so you can pick what suits you." } },
+    { "@type": "Question", "name": "How big are the groups?", "acceptedAnswer": { "@type": "Answer", "text": "Small — usually a maximum of six people, sometimes fewer, depending on the location and parking. That keeps plenty of one-to-one time available." } },
+    { "@type": "Question", "name": "What happens if the weather's bad?", "acceptedAnswer": { "@type": "Answer", "text": "We work with the conditions — some of the best landscape images come from dramatic weather. Workshops run in most conditions; if anything makes a location unsafe or unworkable, Alan will offer a new date or a credit." } },
+    { "@type": "Question", "name": "What's included, and what isn't?", "acceptedAnswer": { "@type": "Answer", "text": "Included: expert on-location tuition, a small group, image review and feedback, loan of filters and a tripod if needed, and joining instructions in advance. Not included: travel to and from the location, and lunch or refreshments — bring a packed lunch, or use a cafe or pub at the break on full days." } },
+    { "@type": "Question", "name": "How will I know where to meet?", "acceptedAnswer": { "@type": "Answer", "text": "You'll get a joining email a few days before your workshop with the exact meeting point, parking information and final details, along with the recommended kit list — so you have time to plan your journey." } },
+    { "@type": "Question", "name": "How do I book, and can I spread the cost?", "acceptedAnswer": { "@type": "Answer", "text": "Book directly through the website or the workshop calendar. If you'd prefer to spread the cost, an interest-free 12-month payment plan is available. Workshops also make great gifts as digital gift vouchers." } },
+    { "@type": "Question", "name": "What's the cancellation policy?", "acceptedAnswer": { "@type": "Answer", "text": "If you need to cancel, please let Alan know in writing as early as you can; cancellation charges apply on a sliding scale depending on how close to the date it is. Full details are in the booking terms and conditions." } },
+    { "@type": "Question", "name": "Can I buy a workshop as a gift?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — digital gift vouchers are valid for 12 months and can be used against any workshop, course or one-to-one session." } },
+    { "@type": "Question", "name": "Can I bring a friend or partner?", "acceptedAnswer": { "@type": "Answer", "text": "If they'd like to take part and there's a place available, yes — just book a place for each of you, and call or message Alan first to check availability. Workshops are hands-on sessions built around each participant, so they're not set up for a non-photographing guest to come along and watch." } }
+  ]
+}
+</script>
+
+
+
+
+
+
+<!-- Squarespace Core Schema Suppressor v2.1 (Code-Block Safe) -->
+
+<script>
+(function(){
+  const CORE_TYPES = new Set(["Product","Organization","LocalBusiness","WebSite","WebPage","BreadcrumbList","SearchAction","Place","Service","FAQPage"]);
+  const CANONICAL_ID_SUFFIXES = ["#org","#website","#webpage","#breadcrumbs","#service","#person","#primaryimage"];
+  const getTypes = (node) => {
+    if (!node) return [];
+    return Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]].filter(Boolean);
+  };
+  const isCanonical = (node) => {
+    const id = String(node && node["@id"] || "");
+    if (CANONICAL_ID_SUFFIXES.some((suffix) => id.includes(suffix))) return true;
+    if (node && Array.isArray(node["@graph"])) return true;
+    return false;
+  };
+  const shouldSuppressNode = (node) => {
+    const nodeTypes = getTypes(node);
+    if (!nodeTypes.some((t) => CORE_TYPES.has(t))) return false;
+    if (isCanonical(node)) return false;
+    return true;
+  };
+  const suppressSquarespaceCore = () => {
+    document.querySelectorAll('script[type="application/ld+json"], script[data-type="application/ld+json"]').forEach((el) => {
+      if (el.id === "arp-critical-schema") return;
+      const txt = (el.textContent || "").trim();
+      if (!txt) return;
+      try {
+        const json = JSON.parse(txt);
+        const nodes = Array.isArray(json["@graph"]) ? json["@graph"] : [json];
+        const kept = nodes.filter((node) => !shouldSuppressNode(node || {}));
+        if (kept.length === nodes.length) return;
+        if (kept.length === 0) {
+          el.remove();
+          return;
+        }
+        const nextJson = Array.isArray(json["@graph"])
+          ? { ...(json || {}), "@graph": kept }
+          : kept[0];
+        el.textContent = JSON.stringify(nextJson);
+      } catch (e) {}
+    });
+  };
+  // Run several times to catch async Squarespace hydration
+  suppressSquarespaceCore();
+  document.addEventListener('DOMContentLoaded', suppressSquarespaceCore);
+  window.addEventListener('load', () => setTimeout(suppressSquarespaceCore, 1000));
+  const obs = new MutationObserver(suppressSquarespaceCore);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
+<script type="application/ld+json" id="arp-critical-schema">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://www.alanranger.com/#person",
+      "name": "Alan Ranger",
+      "url": "https://www.alanranger.com/about",
+      "jobTitle": "Photographer & Tutor",
+      "worksFor": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://bsky.app/profile/alanranger.bsky.social"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.alanranger.com/#website",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com/",
+      "publisher": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.alanranger.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "description": ""
+    },
+    {
+      "@type": [
+        "LocalBusiness",
+        "Organization"
+      ],
+      "@id": "https://www.alanranger.com/#org",
+      "name": "Alan Ranger Photography",
+      "url": "https://www.alanranger.com/",
+      "telephone": "+44 781 701 7994",
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/b859ad2b-1442-4595-b9a4-410c32299bf8/ALAN+RANGER+photography+LOGO+BLACK.+switched+small.png?format=1500w",
+      "legalName": "Alan Ranger Photography",
+      "email": "info@alanranger.com",
+      "sameAs": [
+        "https://www.instagram.com/alanrangerphotography/",
+        "https://www.youtube.com/@alanrangerphotography",
+        "https://www.linkedin.com/in/alanranger",
+        "https://www.facebook.com/alanrangerphotography/",
+        "https://bsky.app/profile/alanranger.bsky.social"
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      },
+      "location": {
+        "@id": "https://www.alanranger.com/#place"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.alanranger.com/landscape-photography-workshops#webpage",
+      "url": "https://www.alanranger.com/landscape-photography-workshops",
+      "inLanguage": "en-GB",
+      "isPartOf": {
+        "@id": "https://www.alanranger.com/#website"
+      },
+      "publisher": {
+        "@id": "https://www.alanranger.com/#org"
+      },
+      "about": {
+        "@id": "https://www.alanranger.com/#person"
+      },
+      "primaryImageOfPage": {
+        "@id": "https://www.alanranger.com/landscape-photography-workshops#primaryimage"
+      },
+      "name": "Half and One-Day Landscape Photography Workshops UK 2026 -2027",
+      "headline": "Half and One-Day Landscape Photography Workshops UK 2026 -2027",
+      "description": "Small-group landscape photography workshops across the UK, led by a BIPP-qualified pro. All levels, usually max 6, with hands-on tuition in the field. Book now."
+    },
+    {
+      "@type": "ImageObject",
+      "@id": "https://www.alanranger.com/landscape-photography-workshops#primaryimage",
+      "url": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1743960992597-44OAWYR2JKMJ6HTMW0L6/_-13-2.jpg?format=750w",
+      "contentUrl": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1743960992597-44OAWYR2JKMJ6HTMW0L6/_-13-2.jpg?format=750w",
+      "name": "Half and One-Day Landscape Photography Workshops UK 2026 -2027 primary image"
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.alanranger.com/landscape-photography-workshops#service",
+      "url": "https://www.alanranger.com/landscape-photography-workshops",
+      "provider": {
+        "@id": "https://www.alanranger.com/#org",
+        "@type": "Organization",
+        "name": "Alan Ranger Photography",
+        "url": "https://www.alanranger.com/"
+      },
+      "areaServed": [
+        {
+          "@type": "Country",
+          "name": "GB"
+        },
+        {
+          "@id": "https://www.alanranger.com/#place"
+        }
+      ],
+      "image": "https://images.squarespace-cdn.com/content/v1/5013f4b2c4aaa4752ac69b17/1743960992597-44OAWYR2JKMJ6HTMW0L6/_-13-2.jpg?format=750w",
+      "name": "Half and One-Day Landscape Photography Workshops UK 2026 -2027",
+      "description": "Small-group landscape photography workshops across the UK, led by a BIPP-qualified pro. All levels, usually max 6, with hands-on tuition in the field. Book now."
+    },
+    {
+      "@type": "Place",
+      "@id": "https://www.alanranger.com/#place",
+      "name": "Alan Ranger Photography",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "45 Hathaway Road",
+        "addressLocality": "Coventry",
+        "addressRegion": "West Midlands",
+        "postalCode": "CV4 9HW",
+        "addressCountry": "GB"
+      }
+    }
+  ]
+}
+</script>
+
+<script>
+(function(){
+  try {
+    const summaryText = "Small-group landscape photography workshops across the UK, led by a BIPP-qualified pro. All levels, usually max 6, with hands-on tuition in the field. Book now.";
+    function hasExistingTldrSignal(){
+      if (document.getElementById("ar-tldr-block")) return true;
+      const headings = Array.from(document.querySelectorAll("h1,h2,h3,h4"));
+      return headings.some((h) => /(^|\s)(tl;?dr|tldr|summary|quick answer)(\s|$)/i.test(String(h.textContent || "")));
+    }
+    function injectTldrBlock(text){
+      if (hasExistingTldrSignal()) return;
+      const summary = String(text || "").replace(/\s+/g, " ").trim();
+      if (summary.length < 40) return;
+      const host = document.querySelector("main, article, .Main-content, #content, .sqs-block-content") || document.body;
+      if (!host) return;
+      const block = document.createElement("section");
+      block.id = "ar-tldr-block";
+      block.setAttribute("aria-hidden", "true");
+      block.style.position = "absolute";
+      block.style.left = "-99999px";
+      block.style.width = "1px";
+      block.style.height = "1px";
+      block.style.overflow = "hidden";
+      block.style.whiteSpace = "nowrap";
+      const titleEl = document.createElement("h2");
+      titleEl.textContent = "TLDR";
+      const bodyEl = document.createElement("p");
+      bodyEl.textContent = summary;
+      block.appendChild(titleEl);
+      block.appendChild(bodyEl);
+      if (host.firstChild) host.insertBefore(block, host.firstChild);
+      else host.appendChild(block);
+    }
+    injectTldrBlock(summaryText);
+  } catch (e) {
+    console.warn("Landing TLDR signal injection failed:", e);
+  }
+})();
+</script>
