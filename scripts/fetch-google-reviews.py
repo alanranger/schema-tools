@@ -253,6 +253,7 @@ def fetch_reviews(creds, location_id=None):
                                     rating = str(star_rating)
                                 
                                 comment = r.get("comment", "").replace("\n", " ").strip()
+                                owner_reply = ((r.get("reviewReply") or {}).get("comment") or "").replace("\n", " ").strip()
                                 
                                 # Try to get createTime first (original review date), fallback to updateTime
                                 create_time = r.get("createTime", "")
@@ -294,7 +295,8 @@ def fetch_reviews(creds, location_id=None):
                                     "review": comment,
                                     "date": date_str,
                                     "source": "Google",
-                                    "reference_id": ""
+                                    "reference_id": "",
+                                    "company_response": owner_reply
                                 })
                             
                             next_page_token = response.get("nextPageToken")

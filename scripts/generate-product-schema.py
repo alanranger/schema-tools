@@ -44,6 +44,7 @@ import os
 import time
 from datetime import datetime, date, timedelta
 from offer_dates import keep_or_stable_until, stable_price_valid_until, stable_valid_from
+from review_owner_reply import owner_reply_fields
 from site_identity import SITE_UA
 from urllib.parse import urlparse, urljoin
 from urllib.error import HTTPError
@@ -3114,6 +3115,7 @@ def main():
                     if source:
                         review_obj["publisher"] = {"@type": "Organization", "name": source}
                     
+                    review_obj.update(owner_reply_fields(review_row))
                     product_reviews.append(review_obj)
                     
                     # Track mapped reviews by source for statistics

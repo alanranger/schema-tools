@@ -26,6 +26,8 @@
     "bulk:blog-howto-faq": "node scripts/bulk-regen-blog-howto-faq.mjs",
     "repair:blog-title-sync": "node scripts/repair-blog-title-sync.mjs",
     "test:reconcile-reviews": "python scripts/test-reconcile-removed-from-google.py",
+    "test:review-owner-reply": "python scripts/test-review-owner-reply.py",
+    "test:product-review-cards": "node --test scripts/product-review-cards.test.mjs",
     "test:landing-live-sources": "node --test scripts/landing-live-sources.test.mjs",
     "test:stale-cleanup": "node --test scripts/stale-schema-cleanup.test.mjs",
     "test:review-matcher-orders": "node --test scripts/review-matcher-orders.test.mjs"
