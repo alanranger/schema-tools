@@ -65,7 +65,25 @@ const API = {
   checkFileExists: (name) => fs.existsSync(repoMirror(name)) || fs.existsSync(path.join(REPO, name)),
   saveAndDeploySchema: (name, json) => { writeOut(repoMirror(name), json); return { success: true, message: 'app-cli: written to --out (no git)', filePath: repoMirror(name) }; },
   saveSchemaToOutputs: (name, json) => { writeOut(path.join(OUT, 'alan-shared-resources', 'outputs', 'schema', name), json); return { success: true }; },
-  batchDeploySchemas: (files) => { files.forEach((f) => writeOut(repoMirror(f.fileName), f.jsonContent)); return { success: true, message: `app-cli: ${files.length} files written to --out`, deletedCount: 0 }; },
+  batchDeploySchemas: async (files, options = {}) => {
+    files.forEach((f) => writeOut(repoMirror(f.fileName), f.jsonContent));
+    let deletedCount = 0;
+    if (options?.cleanupEventSchemas) {
+      const { removeStaleEventSchemaFiles } = await import('./lib/stale-schema-cleanup.mjs');
+      // Seed the OUT repo with live event files first so cleanup can see renamed leftovers.
+      const outRepo = path.join(OUT, 'alanranger-schema');
+      fs.mkdirSync(outRepo, { recursive: true });
+      for (const name of fs.readdirSync(REPO)) {
+        if (!name.endsWith('_event_schema.json') && !name.endsWith('_event_faq.json')) continue;
+        const dest = path.join(outRepo, name);
+        if (!fs.existsSync(dest)) fs.copyFileSync(path.join(REPO, name), dest);
+      }
+      const deleted = removeStaleEventSchemaFiles(outRepo, files.map((f) => f.fileName));
+      deletedCount = deleted.length;
+      deleted.forEach((name) => deletes.push(name));
+    }
+    return { success: true, message: `app-cli: ${files.length} files written to --out`, deletedCount };
+  },
   httpGetManual: async (url) => { const r = await pacedFetch(url, { method: 'GET', redirect: 'manual' }); return { status: r.status, location: r.headers.get('location') || '' }; },
   /** Stale HowTo/FAQ removal: recorded only when the file exists, and applied only to the copy inside OUT (never the real repo).
    *  The Blog Posts tab asks to delete _faq/_howto for every post without one, whether or not the file exists. */
