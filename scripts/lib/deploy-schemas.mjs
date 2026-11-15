@@ -4,8 +4,10 @@
  * BAU Monthly runner's live stages, so both publish the same way.
  *
  * Options:
- *   expectExact — the commit must contain exactly these files (`git diff --name-only HEAD^ HEAD`), else the
- *                 commit is dropped (working tree kept) and nothing is pushed;
+ *   expectExact — the commit must contain exactly these files
+ *                 (`git diff --name-only --no-renames HEAD^ HEAD`), else the commit is dropped
+ *                 (working tree kept) and nothing is pushed. --no-renames matters when a publish
+ *                 list deletes A and adds similar B: git rename detection would otherwise hide A.
  *   restoreOnAbort — runner only: on a dropped commit, its own written files go back to HEAD;
  *   assertClean() — runner only: refuse if the repo has uncommitted changes before the stage writes.
  * undoCommit() restores the parent versions of exactly one commit's files, as its own commit, through the same path.
@@ -150,10 +152,21 @@ export function commitAndPush({ repo, files, message, branch = 'main', push = tr
   for (let i = 0; i < targets.length; i += ADD_BATCH) {
     gitStep(repo, ['add', '-A', '--', ...targets.slice(i, i + ADD_BATCH)], `Stage files (batch ${i / ADD_BATCH + 1})`);
   }
+  // expectExact compares to what git actually staged (no-ops drop out). --no-renames so delete+add of
+  // similar product/event files lists both paths (otherwise rename detection hides the deletion).
+  const staged = pathLines(git(repo, ['diff', '--cached', '--name-only', '--no-renames']).stdout);
+  if (expectExact) {
+    const extra = staged.filter((f) => !targets.includes(f));
+    if (extra.length) {
+      git(repo, ['reset', '-q', 'HEAD', '--', ...staged]);
+      throw new Error(`Staged unexpected files outside the publish list (${extra.join(', ')}); nothing committed`);
+    }
+  }
+  const expected = expectExact ? staged : targets;
   const c = gitStep(repo, ['commit', '-m', message], 'Commit changes');
   if (c.nothing) return { commit: null, nothing: true, files: [] };
-  const actual = pathLines(git(repo, ['diff', '--name-only', 'HEAD^', 'HEAD']).stdout);
-  if (expectExact && !sameSet(actual, targets)) abortCommit(repo, targets, actual, restoreOnAbort ? targets : []);
+  const actual = pathLines(git(repo, ['diff', '--name-only', '--no-renames', 'HEAD^', 'HEAD']).stdout);
+  if (expectExact && !sameSet(actual, expected)) abortCommit(repo, expected, actual, restoreOnAbort ? targets : []);
   const commit = git(repo, ['rev-parse', 'HEAD']).stdout.trim();
   if (push) gitStep(repo, ['push'], 'Push to GitHub');
   return { commit, nothing: false, files: actual };
