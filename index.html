@@ -13540,6 +13540,24 @@
     return parts.length ? parts[parts.length - 1] : '';
   }
 
+  /**
+   * Price lookup. Exact event URL wins. A month-only slug (…-workshop-202703) inherits the one
+   * mapping still stored under the old day slug (…-workshop-20270327) for that same month.
+   */
+  function mappingForEvent(dict, eventUrl) {
+    const key = normalizeUrl(eventUrl);
+    if (!dict) return null;
+    if (dict[key]) return dict[key];
+    const month = /^(.*)-(\d{6})$/.exec(deriveEventSlugFromUrl(key));
+    if (!month) return null;
+    const prefix = month[1] + '-' + month[2];
+    const hits = Object.keys(dict).filter((u) => {
+      const slug = deriveEventSlugFromUrl(u);
+      return slug.indexOf(prefix) === 0 && /-\d{8}$/.test(slug);
+    });
+    return hits.length === 1 ? dict[hits[0]] : null;
+  }
+
   function buildEventFaqPayload() {
     return null;
   }
@@ -14565,7 +14583,7 @@
     
     const eventSchemas = filtered.map((event, index) => {
       const eventUrl = normalizeUrl(event['Event_URL'] || '');
-      const mappingData = mappingsDict[eventUrl];
+      const mappingData = mappingForEvent(mappingsDict, eventUrl);
       const productUrl = mappingData ? mappingData.product_url : null;
       const reviewData = productUrl ? findReviewData(productUrl, reviewsDict) : null;
       
@@ -15948,7 +15966,7 @@
     window.currentEventList.forEach(event => {
       if (fvHasType(event, 'Event') && event.offers && parseFloat(event.offers.price) > 0) {
         const eventUrl = event.url || '';
-        const mappingData = window.currentMappingsDict[normalizeUrl(eventUrl)];
+        const mappingData = mappingForEvent(window.currentMappingsDict, eventUrl);
         
         const feedItem = {
           id: event.identifier || eventUrl.split('/').pop() || '',
