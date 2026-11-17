@@ -1,0 +1,28 @@
+/* Permanent site-wide rules. Included in every blocks.css rebuild. Not page-scoped. */
+
+/* Blog post titles: Squarespace site.css sets 42px and 0.3em tracking, which overflows phones. Desktop stays as it is. */
+@media (max-width: 640px) {
+  h1.BlogItem-title {
+    font-size: 30px !important;
+    letter-spacing: 0.02em !important;
+    line-height: 1.25em !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Gold "Get all 60 modules" bar: nowrap made it 377px wide. Wrap the words; do not clip them. */
+  #ar-lesson-member-strip {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  #ar-lesson-member-strip .ar-lesson-signup-cta {
+    white-space: normal !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: auto;
+    line-height: 1.25;
+  }
+}

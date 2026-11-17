@@ -73,7 +73,8 @@ export async function buildBlocksCss({ out, previous = out, htmlDir, scope = 'ri
   const groups = groupBlocks(blocks);
   const built = buildStylesheet(groups, 'build');
   const fixes = fs.readFileSync(path.join(HERE, 'contrast-fixes.css'), 'utf8');
-  const bodyCss = `${built.css}\n/* contrast fixes (audit 4 Nov 2026) */\n${fixes}`;
+  const fixed = fs.readFileSync(path.join(HERE, 'site-wide-fixed-rules.css'), 'utf8');
+  const bodyCss = `${built.css}\n/* contrast fixes (audit 4 Nov 2026) */\n${fixes}\n/* site-wide fixed rules */\n${fixed}`;
   const hash = crypto.createHash('sha1').update(bodyCss).digest('hex').slice(0, 10);
   const css = bodyCss.replace('generated build', `content ${hash}`);
   const dir = path.join(out, 'styles');
