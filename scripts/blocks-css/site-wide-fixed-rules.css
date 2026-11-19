@@ -241,10 +241,28 @@
   #collection-667a9a6a7881277d6b84fb7f .ar-get-banner-txt {
     min-width: 0;
   }
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-card,
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-shell,
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-grid {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-row,
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-subrows .ar-get-row {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-tag {
+    white-space: normal;
+  }
 }
 @media (max-width: 359px) {
-  body.ar-money-compact .ar-ll .ar-ll-g,
-  body.ar-money-compact .ar-ll .ar-ll-strip {
-    grid-template-columns: 1fr;
+  body.ar-money-compact #ar-ll .ar-ll-g,
+  body.ar-money-compact #ar-ll .ar-ll-strip {
+    grid-template-columns: 1fr !important;
+  }
+  body.ar-money-compact #ar-ll .ar-ll-c {
+    min-width: 0;
+    max-width: 100%;
   }
 }
