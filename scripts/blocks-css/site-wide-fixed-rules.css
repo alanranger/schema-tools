@@ -105,6 +105,24 @@
   body.ar-ws-product #ar-workshop-dates {
     scroll-margin-top: var(--ar-header-offset, 84px);
   }
+  body.ar-ws-product .ProductItem-details--mobile h1,
+  body.ar-ws-product .ProductItem-details-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0 !important;
+  }
+  body.ar-ws-product .ProductItem-nav,
+  body.ar-ws-product .ProductItem-nav-pagination-link-direction {
+    letter-spacing: normal !important;
+    font-size: 14px !important;
+  }
+  body.ar-ws-product [data-ar-opening],
+  body.ar-ws-product .ar-open-line {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+    margin: 8px 0 10px !important;
+  }
 }
 
 /* Other money pages. Details stay first. Images and tiles get shorter. Desktop type stays as it is. */
