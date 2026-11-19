@@ -149,9 +149,36 @@
   body.ar-money-compact .ar-ll .ar-ll-box {
     padding: 18px 12px 12px;
   }
+  body.ar-money-compact .ar-ll .ar-ll-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
   body.ar-money-compact .ar-ll .ar-ll-strip .c {
-    min-width: calc(50% - 8px);
+    min-width: 0;
     padding: 8px 6px;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-g {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-c {
+    min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-p {
+    font-size: 16px;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-phone-hide {
+    display: none;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-c.ar-ll-on {
+    outline: 2px solid #c96a1e;
+  }
+  body.ar-money-compact .sqs-add-to-cart-button {
+    scroll-margin-top: var(--ar-header-offset, 84px);
   }
   #block-5d3f17ca87551cefac58 .image-container,
   #block-6225de69ce414ca951c5 .image-container,
