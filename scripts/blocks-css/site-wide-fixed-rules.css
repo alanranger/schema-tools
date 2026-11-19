@@ -211,12 +211,35 @@
   #collection-667a9a6a7881277d6b84fb7f .ar-hero-top {
     grid-template-columns: 1fr;
   }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-top > *,
   #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash,
   #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash img {
     max-width: 100%;
     min-width: 0;
     height: auto;
     box-sizing: border-box;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash {
+    width: 100%;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash-head {
+    flex-wrap: wrap;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash-head h3,
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-rail {
+    min-width: 0;
+    max-width: 100%;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-rail {
+    flex-wrap: wrap;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-final-wrap::before,
+  #collection-667a9a6a7881277d6b84fb7f .ar-tip::after {
+    width: min(200px, 80vw);
+    max-width: 100%;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-get-banner-txt {
+    min-width: 0;
   }
 }
 @media (max-width: 359px) {
