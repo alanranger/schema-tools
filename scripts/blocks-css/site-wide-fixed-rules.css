@@ -26,3 +26,83 @@
     line-height: 1.25;
   }
 }
+
+/* Gift vouchers. The intro block is added on the page. The product image stays, at a phone height. */
+#collection-53836c32e4b05b1c55576926 .ar-gift-intro h2 {
+  margin: 0 0 10px;
+}
+#collection-53836c32e4b05b1c55576926 .ar-gift-intro .ar-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+#collection-53836c32e4b05b1c55576926 .ar-gift-intro .ar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  box-sizing: border-box;
+}
+#collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714,
+#collection-53836c32e4b05b1c55576926 #buy-voucher {
+  scroll-margin-top: var(--ar-header-offset, 84px);
+}
+@media (max-width: 767px) {
+  #collection-53836c32e4b05b1c55576926 .ar-gift-intro {
+    margin: 8px 0 12px;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .image-container,
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .sqs-product-block-main-image {
+    max-height: 120px;
+    height: 120px;
+    width: 100%;
+    object-fit: contain;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .product-block-content,
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .productDetails {
+    display: flex;
+    flex-direction: column;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .productDetails {
+    order: 1;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .image-container {
+    order: 2;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .product-variants,
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .product-purchase-controls-wrapper,
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .product-price {
+    order: 1;
+  }
+  #collection-53836c32e4b05b1c55576926 #block-yui_3_17_2_5_1507735009696_8714 .product-excerpt {
+    order: 3;
+  }
+  body.ar-ws-product {
+    padding-bottom: 76px;
+  }
+  body.ar-ws-product .ProductItem-summary {
+    display: flex;
+    flex-direction: column;
+  }
+  body.ar-ws-product .ProductItem-details--mobile {
+    order: 1;
+  }
+  body.ar-ws-product .ProductItem-details:not(.ProductItem-details--mobile) {
+    order: 2;
+  }
+  body.ar-ws-product .ProductItem-gallery {
+    order: 3;
+    max-height: 160px;
+  }
+  body.ar-ws-product .ProductItem-gallery img {
+    max-height: 160px;
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+  }
+  body.ar-ws-product #ar-workshop-dates {
+    scroll-margin-top: var(--ar-header-offset, 84px);
+  }
+}
