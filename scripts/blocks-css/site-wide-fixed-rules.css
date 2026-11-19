@@ -206,3 +206,22 @@
     overflow-wrap: anywhere;
   }
 }
+
+@media (max-width: 767px) {
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-top {
+    grid-template-columns: 1fr;
+  }
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash,
+  #collection-667a9a6a7881277d6b84fb7f .ar-hero-dash img {
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    box-sizing: border-box;
+  }
+}
+@media (max-width: 359px) {
+  body.ar-money-compact .ar-ll .ar-ll-g,
+  body.ar-money-compact .ar-ll .ar-ll-strip {
+    grid-template-columns: 1fr;
+  }
+}
