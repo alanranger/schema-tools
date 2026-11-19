@@ -106,3 +106,58 @@
     scroll-margin-top: var(--ar-header-offset, 84px);
   }
 }
+
+/* Other money pages. Details stay first. Images and tiles get shorter. Desktop type stays as it is. */
+#block-5d3f17ca87551cefac58 .image-container,
+#block-6225de69ce414ca951c5 .image-container,
+#block-yui_3_17_2_1_1719686891097_45867 .image-container,
+#block-yui_3_17_2_1_1698326313039_41652 .image-container,
+#block-9cb9eb791df9deb0b47d .image-container,
+#block-5d3f17ca87551cefac58 .sqs-product-block-main-image,
+#block-6225de69ce414ca951c5 .sqs-product-block-main-image,
+#block-yui_3_17_2_1_1719686891097_45867 .sqs-product-block-main-image,
+#block-yui_3_17_2_1_1698326313039_41652 .sqs-product-block-main-image,
+#block-9cb9eb791df9deb0b47d .sqs-product-block-main-image {
+  max-height: 200px;
+  width: 100%;
+  object-fit: contain;
+}
+@media (max-width: 767px) {
+  body.ar-money-compact h1 {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0 !important;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-box {
+    padding: 18px 12px 12px;
+  }
+  body.ar-money-compact .ar-ll .ar-ll-strip .c {
+    min-width: calc(50% - 8px);
+    padding: 8px 6px;
+  }
+  #block-5d3f17ca87551cefac58 .image-container,
+  #block-6225de69ce414ca951c5 .image-container,
+  #block-yui_3_17_2_1_1719686891097_45867 .image-container,
+  #block-yui_3_17_2_1_1698326313039_41652 .image-container,
+  #block-9cb9eb791df9deb0b47d .image-container,
+  #block-5d3f17ca87551cefac58 .sqs-product-block-main-image,
+  #block-6225de69ce414ca951c5 .sqs-product-block-main-image,
+  #block-yui_3_17_2_1_1719686891097_45867 .sqs-product-block-main-image,
+  #block-yui_3_17_2_1_1698326313039_41652 .sqs-product-block-main-image,
+  #block-9cb9eb791df9deb0b47d .sqs-product-block-main-image {
+    max-height: 120px;
+    height: 120px;
+  }
+  #block-yui_3_17_2_1_1782649596484_25101 table,
+  #block-yui_3_17_2_1_1781116166480_8243 table {
+    width: 100%;
+  }
+  #block-yui_3_17_2_1_1782649596484_25101 td,
+  #block-yui_3_17_2_1_1782649596484_25101 th,
+  #block-yui_3_17_2_1_1781116166480_8243 td,
+  #block-yui_3_17_2_1_1781116166480_8243 th {
+    font-size: 13px;
+    padding: 6px 4px;
+    overflow-wrap: anywhere;
+  }
+}
