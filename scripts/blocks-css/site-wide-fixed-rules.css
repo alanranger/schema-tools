@@ -171,8 +171,8 @@
   body.ar-money-compact .ar-ll .ar-ll-p {
     font-size: 16px;
   }
-  body.ar-money-compact .ar-ll .ar-ll-phone-hide {
-    display: none;
+  body.ar-money-compact #ar-ll .ar-ll-phone-hide {
+    display: none !important;
   }
   body.ar-money-compact .ar-ll .ar-ll-c.ar-ll-on {
     outline: 2px solid #c96a1e;
