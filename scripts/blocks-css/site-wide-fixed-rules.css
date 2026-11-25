@@ -141,7 +141,8 @@
   object-fit: contain;
 }
 @media (max-width: 767px) {
-  body.ar-money-compact h1 {
+  body.ar-money-compact h1,
+  body.ar-heading-tight h1 {
     font-size: 32px !important;
     line-height: 1.15 !important;
     letter-spacing: 0 !important;
