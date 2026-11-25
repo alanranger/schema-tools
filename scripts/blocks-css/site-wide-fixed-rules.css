@@ -305,3 +305,7 @@
     line-height: 1.15 !important;
   }
 }
+html:not(.ar-cookie-show) .gdpr-cookie-banner {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
